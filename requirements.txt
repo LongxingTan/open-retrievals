@@ -1,0 +1,8 @@
+torch
+transformers
+accelerator
+peft
+datasets
+faiss-cpu
+scikit-learn
+tqdm

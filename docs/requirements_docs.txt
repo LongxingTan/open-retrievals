@@ -1,0 +1,11 @@
+recommonmark>=0.7.1
+nbconvert>=6.3.0
+sphinx>3.2
+pandoc
+ipython
+nbsphinx
+sphinx_markdown_tables
+pydata_sphinx_theme
+docutils
+sphinx-autobuild
+cloudpickle
