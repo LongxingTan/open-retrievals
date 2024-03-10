@@ -19,8 +19,7 @@ extras = {}
 _deps = [
     "Pillow>=10.0.1,<=15.0",
     "accelerate>=0.21.0",
-    "peft"
-    "av==9.2.0",  # Latest version of PyAV (10.0.0) has issues with audio stream.
+    "peft" "av==9.2.0",  # Latest version of PyAV (10.0.0) has issues with audio stream.
     "beautifulsoup4",
     "codecarbon==1.2.0",
     "cookiecutter==1.7.3",
