@@ -112,10 +112,16 @@ model = AutoModelForEmbedding('llama', pooling_method='last', query_instruction=
 
 **Search by KNN**
 ```python
-from retrievals import AutoModelForEmbedding
+from retrievals import AutoModelForEmbedding, AutoModelForMatch
 
-retrieval_model = AutoModelForEmbedding('')
-retrieval_model.query(method='knn')
+query_texts = []
+passage_texts = []
+model = AutoModelForEmbedding('')
+query_embeddings = model.encode(query_texts, convert_to_tensor=True)
+passage_embeddings = model.encode(passage_texts, convert_to_tensor=True)
+
+matcher = AutoModelForMatch(method='cosine')
+dists, indices = matcher.similarity_search(query_embeddings, passage_embeddings, top_k=1)
 
 ```
 
