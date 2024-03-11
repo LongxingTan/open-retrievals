@@ -64,8 +64,8 @@ from retrievals import AutoModelForEmbedding
 
 sentences = ["Hello world", "How are you?"]
 model_name_or_path = "sentence-transformers/all-MiniLM-L6-v2"
-model = AutoModelForEmbedding(model_name_or_path, pooling_method="cls")
-sentence_embeddings = model.encode(sentences)
+model = AutoModelForEmbedding(model_name_or_path, pooling_method="mean", normalize_embeddings=True)
+sentence_embeddings = model.encode(sentences, convert_to_tensor=True)
 print(sentence_embeddings)
 ```
 

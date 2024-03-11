@@ -5,7 +5,6 @@ import faiss
 import numpy as np
 import torch
 from numpy import ndarray
-from peft import LoraConfig, TaskType, get_peft_model
 from torch import Tensor, nn
 from torch.utils.data import DataLoader, Dataset
 from tqdm.autonotebook import trange
@@ -76,7 +75,7 @@ class AutoModelForEmbedding(nn.Module):
         generation_args: Dict = None,
         use_fp16: bool = False,
         use_lora: bool = False,
-        peft_config: Optional[LoraConfig] = None,
+        peft_config=None,
         device: Optional[str] = None,
         trust_remote_code: bool = False,
     ):
@@ -110,6 +109,8 @@ class AutoModelForEmbedding(nn.Module):
             self.model.half()
         if use_lora:
             # peft config and wrapping
+            from peft import LoraConfig, TaskType, get_peft_model
+
             if not peft_config:
                 raise ValueError("If use_lora is true, please provide a valid peft_config")
             self.model = get_peft_model(self.model, peft_config)
