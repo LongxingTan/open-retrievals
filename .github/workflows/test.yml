@@ -37,27 +37,31 @@ jobs:
         shell: bash
         run: |
           pip install -r requirements.txt
-          pip install --extra-index-url https://pypi.org/simple --no-cache-dir pytest codecov-cli==0.4.0
+          pip install --extra-index-url https://pypi.org/simple --no-cache-dir pytest codecov-cli>=0.4.1
 
       - name: Run unittest
         shell: bash
         run: python -m unittest discover -s ./tests  -p 'test_*.py'
 
-      - name: Statistics
+      - name: Codecov startup
         if: success()
         run: |
           codecovcli create-commit
           codecovcli create-report
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+      - name: Static Analysis
+        run: |
+          codecovcli static-analysis --token=${CODECOV_STATIC_TOKEN} \
+          --folders-to-exclude .artifacts \
+          --folders-to-exclude .github \
+          --folders-to-exclude .venv \
+          --folders-to-exclude static \
+          --folders-to-exclude bin
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+          CODECOV_STATIC_TOKEN: ${{ secrets.CODECOV_STATIC_TOKEN }}
 
-      - name: Upload coverage reports to Codecov
-        uses: codecov/codecov-action@v4.0.1
-        if: always()
-        continue-on-error: true
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          slug: longxingtan/open-retrievals
 
   docs:
     name: Test docs build

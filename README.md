@@ -46,10 +46,13 @@ pip install peft
 pip install open-retrievals
 ```
 
-**With conda**
-```shell
-conda install open-retrievals -c conda-forge
-```
+[//]: # (**With conda**)
+
+[//]: # (```shell)
+
+[//]: # (conda install open-retrievals -c conda-forge)
+
+[//]: # (```)
 
 
 ## Usage
@@ -69,49 +72,39 @@ print(sentence_embeddings)
 
 **Finetune transformers by contrastive learning**
 ```python
-from retrievals import AutoModelForEmbedding, AutoModelForMatch, RetrievalTrainer, PairCollator
+from dataclasses import dataclass, field
+import transformers
+from transformers import AutoTokenizer
+from retrievals import AutoModelForEmbedding, AutoModelForMatch, RetrievalTrainer, PairCollator, TripletCollator
 from retrievals.losses import ArcFaceAdaptiveMarginLoss, InfoNCE, SimCSE, TripletLoss
 from retrievals.data import  RetrievalDataset, RerankDataset
 
+tokenizer = AutoTokenizer.from_pretrained(model_args.tokenizer_name, use_fast=False)
+train_dataset = RetrievalDataset(args=data_args)
 
-train_dataset = RetrievalDataset(topic_df, tokenizer, CFG.max_len, aug=False)
+model = AutoModelForEmbedding(
+    model_args.model_name_or_path,
+    pooling_method="cls"
+)
+optimizer = get_optimizer(model, lr=5e-5, weight_decay=1e-3)
 
-train_loader = DataLoader(
-    train_dataset,
-    batch_size=CFG.batch_size,
-    shuffle=True,
-    num_workers=CFG.num_workers,
-    pin_memory=False,
-    drop_last=True,
-)
+lr_scheduler = get_scheduler(optimizer, num_train_steps=int(len(train_dataset) / 2 * 1))
 
-loss_fn = ArcFaceAdaptiveMarginLoss(
-    criterion=cross_entropy,
-    in_features=768,
-    out_features=CFG.num_classes,
-    scale=CFG.arcface_scale,
-    margin=CFG.arcface_margin,
+trainer = RetrievalTrainer(
+    model=model,
+    args=training_args,
+    train_dataset=train_dataset,
+    data_collator=TripletCollator(tokenizer, max_length=data_args.query_max_len),
+    loss_fn=TripletLoss(),
 )
-model = AutoModelForEmbedding(CFG.MODEL_NAME, pooling_method="cls", loss_fn=loss_fn)
-
-optimizer = get_optimizer(model, lr=CFG.learning_rate)
-scheduler = get_scheduler(
-    optimizer=optimizer, cfg=CFG, total_steps=len(train_dataset)
-)
-trainer = CustomTrainer(model, device="cuda", apex=CFG.apex)
-trainer.train(
-    train_loader=train_loader,
-    criterion=None,
-    optimizer=optimizer,
-    epochs=CFG.epochs,
-    scheduler=scheduler,
-    dynamic_margin=True,
-)
-torch.save(model.state_dict(), CFG.output_dir + f"model_{CFG.exp_id}.pth")
+trainer.optimizer = optimizer
+trainer.scheduler = lr_scheduler
+trainer.train()
 ```
 
 **Finetune LLM for embedding by Contrastive learning**
 ```python
+# just change the model in AutoModelForEmbedding
 from retrievals import AutoModelForEmbedding
 
 model = AutoModelForEmbedding('llama', pooling_method='last', query_instruction='')
@@ -137,26 +130,38 @@ retrieval_model.query(method='knn')
 
 ```
 
-**RAG with LangChain**
+[//]: # (**RAG with LangChain**)
 
-- Prerequisites
-```shell
-pip install langchain
-```
+[//]: # ()
+[//]: # (- Prerequisites)
 
-- Server
-```python
+[//]: # (```shell)
 
-```
+[//]: # (pip install langchain)
 
-**RAG with LLamaIndex**
-```shell
-pip install llamaindex
-```
+[//]: # (```)
 
-```python
+[//]: # ()
+[//]: # (- Server)
 
-```
+[//]: # (```python)
+
+[//]: # ()
+[//]: # (```)
+
+[//]: # (**RAG with LLamaIndex**)
+
+[//]: # (```shell)
+
+[//]: # (pip install llamaindex)
+
+[//]: # (```)
+
+[//]: # ()
+[//]: # (```python)
+
+[//]: # ()
+[//]: # (```)
 
 
 ## Reference & Acknowledge
