@@ -13,7 +13,6 @@
 [coverage-image]: https://codecov.io/gh/longxingtan/open-retrievals/branch/master/graph/badge.svg
 [coverage-url]: https://codecov.io/github/longxingtan/open-retrievals?branch=master
 
-
 <h1 align="center">
 <img src="./docs/source/_static/logo.svg" width="490" align=center/>
 </h1><br>
@@ -29,17 +28,61 @@
 **[文档](https://open-retrievals.readthedocs.io)** | **[Tutorials](https://open-retrievals.readthedocs.io/en/latest/tutorials.html)** | **[Release Notes](https://open-retrievals.readthedocs.io/en/latest/CHANGELOG.html)** | **[中文](https://github.com/LongxingTan/open-retrievals/blob/master/README_zh-CN.md)**
 
 **Open-Retrievals** 帮助开发者在信息检索、大语言模型等领域便捷地应用与增强文本向量，基于Pytorch、Transformers框架。
+- 对比学习增强性能
+- 支持大语言模型文本向量
+
 
 ## 安装
+
+**基础**
+```shell
+pip install transformers
+pip install faiss
+pip install peft
+```
+
+**安装**
+```shell
+pip install open-retrievals
+```
 
 
 ## 快速使用
 
+**预训练文本向量**
+```python
+from retrievals import AutoModelForEmbedding
 
-## 示例
+sentences = ["Hello world", "How are you?"]
+model_name_or_path = "sentence-transformers/all-MiniLM-L6-v2"
+model = AutoModelForEmbedding(model_name_or_path, pooling_method="mean", normalize_embeddings=True)
+sentence_embeddings = model.encode(sentences, convert_to_tensor=True)
+print(sentence_embeddings)
+```
 
+**基于余弦相似度和紧邻搜索**
+```python
+from retrievals import AutoModelForEmbedding, AutoModelForMatch
 
-## 引用
+query_texts = []
+passage_texts = []
+model = AutoModelForEmbedding('')
+query_embeddings = model.encode(query_texts, convert_to_tensor=True)
+passage_embeddings = model.encode(passage_texts, convert_to_tensor=True)
+
+matcher = AutoModelForMatch(method='cosine')
+dists, indices = matcher.similarity_search(query_embeddings, passage_embeddings, top_k=1)
+```
+
+**Faiss向量数据库检索**
+```python
+
+```
+
+**重排**
+```python
+
+```
 
 
 ## 参考与致谢

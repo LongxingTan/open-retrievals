@@ -13,7 +13,6 @@
 [coverage-image]: https://codecov.io/gh/longxingtan/open-retrievals/branch/master/graph/badge.svg
 [coverage-url]: https://codecov.io/github/longxingtan/open-retrievals?branch=master
 
-
 <h1 align="center">
 <img src="./docs/source/_static/logo.svg" width="520" align=center/>
 </h1><br>
@@ -34,6 +33,7 @@
 
 
 ## Installation
+
 **Prerequisites**
 ```shell
 pip install transformers
@@ -57,7 +57,6 @@ pip install open-retrievals
 
 ## Usage
 
-
 **Use Pretrained sentence embedding**
 ```python
 from retrievals import AutoModelForEmbedding
@@ -68,7 +67,6 @@ model = AutoModelForEmbedding(model_name_or_path, pooling_method="mean", normali
 sentence_embeddings = model.encode(sentences, convert_to_tensor=True)
 print(sentence_embeddings)
 ```
-
 
 **Finetune transformers by contrastive learning**
 ```python
@@ -108,8 +106,8 @@ trainer.train()
 from retrievals import AutoModelForEmbedding
 
 model = AutoModelForEmbedding(
-    "mistralai/Mistral-7B-v0.1", 
-    pooling_method='cls', 
+    "mistralai/Mistral-7B-v0.1",
+    pooling_method='cls',
     query_instruction=f'Instruct: Retrieve semantically similar text\nQuery: '
 )
 ```
@@ -126,14 +124,12 @@ passage_embeddings = model.encode(passage_texts, convert_to_tensor=True)
 
 matcher = AutoModelForMatch(method='cosine')
 dists, indices = matcher.similarity_search(query_embeddings, passage_embeddings, top_k=1)
-
 ```
 
 **Search by Faiss**
 ```python
 
 ```
-
 
 **Rerank**
 ```python
