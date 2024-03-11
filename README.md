@@ -104,13 +104,17 @@ trainer.train()
 
 **Finetune LLM for embedding by Contrastive learning**
 ```python
-# just change the model in AutoModelForEmbedding
+
 from retrievals import AutoModelForEmbedding
 
-model = AutoModelForEmbedding('llama', pooling_method='last', query_instruction='')
+model = AutoModelForEmbedding(
+    "mistralai/Mistral-7B-v0.1", 
+    pooling_method='cls', 
+    query_instruction=f'Instruct: Retrieve semantically similar text\nQuery: '
+)
 ```
 
-**Search by KNN**
+**Search by Cosine similarity/KNN**
 ```python
 from retrievals import AutoModelForEmbedding, AutoModelForMatch
 
