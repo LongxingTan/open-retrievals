@@ -90,7 +90,7 @@ def cosine_similarity_search(
     inds = torch.cat(inds)
     if convert_to_numpy:
         vals = vals.numpy()
-        inds = vals.numpy()
+        inds = inds.numpy()
     return inds, vals
 
 
