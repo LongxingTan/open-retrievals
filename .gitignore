@@ -100,3 +100,5 @@ coverage.xml
 /weights/checkpoint.index
 /conda/*
 **/.pdf
+/encode.py
+/.build/*
