@@ -124,9 +124,9 @@ def faiss_search(
     for i in tqdm(range(0, query_size, batch_size), desc="Searching"):
         j = min(i + batch_size, query_size)
         query_embedding = query_embeddings[i:j]
-        score, indice = faiss_index.search(query_embedding.astype(np.float32), k=top_k)
+        score, index = faiss_index.search(query_embedding.astype(np.float32), k=top_k)
         all_scores.append(score)
-        all_indices.append(indice)
+        all_indices.append(index)
 
     all_scores = np.concatenate(all_scores, axis=0)
     all_indices = np.concatenate(all_indices, axis=0)
