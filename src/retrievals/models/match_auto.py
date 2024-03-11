@@ -16,7 +16,13 @@ class AutoModelForMatch(object):
         self.method = method
 
     def similarity_search(
-        self, query_embed: torch.Tensor, passage_embed: torch.Tensor, top_k: int = 1, batch_size: int = 0, **kwargs
+        self,
+        query_embed: torch.Tensor,
+        passage_embed: torch.Tensor,
+        top_k: int = 1,
+        batch_size: int = 0,
+        convert_to_numpy: bool = True,
+        **kwargs,
     ):
         if self.method == "knn":
             neighbors_model = NearestNeighbors(n_neighbors=top_k, metric="cosine", n_jobs=-1)
@@ -25,7 +31,9 @@ class AutoModelForMatch(object):
             return dists, indices
 
         elif self.method == "cosine":
-            dists, indices = cosine_similarity_search(query_embed, passage_embed, top_k=top_k, batch_size=batch_size)
+            dists, indices = cosine_similarity_search(
+                query_embed, passage_embed, top_k=top_k, batch_size=batch_size, convert_to_numpy=convert_to_numpy
+            )
             return dists, indices
 
         else:
