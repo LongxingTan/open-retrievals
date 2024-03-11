@@ -5,21 +5,19 @@ import faiss
 import numpy as np
 import torch
 from sklearn.neighbors import NearestNeighbors
-from torch import nn
 from tqdm import tqdm
 
 logger = logging.getLogger(__name__)
 
 
-class AutoModelForMatch(nn.Module):
-    def __init__(self, method="knn") -> None:
+class AutoModelForMatch(object):
+    def __init__(self, method="cosine") -> None:
         super().__init__()
         self.method = method
 
     def similarity_search(
-        self, query_embed, passage_embed=None, top_k=1, query_chunk_size=5, corpus_chunk_size=17, **kwargs
+        self, query_embed: torch.Tensor, passage_embed: torch.Tensor, top_k: int = 1, batch_size: int = 0, **kwargs
     ):
-        """ """
         if self.method == "knn":
             neighbors_model = NearestNeighbors(n_neighbors=top_k, metric="cosine", n_jobs=-1)
             neighbors_model.fit(passage_embed)
@@ -27,11 +25,11 @@ class AutoModelForMatch(nn.Module):
             return dists, indices
 
         elif self.method == "cosine":
-            dists, indices = cosine_similarity_search(query_embed, passage_embed, top_k=top_k)
+            dists, indices = cosine_similarity_search(query_embed, passage_embed, top_k=top_k, batch_size=batch_size)
             return dists, indices
 
         else:
-            raise ValueError
+            raise ValueError(f"Only cosine and knn method are supported by similarity_search, while get {self.method}")
 
     def faiss_search(
         self,
@@ -55,20 +53,27 @@ class AutoModelForMatch(nn.Module):
 
 
 def cosine_similarity_search(
-    query_embed,
-    passage_embed,
+    query_embed: torch.Tensor,
+    passage_embed: torch.Tensor,
     top_k: int = 1,
     batch_size: int = 512,
     penalty: bool = True,
     temperature: float = 0,
+    convert_to_numpy: bool = True,
 ):
-    chunk = batch_size
+    if len(query_embed.size()) == 1:
+        query_embed = query_embed.view(1, -1)
+    assert query_embed.size()[1] == passage_embed.size()[1], (
+        f"The embed Shape of query_embed and passage_embed should be same, "
+        f"while received query {query_embed.size()} and passage {passage_embed.size()}"
+    )
+    chunk = batch_size if batch_size > 0 else len(query_embed)
     embeddings_chunks = query_embed.split(chunk)
 
     vals = []
     inds = []
     for idx in range(len(embeddings_chunks)):
-        cos_sim_chunk = torch.mm(embeddings_chunks[idx], passage_embed.transpose(0, 1))
+        cos_sim_chunk = torch.matmul(embeddings_chunks[idx], passage_embed.transpose(0, 1))
         cos_sim_chunk = torch.nan_to_num(cos_sim_chunk, nan=0.0)
         # if penalty:
         #     pen = ((contents["old_source_count"].values==0) & (contents["old_nonsource_count"].values==1))
@@ -81,8 +86,11 @@ def cosine_similarity_search(
         vals_chunk, inds_chunk = torch.topk(cos_sim_chunk, k=top_k, dim=1)
         vals.append(vals_chunk[:, :].detach().cpu())
         inds.append(inds_chunk[:, :].detach().cpu())
-    vals = torch.cat(vals).detach().cpu().numpy()
-    inds = torch.cat(inds).detach().cpu().numpy()
+    vals = torch.cat(vals)
+    inds = torch.cat(inds)
+    if convert_to_numpy:
+        vals = vals.numpy()
+        inds = vals.numpy()
     return inds, vals
 
 
