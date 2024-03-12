@@ -118,6 +118,7 @@ from retrievals import AutoModelForEmbedding, AutoModelForMatch
 
 query_texts = []
 passage_texts = []
+model_name_or_path = "sentence-transformers/all-MiniLM-L6-v2"
 model = AutoModelForEmbedding('')
 query_embeddings = model.encode(query_texts, convert_to_tensor=True)
 passage_embeddings = model.encode(passage_texts, convert_to_tensor=True)
@@ -128,7 +129,15 @@ dists, indices = matcher.similarity_search(query_embeddings, passage_embeddings,
 
 **Search by Faiss**
 ```python
+from retrievals import AutoModelForEmbedding, AutoModelForMatch
 
+sentences = ['A woman is reading.', 'A man is playing a guitar.']
+model_name_or_path = "sentence-transformers/all-MiniLM-L6-v2"
+model = AutoModelForEmbedding(model_name_or_path)
+model.build_index(sentences)
+
+matcher = AutoModelForMatch()
+results = matcher.faiss_search("He plays guitar.")
 ```
 
 **Rerank**

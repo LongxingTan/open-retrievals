@@ -97,6 +97,6 @@ class RerankModel(nn.Module):
 
     def save_pretrained(self, path):
         """
-        Same function as save
+        Same function to save
         """
         return self.save(path)

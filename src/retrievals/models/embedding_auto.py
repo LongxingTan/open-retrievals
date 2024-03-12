@@ -9,7 +9,6 @@ from torch import Tensor, nn
 from torch.utils.data import DataLoader, Dataset
 from tqdm.autonotebook import trange
 from transformers import (
-    AdamW,
     AutoConfig,
     AutoModel,
     AutoTokenizer,
@@ -361,8 +360,8 @@ class AutoModelForEmbedding(nn.Module):
 
         return all_embeddings
 
-    def build_index(self, inputs, use_gpu: bool = True):
-        embeddings = self.encode(inputs)
+    def build_index(self, inputs, batch_size: int = 64, use_gpu: bool = True):
+        embeddings = self.encode(inputs, batch_size=batch_size)
         embeddings = np.asarray(embeddings, dtype=np.float32)
         index = faiss.IndexFlatL2(len(embeddings[0]))
         if use_gpu:
@@ -372,6 +371,15 @@ class AutoModelForEmbedding(nn.Module):
             index = faiss.index_cpu_to_all_gpus(index, co=co)
         index.add(embeddings)
         return index
+
+    def add_to_index(self):
+        return
+
+    def search(self):
+        return
+
+    def similarity(self, queries: Union[str, List[str]], keys: Union[str, List[str], ndarray]):
+        return
 
     def save(self):
         pass
@@ -473,13 +481,23 @@ class PairwiseModel(AutoModelForEmbedding):
             return pooled_output1, pooled_output2
 
 
+def unsorted_segment_mean(data: torch.Tensor, segment_ids: torch.Tensor, num_segments: int) -> torch.Tensor:
+    result_shape = (num_segments, data.size(1))
+    segment_ids = segment_ids.unsqueeze(-1).expand(-1, data.size(1))
+    result = data.new_full(result_shape, 0)  # init empty result tensor
+    count = data.new_full(result_shape, 0)
+    result.scatter_add_(0, segment_ids, data)
+    count.scatter_add_(0, segment_ids, torch.ones_like(data))
+    return result / count.clamp(min=1)
+
+
 class ListwiseModel(AutoModelForEmbedding):
     """
     segment_id
     """
 
-    def __init__(self) -> None:
-        super().__init__()
+    def __init__(self, **kwargs) -> None:
+        super().__init__(**kwargs)
 
     def forward(
         self,
@@ -489,7 +507,4 @@ class ListwiseModel(AutoModelForEmbedding):
         output_hidden_states: Optional[bool] = None,
         return_dict: Optional[bool] = None,
     ):
-        return
-
-    def apply_listwise_pooling(self, data: torch.Tensor, segment_ids: torch.Tensor, num_segments: int):
         return
