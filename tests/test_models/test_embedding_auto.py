@@ -2,9 +2,15 @@ import tempfile
 from unittest import TestCase
 
 import numpy as np
+import torch
 from transformers import AutoConfig
 
-from src.retrievals.models.embedding_auto import AutoModelForEmbedding
+from src.retrievals.models.embedding_auto import (
+    AutoModelForEmbedding,
+    ListwiseModel,
+    PairwiseModel,
+    unsorted_segment_mean,
+)
 
 from .test_modeling_common import (
     ModelTesterMixin,
@@ -150,3 +156,18 @@ class PairwiseModelTest(TestCase, ModelTesterMixin):
 
     def test_pairwise_model(self):
         pass
+
+
+class ListwiseModelTest(TestCase):
+    def setUp(self) -> None:
+        pass
+        # self.model = ListwiseModel()
+
+    def test_unsorted_segment_mean(self):
+        input_tensor = torch.tensor([[1.0, 2.0], [3.0, 4.0], [5.0, 6.0], [7.0, 8.0]])
+        segment_ids = torch.tensor([0, 0, 1, 1])
+        num_segments = 2
+
+        list_pool = unsorted_segment_mean(input_tensor, segment_ids, num_segments)
+        print(list_pool)
+        # self.assertEqual()

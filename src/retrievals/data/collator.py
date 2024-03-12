@@ -5,11 +5,30 @@ from transformers import DataCollatorWithPadding, PreTrainedTokenizer
 
 
 class PairCollator(DataCollatorWithPadding):
-    def __init__(self, tokenizer, max_length: Optional[int] = None) -> None:
+    def __init__(
+        self,
+        tokenizer,
+        max_length: Optional[int] = None,
+        query_max_length: Optional[int] = None,
+        passage_max_length: Optional[int] = None,
+    ) -> None:
         self.tokenizer = tokenizer
         if not hasattr(self.tokenizer, "pad_token_id") or self.tokenizer.pad_token is None:
             self.tokenizer.add_special_tokens({"pad_token": "[PAD]"})
-        self.max_length = max_length or tokenizer.model_max_length
+
+        self.query_max_length: int
+        self.passage_man_length: int
+        if query_max_length:
+            self.query_max_length = query_max_length
+        elif max_length:
+            self.query_max_length = max_length
+            self.passage_man_length = max_length
+        else:
+            self.query_max_length = tokenizer.model_max_length
+            self.passage_man_length = tokenizer.model_max_length
+
+        if passage_max_length:
+            self.passage_man_length = passage_max_length
 
     def __call__(self, features: List[Dict[str, Any]]) -> Dict[str, Any]:
         query_texts = [feature["query"] for feature in features]
@@ -18,14 +37,14 @@ class PairCollator(DataCollatorWithPadding):
         query_inputs = self.tokenizer(
             query_texts,
             padding=True,
-            max_length=self.max_length,
+            max_length=self.query_max_length,
             truncation=True,
             return_tensors="pt",
         )
         pos_inputs = self.tokenizer(
             pos_texts,
             padding=True,
-            max_length=self.max_length,
+            max_length=self.passage_man_length,
             truncation=True,
             return_tensors="pt",
         )
@@ -34,11 +53,30 @@ class PairCollator(DataCollatorWithPadding):
 
 
 class TripletCollator(DataCollatorWithPadding):
-    def __init__(self, tokenizer, max_length: Optional[int] = None) -> None:
+    def __init__(
+        self,
+        tokenizer,
+        max_length: Optional[int] = None,
+        query_max_length: Optional[int] = None,
+        passage_max_length: Optional[int] = None,
+    ) -> None:
         self.tokenizer = tokenizer
         if not hasattr(self.tokenizer, "pad_token_id") or self.tokenizer.pad_token is None:
             self.tokenizer.add_special_tokens({"pad_token": "[PAD]"})
-        self.max_length = max_length or tokenizer.model_max_length
+
+        self.query_max_length: int
+        self.passage_man_length: int
+        if query_max_length:
+            self.query_max_length = query_max_length
+        elif max_length:
+            self.query_max_length = max_length
+            self.passage_man_length = max_length
+        else:
+            self.query_max_length = tokenizer.model_max_length
+            self.passage_man_length = tokenizer.model_max_length
+
+        if passage_max_length:
+            self.passage_man_length = passage_max_length
 
     def __call__(self, features: List[Dict[str, Any]]) -> Dict[str, Any]:
         query_texts = [feature["query"] for feature in features]
@@ -53,21 +91,21 @@ class TripletCollator(DataCollatorWithPadding):
         query_inputs = self.tokenizer(
             query_texts,
             padding=True,
-            max_length=self.max_length,
+            max_length=self.query_max_length,
             truncation=True,
             return_tensors="pt",
         )
         pos_inputs = self.tokenizer(
             pos_texts,
             padding=True,
-            max_length=self.max_length,
+            max_length=self.passage_man_length,
             truncation=True,
             return_tensors="pt",
         )  # ["input_ids"]
         neg_inputs = self.tokenizer(
             neg_texts,
             padding=True,
-            max_length=self.max_length,
+            max_length=self.passage_man_length,
             truncation=True,
             return_tensors="pt",
         )  # ["input_ids"]
@@ -80,11 +118,30 @@ class TripletCollator(DataCollatorWithPadding):
 
 
 class RerankCollator(DataCollatorWithPadding):
-    def __init__(self, tokenizer, max_length: Optional[int] = None):
+    def __init__(
+        self,
+        tokenizer,
+        max_length: Optional[int] = None,
+        query_max_length: Optional[int] = None,
+        passage_max_length: Optional[int] = None,
+    ):
         self.tokenizer = tokenizer
         if not hasattr(self.tokenizer, "pad_token_id") or self.tokenizer.pad_token is None:
             self.tokenizer.add_special_tokens({"pad_token": "[PAD]"})
-        self.max_length = max_length or tokenizer.model_max_length
+
+        self.query_max_length: int
+        self.passage_man_length: int
+        if query_max_length:
+            self.query_max_length = query_max_length
+        elif max_length:
+            self.query_max_length = max_length
+            self.passage_man_length = max_length
+        else:
+            self.query_max_length = tokenizer.model_max_length
+            self.passage_man_length = tokenizer.model_max_length
+
+        if passage_max_length:
+            self.passage_man_length = passage_max_length
 
     def __call__(self, features: List[Dict[str, Any]]) -> Dict[str, Any]:
 
