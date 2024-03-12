@@ -41,9 +41,9 @@ class AutoModelForMatch(object):
 
     def faiss_search(
         self,
-        query_embed,
+        query_embed: torch.Tensor,
         index_path: str = "/faiss.index",
-        top_k=1,
+        top_k: int = 1,
         batch_size: int = 256,
         max_length: int = 512,
     ):
@@ -78,8 +78,8 @@ def cosine_similarity_search(
     chunk = batch_size if batch_size > 0 else len(query_embed)
     embeddings_chunks = query_embed.split(chunk)
 
-    vals = []
-    inds = []
+    dists = []
+    indices = []
     for idx in range(len(embeddings_chunks)):
         cos_sim_chunk = torch.matmul(embeddings_chunks[idx], passage_embed.transpose(0, 1))
         cos_sim_chunk = torch.nan_to_num(cos_sim_chunk, nan=0.0)
@@ -91,15 +91,15 @@ def cosine_similarity_search(
         if temperature:
             cos_sim_chunk = cos_sim_chunk / temperature
         top_k = min(top_k, cos_sim_chunk.size(1))
-        vals_chunk, inds_chunk = torch.topk(cos_sim_chunk, k=top_k, dim=1)
-        vals.append(vals_chunk[:, :].detach().cpu())
-        inds.append(inds_chunk[:, :].detach().cpu())
-    vals = torch.cat(vals)
-    inds = torch.cat(inds)
+        dists_chunk, indices_chunk = torch.topk(cos_sim_chunk, k=top_k, dim=1)
+        dists.append(dists_chunk[:, :].detach().cpu())
+        indices.append(indices_chunk[:, :].detach().cpu())
+    dists = torch.cat(dists)
+    indices = torch.cat(indices)
     if convert_to_numpy:
-        vals = vals.numpy()
-        inds = inds.numpy()
-    return inds, vals
+        dists = dists.numpy()
+        indices = indices.numpy()
+    return dists, indices
 
 
 def faiss_search(
@@ -124,9 +124,9 @@ def faiss_search(
     for i in tqdm(range(0, query_size, batch_size), desc="Searching"):
         j = min(i + batch_size, query_size)
         query_embedding = query_embeddings[i:j]
-        score, indice = faiss_index.search(query_embedding.astype(np.float32), k=top_k)
+        score, index = faiss_index.search(query_embedding.astype(np.float32), k=top_k)
         all_scores.append(score)
-        all_indices.append(indice)
+        all_indices.append(index)
 
     all_scores = np.concatenate(all_scores, axis=0)
     all_indices = np.concatenate(all_indices, axis=0)
