@@ -141,8 +141,8 @@ class RerankModel(nn.Module):
 
     def rerank(
         self,
-        query: Union[list[str], str],
-        passages: list[str],
+        query: Union[List[str], str],
+        passages: List[str],
         data_collator: Optional[RerankCollator] = None,
         batch_size: int = 32,
         show_progress_bar: bool = None,
