@@ -1,7 +1,7 @@
 from typing import Any, Callable, Dict, List, NewType, Optional, Tuple, Union
 
 import torch
-from transformers import DataCollatorWithPadding, PreTrainedTokenizer
+from transformers import BatchEncoding, DataCollatorWithPadding, PreTrainedTokenizer
 
 
 class PairCollator(DataCollatorWithPadding):
@@ -17,18 +17,18 @@ class PairCollator(DataCollatorWithPadding):
             self.tokenizer.add_special_tokens({"pad_token": "[PAD]"})
 
         self.query_max_length: int
-        self.passage_man_length: int
+        self.passage_max_length: int
         if query_max_length:
             self.query_max_length = query_max_length
         elif max_length:
             self.query_max_length = max_length
-            self.passage_man_length = max_length
+            self.passage_max_length = max_length
         else:
             self.query_max_length = tokenizer.model_max_length
-            self.passage_man_length = tokenizer.model_max_length
+            self.passage_max_length = tokenizer.model_max_length
 
         if passage_max_length:
-            self.passage_man_length = passage_max_length
+            self.passage_max_length = passage_max_length
 
     def __call__(self, features: List[Dict[str, Any]]) -> Dict[str, Any]:
         query_texts = [feature["query"] for feature in features]
@@ -44,7 +44,7 @@ class PairCollator(DataCollatorWithPadding):
         pos_inputs = self.tokenizer(
             pos_texts,
             padding=True,
-            max_length=self.passage_man_length,
+            max_length=self.passage_max_length,
             truncation=True,
             return_tensors="pt",
         )
@@ -65,18 +65,18 @@ class TripletCollator(DataCollatorWithPadding):
             self.tokenizer.add_special_tokens({"pad_token": "[PAD]"})
 
         self.query_max_length: int
-        self.passage_man_length: int
+        self.passage_max_length: int
         if query_max_length:
             self.query_max_length = query_max_length
         elif max_length:
             self.query_max_length = max_length
-            self.passage_man_length = max_length
+            self.passage_max_length = max_length
         else:
             self.query_max_length = tokenizer.model_max_length
-            self.passage_man_length = tokenizer.model_max_length
+            self.passage_max_length = tokenizer.model_max_length
 
         if passage_max_length:
-            self.passage_man_length = passage_max_length
+            self.passage_max_length = passage_max_length
 
     def __call__(self, features: List[Dict[str, Any]]) -> Dict[str, Any]:
         query_texts = [feature["query"] for feature in features]
@@ -98,14 +98,14 @@ class TripletCollator(DataCollatorWithPadding):
         pos_inputs = self.tokenizer(
             pos_texts,
             padding=True,
-            max_length=self.passage_man_length,
+            max_length=self.passage_max_length,
             truncation=True,
             return_tensors="pt",
         )  # ["input_ids"]
         neg_inputs = self.tokenizer(
             neg_texts,
             padding=True,
-            max_length=self.passage_man_length,
+            max_length=self.passage_max_length,
             truncation=True,
             return_tensors="pt",
         )  # ["input_ids"]
@@ -130,39 +130,34 @@ class RerankCollator(DataCollatorWithPadding):
             self.tokenizer.add_special_tokens({"pad_token": "[PAD]"})
 
         self.query_max_length: int
-        self.passage_man_length: int
+        self.passage_max_length: int
         if query_max_length:
             self.query_max_length = query_max_length
         elif max_length:
             self.query_max_length = max_length
-            self.passage_man_length = max_length
+            self.passage_max_length = max_length
         else:
             self.query_max_length = tokenizer.model_max_length
-            self.passage_man_length = tokenizer.model_max_length
+            self.passage_max_length = tokenizer.model_max_length
 
         if passage_max_length:
-            self.passage_man_length = passage_max_length
+            self.passage_max_length = passage_max_length
 
-    def __call__(self, features: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def __call__(self, features: List[Dict[str, Any]]) -> BatchEncoding:
+        assert (
+            'query' in features and 'passage' in features
+        ), "Rerank collator should have 'query' and 'passage' keys in features dict at least"
 
         query_texts = [feature["query"] for feature in features]
         passage_texts = [feature['passage'] for feature in features]
 
         labels = None
-        if 'label' in features[0].keys():
-            labels = [feature['label'] for feature in features]
+        if 'labels' in features[0].keys():
+            labels = [feature['labels'] for feature in features]
 
         batch = self.tokenizer(
             text=query_texts, text_pair=passage_texts, truncation=True, max_length=self.max_length, return_tensors="pt"
         )
-
-        # batch = self.tokenizer.pad(
-        #     features,
-        #     padding=self.padding,
-        #     max_length=self.max_length,
-        #     pad_to_multiple_of=self.pad_to_multiple_of,
-        #     return_tensors=None,
-        # )
 
         # for key in ['input_ids', 'attention_mask']:
         #     batch[key] = torch.tensor(batch[key], dtype=torch.int64)
@@ -170,11 +165,3 @@ class RerankCollator(DataCollatorWithPadding):
         if labels is not None:
             batch['labels'] = torch.tensor(batch['labels'], dtype=torch.float32)
         return batch
-
-
-class RerankCrossCollator(DataCollatorWithPadding):
-    def __init__(self, tokenizer):
-        self.tokenizer = tokenizer
-
-    def __call__(self, features: List[Dict[str, Any]]) -> Dict[str, Any]:
-        return
