@@ -71,6 +71,7 @@ class RerankModel(nn.Module):
         text_pair: Union[List[str], str],
         data_collator: RerankCollator,
         batch_size: int = 128,
+        show_progress_bar: bool = None,
         **kwargs,
     ):
         if isinstance(text, str):
@@ -92,16 +93,12 @@ class RerankModel(nn.Module):
 
     def rerank(
         self,
-        query,
-        passages,
-        sentences: List[List[str]],
+        query: list[str],
+        passages: list[str],
+        data_collator: RerankCollator,
         batch_size: int = 32,
         show_progress_bar: bool = None,
-        num_workers: int = 0,
-        activation_fct=None,
-        apply_softmax=False,
-        convert_to_numpy: bool = True,
-        convert_to_tensor: bool = False,
+        **kwargs,
     ):
 
         return
