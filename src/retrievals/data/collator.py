@@ -31,6 +31,10 @@ class PairCollator(DataCollatorWithPadding):
             self.passage_max_length = passage_max_length
 
     def __call__(self, features: List[Dict[str, Any]]) -> Dict[str, Any]:
+        assert (
+            'query' in features and 'pos' in features
+        ), "PairCollator should have 'query' and 'pos' keys in features dict"
+
         query_texts = [feature["query"] for feature in features]
         pos_texts = [feature["pos"] for feature in features]
 
@@ -79,6 +83,10 @@ class TripletCollator(DataCollatorWithPadding):
             self.passage_max_length = passage_max_length
 
     def __call__(self, features: List[Dict[str, Any]]) -> Dict[str, Any]:
+        assert (
+            'query' in features and 'pos' in features and 'neg' in features
+        ), "TripletCollator should have 'query', 'pos' and 'neg' keys in features dict"
+
         query_texts = [feature["query"] for feature in features]
         pos_texts = [feature["pos"] for feature in features]
         neg_texts = [feature["neg"] for feature in features]
@@ -146,7 +154,7 @@ class RerankCollator(DataCollatorWithPadding):
     def __call__(self, features: List[Dict[str, Any]]) -> BatchEncoding:
         assert (
             'query' in features and 'passage' in features
-        ), "Rerank collator should have 'query' and 'passage' keys in features dict at least"
+        ), "RerankCollator should have 'query' and 'passage' keys in features dict, and 'labels' during training"
 
         query_texts = [feature["query"] for feature in features]
         passage_texts = [feature['passage'] for feature in features]
