@@ -1,9 +1,11 @@
 import logging
-from typing import List, Optional
+from typing import List, Optional, Union
 
+import torch
 import torch.nn as nn
 from transformers import AutoConfig, AutoModel, AutoTokenizer
 
+from src.retrievals.data.collator import RerankCollator
 from src.retrievals.models.pooling import AutoPooling
 
 logger = logging.getLogger(__name__)
@@ -20,7 +22,7 @@ class RerankModel(nn.Module):
         pretrained: bool = True,
         config_path: Optional[str] = None,
         device: Optional[str] = None,
-        **kwargs
+        **kwargs,
     ):
         super().__init__()
         self.tokenizer = AutoTokenizer.from_pretrained(model_name_or_path)
@@ -63,11 +65,30 @@ class RerankModel(nn.Module):
             loss_dict['loss'] = loss
         return logits, loss, loss_dict
 
-    def compute_score(self, sentence_pairs):
-        assert isinstance(sentence_pairs, list)
-        if isinstance(sentence_pairs[0], str):
-            sentence_pairs = [sentence_pairs]
-        return
+    def compute_score(
+        self,
+        text: Union[List[str], str],
+        text_pair: Union[List[str], str],
+        data_collator: RerankCollator,
+        batch_size: int = 128,
+        **kwargs,
+    ):
+        if isinstance(text, str):
+            text = [text]
+        if isinstance(text_pair, str):
+            text_pair = [text_pair]
+        assert len(text) == len(text_pair), f"Length of text {len(text)} and text_pair {len(text_pair)} should be same"
+
+        with torch.no_grad():
+            scores_list: List = []
+            for i in range(0, len(text), batch_size):
+                text_batch = [{'query': text[i], 'passage': text_pair[i]} for i in range(i, i + batch_size)]
+                batch = data_collator(text_batch)
+                scores = self.model(batch, return_dict=True).logits.view(-1).float()
+                scores = torch.sigmoid(scores)
+                scores_list.extend(scores.cpu().numpy().tolist())
+
+        return scores_list
 
     def rerank(
         self,
