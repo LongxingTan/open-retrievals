@@ -32,7 +32,7 @@ class PairCollator(DataCollatorWithPadding):
 
     def __call__(self, features: List[Dict[str, Any]]) -> Dict[str, Any]:
         assert (
-            'query' in features and 'pos' in features
+            'query' in features[0] and 'pos' in features[0]
         ), "PairCollator should have 'query' and 'pos' keys in features dict"
 
         query_texts = [feature["query"] for feature in features]
@@ -84,7 +84,7 @@ class TripletCollator(DataCollatorWithPadding):
 
     def __call__(self, features: List[Dict[str, Any]]) -> Dict[str, Any]:
         assert (
-            'query' in features and 'pos' in features and 'neg' in features
+            'query' in features[0] and 'pos' in features[0] and 'neg' in features[0]
         ), "TripletCollator should have 'query', 'pos' and 'neg' keys in features dict"
 
         query_texts = [feature["query"] for feature in features]
