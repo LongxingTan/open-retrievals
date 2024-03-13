@@ -1,4 +1,4 @@
-from typing import Any, Callable, Dict, List, NewType, Optional, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import torch
 from transformers import BatchEncoding, DataCollatorWithPadding, PreTrainedTokenizer

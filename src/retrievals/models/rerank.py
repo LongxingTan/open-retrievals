@@ -113,7 +113,7 @@ class RerankModel(nn.Module):
         self,
         text: Union[List[str], str],
         text_pair: Union[List[str], str],
-        data_collator: RerankCollator,
+        data_collator: Optional[RerankCollator] = None,
         batch_size: int = 128,
         show_progress_bar: bool = None,
         **kwargs,
@@ -123,6 +123,9 @@ class RerankModel(nn.Module):
         if isinstance(text_pair, str):
             text_pair = [text_pair]
         assert len(text) == len(text_pair), f"Length of text {len(text)} and text_pair {len(text_pair)} should be same"
+
+        if not data_collator:
+            data_collator = RerankCollator(tokenizer=self.tokenizer)
 
         with torch.no_grad():
             scores_list: List = []
@@ -137,13 +140,14 @@ class RerankModel(nn.Module):
 
     def rerank(
         self,
-        query: list[str],
+        query: Union[list[str], str],
         passages: list[str],
-        data_collator: RerankCollator,
+        data_collator: Optional[RerankCollator] = None,
         batch_size: int = 32,
         show_progress_bar: bool = None,
         **kwargs,
     ):
+
         merge_scores = self.compute_score(query, passages, data_collator, batch_size, show_progress_bar)
 
         merge_scores_argsort = np.argsort(merge_scores)[::-1]

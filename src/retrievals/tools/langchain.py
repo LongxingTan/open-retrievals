@@ -8,7 +8,6 @@ from langchain.text_splitter import (
     MarkdownHeaderTextSplitter,
     MarkdownTextSplitter,
 )
-from langchain.vectorstores.faiss import FAISS as Vectorstore
 from langchain_core.documents import Document
 from langchain_core.pydantic_v1 import Extra, root_validator
 
@@ -29,7 +28,7 @@ class LangchainReranker(BaseDocumentCompressor):
         device: str = "cuda",
         max_length: int = 1024,
         batch_size: int = 32,
-        # show_progress_bar: bool = None,
+        show_progress_bar: bool = None,
         num_workers: int = 0,
     ):
         self._model = RerankModel(model_name_or_path=model_name_or_path, max_length=max_length, device=device)
