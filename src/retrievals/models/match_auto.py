@@ -56,8 +56,9 @@ class AutoModelForMatch(object):
         )
         return dists, indices
 
-    def get_rerank_df(self):
-        pass
+    def get_match_df(self):
+        rerank_data = dict({'query': [], 'passage': [], 'labels': []})
+        return rerank_data
 
 
 def cosine_similarity_search(

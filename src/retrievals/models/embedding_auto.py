@@ -159,6 +159,8 @@ class AutoModelForEmbedding(nn.Module):
             embeddings = self.forward_from_loader(inputs)
         elif isinstance(inputs, str) or (isinstance(inputs, list) and isinstance(inputs[0], str)):
             embeddings = self.forward_from_text(inputs)
+        else:
+            raise ValueError
 
         if labels is None or self.loss_fn is None:
             if return_dict:
@@ -176,10 +178,10 @@ class AutoModelForEmbedding(nn.Module):
         if self.pooling is not None:
             embeddings = self.pooling(model_output[0], inputs["attention_mask"])
 
-        if self.normalize_embeddings:
-            embeddings = torch.nn.functional.normalize(embeddings, p=2, dim=1)
+            if self.normalize_embeddings:
+                embeddings = torch.nn.functional.normalize(embeddings, p=2, dim=1)
 
-        return embeddings
+            return embeddings
 
     def forward_from_text(self, texts):
         return self.forward_from_loader(texts)
@@ -303,7 +305,7 @@ class AutoModelForEmbedding(nn.Module):
         self.to(device)
 
         all_embeddings = []
-        length_sorted_idx = np.argsort([-self._text_length(sen) for sen in sentences])
+        length_sorted_idx = np.argsort([-self._text_length(sentence) for sentence in sentences])
         sentences_sorted = [sentences[idx] for idx in length_sorted_idx]
 
         for start_index in trange(0, len(sentences), batch_size, desc="Batches", disable=not show_progress_bar):

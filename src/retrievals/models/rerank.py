@@ -23,6 +23,7 @@ class RerankModel(nn.Module):
         use_fp16: bool = False,
         use_lora: bool = False,
         lora_config=None,
+        gradient_checkpointing: bool = False,
         device: Optional[str] = None,
         trust_remote_code: bool = False,
         **kwargs,
@@ -33,8 +34,8 @@ class RerankModel(nn.Module):
         )
 
         self.model = AutoModel.from_pretrained(model_name_or_path, trust_remote_code=trust_remote_code)
-
-        self.model.graident_checkpointing_enable()
+        if gradient_checkpointing:
+            self.model.graident_checkpointing_enable()
         if device is None:
             self.device = get_device_name()
         else:
