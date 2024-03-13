@@ -70,15 +70,14 @@ print(sentence_embeddings)
 
 **Finetune transformers by contrastive learning**
 ```python
-from dataclasses import dataclass, field
-import transformers
 from transformers import AutoTokenizer
 from retrievals import AutoModelForEmbedding, AutoModelForMatch, RetrievalTrainer, PairCollator, TripletCollator
 from retrievals.losses import ArcFaceAdaptiveMarginLoss, InfoNCE, SimCSE, TripletLoss
 from retrievals.data import  RetrievalDataset, RerankDataset
 
-tokenizer = AutoTokenizer.from_pretrained(model_args.tokenizer_name, use_fast=False)
+
 train_dataset = RetrievalDataset(args=data_args)
+tokenizer = AutoTokenizer.from_pretrained(model_args.tokenizer_name, use_fast=False)
 
 model = AutoModelForEmbedding(
     model_args.model_name_or_path,
@@ -142,7 +141,29 @@ results = matcher.faiss_search("He plays guitar.")
 
 **Rerank**
 ```python
+from transformers import AutoTokenizer
+from retrievals import RerankCollator, RerankModel, RerankTrainer, RerankDataset
 
+train_dataset = RerankDataset(args=data_args)
+tokenizer = AutoTokenizer.from_pretrained(model_args.tokenizer_name, use_fast=False)
+
+model = RerankModel(
+    model_args.model_name_or_path,
+    pooling_method="mean"
+)
+optimizer = get_optimizer(model, lr=5e-5, weight_decay=1e-3)
+
+lr_scheduler = get_scheduler(optimizer, num_train_steps=int(len(train_dataset) / 2 * 1))
+
+trainer = RerankTrainer(
+    model=model,
+    args=training_args,
+    train_dataset=train_dataset,
+    data_collator=RerankCollator(tokenizer, max_length=data_args.query_max_len),
+)
+trainer.optimizer = optimizer
+trainer.scheduler = lr_scheduler
+trainer.train()
 ```
 
 [//]: # (**RAG with LangChain**)

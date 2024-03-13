@@ -17,7 +17,7 @@ class AutoPooling(nn.Module):
         elif pooling_method == "last":
             self.pooling = LastTokenPooling()
         else:
-            self.pooling = None
+            raise ValueError("Please input valid pooling_method: 'cls', 'mean', 'weighted', 'last'")
 
     def forward(self, last_hidden_state, attention_mask):
         if self.pooling:

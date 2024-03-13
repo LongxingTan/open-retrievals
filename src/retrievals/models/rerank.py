@@ -59,7 +59,7 @@ class RerankModel(nn.Module):
         loss = None
         if labels is not None:
             if not self.loss_fn:
-                logger.warning('loss_fn should be setup')
+                logger.warning('loss_fn is not setup, use BCEWithLogitsLoss')
                 self.loss_fn = nn.BCEWithLogitsLoss(reduction='mean')
             loss = self.loss_fn(logits, labels)
             loss_dict['loss'] = loss
@@ -103,6 +103,7 @@ class RerankModel(nn.Module):
         convert_to_numpy: bool = True,
         convert_to_tensor: bool = False,
     ):
+
         return
 
     def save(self, path):
