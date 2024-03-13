@@ -1,11 +1,13 @@
 import logging
 from typing import List, Optional, Union
 
+import numpy as np
 import torch
 import torch.nn as nn
 from transformers import AutoConfig, AutoModel, AutoTokenizer
 
 from src.retrievals.data.collator import RerankCollator
+from src.retrievals.models.embedding_auto import get_device_name
 from src.retrievals.models.pooling import AutoPooling
 
 logger = logging.getLogger(__name__)
@@ -15,21 +17,40 @@ class RerankModel(nn.Module):
     def __init__(
         self,
         model_name_or_path: str = None,
-        max_length: Optional[int] = None,
         pooling_method='mean',
         loss_fn=None,
+        max_length: Optional[int] = None,
         use_fp16: bool = False,
-        pretrained: bool = True,
-        config_path: Optional[str] = None,
+        use_lora: bool = False,
+        lora_config=None,
         device: Optional[str] = None,
+        trust_remote_code: bool = False,
         **kwargs,
     ):
         super().__init__()
-        self.tokenizer = AutoTokenizer.from_pretrained(model_name_or_path)
-        self.model = AutoModel.from_pretrained(model_name_or_path)
+        self.tokenizer = AutoTokenizer.from_pretrained(
+            model_name_or_path, return_tensors=False, trust_remote_code=trust_remote_code
+        )
+
+        self.model = AutoModel.from_pretrained(model_name_or_path, trust_remote_code=trust_remote_code)
+
         self.model.graident_checkpointing_enable()
+        if device is None:
+            self.device = get_device_name()
+        else:
+            self.device = device
+
         if use_fp16:
             self.model.half()
+        if use_lora:
+            # peft config and wrapping
+            from peft import LoraConfig, TaskType, get_peft_model
+
+            if not lora_config:
+                raise ValueError("If use_lora is true, please provide a valid lora_config")
+            self.model = get_peft_model(self.model, lora_config)
+            self.model.print_trainable_parameters()
+
         self.pooling = AutoPooling(pooling_method)
         num_features = self.backbone.config.hidden_size
         self.classifier = nn.Linear(num_features, 1)
@@ -45,25 +66,48 @@ class RerankModel(nn.Module):
 
         self.max_length = max_length
 
-    def encode(self, input_ids, attention_mask):
+    def _init_weights(self, module):
+        if isinstance(module, nn.Linear):
+            module.weight.data.normal_(mean=0.0, std=self.config.initializer_range)
+            if module.bias is not None:
+                module.bias.data.zero_()
+        elif isinstance(module, nn.Embedding):
+            module.weight.data.normal_(mean=0.0, std=self.config.initializer_range)
+            if module.padding_idx is not None:
+                module.weight.data[module.padding_idx].zero_()
+        elif isinstance(module, nn.LayerNorm):
+            module.bias.data.zero_()
+            module.weight.data.fill_(1.0)
+
+    def encode(self, input_ids: torch.Tensor, attention_mask: torch.Tensor):
         outputs = self.model(input_ids, attention_mask, output_hidden_states=False)
         encoder_layer = outputs.last_hidden_state
         embeddings = self.pooling(encoder_layer, attention_mask)
         return embeddings
 
-    def forward(self, input_ids, attention_mask, labels=None, **kwargs):
+    def forward(
+        self,
+        input_ids: torch.Tensor,
+        attention_mask: torch.Tensor,
+        labels: Optional[torch.Tensor] = None,
+        return_dict: Optional[bool] = False,
+        **kwargs,
+    ):
         features = self.encode(input_ids=input_ids, attention_mask=attention_mask)
         logits = self.classifier(features).reshape(-1)
-        loss_dict = dict()
 
-        loss = None
         if labels is not None:
             if not self.loss_fn:
                 logger.warning('loss_fn is not setup, use BCEWithLogitsLoss')
                 self.loss_fn = nn.BCEWithLogitsLoss(reduction='mean')
-            loss = self.loss_fn(logits, labels)
-            loss_dict['loss'] = loss
-        return logits, loss, loss_dict
+
+        loss = self.loss_fn(logits, labels)
+        if return_dict:
+            outputs_dict = dict()
+            outputs_dict['loss'] = loss
+            outputs_dict['logits'] = logits
+            return outputs_dict
+        return loss
 
     def compute_score(
         self,
@@ -100,8 +144,20 @@ class RerankModel(nn.Module):
         show_progress_bar: bool = None,
         **kwargs,
     ):
+        merge_scores = self.compute_score(query, passages, data_collator, batch_size, show_progress_bar)
 
-        return
+        merge_scores_argsort = np.argsort(merge_scores)[::-1]
+        sorted_passages = []
+        sorted_scores = []
+        for mid in merge_scores_argsort:
+            sorted_scores.append(merge_scores[mid])
+            sorted_passages.append(passages[mid])
+
+        return {
+            'rerank_passages': sorted_passages,
+            'rerank_scores': sorted_scores,
+            'rerank_ids': merge_scores_argsort.tolist(),
+        }
 
     def save(self, path):
         """
