@@ -74,7 +74,7 @@ class AutoModelForEmbedding(nn.Module):
         generation_args: Dict = None,
         use_fp16: bool = False,
         use_lora: bool = False,
-        peft_config=None,
+        lora_config=None,
         device: Optional[str] = None,
         trust_remote_code: bool = False,
     ):
@@ -110,9 +110,9 @@ class AutoModelForEmbedding(nn.Module):
             # peft config and wrapping
             from peft import LoraConfig, TaskType, get_peft_model
 
-            if not peft_config:
-                raise ValueError("If use_lora is true, please provide a valid peft_config")
-            self.model = get_peft_model(self.model, peft_config)
+            if not lora_config:
+                raise ValueError("If use_lora is true, please provide a valid lora_config")
+            self.model = get_peft_model(self.model, lora_config)
             self.model.print_trainable_parameters()
 
         if device is None:

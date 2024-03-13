@@ -253,16 +253,16 @@ def main():
     print(len(train_dataset))
 
     if training_args.use_lora:
-        peft_config = LoraConfig(**json.load(open("lora.json")))
+        lora_config = LoraConfig(**json.load(open("lora.json")))
     else:
-        peft_config = None
+        lora_config = None
 
     # model = PairwiseModel(model_args.model_name_or_path, pooling_method="mean")
     model = AutoModelForEmbedding(
         model_args.model_name_or_path,
         pooling_method="last",
         use_lora=training_args.use_lora,
-        peft_config=peft_config,
+        lora_config=lora_config,
     )
     optimizer = get_optimizer(model, lr=5e-5, weight_decay=1e-3)
 
