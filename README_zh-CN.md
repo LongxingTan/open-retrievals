@@ -76,12 +76,42 @@ dists, indices = matcher.similarity_search(query_embeddings, passage_embeddings,
 
 **Faiss向量数据库检索**
 ```python
+from retrievals import AutoModelForEmbedding, AutoModelForMatch
 
+sentences = ['A woman is reading.', 'A man is playing a guitar.']
+model_name_or_path = "sentence-transformers/all-MiniLM-L6-v2"
+model = AutoModelForEmbedding(model_name_or_path)
+model.build_index(sentences)
+
+matcher = AutoModelForMatch()
+results = matcher.faiss_search("He plays guitar.")
 ```
 
 **重排**
 ```python
+from transformers import AutoTokenizer
+from retrievals import RerankCollator, RerankModel, RerankTrainer, RerankDataset
 
+train_dataset = RerankDataset(args=data_args)
+tokenizer = AutoTokenizer.from_pretrained(model_args.tokenizer_name, use_fast=False)
+
+model = RerankModel(
+    model_args.model_name_or_path,
+    pooling_method="mean"
+)
+optimizer = get_optimizer(model, lr=5e-5, weight_decay=1e-3)
+
+lr_scheduler = get_scheduler(optimizer, num_train_steps=int(len(train_dataset) / 2 * 1))
+
+trainer = RerankTrainer(
+    model=model,
+    args=training_args,
+    train_dataset=train_dataset,
+    data_collator=RerankCollator(tokenizer, max_length=data_args.query_max_len),
+)
+trainer.optimizer = optimizer
+trainer.scheduler = lr_scheduler
+trainer.train()
 ```
 
 
@@ -89,3 +119,4 @@ dists, indices = matcher.similarity_search(query_embeddings, passage_embeddings,
 - [sentence-transformers](https://github.com/UKPLab/sentence-transformers)
 - [FlagEmbedding](https://github.com/FlagOpen/FlagEmbedding)
 - [uniem](https://github.com/wangyuxinwhy/uniem)
+- [BCEmbedding](https://github.com/netease-youdao/BCEmbedding)
