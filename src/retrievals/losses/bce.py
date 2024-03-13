@@ -4,7 +4,7 @@ from torch import nn
 
 
 class BCELoss(nn.Module):
-    def __init__(self, temperature):
+    def __init__(self, temperature: float = 0.0):
         super().__init__()
         self.temperature = temperature
 

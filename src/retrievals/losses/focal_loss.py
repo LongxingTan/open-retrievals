@@ -8,13 +8,13 @@ from torch import nn
 
 
 class FocalLoss(nn.Module):
-    def __init__(self, gamma=0, eps=1e-7):
+    def __init__(self, gamma: float = 0, eps: float = 1e-7):
         super(FocalLoss, self).__init__()
         self.gamma = gamma
         self.eps = eps
         self.ce = torch.nn.CrossEntropyLoss(reduction="none")
 
-    def forward(self, inputs, labels):
+    def forward(self, inputs: torch.Tensor, labels: torch.Tensor):
         logp = self.ce(inputs, labels)
         p = torch.exp(-logp)
         loss = (1 - p) ** self.gamma * logp
