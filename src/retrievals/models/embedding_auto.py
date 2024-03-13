@@ -4,8 +4,8 @@ from typing import Callable, Dict, Iterable, List, Literal, Optional, Tuple, Uni
 import faiss
 import numpy as np
 import torch
+import torch.nn as nn
 from numpy import ndarray
-from torch import Tensor, nn
 from torch.utils.data import DataLoader, Dataset
 from tqdm.autonotebook import trange
 from transformers import (
@@ -38,12 +38,12 @@ def get_device_name() -> Literal["mps", "cuda", "cpu"]:
         return "cpu"
 
 
-def batch_to_device(batch: Dict, target_device: str) -> Dict[str, Tensor]:
+def batch_to_device(batch: Dict, target_device: str) -> Dict[str, torch.Tensor]:
     """
     send a pytorch batch to a device (CPU/GPU)
     """
     for key in batch:
-        if isinstance(batch[key], Tensor):
+        if isinstance(batch[key], torch.Tensor):
             batch[key] = batch[key].to(target_device)
         else:
             print(batch[key])
@@ -134,7 +134,7 @@ class AutoModelForEmbedding(nn.Module):
             generation_config.update({"pad_token_id": self.tokenizer.pad_token_id})
             self.model.generation_config = GenerationConfig(**generation_config)
 
-    def _init_weights(self, module):
+    def _init_weights(self, module: nn.Module):
         if isinstance(module, nn.Linear):
             module.weight.data.normal_(mean=0.0, std=self.config.initializer_range)
             if module.bias is not None:
@@ -230,7 +230,7 @@ class AutoModelForEmbedding(nn.Module):
         convert_to_tensor: bool = False,
         device: str = None,
         normalize_embeddings: bool = False,
-    ) -> Union[List[Tensor], ndarray, Tensor]:
+    ) -> Union[List[torch.Tensor], ndarray, torch.Tensor]:
         self.model.eval()
         self.model.to(device or self.device)
         all_embeddings = []
@@ -260,7 +260,7 @@ class AutoModelForEmbedding(nn.Module):
         convert_to_tensor: bool = False,
         device: str = None,
         normalize_embeddings: bool = False,
-    ) -> Union[List[Tensor], ndarray, Tensor]:
+    ) -> Union[List[torch.Tensor], ndarray, torch.Tensor]:
         """
         Computes sentence embeddings from sentence-transformers library.
 
@@ -362,7 +362,7 @@ class AutoModelForEmbedding(nn.Module):
 
         return all_embeddings
 
-    def build_index(self, inputs, batch_size: int = 64, use_gpu: bool = True):
+    def build_index(self, inputs: BatchEncoding, batch_size: int = 64, use_gpu: bool = True):
         embeddings = self.encode(inputs, batch_size=batch_size)
         embeddings = np.asarray(embeddings, dtype=np.float32)
         index = faiss.IndexFlatL2(len(embeddings[0]))
@@ -392,7 +392,7 @@ class AutoModelForEmbedding(nn.Module):
         tokenizer = AutoTokenizer.from_pretrained(model_name_or_path)
         return cls(embedder, tokenizer, **kwargs)
 
-    def save_pretrained(self, output_path):
+    def save_pretrained(self, output_path: str):
         self.tokenizer.save_pretrained(output_path)
         self.model.config.save_pretrained(output_path)
 
@@ -423,16 +423,16 @@ class PairwiseModel(AutoModelForEmbedding):
 
     def __init__(
         self,
-        model_name_or_path,
-        pooling_method="cls",
-        normalize_embeddings=False,
-        query_instruction=None,
-        use_fp16=False,
-        cross_encoder=False,
-        poly_encoder=False,
-        temperature=0,
-        dynamic_temperature=False,
-        loss_fn=None,
+        model_name_or_path: str,
+        pooling_method: str = "cls",
+        normalize_embeddings: bool = False,
+        query_instruction: Optional[str] = None,
+        use_fp16: bool = False,
+        cross_encoder: bool = False,
+        poly_encoder: bool = False,
+        temperature: float = 0,
+        dynamic_temperature: bool = False,
+        loss_fn: Union[nn.Module, Callable] = None,
     ) -> None:
         super().__init__(
             model_name_or_path=model_name_or_path,
@@ -451,7 +451,7 @@ class PairwiseModel(AutoModelForEmbedding):
 
     def forward(
         self,
-        inputs,
+        inputs: List[torch.Tensor],
         labels: Optional[torch.LongTensor] = None,
         output_attentions: Optional[bool] = None,
         output_hidden_states: Optional[bool] = None,

@@ -1,5 +1,5 @@
 import logging
-from typing import List, Optional, Union
+from typing import Callable, Dict, List, Optional, Union
 
 import numpy as np
 import torch
@@ -17,8 +17,8 @@ class RerankModel(nn.Module):
     def __init__(
         self,
         model_name_or_path: str = None,
-        pooling_method='mean',
-        loss_fn=None,
+        pooling_method: str = 'mean',
+        loss_fn: Union[nn.Module, Callable] = None,
         max_length: Optional[int] = None,
         use_fp16: bool = False,
         use_lora: bool = False,
@@ -67,7 +67,7 @@ class RerankModel(nn.Module):
 
         self.max_length = max_length
 
-    def _init_weights(self, module):
+    def _init_weights(self, module: nn.Module):
         if isinstance(module, nn.Linear):
             module.weight.data.normal_(mean=0.0, std=self.config.initializer_range)
             if module.bias is not None:
@@ -80,7 +80,7 @@ class RerankModel(nn.Module):
             module.bias.data.zero_()
             module.weight.data.fill_(1.0)
 
-    def encode(self, input_ids: torch.Tensor, attention_mask: torch.Tensor):
+    def encode(self, input_ids: torch.Tensor, attention_mask: torch.Tensor) -> torch.Tensor:
         outputs = self.model(input_ids, attention_mask, output_hidden_states=False)
         encoder_layer = outputs.last_hidden_state
         embeddings = self.pooling(encoder_layer, attention_mask)
@@ -93,7 +93,7 @@ class RerankModel(nn.Module):
         labels: Optional[torch.Tensor] = None,
         return_dict: Optional[bool] = False,
         **kwargs,
-    ):
+    ) -> Union[Dict[str, torch.Tensor], torch.Tensor]:
         features = self.encode(input_ids=input_ids, attention_mask=attention_mask)
         logits = self.classifier(features).reshape(-1)
 
@@ -164,7 +164,7 @@ class RerankModel(nn.Module):
             'rerank_ids': merge_scores_argsort.tolist(),
         }
 
-    def save(self, path):
+    def save(self, path: str):
         """
         Saves all model and tokenizer to path
         """
@@ -175,7 +175,7 @@ class RerankModel(nn.Module):
         self.model.save_pretrained(path)
         self.tokenizer.save_pretrained(path)
 
-    def save_pretrained(self, path):
+    def save_pretrained(self, path: str):
         """
         Same function to save
         """
