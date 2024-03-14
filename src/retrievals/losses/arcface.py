@@ -5,7 +5,7 @@
 
 import logging
 import math
-from typing import Callable, Union
+from typing import Callable, Optional, Union
 
 import numpy as np
 import torch
@@ -42,7 +42,7 @@ class ArcFaceAdaptiveMarginLoss(nn.Module):
     def init_parameters(self) -> None:
         nn.init.xavier_uniform_(self.arc_weight)
 
-    def set_margin(self, margin):
+    def set_margin(self, margin: float):
         self.margin = margin
         self.cos_m = torch.from_numpy(np.asarray(np.cos(margin))).float()
         self.sin_m = torch.from_numpy(np.asarray(np.sin(margin))).float()
@@ -52,7 +52,7 @@ class ArcFaceAdaptiveMarginLoss(nn.Module):
             requires_grad=False,
         )
 
-    def forward(self, embeddings: torch.Tensor, labels: torch.Tensor, weight=None, margin=None):
+    def forward(self, embeddings: torch.Tensor, labels: torch.Tensor, weight=None, margin: Optional[float] = None):
         if margin is not None:
             # dynamic margin
             self.set_margin(margin=margin)

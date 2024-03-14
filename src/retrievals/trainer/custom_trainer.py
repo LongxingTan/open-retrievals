@@ -203,9 +203,12 @@ def inference_fn(test_loader, model, device):
 
 
 class CustomTrainer(object):
-    def __init__(self, model: Union[str, nn.Module], device=None, apex=False):
-        self.device = "cuda" if torch.cuda.is_available() else "cpu"
+    def __init__(self, model: Union[str, nn.Module], device=None, apex=False, teacher=None):
+        if not device:
+            device = "cuda" if torch.cuda.is_available() else "cpu"
+        self.device = device
         self.model = model
+        self.teacher = teacher
         self.apex = apex
         self.train_step = train_fn
         self.valid_step = valid_fn

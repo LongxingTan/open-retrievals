@@ -4,7 +4,7 @@
 """
 
 import logging
-from typing import Callable, Union
+from typing import Callable, Optional, Union
 
 import torch
 import torch.distributed.nn
@@ -19,7 +19,7 @@ class InfoNCE(nn.Module):
         self,
         criterion: Union[nn.Module, Callable, None] = None,
         scale: float = 1,
-        negative_mode="unpaired",
+        negative_mode: str = "unpaired",
     ):
         super().__init__()
         self.criterion = criterion
@@ -28,9 +28,9 @@ class InfoNCE(nn.Module):
 
     def forward(
         self,
-        query_embeddings,
-        positive_embeddings,
-        negative_embeddings=None,
+        query_embeddings: torch.Tensor,
+        positive_embeddings: torch.Tensor,
+        negative_embeddings: Optional[torch.Tensor] = None,
     ):
         query_embeddings = F.normalize(query_embeddings, dim=-1)
         positive_embeddings = F.normalize(positive_embeddings, dim=-1)

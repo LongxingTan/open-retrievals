@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 
 class AutoModelForMatch(object):
-    def __init__(self, method="cosine") -> None:
+    def __init__(self, method: str = "cosine") -> None:
         super().__init__()
         self.method = method
 

@@ -72,7 +72,7 @@ class TripletCosineSimilarity(nn.Module):
         self.margin = margin
         self.distance_metric = lambda x, y: F.pairwise_distance(x, y, p=2)
 
-    def forward(self, query_embedding, pos_embedding, neg_embedding):
+    def forward(self, query_embedding: torch.Tensor, pos_embedding: torch.Tensor, neg_embedding: torch.Tensor):
         distance_pos = self.distance_metric(query_embedding, pos_embedding)
         distance_neg = self.distance_metric(query_embedding, neg_embedding)
 

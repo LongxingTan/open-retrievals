@@ -11,11 +11,11 @@ logger = logging.getLogger(__name__)
 
 
 class CosineSimilarity(nn.Module):
-    def __init__(self, temperature):
+    def __init__(self, temperature: float = 0.0):
         super().__init__()
         self.temperature = temperature
 
-    def forward(self, query_embeddings, passage_embeddings):
+    def forward(self, query_embeddings: torch.Tensor, passage_embeddings: torch.Tensor):
         sim_pos_vector = torch.cosine_similarity(query_embeddings, passage_embeddings, dim=-1)
         sim_pos_vector = sim_pos_vector / self.temperature
         sim_neg_matrix = torch.cosine_similarity(
