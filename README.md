@@ -115,8 +115,8 @@ model = AutoModelForEmbedding(
 ```python
 from retrievals import AutoModelForEmbedding, AutoModelForMatch
 
-query_texts = []
-passage_texts = []
+query_texts = ['A dog is chasing car.']
+passage_texts = ['A man is playing a guitar.', 'A bee is flying low']
 model_name_or_path = "sentence-transformers/all-MiniLM-L6-v2"
 model = AutoModelForEmbedding('')
 query_embeddings = model.encode(query_texts, convert_to_tensor=True)
@@ -130,7 +130,7 @@ dists, indices = matcher.similarity_search(query_embeddings, passage_embeddings,
 ```python
 from retrievals import AutoModelForEmbedding, AutoModelForMatch
 
-sentences = ['A woman is reading.', 'A man is playing a guitar.']
+sentences = ['A dog is chasing car.', 'A man is playing a guitar.']
 model_name_or_path = "sentence-transformers/all-MiniLM-L6-v2"
 model = AutoModelForEmbedding(model_name_or_path)
 model.build_index(sentences)
