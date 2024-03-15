@@ -23,6 +23,7 @@ Enhance RAG Performance
 * Multi-chunks
 * Pretrain and finetune of embeddings and rerank weights
 * Meta data of documents
+<<<<<<< HEAD
 
 
 pdf parse
