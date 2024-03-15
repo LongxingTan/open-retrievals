@@ -5,9 +5,9 @@ from langchain_community.vectorstores import FAISS
 from langchain_community.vectorstores.utils import DistanceStrategy
 
 from retrievals import AutoModelForEmbedding, RerankModel
-from retrievals.tools import LangchainReranker, RagFeature
+from retrievals.tools.langchain import LangchainReranker, RagFeature
 
-embed_model = AutoModelForEmbedding(model_name_or_path='')
+embed_model = AutoModelForEmbedding(model_name_or_path='BAAI/bge-large-zh')
 rerank_model = LangchainReranker(model_name_or_path='', top_n=5, device='cuda')
 
 

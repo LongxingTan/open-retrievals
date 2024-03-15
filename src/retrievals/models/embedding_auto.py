@@ -1,5 +1,5 @@
 import logging
-from typing import Callable, Dict, Iterable, List, Literal, Optional, Tuple, Union
+from typing import Any, Callable, Dict, Iterable, List, Literal, Optional, Tuple, Union
 
 import faiss
 import numpy as np
@@ -59,6 +59,9 @@ class AutoModelForEmbedding(nn.Module):
         it first tries to download a pre-trained SentenceTransformer model. If that fails, tries to construct a model
         from the Hugging Face Hub with that name.
     """
+
+    encode_kwargs: Dict[str, Any] = dict()
+    show_progress: bool = False
 
     def __init__(
         self,
@@ -219,6 +222,15 @@ class AutoModelForEmbedding(nn.Module):
                 device=device,
                 normalize_embeddings=normalize_embeddings,
             )
+
+    def embed_documents(self, texts: List[str]) -> List[List[float]]:
+        """Compute doc embeddings using a HuggingFace transformer model."""
+        embeddings = self.encode(texts, show_progress_bar=self.show_progress, **self.encode_kwargs)
+        return embeddings.tolist()
+
+    def embed_query(self, text: str) -> List[float]:
+        """Compute query embeddings using a HuggingFace transformer model."""
+        return self.embed_documents([text])[0]
 
     def encode_from_loader(
         self,
