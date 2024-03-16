@@ -187,7 +187,17 @@ class AutoModelForEmbedding(nn.Module):
             return embeddings
 
     def forward_from_text(self, texts):
-        return self.forward_from_loader(texts)
+        batch_dict = self.tokenizer(
+            texts,
+            max_length=self.max_length,
+            return_attention_mask=False,
+            padding=False,
+            truncation=True,
+        )
+        batch_dict["input_ids"] = [input_ids + [self.tokenizer.eos_token_id] for input_ids in batch_dict["input_ids"]]
+        batch_dict = self.tokenizer.pad(batch_dict, padding=True, return_attention_mask=True, return_tensors="pt")
+        batch_dict.pop("token_type_ids")
+        return self.forward_from_loader(batch_dict)
 
     def encode(
         self,
@@ -200,7 +210,7 @@ class AutoModelForEmbedding(nn.Module):
         device: str = None,
         normalize_embeddings: bool = False,
     ):
-        if isinstance(inputs, DataLoader):
+        if isinstance(inputs, (BatchEncoding, Dict)):
             return self.encode_from_loader(
                 loader=inputs,
                 batch_size=batch_size,
@@ -211,7 +221,7 @@ class AutoModelForEmbedding(nn.Module):
                 device=device,
                 normalize_embeddings=normalize_embeddings,
             )
-        elif isinstance(inputs, (str, Iterable)):
+        elif isinstance(inputs, (str, List, Tuple)):
             return self.encode_from_text(
                 sentences=inputs,
                 batch_size=batch_size,
@@ -222,6 +232,8 @@ class AutoModelForEmbedding(nn.Module):
                 device=device,
                 normalize_embeddings=normalize_embeddings,
             )
+        else:
+            raise ValueError
 
     def embed_documents(self, texts: List[str]) -> List[List[float]]:
         """Compute doc embeddings using a HuggingFace transformer model."""

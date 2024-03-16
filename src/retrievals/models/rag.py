@@ -39,3 +39,8 @@ class RAG(object):
 
     def search(self):
         return
+
+
+class Generator(object):
+    def __init__(self):
+        pass

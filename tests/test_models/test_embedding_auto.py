@@ -149,6 +149,9 @@ class AutoModelForEmbeddingTest(TestCase, ModelTesterMixin):
         assert emb.shape == (3, 384)
         # assert abs(np.sum(emb) - 32.14627) < 0.001
 
+    def test_forward_from_text(self):
+        pass
+
 
 class PairwiseModelTest(TestCase, ModelTesterMixin):
     def setUp(self) -> None:
