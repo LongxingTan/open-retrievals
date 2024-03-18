@@ -98,18 +98,23 @@ class RerankModel(nn.Module):
         features = self.encode(input_ids=input_ids, attention_mask=attention_mask)
         logits = self.classifier(features).reshape(-1)
 
+        if return_dict:
+            outputs_dict = dict()
+            outputs_dict['logits'] = logits
+
         if labels is not None:
             if not self.loss_fn:
                 logger.warning('loss_fn is not setup, use BCEWithLogitsLoss')
                 self.loss_fn = nn.BCEWithLogitsLoss(reduction='mean')
 
-        loss = self.loss_fn(logits, labels)
-        if return_dict:
-            outputs_dict = dict()
-            outputs_dict['loss'] = loss
-            outputs_dict['logits'] = logits
-            return outputs_dict
-        return loss
+            loss = self.loss_fn(logits, labels)
+            if return_dict:
+                outputs_dict['loss'] = loss
+                return outputs_dict
+            else:
+                return logits, loss
+        else:
+            return logits
 
     def compute_score(
         self,

@@ -23,3 +23,11 @@ Enhance RAG Performance
 * Multi-chunks
 * Pretrain and finetune of embeddings and rerank weights
 * Meta data of documents
+
+
+pdf parse
+--------------
+
+* PyPDF2
+* fitz
+* llama_index parse (support table and figure)
