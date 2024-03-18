@@ -23,7 +23,7 @@ Enhance RAG Performance
 * Multi-chunks
 * Pretrain and finetune of embeddings and rerank weights
 * Meta data of documents
-<<<<<<< HEAD
+
 
 
 pdf parse
@@ -45,3 +45,5 @@ Layout
 --------------
 
 * https://github.com/LynnHaDo/Document-Layout-Analysis
+* fitz
+* llama_index parse (support table and figure)
