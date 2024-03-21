@@ -174,3 +174,37 @@ class AdaptiveGeM(nn.Module):
 
     def __repr__(self):
         return f"AdaptiveGeM(size={self.size}, p={self.p}, eps={self.eps})"
+
+
+class TopKPooling(nn.Module):
+    def __init__(self):
+        super().__init__()
+
+    def forward(self):
+        return
+
+
+class SumPooling(nn.Module):
+    def forward(self, x, x_mask=None):
+        if x_mask is None or x_mask.data.sum() == 0:
+            return torch.sum(x, 1)
+        else:
+            x_mask = x_mask.unsqueeze(-1).expand(x.size())
+            x.data.masked_fill_(x_mask.data, 0.0)
+            return torch.sum(x, 1)
+
+
+class FMPooling(nn.Module):
+    def __init__(self):
+        super(FMPooling, self).__init__()
+        self.sum_pooling = SumPooling()
+
+    def forward(self, x, x_mask=None):
+        summed_emb = self.sum_pooling(x, x_mask)
+        summed_emb_square = summed_emb**2
+
+        squared_emb = x**2
+        squared_sum_emb = self.sum_pooling(squared_emb, x_mask)
+
+        y_second_order = 0.5 * (summed_emb_square - squared_sum_emb)
+        return y_second_order

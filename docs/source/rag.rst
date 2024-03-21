@@ -29,5 +29,17 @@ pdf parse
 --------------
 
 * PyPDF2
+* pdfplumber
 * fitz
 * llama_index parse (support table and figure)
+
+
+OCR
+------------
+
+* https://github.com/mittagessen/kraken
+
+Layout
+--------------
+
+* https://github.com/LynnHaDo/Document-Layout-Analysis
