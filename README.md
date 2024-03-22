@@ -57,6 +57,79 @@ pip install open-retrievals
 
 ## Usage
 
+**Build Index and Search for Documents**
+```python
+from retrievals import AutoModelForEmbedding, AutoModelForMatch
+
+sentences = ['A dog is chasing car.', 'A man is playing a guitar.']
+model_name_or_path = "sentence-transformers/all-MiniLM-L6-v2"
+model = AutoModelForEmbedding(model_name_or_path)
+model.build_index(sentences)
+
+matcher = AutoModelForMatch()
+results = matcher.faiss_search("He plays guitar.")
+```
+
+**Rerank**
+```python
+from transformers import AutoTokenizer
+from retrievals import RerankCollator, RerankModel, RerankTrainer, RerankDataset
+
+train_dataset = RerankDataset(args=data_args)
+tokenizer = AutoTokenizer.from_pretrained(model_args.tokenizer_name, use_fast=False)
+
+model = RerankModel(
+    model_args.model_name_or_path,
+    pooling_method="mean"
+)
+optimizer = get_optimizer(model, lr=5e-5, weight_decay=1e-3)
+
+lr_scheduler = get_scheduler(optimizer, num_train_steps=int(len(train_dataset) / 2 * 1))
+
+trainer = RerankTrainer(
+    model=model,
+    args=training_args,
+    train_dataset=train_dataset,
+    data_collator=RerankCollator(tokenizer, max_length=data_args.query_max_len),
+)
+trainer.optimizer = optimizer
+trainer.scheduler = lr_scheduler
+trainer.train()
+```
+
+**RAG with LangChain**
+
+
+- Prerequisites
+
+```shell
+
+pip install langchain
+
+```
+
+
+- Server
+
+```python
+
+
+```
+
+**RAG with LLamaIndex**
+
+```shell
+
+pip install llamaindex
+
+```
+
+
+```python
+
+
+```
+
 **Use Pretrained sentence embedding**
 ```python
 from retrievals import AutoModelForEmbedding
@@ -67,6 +140,8 @@ model = AutoModelForEmbedding(model_name_or_path, pooling_method="mean", normali
 sentence_embeddings = model.encode(sentences, convert_to_tensor=True)
 print(sentence_embeddings)
 ```
+
+
 
 **Finetune transformers by contrastive learning**
 ```python
@@ -125,80 +200,6 @@ passage_embeddings = model.encode(passage_texts, convert_to_tensor=True)
 matcher = AutoModelForMatch(method='cosine')
 dists, indices = matcher.similarity_search(query_embeddings, passage_embeddings, top_k=1)
 ```
-
-**Search by Faiss**
-```python
-from retrievals import AutoModelForEmbedding, AutoModelForMatch
-
-sentences = ['A dog is chasing car.', 'A man is playing a guitar.']
-model_name_or_path = "sentence-transformers/all-MiniLM-L6-v2"
-model = AutoModelForEmbedding(model_name_or_path)
-model.build_index(sentences)
-
-matcher = AutoModelForMatch()
-results = matcher.faiss_search("He plays guitar.")
-```
-
-**Rerank**
-```python
-from transformers import AutoTokenizer
-from retrievals import RerankCollator, RerankModel, RerankTrainer, RerankDataset
-
-train_dataset = RerankDataset(args=data_args)
-tokenizer = AutoTokenizer.from_pretrained(model_args.tokenizer_name, use_fast=False)
-
-model = RerankModel(
-    model_args.model_name_or_path,
-    pooling_method="mean"
-)
-optimizer = get_optimizer(model, lr=5e-5, weight_decay=1e-3)
-
-lr_scheduler = get_scheduler(optimizer, num_train_steps=int(len(train_dataset) / 2 * 1))
-
-trainer = RerankTrainer(
-    model=model,
-    args=training_args,
-    train_dataset=train_dataset,
-    data_collator=RerankCollator(tokenizer, max_length=data_args.query_max_len),
-)
-trainer.optimizer = optimizer
-trainer.scheduler = lr_scheduler
-trainer.train()
-```
-
-[//]: # (**RAG with LangChain**)
-
-[//]: # ()
-[//]: # (- Prerequisites)
-
-[//]: # (```shell)
-
-[//]: # (pip install langchain)
-
-[//]: # (```)
-
-[//]: # ()
-[//]: # (- Server)
-
-[//]: # (```python)
-
-[//]: # ()
-[//]: # (```)
-
-[//]: # (**RAG with LLamaIndex**)
-
-[//]: # (```shell)
-
-[//]: # (pip install llamaindex)
-
-[//]: # (```)
-
-[//]: # ()
-[//]: # (```python)
-
-[//]: # ()
-[//]: # (```)
-
 
 ## Reference & Acknowledge
 - [sentence-transformers](https://github.com/UKPLab/sentence-transformers)

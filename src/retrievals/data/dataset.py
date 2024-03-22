@@ -1,3 +1,4 @@
+import logging
 import os
 import random
 from dataclasses import dataclass
@@ -6,6 +7,8 @@ from typing import Iterable, List, Tuple
 import datasets
 from torch.utils.data import Dataset
 from transformers import DataCollatorWithPadding, PreTrainedTokenizer
+
+logger = logging.getLogger(__name__)
 
 
 class RetrievalDataset(Dataset):
@@ -27,6 +30,7 @@ class RetrievalDataset(Dataset):
             self.dataset = datasets.load_dataset("json", data_files=args.train_data, split="train")
 
         # self.tokenizer = tokenizer
+        logger.info("Loaded {} retrieval data.".format(len(self.dataset)))
 
     def __len__(self):
         return len(self.dataset)
@@ -62,6 +66,8 @@ class RerankDataset(Dataset):
             self.dataset = datasets.concatenate_datasets(train_datasets)
         else:
             self.dataset = datasets.load_dataset("json", data_files=args.train_data, split="train")
+
+        logger.info("Loaded {} rerank data.".format(len(self.dataset)))
 
     def __len__(self):
         return len(self.dataset)
