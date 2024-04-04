@@ -1,8 +1,11 @@
+import logging
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Literal, Optional, Tuple, TypeVar, Union
-
+import pytoml
+import requests
 from transformers import AutoModel
 
+logger = logging.getLogger(__name__)
 
 class RAG(object):
     def __init__(self):
@@ -41,6 +44,15 @@ class RAG(object):
         return
 
 
-class Generator(object):
-    def __init__(self):
+class ChatGenerator(object):
+    def __init__(self, config_path: str):
+        self.config_path = config_path
+
+    def _load_config(self):
+        with open(self.config_path, encoding='utf8') as f:
+            config = pytoml.load(f)
+            return config['llm']
+        pass
+
+    def generate(self, prompt, history=None, remote=False):
         pass
