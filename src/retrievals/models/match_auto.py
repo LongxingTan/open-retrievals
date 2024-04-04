@@ -56,7 +56,7 @@ class AutoModelForMatch(object):
         )
         return dists, indices
 
-    def get_match_df(self):
+    def get_rerank_df(self):
         rerank_data = dict({'query': [], 'passage': [], 'labels': []})
         return rerank_data
 

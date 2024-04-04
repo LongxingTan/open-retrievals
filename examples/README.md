@@ -2,12 +2,12 @@
 
 
 ## Finetune
-- [Text embeddings finetune with contrastive learning](./finetune_pairwise.py)
+- [Text embeddings finetune with contrastive learning](./finetune_pairwise_embed.py)
 ```shell
 sh finetune_pairwise.sh
 ```
 
-- [LLM text embeddings finetune with contrastive learning](./finetune_llm.py)
+- [LLM text embeddings finetune with contrastive learning](./finetune_llm_embed.py)
 ```shell
 sh finetune_llm.sh
 ```
