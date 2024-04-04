@@ -140,6 +140,7 @@ def train_fn(
 
 @torch.no_grad()
 def valid_fn(
+    epoch,
     valid_loader,
     model,
     criterion,
@@ -147,7 +148,9 @@ def valid_fn(
     apex: bool = False,
     device="cuda",
     data_collator=None,
+    print_freq: int = 100,
 ):
+    start = time.time()
     model.eval()
     losses = AverageMeter()
     pred_array = torch.tensor([], device=device)
@@ -180,8 +183,25 @@ def valid_fn(
         pred_array = torch.cat((pred_array, pred), dim=0)
         label_array = np.append(label_array, np.array(labels))
 
+        if step % print_freq == 0 or step == (len(valid_loader) - 1):
+            print(
+                "Epoch: [{0}][{1}/{2}] "
+                "Elapsed {remain:s} "
+                "Loss: {loss.val:.4f}({loss.avg:.4f}) "
+                # "ACC: {acc: .4f}"
+                .format(
+                    epoch + 1,
+                    step,
+                    len(valid_loader),
+                    remain=timeSince(start, float(step + 1) / len(valid_loader)),
+                    loss=losses,
+                    # acc=np.mean(acc_list),
+                )
+            )
+
     if eval_metrics is not None:
         score = eval_metrics(label_array, pred_array)
+        print(f"Epoch {epoch}, Score: {score}")
         return losses.avg, score
 
     return losses.avg
@@ -221,7 +241,7 @@ class CustomTrainer(object):
         criterion=None,
         scheduler=None,
         valid_loader=None,
-        eval_metric=None,
+        eval_metrics=None,
         data_collator=None,
         max_grad_norm=10,
         **kwargs,
@@ -263,9 +283,11 @@ class CustomTrainer(object):
 
             if valid_loader is not None:
                 self.valid_step(
-                    valid_loader,
-                    self.model,
+                    epoch=epoch,
+                    valid_loader=valid_loader,
+                    model=self.model,
                     criterion=criterion,
+                    eval_metrics=eval_metrics,
                     apex=self.apex,
                     device=self.device,
                     data_collator=None,

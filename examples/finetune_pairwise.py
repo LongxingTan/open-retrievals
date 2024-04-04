@@ -1,10 +1,7 @@
-import sys
-
-sys.path.append("/root/kaggle101/examples/open-retrievals")
-
 import logging
 import os
 import random
+import sys
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Sequence, Tuple
 
@@ -20,13 +17,13 @@ from transformers import (
     set_seed,
 )
 
-from src.retrievals import (
+from retrievals import (
     AutoModelForEmbedding,
     AutoModelForMatch,
     RetrievalTrainer,
     TripletCollator,
 )
-from src.retrievals.losses import TripletLoss
+from retrievals.losses import TripletLoss
 
 logger = logging.getLogger(__name__)
 
