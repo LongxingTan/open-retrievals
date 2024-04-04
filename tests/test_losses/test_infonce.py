@@ -10,7 +10,6 @@ from .test_losses_common import LossTesterMixin
 
 class InfoNCETest(TestCase, LossTesterMixin):
     def setUp(self) -> None:
-
         self.query_embedding = torch.rand(2, 11)
         self.positive_embedding = torch.rand(2, 11)
         self.negative_embedding = torch.rand(2, 11)
