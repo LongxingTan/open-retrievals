@@ -256,9 +256,13 @@ class CustomTrainer(object):
             if "dynamic_margin" in kwargs.keys():
                 if criterion:
                     criterion.set_margin(0.1 + epoch * 0.02)
-                else:
+                elif self.model.loss_fn is not None:
                     self.model.loss_fn.set_margin(0.1 + epoch * 0.02)
                     logger.info(f"Epoch: {epoch}, Margin: {0.1 + epoch * 0.02}")
+                else:
+                    raise ValueError(
+                        'dynamic margin is True, but criterion of trainer and loss_fn of model are both none'
+                    )
 
             # lr = scheduler(optimizer, epoch)
 

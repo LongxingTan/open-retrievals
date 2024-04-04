@@ -6,7 +6,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 from numpy import ndarray
-from torch.utils.data import DataLoader, Dataset
+from torch.utils.data import DataLoader
 from tqdm.autonotebook import trange
 from transformers import (
     AutoConfig,
@@ -210,7 +210,7 @@ class AutoModelForEmbedding(nn.Module):
         device: str = None,
         normalize_embeddings: bool = False,
     ):
-        if isinstance(inputs, (BatchEncoding, Dict)):
+        if isinstance(inputs, (DataLoader, BatchEncoding, Dict)):
             return self.encode_from_loader(
                 loader=inputs,
                 batch_size=batch_size,
@@ -267,7 +267,7 @@ class AutoModelForEmbedding(nn.Module):
                 embed = embed.detach().cpu()
                 if convert_to_numpy:
                     embed = embed.numpy()
-                all_embeddings.append(embed.numpy())
+                all_embeddings.append(embed)
         if convert_to_numpy:
             all_embeddings = np.concatenate(all_embeddings)
         else:
