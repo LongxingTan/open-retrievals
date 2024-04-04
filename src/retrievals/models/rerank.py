@@ -149,7 +149,6 @@ class RerankModel(nn.Module):
         show_progress_bar: bool = None,
         **kwargs,
     ):
-
         merge_scores = self.compute_score(query, passages, data_collator, batch_size, show_progress_bar)
 
         merge_scores_argsort = np.argsort(merge_scores)[::-1]

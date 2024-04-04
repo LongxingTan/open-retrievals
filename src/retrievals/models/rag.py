@@ -1,11 +1,13 @@
 import logging
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Literal, Optional, Tuple, TypeVar, Union
+
 import pytoml
 import requests
 from transformers import AutoModel
 
 logger = logging.getLogger(__name__)
+
 
 class RAG(object):
     def __init__(self):
