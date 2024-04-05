@@ -62,7 +62,7 @@ print(sentence_embeddings)
 
 **基于余弦相似度和紧邻搜索**
 ```python
-from retrievals import AutoModelForEmbedding, AutoModelForMatch
+from retrievals import AutoModelForEmbedding, AutoModelForRetrieval
 
 query_texts = []
 passage_texts = []
@@ -70,20 +70,20 @@ model = AutoModelForEmbedding('')
 query_embeddings = model.encode(query_texts, convert_to_tensor=True)
 passage_embeddings = model.encode(passage_texts, convert_to_tensor=True)
 
-matcher = AutoModelForMatch(method='cosine')
+matcher = AutoModelForRetrieval(method='cosine')
 dists, indices = matcher.similarity_search(query_embeddings, passage_embeddings, top_k=1)
 ```
 
 **Faiss向量数据库检索**
 ```python
-from retrievals import AutoModelForEmbedding, AutoModelForMatch
+from retrievals import AutoModelForEmbedding, AutoModelForRetrieval
 
 sentences = ['A woman is reading.', 'A man is playing a guitar.']
 model_name_or_path = "sentence-transformers/all-MiniLM-L6-v2"
 model = AutoModelForEmbedding(model_name_or_path)
 model.build_index(sentences)
 
-matcher = AutoModelForMatch()
+matcher = AutoModelForRetrieval()
 results = matcher.faiss_search("He plays guitar.")
 ```
 

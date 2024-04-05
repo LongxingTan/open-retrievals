@@ -59,14 +59,14 @@ pip install open-retrievals
 
 **Build Index and Search for Documents**
 ```python
-from retrievals import AutoModelForEmbedding, AutoModelForMatch
+from retrievals import AutoModelForEmbedding, AutoModelForRetrieval
 
 sentences = ['A dog is chasing car.', 'A man is playing a guitar.']
 model_name_or_path = "sentence-transformers/all-MiniLM-L6-v2"
 model = AutoModelForEmbedding(model_name_or_path)
 model.build_index(sentences)
 
-matcher = AutoModelForMatch()
+matcher = AutoModelForRetrieval()
 results = matcher.faiss_search("He plays guitar.")
 ```
 
@@ -146,7 +146,7 @@ print(sentence_embeddings)
 **Finetune transformers by contrastive learning**
 ```python
 from transformers import AutoTokenizer
-from retrievals import AutoModelForEmbedding, AutoModelForMatch, RetrievalTrainer, PairCollator, TripletCollator
+from retrievals import AutoModelForEmbedding, AutoModelForRetrieval, RetrievalTrainer, PairCollator, TripletCollator
 from retrievals.losses import ArcFaceAdaptiveMarginLoss, InfoNCE, SimCSE, TripletLoss
 from retrievals.data import  RetrievalDataset, RerankDataset
 
@@ -188,7 +188,7 @@ model = AutoModelForEmbedding(
 
 **Search by Cosine similarity/KNN**
 ```python
-from retrievals import AutoModelForEmbedding, AutoModelForMatch
+from retrievals import AutoModelForEmbedding, AutoModelForRetrieval
 
 query_texts = ['A dog is chasing car.']
 passage_texts = ['A man is playing a guitar.', 'A bee is flying low']
@@ -197,7 +197,7 @@ model = AutoModelForEmbedding('')
 query_embeddings = model.encode(query_texts, convert_to_tensor=True)
 passage_embeddings = model.encode(passage_texts, convert_to_tensor=True)
 
-matcher = AutoModelForMatch(method='cosine')
+matcher = AutoModelForRetrieval(method='cosine')
 dists, indices = matcher.similarity_search(query_embeddings, passage_embeddings, top_k=1)
 ```
 
