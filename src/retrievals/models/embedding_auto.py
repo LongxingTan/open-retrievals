@@ -202,7 +202,7 @@ class AutoModelForEmbedding(nn.Module):
     def encode(
         self,
         inputs,
-        batch_size: int = 32,
+        batch_size: int = 128,
         show_progress_bar: bool = None,
         output_value: str = "sentence_embedding",
         convert_to_numpy: bool = True,
@@ -247,7 +247,7 @@ class AutoModelForEmbedding(nn.Module):
     def encode_from_loader(
         self,
         loader,
-        batch_size: int = 32,
+        batch_size: int = 128,
         show_progress_bar: bool = None,
         output_value: str = "sentence_embedding",
         convert_to_numpy: bool = True,
@@ -277,7 +277,7 @@ class AutoModelForEmbedding(nn.Module):
     def encode_from_text(
         self,
         sentences: Union[str, List[str]],
-        batch_size: int = 32,
+        batch_size: int = 128,
         show_progress_bar: bool = None,
         output_value: str = "sentence_embedding",
         convert_to_numpy: bool = True,

@@ -6,6 +6,7 @@ import numpy as np
 import torch
 from sklearn.neighbors import NearestNeighbors
 from tqdm import tqdm
+from tqdm.autonotebook import trange
 
 logger = logging.getLogger(__name__)
 
@@ -20,7 +21,7 @@ class AutoModelForMatch(object):
         query_embed: torch.Tensor,
         passage_embed: torch.Tensor,
         top_k: int = 1,
-        batch_size: int = 0,
+        batch_size: int = -1,
         convert_to_numpy: bool = True,
         **kwargs,
     ):
@@ -44,7 +45,7 @@ class AutoModelForMatch(object):
         query_embed: torch.Tensor,
         index_path: str = "/faiss.index",
         top_k: int = 1,
-        batch_size: int = 256,
+        batch_size: int = 128,
         max_length: int = 512,
     ):
         faiss_index = faiss.read_index(index_path)
@@ -65,10 +66,11 @@ def cosine_similarity_search(
     query_embed: torch.Tensor,
     passage_embed: torch.Tensor,
     top_k: int = 1,
-    batch_size: int = 512,
+    batch_size: int = 128,
     penalty: bool = True,
     temperature: float = 0,
     convert_to_numpy: bool = True,
+    show_progress_bar: bool = None,
 ):
     if len(query_embed.size()) == 1:
         query_embed = query_embed.view(1, -1)
@@ -81,7 +83,7 @@ def cosine_similarity_search(
 
     dists = []
     indices = []
-    for idx in range(len(embeddings_chunks)):
+    for idx in trange(0, len(embeddings_chunks), desc="Batches", disable=not show_progress_bar):
         cos_sim_chunk = torch.matmul(embeddings_chunks[idx], passage_embed.transpose(0, 1))
         cos_sim_chunk = torch.nan_to_num(cos_sim_chunk, nan=0.0)
         # if penalty:
@@ -107,7 +109,7 @@ def faiss_search(
     query_embeddings,
     faiss_index: faiss.Index,
     top_k: int = 100,
-    batch_size: int = 256,
+    batch_size: int = 128,
     max_length: int = 512,
 ):
     """
