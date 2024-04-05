@@ -136,6 +136,11 @@ def faiss_search(
     return all_scores, all_indices
 
 
+class EnsembleRetriever(object):
+    def __init__(self, retrievers, weights=None):
+        pass
+
+
 class FaissIndex:
     def __init__(self, device) -> None:
         if isinstance(device, torch.device):

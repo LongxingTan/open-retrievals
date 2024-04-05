@@ -44,11 +44,6 @@ class RAG(object):
         return
 
 
-class EnsembleRetriever(object):
-    def __init__(self, retrievers, weights=None):
-        pass
-
-
 class ChatGenerator(object):
     def __init__(self, config_path: str):
         self.config_path = config_path
