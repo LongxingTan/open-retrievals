@@ -6,7 +6,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 from numpy import ndarray
-from torch.utils.data import DataLoader, Dataset
+from torch.utils.data import DataLoader
 from tqdm.autonotebook import trange
 from transformers import (
     AutoConfig,
@@ -202,7 +202,7 @@ class AutoModelForEmbedding(nn.Module):
     def encode(
         self,
         inputs,
-        batch_size: int = 32,
+        batch_size: int = 128,
         show_progress_bar: bool = None,
         output_value: str = "sentence_embedding",
         convert_to_numpy: bool = True,
@@ -210,7 +210,7 @@ class AutoModelForEmbedding(nn.Module):
         device: str = None,
         normalize_embeddings: bool = False,
     ):
-        if isinstance(inputs, (BatchEncoding, Dict)):
+        if isinstance(inputs, (DataLoader, BatchEncoding, Dict)):
             return self.encode_from_loader(
                 loader=inputs,
                 batch_size=batch_size,
@@ -245,15 +245,7 @@ class AutoModelForEmbedding(nn.Module):
         return self.embed_documents([text])[0]
 
     def encode_from_loader(
-        self,
-        loader,
-        batch_size: int = 32,
-        show_progress_bar: bool = None,
-        output_value: str = "sentence_embedding",
-        convert_to_numpy: bool = True,
-        convert_to_tensor: bool = False,
-        device: str = None,
-        normalize_embeddings: bool = False,
+        self, loader, convert_to_numpy: bool = True, device: str = None, normalize_embeddings: bool = False, **kwargs
     ) -> Union[List[torch.Tensor], ndarray, torch.Tensor]:
         self.model.eval()
         self.model.to(device or self.device)
@@ -263,13 +255,15 @@ class AutoModelForEmbedding(nn.Module):
             for idx, inputs in enumerate(loader):
                 for k, v in inputs.items():
                     inputs[k] = v.to(self.device)
-                embed = self.forward_from_loader(inputs)
-                embed = embed.detach().cpu()
+                embeddings = self.forward_from_loader(inputs)
+                embeddings = embeddings.detach()
+                if normalize_embeddings:
+                    embeddings = torch.nn.functional.normalize(embeddings, p=2, dim=1)
                 if convert_to_numpy:
-                    embed = embed.numpy()
-                all_embeddings.append(embed.numpy())
+                    embeddings = embeddings.cpu()
+                all_embeddings.append(embeddings)
         if convert_to_numpy:
-            all_embeddings = np.concatenate(all_embeddings)
+            all_embeddings = np.asarray([emb.numpy() for emb in all_embeddings])
         else:
             all_embeddings = torch.concat(all_embeddings)
         return all_embeddings
@@ -277,7 +271,7 @@ class AutoModelForEmbedding(nn.Module):
     def encode_from_text(
         self,
         sentences: Union[str, List[str]],
-        batch_size: int = 32,
+        batch_size: int = 128,
         show_progress_bar: bool = None,
         output_value: str = "sentence_embedding",
         convert_to_numpy: bool = True,
