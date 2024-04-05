@@ -37,7 +37,7 @@
 **Prerequisites**
 ```shell
 pip install transformers
-pip install faiss
+pip install faiss-cpu
 pip install peft
 ```
 
