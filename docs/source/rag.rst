@@ -25,6 +25,7 @@ Enhance RAG Performance
 * Meta data of documents
 
 
+
 pdf parse
 --------------
 
@@ -39,7 +40,10 @@ OCR
 
 * https://github.com/mittagessen/kraken
 
+
 Layout
 --------------
 
 * https://github.com/LynnHaDo/Document-Layout-Analysis
+* fitz
+* llama_index parse (support table and figure)
