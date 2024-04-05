@@ -57,4 +57,4 @@ llm = HuggingFacePipeline(pipeline=query_pipeline)
 
 qa = RetrievalQA.from_chain_type(llm=llm, chain_type="stuff", retriever=retriever, verbose=True)
 
-qa.run('你看了这篇文章后有何感性?')
+qa.run('看了这篇文章后你有何感想?')
