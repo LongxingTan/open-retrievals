@@ -57,7 +57,7 @@ pip install open-retrievals
 
 ## Usage
 
-**Build Index and Search for Documents**
+**Build Index and Retrieval**
 ```python
 from retrievals import AutoModelForEmbedding, AutoModelForRetrieval
 
@@ -140,7 +140,6 @@ model = AutoModelForEmbedding(model_name_or_path, pooling_method="mean", normali
 sentence_embeddings = model.encode(sentences, convert_to_tensor=True)
 print(sentence_embeddings)
 ```
-
 
 
 **Finetune transformers by contrastive learning**
