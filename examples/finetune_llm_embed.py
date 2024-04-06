@@ -22,7 +22,7 @@ from transformers import (
 from retrievals.losses import TripletLoss
 from src.retrievals import (
     AutoModelForEmbedding,
-    AutoModelForMatch,
+    AutoModelForRetrieval,
     RetrievalTrainer,
     TripletCollator,
 )

@@ -18,6 +18,6 @@ class BCELoss(nn.Module):
 
         if sample_weight is not None:
             bce = bce * sample_weight.unsqueeze(1)
-        loss = torch.sum(bce, dim=1) / torch.sum(mask, dim=1)
+        loss = torch.sum(bce, dim=1)  # / torch.sum(mask, dim=1)
         loss = loss.mean()
         return loss

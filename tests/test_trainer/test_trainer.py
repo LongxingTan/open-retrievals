@@ -3,16 +3,18 @@ import tempfile
 from dataclasses import dataclass, field
 from typing import Optional
 from unittest import TestCase
+from unittest.mock import MagicMock, patch
 
 import torch
 import transformers
+from torch import nn
 from torch.utils.data import DataLoader, Dataset
 from transformers import AutoTokenizer, HfArgumentParser
 
 from src.retrievals import AutoModelForEmbedding, TripletCollator
 from src.retrievals.losses import TripletLoss
 from src.retrievals.trainer.custom_trainer import CustomTrainer
-from src.retrievals.trainer.trainer import RetrievalTrainer
+from src.retrievals.trainer.trainer import RerankTrainer, RetrievalTrainer
 
 
 class PseudoDataset(Dataset):
@@ -37,9 +39,23 @@ class TrainerTest(TestCase):
         self.model = AutoModelForEmbedding(model_name_or_path, pooling_method="cls")
         self.train_dataset = PseudoDataset()
         self.tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, cache_dir=self.output_dir)
+        self.mock_loss_fn = MagicMock()
 
     def tearDown(self):
         shutil.rmtree(self.output_dir)
+
+    # @patch("src.retrievals.losses.TripletLoss")
+    # def test_compute_loss(self, mock_loss_fn):
+    #     inputs = {
+    #         "query": torch.tensor([[1.0, 2.0]]),
+    #         "pos": torch.tensor([[1.0, 2.0]]),
+    #         "neg": torch.tensor([[3.0, 4.0]]),
+    #     }
+    #     model = MagicMock()
+    #     trainer = RetrievalTrainer(loss_fn=mock_loss_fn)
+    #     loss = trainer.compute_loss(model, inputs, return_outputs=False)
+    #     self.assertIsNotNone(loss)  # or other assertions based on expected behavior
+    #     mock_loss_fn.assert_called()
 
     def test_trainer(self):
         # training_args = TrainingArguments(
@@ -98,3 +114,11 @@ class TrainerTest(TestCase):
         sentence_embeddings = self.model.encode(sentences)
 
         self.assertEqual(sentence_embeddings.shape, torch.Size([2, 384]))
+
+
+# class TestRerankTrainer(TestCase):
+#     def test_init_with_default_loss_fn(self):
+#         model = MagicMock()
+#
+#         trainer = RerankTrainer(model)
+#         self.assertIsInstance(trainer.loss_fn, nn.BCEWithLogitsLoss)

@@ -11,7 +11,7 @@ from tqdm.autonotebook import trange
 logger = logging.getLogger(__name__)
 
 
-class AutoModelForMatch(object):
+class AutoModelForRetrieval(object):
     def __init__(self, method: str = "cosine") -> None:
         super().__init__()
         self.method = method
@@ -134,6 +134,11 @@ def faiss_search(
     all_scores = np.concatenate(all_scores, axis=0)
     all_indices = np.concatenate(all_indices, axis=0)
     return all_scores, all_indices
+
+
+class EnsembleRetriever(object):
+    def __init__(self, retrievers, weights=None):
+        pass
 
 
 class FaissIndex:
