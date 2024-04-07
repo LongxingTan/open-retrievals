@@ -54,6 +54,25 @@ pip install open-retrievals
 
 [//]: # (```)
 
+## Quick-start
+
+```python
+from retrievals import AutoModelForEmbedding, AutoModelForRetrieval
+
+# Example list of documents
+documents = [
+    "Open-retrievals is a text embedding libraries",
+    "I can use it simply with a SOTA RAG application.",
+]
+
+# This will trigger the model download and initialization
+model_name_or_path = "sentence-transformers/all-MiniLM-L6-v2"
+model = AutoModelForEmbedding(model_name_or_path)
+
+embeddings = model.encode(documents)
+len(embeddings) # Vector of 384 dimensions
+```
+
 
 ## Usage
 
