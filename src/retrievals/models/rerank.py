@@ -53,7 +53,7 @@ class RerankModel(nn.Module):
             self.model.print_trainable_parameters()
 
         self.pooling = AutoPooling(pooling_method)
-        num_features = self.backbone.config.hidden_size
+        num_features = self.model.config.hidden_size
         self.classifier = nn.Linear(num_features, 1)
         self._init_weights(self.classifier)
         self.loss_fn = loss_fn
