@@ -151,13 +151,16 @@ class RerankCollator(DataCollatorWithPadding):
         if passage_max_length:
             self.passage_max_length = passage_max_length
 
-    def __call__(self, features: List[Dict[str, Any]]) -> BatchEncoding:
-        assert (
-            'query' in features and 'passage' in features
-        ), "RerankCollator should have 'query' and 'passage' keys in features dict, and 'labels' during training"
-
-        query_texts = [feature["query"] for feature in features]
-        passage_texts = [feature['passage'] for feature in features]
+    def __call__(self, features: Union[List[Dict[str, Any]], List]) -> BatchEncoding:
+        if isinstance(features[0], dict):
+            assert (
+                'query' in features[0] and 'passage' in features[0]
+            ), "RerankCollator should have 'query' and 'passage' keys in features dict, and 'labels' during training"
+            query_texts = [feature["query"] for feature in features]
+            passage_texts = [feature['passage'] for feature in features]
+        else:
+            query_texts = [feature[0] for feature in features]
+            passage_texts = [feature[1] for feature in features]
 
         labels = None
         if 'labels' in features[0].keys():
