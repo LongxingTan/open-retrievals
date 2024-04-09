@@ -380,7 +380,7 @@ class AutoModelForEmbedding(nn.Module):
 
         return all_embeddings
 
-    def build_index(self, inputs: BatchEncoding, batch_size: int = 64, use_gpu: bool = True):
+    def build_index(self, inputs: BatchEncoding, batch_size: int = 128, use_gpu: bool = True):
         embeddings = self.encode(inputs, batch_size=batch_size)
         embeddings = np.asarray(embeddings, dtype=np.float32)
         index = faiss.IndexFlatL2(len(embeddings[0]))
@@ -401,8 +401,16 @@ class AutoModelForEmbedding(nn.Module):
     def similarity(self, queries: Union[str, List[str]], keys: Union[str, List[str], ndarray]):
         return
 
-    def save(self):
-        pass
+    def save(self, path: str):
+        """
+        Saves all model and tokenizer to path
+        """
+        if path is None:
+            return
+
+        logger.info("Save model to {}".format(path))
+        self.model.save_pretrained(path)
+        self.tokenizer.save_pretrained(path)
 
     @classmethod
     def from_pretrained(cls, model_name_or_path: str, **kwargs):
