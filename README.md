@@ -242,7 +242,7 @@ from retrievals import AutoModelForEmbedding, AutoModelForRetrieval
 query_texts = ['A dog is chasing car.']
 passage_texts = ['A man is playing a guitar.', 'A bee is flying low']
 model_name_or_path = "sentence-transformers/all-MiniLM-L6-v2"
-model = AutoModelForEmbedding('')
+model = AutoModelForEmbedding(model_name_or_path)
 query_embeddings = model.encode(query_texts, convert_to_tensor=True)
 passage_embeddings = model.encode(passage_texts, convert_to_tensor=True)
 
