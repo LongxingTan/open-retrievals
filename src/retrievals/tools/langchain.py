@@ -92,8 +92,3 @@ class LangchainReranker(BaseDocumentCompressor):
 
         final_results = final_results[: self.top_n]
         return final_results
-
-
-class RagFeature(object):
-    def __init__(self, config_path: str = 'config.ini'):
-        pass

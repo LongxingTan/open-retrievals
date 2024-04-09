@@ -7,7 +7,7 @@ from transformers import AutoModel
 logger = logging.getLogger(__name__)
 
 
-class RAG(object):
+class SimpleRAG(object):
     def __init__(self):
         pass
 
@@ -44,7 +44,7 @@ class RAG(object):
         return
 
 
-class ChatGenerator(object):
+class Generator(object):
     def __init__(self, config_path: str):
         self.config_path = config_path
 

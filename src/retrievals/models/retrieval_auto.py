@@ -1,8 +1,9 @@
 import logging
-from typing import Union
+from typing import Optional, Union
 
 import faiss
 import numpy as np
+import pandas as pd
 import torch
 from sklearn.neighbors import NearestNeighbors
 from tqdm import tqdm
@@ -19,47 +20,49 @@ class AutoModelForRetrieval(object):
     def similarity_search(
         self,
         query_embed: torch.Tensor,
-        passage_embed: torch.Tensor,
+        passage_embed: Optional[torch.Tensor] = None,
+        index_path: Optional[str] = None,
         top_k: int = 1,
         batch_size: int = -1,
         convert_to_numpy: bool = True,
+        convert_to_pandas: bool = False,
         **kwargs,
     ):
-        if self.method == "knn":
+        if passage_embed is None and index_path is None:
+            logging.warning('Please provide passage_embed for knn/tensor search or index_path for faiss search')
+            return
+        if index_path is not None:
+            faiss_index = faiss.read_index(index_path)
+            dists, indices = faiss_search(
+                query_embeddings=query_embed,
+                faiss_index=faiss_index,
+                top_k=top_k,
+                batch_size=batch_size,
+            )
+
+        elif self.method == "knn":
             neighbors_model = NearestNeighbors(n_neighbors=top_k, metric="cosine", n_jobs=-1)
             neighbors_model.fit(passage_embed)
             dists, indices = neighbors_model.kneighbors(query_embed)
-            return dists, indices
 
         elif self.method == "cosine":
             dists, indices = cosine_similarity_search(
                 query_embed, passage_embed, top_k=top_k, batch_size=batch_size, convert_to_numpy=convert_to_numpy
             )
-            return dists, indices
 
         else:
             raise ValueError(f"Only cosine and knn method are supported by similarity_search, while get {self.method}")
 
-    def faiss_search(
-        self,
-        query_embed: torch.Tensor,
-        index_path: str = "/faiss.index",
-        top_k: int = 1,
-        batch_size: int = 128,
-        max_length: int = 512,
-    ):
-        faiss_index = faiss.read_index(index_path)
-        dists, indices = faiss_search(
-            query_embeddings=query_embed,
-            faiss_index=faiss_index,
-            top_k=top_k,
-            batch_size=batch_size,
-        )
-        return dists, indices
+        if not convert_to_pandas:
+            return dists, indices
 
-    def get_rerank_df(self):
-        rerank_data = dict({'query': [], 'passage': [], 'labels': []})
-        return rerank_data
+        retrieval = dict({'query': [], 'passage': [], 'labels': []})
+        return pd.from_dict(retrieval)
+
+
+class EnsembleRetriever(object):
+    def __init__(self, retrievers, weights=None):
+        pass
 
 
 def cosine_similarity_search(
@@ -134,11 +137,6 @@ def faiss_search(
     all_scores = np.concatenate(all_scores, axis=0)
     all_indices = np.concatenate(all_indices, axis=0)
     return all_scores, all_indices
-
-
-class EnsembleRetriever(object):
-    def __init__(self, retrievers, weights=None):
-        pass
 
 
 class FaissIndex:

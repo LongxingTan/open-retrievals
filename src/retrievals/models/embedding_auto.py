@@ -53,7 +53,7 @@ def batch_to_device(batch: Dict, target_device: str) -> Dict[str, torch.Tensor]:
 
 class AutoModelForEmbedding(nn.Module):
     """
-    Loads or creates a Embedding model that can be used to map sentences / text.
+    Loads or creates an Embedding model that can be used to map sentences / text.
 
     :param model_name_or_path: If it is a filepath on disc, it loads the model from that path. If it is not a path,
         it first tries to download a pre-trained SentenceTransformer model. If that fails, tries to construct a model
@@ -79,7 +79,7 @@ class AutoModelForEmbedding(nn.Module):
         use_lora: bool = False,
         lora_config=None,
         device: Optional[str] = None,
-        trust_remote_code: bool = False,
+        trust_remote_code: bool = True,
     ):
         super().__init__()
 
@@ -201,7 +201,7 @@ class AutoModelForEmbedding(nn.Module):
 
     def encode(
         self,
-        inputs,
+        inputs: Union[DataLoader, Dict, List, str],
         batch_size: int = 128,
         show_progress_bar: bool = None,
         output_value: str = "sentence_embedding",
@@ -380,7 +380,7 @@ class AutoModelForEmbedding(nn.Module):
 
         return all_embeddings
 
-    def build_index(self, inputs: BatchEncoding, batch_size: int = 64, use_gpu: bool = True):
+    def build_index(self, inputs: BatchEncoding, batch_size: int = 128, use_gpu: bool = True):
         embeddings = self.encode(inputs, batch_size=batch_size)
         embeddings = np.asarray(embeddings, dtype=np.float32)
         index = faiss.IndexFlatL2(len(embeddings[0]))
@@ -401,8 +401,16 @@ class AutoModelForEmbedding(nn.Module):
     def similarity(self, queries: Union[str, List[str]], keys: Union[str, List[str], ndarray]):
         return
 
-    def save(self):
-        pass
+    def save(self, path: str):
+        """
+        Saves all model and tokenizer to path
+        """
+        if path is None:
+            return
+
+        logger.info("Save model to {}".format(path))
+        self.model.save_pretrained(path)
+        self.tokenizer.save_pretrained(path)
 
     @classmethod
     def from_pretrained(cls, model_name_or_path: str, **kwargs):

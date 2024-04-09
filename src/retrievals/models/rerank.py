@@ -4,7 +4,12 @@ from typing import Callable, Dict, List, Optional, Union
 import numpy as np
 import torch
 import torch.nn as nn
-from transformers import AutoConfig, AutoModel, AutoTokenizer
+from transformers import (
+    AutoConfig,
+    AutoModel,
+    AutoModelForSequenceClassification,
+    AutoTokenizer,
+)
 
 from src.retrievals.data.collator import RerankCollator
 from src.retrievals.models.embedding_auto import get_device_name
@@ -33,7 +38,9 @@ class RerankModel(nn.Module):
             model_name_or_path, return_tensors=False, trust_remote_code=trust_remote_code
         )
 
-        self.model = AutoModel.from_pretrained(model_name_or_path, trust_remote_code=trust_remote_code)
+        self.model = AutoModelForSequenceClassification.from_pretrained(
+            model_name_or_path, trust_remote_code=trust_remote_code
+        )
         if gradient_checkpointing:
             self.model.graident_checkpointing_enable()
         if device is None:
@@ -53,9 +60,9 @@ class RerankModel(nn.Module):
             self.model.print_trainable_parameters()
 
         self.pooling = AutoPooling(pooling_method)
-        num_features = self.backbone.config.hidden_size
+        num_features = self.model.config.hidden_size
         self.classifier = nn.Linear(num_features, 1)
-        self._init_weights(self.classifier)
+        # self._init_weights(self.classifier)
         self.loss_fn = loss_fn
 
         if max_length is None:
@@ -130,6 +137,7 @@ class RerankModel(nn.Module):
         if isinstance(text_pair, str):
             text_pair = [text_pair]
         assert len(text) == len(text_pair), f"Length of text {len(text)} and text_pair {len(text_pair)} should be same"
+        batch_size = min(batch_size, len(text))
 
         if not data_collator:
             data_collator = RerankCollator(tokenizer=self.tokenizer)
@@ -139,7 +147,9 @@ class RerankModel(nn.Module):
             for i in range(0, len(text), batch_size):
                 text_batch = [{'query': text[i], 'passage': text_pair[i]} for i in range(i, i + batch_size)]
                 batch = data_collator(text_batch)
-                scores = self.model(batch, return_dict=True).logits.view(-1).float()
+                scores = (
+                    self.model(batch['input_ids'], batch['attention_mask'], return_dict=True).logits.view(-1).float()
+                )
                 scores = torch.sigmoid(scores)
                 scores_list.extend(scores.cpu().numpy().tolist())
 
