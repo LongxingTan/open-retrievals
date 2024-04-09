@@ -1,5 +1,5 @@
 import logging
-from typing import Union
+from typing import Optional, Union
 
 import faiss
 import numpy as np
@@ -19,12 +19,26 @@ class AutoModelForRetrieval(object):
     def similarity_search(
         self,
         query_embed: torch.Tensor,
-        passage_embed: torch.Tensor,
+        passage_embed: Optional[torch.Tensor] = None,
+        index_path: Optional[str] = None,
         top_k: int = 1,
         batch_size: int = -1,
         convert_to_numpy: bool = True,
         **kwargs,
     ):
+        if passage_embed is None and index_path is None:
+            logging.warning('Please provide passage_embed for knn/tensor search or index_path for faiss search')
+            return
+        if index_path is not None:
+            faiss_index = faiss.read_index(index_path)
+            dists, indices = faiss_search(
+                query_embeddings=query_embed,
+                faiss_index=faiss_index,
+                top_k=top_k,
+                batch_size=batch_size,
+            )
+            return dists, indices
+
         if self.method == "knn":
             neighbors_model = NearestNeighbors(n_neighbors=top_k, metric="cosine", n_jobs=-1)
             neighbors_model.fit(passage_embed)
@@ -39,23 +53,6 @@ class AutoModelForRetrieval(object):
 
         else:
             raise ValueError(f"Only cosine and knn method are supported by similarity_search, while get {self.method}")
-
-    def faiss_search(
-        self,
-        query_embed: torch.Tensor,
-        index_path: str = "/faiss.index",
-        top_k: int = 1,
-        batch_size: int = 128,
-        max_length: int = 512,
-    ):
-        faiss_index = faiss.read_index(index_path)
-        dists, indices = faiss_search(
-            query_embeddings=query_embed,
-            faiss_index=faiss_index,
-            top_k=top_k,
-            batch_size=batch_size,
-        )
-        return dists, indices
 
     def get_rerank_df(self):
         rerank_data = dict({'query': [], 'passage': [], 'labels': []})

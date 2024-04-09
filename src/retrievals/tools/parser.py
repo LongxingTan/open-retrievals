@@ -35,7 +35,7 @@ class FileParser:
             + self.html_suffix
         )
 
-    def read(self, filepath: str):
+    def read(self, filepath: str, to_document: bool = False):
         file_type = self.get_type(filepath)
         text = ''
 
