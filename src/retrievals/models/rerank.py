@@ -162,6 +162,7 @@ class RerankModel(nn.Module):
         data_collator: Optional[RerankCollator] = None,
         batch_size: int = 32,
         show_progress_bar: bool = None,
+        return_dict: bool = True,
         **kwargs,
     ):
         merge_scores = self.compute_score(query, passages, data_collator, batch_size, show_progress_bar)
@@ -173,11 +174,14 @@ class RerankModel(nn.Module):
             sorted_scores.append(merge_scores[mid])
             sorted_passages.append(passages[mid])
 
-        return {
-            'rerank_passages': sorted_passages,
-            'rerank_scores': sorted_scores,
-            'rerank_ids': merge_scores_argsort.tolist(),
-        }
+        if return_dict:
+            return {
+                'rerank_passages': sorted_passages,
+                'rerank_scores': sorted_scores,
+                'rerank_ids': merge_scores_argsort.tolist(),
+            }
+        else:
+            return sorted_passages
 
     def save(self, path: str):
         """
