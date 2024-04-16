@@ -56,14 +56,17 @@ class AutoModelForRetrieval(object):
         return dists, indices
 
     def get_pandas_candidate(self, query_ids, passage_ids, dists, indices):
-        retrieval = dict(
-            {
-                'query': np.repeat(query_ids, self.top_k),
-                'passage': passage_ids[indices.ravel()],
-                'scores': dists.ravel(),
-            }
-        )
-        return pd.DataFrame.from_dict(retrieval)
+        if isinstance(query_ids, pd.Series):
+            query_ids = query_ids.values
+        if isinstance(passage_ids, pd.Series):
+            passage_ids = passage_ids.values
+
+        retrieval = {
+            'query': np.repeat(query_ids, self.top_k),
+            'passage': passage_ids[indices.ravel()],
+            'scores': dists.ravel(),
+        }
+        return pd.DataFrame(retrieval)
 
 
 class EnsembleRetriever(object):
