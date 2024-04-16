@@ -55,8 +55,14 @@ class AutoModelForRetrieval(object):
 
         return dists, indices
 
-    def get_pandas_candidate(self, query_ids, passage_ids, dists):
-        retrieval = dict({'query': np.repeat(query_ids, self.top_k), 'passage': passage_ids, 'scores': dists})
+    def get_pandas_candidate(self, query_ids, passage_ids, dists, indices):
+        retrieval = dict(
+            {
+                'query': np.repeat(query_ids, self.top_k),
+                'passage': passage_ids[indices.ravel()],
+                'scores': dists.reval(),
+            }
+        )
         return pd.DataFrame.from_dict(retrieval)
 
 
