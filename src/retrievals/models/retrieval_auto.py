@@ -60,7 +60,7 @@ class AutoModelForRetrieval(object):
             {
                 'query': np.repeat(query_ids, self.top_k),
                 'passage': passage_ids[indices.ravel()],
-                'scores': dists.reval(),
+                'scores': dists.ravel(),
             }
         )
         return pd.DataFrame.from_dict(retrieval)
