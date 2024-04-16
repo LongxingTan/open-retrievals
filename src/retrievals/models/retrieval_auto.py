@@ -1,5 +1,5 @@
 import logging
-from typing import Optional, Union
+from typing import Literal, Optional, Union
 
 import faiss
 import numpy as np
@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 
 class AutoModelForRetrieval(object):
-    def __init__(self, method: str = "cosine") -> None:
+    def __init__(self, method: Literal['cosine', 'knn'] = "cosine") -> None:
         super().__init__()
         self.method = method
 
@@ -25,9 +25,9 @@ class AutoModelForRetrieval(object):
         top_k: int = 1,
         batch_size: int = -1,
         convert_to_numpy: bool = True,
-        convert_to_pandas: bool = False,
         **kwargs,
     ):
+        self.top_k = top_k
         if passage_embed is None and index_path is None:
             logging.warning('Please provide passage_embed for knn/tensor search or index_path for faiss search')
             return
@@ -53,11 +53,11 @@ class AutoModelForRetrieval(object):
         else:
             raise ValueError(f"Only cosine and knn method are supported by similarity_search, while get {self.method}")
 
-        if not convert_to_pandas:
-            return dists, indices
+        return dists, indices
 
-        retrieval = dict({'query': [], 'passage': [], 'labels': []})
-        return pd.from_dict(retrieval)
+    def get_pandas_candidate(self, query_ids, passage_ids, dists):
+        retrieval = dict({'query': np.repeat(query_ids, self.top_k), 'passage': passage_ids, 'scores': dists})
+        return pd.DataFrame.from_dict(retrieval)
 
 
 class EnsembleRetriever(object):
