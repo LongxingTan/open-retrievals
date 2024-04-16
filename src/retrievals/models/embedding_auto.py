@@ -263,7 +263,7 @@ class AutoModelForEmbedding(nn.Module):
                     embeddings = embeddings.cpu()
                 all_embeddings.append(embeddings)
         if convert_to_numpy:
-            all_embeddings = np.asarray([emb.numpy() for emb in all_embeddings])
+            all_embeddings = np.concatenate([emb.numpy() for emb in all_embeddings], axis=0)
         else:
             all_embeddings = torch.concat(all_embeddings)
         return all_embeddings
