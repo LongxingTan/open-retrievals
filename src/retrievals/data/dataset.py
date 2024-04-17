@@ -74,7 +74,7 @@ class RerankDataset(Dataset):
 
     def __getitem__(self, item):
         query = self.dataset[item]["query"]
-        passage = self.dataset[item]['passage']
+        document = self.dataset[item]['document']
         labels = self.dataset[item]['labels']
-        sample = {"query": query, "passage": passage, "neg": labels}
+        sample = {"query": query, "document": document, "neg": labels}
         return sample

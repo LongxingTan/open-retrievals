@@ -145,7 +145,7 @@ class RerankModel(nn.Module):
         with torch.no_grad():
             scores_list: List = []
             for i in range(0, len(text), batch_size):
-                text_batch = [{'query': text[i], 'passage': text_pair[i]} for i in range(i, i + batch_size)]
+                text_batch = [{'query': text[i], 'document': text_pair[i]} for i in range(i, i + batch_size)]
                 batch = data_collator(text_batch)
                 scores = (
                     self.model(batch['input_ids'], batch['attention_mask'], return_dict=True).logits.view(-1).float()
@@ -158,30 +158,30 @@ class RerankModel(nn.Module):
     def rerank(
         self,
         query: Union[List[str], str],
-        passages: List[str],
+        document: List[str],
         data_collator: Optional[RerankCollator] = None,
         batch_size: int = 32,
         show_progress_bar: bool = None,
         return_dict: bool = True,
         **kwargs,
     ):
-        merge_scores = self.compute_score(query, passages, data_collator, batch_size, show_progress_bar)
+        merge_scores = self.compute_score(query, document, data_collator, batch_size, show_progress_bar)
 
         merge_scores_argsort = np.argsort(merge_scores)[::-1]
-        sorted_passages = []
+        sorted_document = []
         sorted_scores = []
         for mid in merge_scores_argsort:
             sorted_scores.append(merge_scores[mid])
-            sorted_passages.append(passages[mid])
+            sorted_document.append(document[mid])
 
         if return_dict:
             return {
-                'rerank_passages': sorted_passages,
+                'rerank_document': sorted_document,
                 'rerank_scores': sorted_scores,
                 'rerank_ids': merge_scores_argsort.tolist(),
             }
         else:
-            return sorted_passages
+            return sorted_document
 
     def save(self, path: str):
         """

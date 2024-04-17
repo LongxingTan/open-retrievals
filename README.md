@@ -240,14 +240,14 @@ model = AutoModelForEmbedding(
 from retrievals import AutoModelForEmbedding, AutoModelForRetrieval
 
 query_texts = ['A dog is chasing car.']
-passage_texts = ['A man is playing a guitar.', 'A bee is flying low']
+document_texts = ['A man is playing a guitar.', 'A bee is flying low']
 model_name_or_path = "sentence-transformers/all-MiniLM-L6-v2"
 model = AutoModelForEmbedding(model_name_or_path)
 query_embeddings = model.encode(query_texts, convert_to_tensor=True)
-passage_embeddings = model.encode(passage_texts, convert_to_tensor=True)
+document_embeddings = model.encode(document_texts, convert_to_tensor=True)
 
 matcher = AutoModelForRetrieval(method='cosine')
-dists, indices = matcher.similarity_search(query_embeddings, passage_embeddings, top_k=1)
+dists, indices = matcher.similarity_search(query_embeddings, document_embeddings, top_k=1)
 ```
 
 ## Reference & Acknowledge

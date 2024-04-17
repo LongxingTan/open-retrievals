@@ -16,12 +16,12 @@ class CosineSimilarity(nn.Module):
         self.temperature = temperature
         self.dynamic_temperature = dynamic_temperature
 
-    def forward(self, query_embeddings: torch.Tensor, passage_embeddings: torch.Tensor):
-        sim_pos_vector = torch.cosine_similarity(query_embeddings, passage_embeddings, dim=-1)
+    def forward(self, query_embeddings: torch.Tensor, document_embeddings: torch.Tensor):
+        sim_pos_vector = torch.cosine_similarity(query_embeddings, document_embeddings, dim=-1)
         sim_pos_vector = sim_pos_vector / self.temperature
         sim_neg_matrix = torch.cosine_similarity(
             query_embeddings.unsqueeze(1),
-            passage_embeddings.unsqueeze(0),
+            document_embeddings.unsqueeze(0),
             dim=-1,
         )
         sim_neg_matrix = sim_neg_matrix / self.temperature

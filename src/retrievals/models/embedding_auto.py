@@ -73,7 +73,7 @@ class AutoModelForEmbedding(nn.Module):
         max_length: Optional[int] = None,
         loss_fn: Optional[Callable] = None,
         query_instruction: Optional[str] = None,
-        passage_instruction: Optional[str] = None,
+        document_instruction: Optional[str] = None,
         generation_args: Dict = None,
         use_fp16: bool = False,
         use_lora: bool = False,
@@ -130,7 +130,7 @@ class AutoModelForEmbedding(nn.Module):
         # self._init_weights(self.fc)
 
         self.query_instruction = query_instruction
-        self.passage_instruction = passage_instruction
+        self.document_instruction = document_instruction
         if generation_args is not None:
             generation_config = self.model.generation_config.to_dict()
             generation_config.update(generation_args)
