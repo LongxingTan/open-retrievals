@@ -2,7 +2,7 @@ import gc
 import logging
 import math
 import time
-from typing import Callable, Dict, List, Optional, Tuple, Union
+from typing import Callable, Dict, List, Literal, Optional, Tuple, Union
 
 import numpy as np
 import torch
@@ -13,11 +13,11 @@ logger = logging.getLogger(__name__)
 
 
 def train_fn(
-    epoch,
-    model,
+    epoch: int,
+    model: nn.Module,
     train_loader,
     optimizer,
-    criterion=None,
+    criterion: Optional[Callable] = None,
     apex: bool = False,
     gradient_accumulation_steps: int = 1,
     max_grad_norm: float = 1,
@@ -223,15 +223,15 @@ def inference_fn(test_loader, model, device):
 
 
 class CustomTrainer(object):
-    def __init__(self, model: Union[str, nn.Module], device=None, apex=False, teacher=None):
+    def __init__(self, model: Union[str, nn.Module], device: Optional[str] = None, apex=False, teacher=None):
         if not device:
             device = "cuda" if torch.cuda.is_available() else "cpu"
         self.device = device
         self.model = model
         self.teacher = teacher
         self.apex = apex
-        self.train_step = train_fn
-        self.valid_step = valid_fn
+        self.train_fn = train_fn
+        self.valid_fn = valid_fn
 
     def train(
         self,
@@ -246,6 +246,7 @@ class CustomTrainer(object):
         max_grad_norm=10,
         **kwargs,
     ):
+        logger.info('-------START TO TRAIN-------')
         # best_score = 0
         # fgm = FGM(model)
         # awp = None
@@ -271,7 +272,7 @@ class CustomTrainer(object):
             # 如果把参数直接放在cuda, 则导致parameter里没有出现该参数，无法分别设置学习率
             self.model = self.model.to(self.device)
             optimizer.zero_grad()
-            self.train_step(
+            self.train_fn(
                 epoch=epoch,
                 train_loader=train_loader,
                 model=self.model,
@@ -287,7 +288,7 @@ class CustomTrainer(object):
             )
 
             if valid_loader is not None:
-                self.valid_step(
+                self.valid_fn(
                     epoch=epoch,
                     valid_loader=valid_loader,
                     model=self.model,
