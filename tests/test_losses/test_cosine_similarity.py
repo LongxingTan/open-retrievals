@@ -9,7 +9,7 @@ class CosineSimilarityTest(TestCase):
     def setUp(self):
         # Setup can adjust parameters for wide coverage of scenarios
         self.query_embeddings = torch.randn(10, 128)  # Example embeddings
-        self.passage_embeddings = torch.randn(10, 128)
+        self.document_embeddings = torch.randn(10, 128)
         self.temperature = 0.1
 
     def test_loss_computation(self):
@@ -17,7 +17,7 @@ class CosineSimilarityTest(TestCase):
         module = CosineSimilarity(temperature=self.temperature)
 
         # Compute loss
-        loss = module(self.query_embeddings, self.passage_embeddings)
+        loss = module(self.query_embeddings, self.document_embeddings)
 
         # Check if loss is a single scalar value and not nan or inf
         self.assertTrue(torch.isfinite(loss))
@@ -25,11 +25,11 @@ class CosineSimilarityTest(TestCase):
     def test_temperature_effect(self):
         # High temperature
         high_temp_module = CosineSimilarity(temperature=100.0)
-        high_temp_loss = high_temp_module(self.query_embeddings, self.passage_embeddings)
+        high_temp_loss = high_temp_module(self.query_embeddings, self.document_embeddings)
 
         # Low temperature
         low_temp_module = CosineSimilarity(temperature=0.01)
-        low_temp_loss = low_temp_module(self.query_embeddings, self.passage_embeddings)
+        low_temp_loss = low_temp_module(self.query_embeddings, self.document_embeddings)
 
         # Expect the loss to be higher for the lower temperature due to sharper softmax
         self.assertTrue(low_temp_loss > high_temp_loss)

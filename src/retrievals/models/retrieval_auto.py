@@ -20,7 +20,7 @@ class AutoModelForRetrieval(object):
     def similarity_search(
         self,
         query_embed: torch.Tensor,
-        passage_embed: Optional[torch.Tensor] = None,
+        document_embed: Optional[torch.Tensor] = None,
         index_path: Optional[str] = None,
         top_k: int = 1,
         batch_size: int = -1,
@@ -28,8 +28,8 @@ class AutoModelForRetrieval(object):
         **kwargs,
     ):
         self.top_k = top_k
-        if passage_embed is None and index_path is None:
-            logging.warning('Please provide passage_embed for knn/tensor search or index_path for faiss search')
+        if document_embed is None and index_path is None:
+            logging.warning('Please provide document_embed for knn/tensor search or index_path for faiss search')
             return
         if index_path is not None:
             faiss_index = faiss.read_index(index_path)
@@ -42,12 +42,12 @@ class AutoModelForRetrieval(object):
 
         elif self.method == "knn":
             neighbors_model = NearestNeighbors(n_neighbors=top_k, metric="cosine", n_jobs=-1)
-            neighbors_model.fit(passage_embed)
+            neighbors_model.fit(document_embed)
             dists, indices = neighbors_model.kneighbors(query_embed)
 
         elif self.method == "cosine":
             dists, indices = cosine_similarity_search(
-                query_embed, passage_embed, top_k=top_k, batch_size=batch_size, convert_to_numpy=convert_to_numpy
+                query_embed, document_embed, top_k=top_k, batch_size=batch_size, convert_to_numpy=convert_to_numpy
             )
 
         else:
@@ -55,15 +55,15 @@ class AutoModelForRetrieval(object):
 
         return dists, indices
 
-    def get_pandas_candidate(self, query_ids, passage_ids, dists, indices):
+    def get_pandas_candidate(self, query_ids, document_ids, dists, indices):
         if isinstance(query_ids, pd.Series):
             query_ids = query_ids.values
-        if isinstance(passage_ids, pd.Series):
-            passage_ids = passage_ids.values
+        if isinstance(document_ids, pd.Series):
+            document_ids = document_ids.values
 
         retrieval = {
             'query': np.repeat(query_ids, self.top_k),
-            'passage': passage_ids[indices.ravel()],
+            'document': document_ids[indices.ravel()],
             'scores': dists.ravel(),
         }
         return pd.DataFrame(retrieval)
@@ -76,7 +76,7 @@ class EnsembleRetriever(object):
 
 def cosine_similarity_search(
     query_embed: torch.Tensor,
-    passage_embed: torch.Tensor,
+    document_embed: torch.Tensor,
     top_k: int = 1,
     batch_size: int = 128,
     penalty: bool = True,
@@ -86,9 +86,9 @@ def cosine_similarity_search(
 ):
     if len(query_embed.size()) == 1:
         query_embed = query_embed.view(1, -1)
-    assert query_embed.size()[1] == passage_embed.size()[1], (
-        f"The embed Shape of query_embed and passage_embed should be same, "
-        f"while received query {query_embed.size()} and passage {passage_embed.size()}"
+    assert query_embed.size()[1] == document_embed.size()[1], (
+        f"The embed Shape of query_embed and document_embed should be same, "
+        f"while received query {query_embed.size()} and document {document_embed.size()}"
     )
     chunk = batch_size if batch_size > 0 else len(query_embed)
     embeddings_chunks = query_embed.split(chunk)
@@ -96,7 +96,7 @@ def cosine_similarity_search(
     dists = []
     indices = []
     for idx in trange(0, len(embeddings_chunks), desc="Batches", disable=not show_progress_bar):
-        cos_sim_chunk = torch.matmul(embeddings_chunks[idx], passage_embed.transpose(0, 1))
+        cos_sim_chunk = torch.matmul(embeddings_chunks[idx], document_embed.transpose(0, 1))
         cos_sim_chunk = torch.nan_to_num(cos_sim_chunk, nan=0.0)
         # if penalty:
         #     pen = ((contents["old_source_count"].values==0) & (contents["old_nonsource_count"].values==1))

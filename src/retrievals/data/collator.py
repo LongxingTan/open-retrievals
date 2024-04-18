@@ -10,25 +10,25 @@ class PairCollator(DataCollatorWithPadding):
         tokenizer,
         max_length: Optional[int] = None,
         query_max_length: Optional[int] = None,
-        passage_max_length: Optional[int] = None,
+        document_max_length: Optional[int] = None,
     ) -> None:
         self.tokenizer = tokenizer
         if not hasattr(self.tokenizer, "pad_token_id") or self.tokenizer.pad_token is None:
             self.tokenizer.add_special_tokens({"pad_token": "[PAD]"})
 
         self.query_max_length: int
-        self.passage_max_length: int
+        self.document_max_length: int
         if query_max_length:
             self.query_max_length = query_max_length
         elif max_length:
             self.query_max_length = max_length
-            self.passage_max_length = max_length
+            self.document_max_length = max_length
         else:
             self.query_max_length = tokenizer.model_max_length
-            self.passage_max_length = tokenizer.model_max_length
+            self.document_max_length = tokenizer.model_max_length
 
-        if passage_max_length:
-            self.passage_max_length = passage_max_length
+        if document_max_length:
+            self.document_max_length = document_max_length
 
     def __call__(self, features: List[Dict[str, Any]]) -> Dict[str, Any]:
         assert (
@@ -48,7 +48,7 @@ class PairCollator(DataCollatorWithPadding):
         pos_inputs = self.tokenizer(
             pos_texts,
             padding=True,
-            max_length=self.passage_max_length,
+            max_length=self.document_max_length,
             truncation=True,
             return_tensors="pt",
         )
@@ -62,25 +62,25 @@ class TripletCollator(DataCollatorWithPadding):
         tokenizer,
         max_length: Optional[int] = None,
         query_max_length: Optional[int] = None,
-        passage_max_length: Optional[int] = None,
+        document_max_length: Optional[int] = None,
     ) -> None:
         self.tokenizer = tokenizer
         if not hasattr(self.tokenizer, "pad_token_id") or self.tokenizer.pad_token is None:
             self.tokenizer.add_special_tokens({"pad_token": "[PAD]"})
 
         self.query_max_length: int
-        self.passage_max_length: int
+        self.document_max_length: int
         if query_max_length:
             self.query_max_length = query_max_length
         elif max_length:
             self.query_max_length = max_length
-            self.passage_max_length = max_length
+            self.document_max_length = max_length
         else:
             self.query_max_length = tokenizer.model_max_length
-            self.passage_max_length = tokenizer.model_max_length
+            self.document_max_length = tokenizer.model_max_length
 
-        if passage_max_length:
-            self.passage_max_length = passage_max_length
+        if document_max_length:
+            self.document_max_length = document_max_length
 
     def __call__(self, features: List[Dict[str, Any]]) -> Dict[str, Any]:
         assert (
@@ -93,8 +93,8 @@ class TripletCollator(DataCollatorWithPadding):
 
         # if isinstance(query[0], list):
         #     query = sum(query, [])
-        # if isinstance(passage[0], list):
-        #     passage = sum(passage, [])
+        # if isinstance(document[0], list):
+        #     document = sum(document, [])
 
         query_inputs = self.tokenizer(
             query_texts,
@@ -106,14 +106,14 @@ class TripletCollator(DataCollatorWithPadding):
         pos_inputs = self.tokenizer(
             pos_texts,
             padding=True,
-            max_length=self.passage_max_length,
+            max_length=self.document_max_length,
             truncation=True,
             return_tensors="pt",
         )  # ["input_ids"]
         neg_inputs = self.tokenizer(
             neg_texts,
             padding=True,
-            max_length=self.passage_max_length,
+            max_length=self.document_max_length,
             truncation=True,
             return_tensors="pt",
         )  # ["input_ids"]
@@ -131,43 +131,43 @@ class RerankCollator(DataCollatorWithPadding):
         tokenizer,
         max_length: Optional[int] = None,
         query_max_length: Optional[int] = None,
-        passage_max_length: Optional[int] = None,
+        document_max_length: Optional[int] = None,
     ):
         self.tokenizer = tokenizer
         if not hasattr(self.tokenizer, "pad_token_id") or self.tokenizer.pad_token is None:
             self.tokenizer.add_special_tokens({"pad_token": "[PAD]"})
 
         self.query_max_length: int
-        self.passage_max_length: int
+        self.document_max_length: int
         if query_max_length:
             self.query_max_length = query_max_length
         elif max_length:
             self.query_max_length = max_length
-            self.passage_max_length = max_length
+            self.document_max_length = max_length
         else:
             self.query_max_length = tokenizer.model_max_length
-            self.passage_max_length = tokenizer.model_max_length
+            self.document_max_length = tokenizer.model_max_length
 
-        if passage_max_length:
-            self.passage_max_length = passage_max_length
+        if document_max_length:
+            self.document_max_length = document_max_length
 
     def __call__(self, features: Union[List[Dict[str, Any]], List]) -> BatchEncoding:
         if isinstance(features[0], dict):
             assert (
-                'query' in features[0] and 'passage' in features[0]
-            ), "RerankCollator should have 'query' and 'passage' keys in features dict, and 'labels' during training"
+                'query' in features[0] and 'document' in features[0]
+            ), "RerankCollator should have 'query' and 'document' keys in features dict, and 'labels' during training"
             query_texts = [feature["query"] for feature in features]
-            passage_texts = [feature['passage'] for feature in features]
+            document_texts = [feature['document'] for feature in features]
         else:
             query_texts = [feature[0] for feature in features]
-            passage_texts = [feature[1] for feature in features]
+            document_texts = [feature[1] for feature in features]
 
         labels = None
         if 'labels' in features[0].keys():
             labels = [feature['labels'] for feature in features]
 
         batch = self.tokenizer(
-            text=query_texts, text_pair=passage_texts, truncation=True, max_length=self.max_length, return_tensors="pt"
+            text=query_texts, text_pair=document_texts, truncation=True, max_length=self.max_length, return_tensors="pt"
         )
 
         # for key in ['input_ids', 'attention_mask']:

@@ -59,15 +59,15 @@ class DataArguments:
     query_max_len: int = field(
         default=32,
         metadata={
-            "help": "The maximum total input sequence length after tokenization for passage. Sequences longer "
+            "help": "The maximum total input sequence length after tokenization for document. Sequences longer "
             "than this will be truncated, sequences shorter will be padded."
         },
     )
 
-    passage_max_len: int = field(
+    document_max_len: int = field(
         default=128,
         metadata={
-            "help": "The maximum total input sequence length after tokenization for passage. Sequences longer "
+            "help": "The maximum total input sequence length after tokenization for document. Sequences longer "
             "than this will be truncated, sequences shorter will be padded."
         },
     )
@@ -78,7 +78,7 @@ class DataArguments:
     )
 
     query_instruction: str = field(default=None, metadata={"help": "instruction for query"})
-    passage_instruction: str = field(default=None, metadata={"help": "instruction for passage"})
+    document_instruction: str = field(default=None, metadata={"help": "instruction for document"})
 
     def __post_init__(self):
         if not os.path.exists(self.train_data):
