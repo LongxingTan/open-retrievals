@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 
 class AutoModelForRetrieval(object):
-    def __init__(self, method: Literal['cosine', 'knn'] = "cosine") -> None:
+    def __init__(self, method: Literal['cosine', 'knn', None] = "cosine") -> None:
         super().__init__()
         self.method = method
 
