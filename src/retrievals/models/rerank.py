@@ -118,7 +118,7 @@ class RerankModel(nn.Module):
                 logger.warning('loss_fn is not setup, use BCEWithLogitsLoss')
                 self.loss_fn = nn.BCEWithLogitsLoss(reduction='mean')
 
-            loss = self.loss_fn(logits, labels)
+            loss = self.loss_fn(logits, labels.float())
             if return_dict:
                 outputs_dict['loss'] = loss
                 return outputs_dict
