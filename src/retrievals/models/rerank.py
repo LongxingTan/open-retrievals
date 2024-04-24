@@ -89,12 +89,13 @@ class RerankModel(nn.Module):
             module.weight.data.fill_(1.0)
 
     def encode(self, input_ids: torch.Tensor, attention_mask: torch.Tensor) -> torch.Tensor:
-        outputs = self.model(input_ids, attention_mask, output_hidden_states=False)
+        outputs = self.model(input_ids, attention_mask, output_hidden_states=True)
         if hasattr(outputs, 'last_hidden_state'):
-            encoder_layer = outputs.last_hidden_state
-            embeddings = self.pooling(encoder_layer, attention_mask)
+            hidden_state = outputs.last_hidden_state
+            embeddings = self.pooling(hidden_state, attention_mask)
         else:
-            embeddings = outputs.hidden_states
+            hidden_state = outputs.hidden_states[1]
+            embeddings = self.pooling(hidden_state, attention_mask)
         return embeddings
 
     def forward(
