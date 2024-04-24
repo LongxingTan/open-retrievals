@@ -1,12 +1,10 @@
 import logging
-import math
 import os
-import time
-from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import torch.nn as nn
 from transformers import Trainer
+from transformers.modeling_outputs import SequenceClassifierOutput
 from transformers.modeling_utils import PreTrainedModel
 from transformers.tokenization_utils_base import PreTrainedTokenizerBase
 from transformers.trainer_callback import TrainerCallback
@@ -57,8 +55,14 @@ class RerankTrainer(Trainer):
             loss_fn = nn.BCEWithLogitsLoss()
         self.loss_fn = loss_fn
 
-    def compute_loss(self, model, inputs, **kwargs):
-        return
+    def compute_loss(self, model, inputs, return_outputs=False, **kwargs):
+        outputs: SequenceClassifierOutput = model(inputs)
+        loss = outputs.loss
+        return (loss, outputs) if return_outputs else loss
 
     def _save(self, output_dir: Optional[str] = None, state_dict=None):
-        pass
+        output_dir = output_dir if output_dir is not None else self.args.output_dir
+        os.makedirs(output_dir, exist_ok=True)
+
+        self.model.model.save_pretrained(output_dir)
+        self.model.tokenizer.save_pretrained(output_dir)

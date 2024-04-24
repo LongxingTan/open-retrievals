@@ -29,7 +29,7 @@ class SimCSE(nn.Module):
         y_true = torch.arange(0, query_embeddings.size(0), device=query_embeddings.device)
 
         sim = F.cosine_similarity(query_embeddings.unsqueeze(1), pos_embeddings.unsqueeze(0), dim=2)
-        # sim = sim - torch.eye(y_pred.shape[0], device=device) * 1e12
+        # sim = sim - torch.eye(pos_embeddings.shape[0], device=query_embeddings.device) * 1e12
 
         sim = sim / self.temperature
         loss = self.criterion(sim, y_true)
