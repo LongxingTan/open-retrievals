@@ -56,7 +56,7 @@ class RerankTrainer(Trainer):
         self.loss_fn = loss_fn
 
     def compute_loss(self, model, inputs, return_outputs=False, **kwargs):
-        outputs: SequenceClassifierOutput = model(inputs)
+        outputs: SequenceClassifierOutput = model(**inputs)
         loss = outputs.loss
         return (loss, outputs) if return_outputs else loss
 
