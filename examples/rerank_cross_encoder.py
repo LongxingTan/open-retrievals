@@ -1,18 +1,19 @@
-import json
 import logging
 import os
 import sys
 from dataclasses import dataclass, field
+from functools import partial
 from typing import List, Optional, Tuple
 
-import evaluate
+import datasets
+import numpy as np
+import pandas as pd
 import torch
 import transformers
-from peft import LoraConfig
+from sklearn.metrics import accuracy_score
+from torch import nn
 from torch.utils.data import DataLoader, Dataset
 from transformers import (
-    AutoConfig,
-    AutoModel,
     AutoTokenizer,
     HfArgumentParser,
     get_cosine_schedule_with_warmup,
@@ -31,7 +32,8 @@ class ModelArguments:
     """
 
     model_name_or_path: str = field(
-        metadata={"help": "Path to pretrained model or model identifier from huggingface.co/models"}
+        default="microsoft/deberta-v3-base",
+        metadata={"help": "Path to pretrained model or model identifier from huggingface.co/models"},
     )
     config_name: Optional[str] = field(
         default=None,
@@ -41,6 +43,7 @@ class ModelArguments:
         default=None,
         metadata={"help": "Pretrained tokenizer name or path if not the same as model_name"},
     )
+    pooling_method: str = field(default="mean")
     # cache_dir: Optional[str] = field(
     #     default=None,
     #     metadata={
@@ -102,15 +105,39 @@ class TrainingArguments(transformers.TrainingArguments):
 
 
 class RerankTrainingDataset(Dataset):
-    def __init__(self, args, tokenizer):
-        self.args = args
+    def __init__(self, df, tokenizer: transformers.PreTrainedTokenizer, max_len: int):
         self.tokenizer = tokenizer
+        dataset = datasets.Dataset.from_pandas(df)
+        self.tokenizer = tokenizer
+        data_dict = dataset.map(partial(preprocess, tokenizer=tokenizer, max_len=max_len), batched=True)
+
+        self.input_ids = data_dict["input_ids"]
+        self.attention_mask = data_dict["attention_mask"]
+        self.labels = data_dict["labels"]
 
     def __len__(self):
-        return
+        return len(self.input_ids)
 
-    def __getitem__(self, item):
-        return
+    def __getitem__(self, item) -> dict[str, torch.Tensor]:
+        return dict(
+            input_ids=self.input_ids[item],
+            attention_mask=self.attention_mask[item],
+            labels=self.labels[item],
+        )
+
+
+def preprocess(examples, tokenizer, max_len):
+    tokenized_text = tokenizer(
+        examples["query"],
+        examples["document"],
+        padding="max_length",
+        truncation="longest_first",
+        max_length=max_len,
+        add_special_tokens=True,
+        return_tensors="pt",
+    )
+    tokenized_text["labels"] = torch.tensor(examples["labels"]).long()
+    return tokenized_text
 
 
 def get_optimizer():
@@ -122,7 +149,9 @@ def get_scheduler():
 
 
 def compute_metrics(eval_pred):
-    return
+    logits, labels = eval_pred
+    predictions = np.argmax(logits, axis=-1)
+    return accuracy_score(labels, predictions)
 
 
 def main():
@@ -160,27 +189,38 @@ def main():
 
     set_seed(training_args.seed)
 
-    tokenizer = AutoTokenizer.from_pretrained()
+    tokenizer = AutoTokenizer.from_pretrained(model_args.model_name_or_path)
 
-    train_dataset = RerankTrainingDataset(args=data_args, tokenizer=tokenizer)
-    eval_dataset = RerankTrainingDataset()
+    df = pd.read_csv(data_args.train_data)
 
-    model = RerankModel()
-    optimizer = get_optimizer()
-    scheduler = get_scheduler()
+    train_dataset = RerankTrainingDataset(df=df, tokenizer=tokenizer, max_len=data_args.query_max_len)
+    # eval_dataset = RerankTrainingDataset()
+
+    loss_fn = nn.BCEWithLogitsLoss(reduction="mean")
+    model = RerankModel(
+        model_args.model_name_or_path,
+        pooling_method=model_args.pooling_method,
+        loss_fn=loss_fn,
+    )
+    # optimizer = get_optimizer()
+    # scheduler = get_scheduler()
 
     trainer = RerankTrainer(
         model=model,
         args=training_args,
         train_dataset=train_dataset,
-        eval_dataset=eval_dataset,
-        tokenizer=tokenizer,
-        data_collator=RerankCollator(),
+        # eval_dataset=eval_dataset,
+        # tokenizer=tokenizer,
+        # data_collator=RerankCollator(),
         compute_metrics=compute_metrics,
     )
-    trainer.optimzier = optimizer
-    trainer.scheduler = scheduler
+    # trainer.optimizer = optimizer
+    # trainer.scheduler = scheduler
 
-    eval_res = trainer.evaluate()
-    print(f"{eval_res=}")
+    # eval_res = trainer.evaluate()
+    # print(f"{eval_res=}")
     trainer.train()
+
+
+if __name__ == "__main__":
+    main()
