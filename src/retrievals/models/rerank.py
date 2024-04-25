@@ -103,7 +103,7 @@ class RerankModel(nn.Module):
         input_ids: torch.Tensor,
         attention_mask: Optional[torch.Tensor] = None,
         labels: Optional[torch.Tensor] = None,
-        return_dict: Optional[bool] = False,
+        return_dict: Optional[bool] = True,
         **kwargs,
     ) -> Union[Dict[str, torch.Tensor], torch.Tensor]:
         features = self.encode(input_ids=input_ids, attention_mask=attention_mask)
