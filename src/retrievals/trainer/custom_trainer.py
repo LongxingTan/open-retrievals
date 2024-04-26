@@ -6,8 +6,14 @@ from typing import Callable, Dict, List, Literal, Optional, Tuple, Union
 
 import numpy as np
 import torch
+
+# from accelerate import Accelerator
+# from accelerate.logging import get_logger
+# from accelerate.utils import set_seed
 from torch import nn
 from tqdm import tqdm
+
+from src.retrievals.trainer.adversarial import AWP, EMA, FGM
 
 logger = logging.getLogger(__name__)
 
@@ -244,14 +250,20 @@ class CustomTrainer(object):
         eval_metrics=None,
         data_collator=None,
         max_grad_norm=10,
+        use_fgm: bool = False,
+        use_awp: bool = False,
+        ema: float = 0,
         **kwargs,
     ):
         logger.info('-------START TO TRAIN-------')
-        # best_score = 0
-        # fgm = FGM(model)
-        # awp = None
-        # ema_inst = EMA(model, 0.999)
-        # ema_inst.register()
+        if use_fgm:
+            fgm = FGM(self.model)
+        elif use_awp:
+            awp = None
+
+        if ema > 0:
+            ema_inst = EMA(self.model, 0.999)
+            ema_inst.register()
 
         for epoch in range(epochs):
             if "dynamic_margin" in kwargs.keys():
@@ -279,6 +291,8 @@ class CustomTrainer(object):
                 criterion=criterion,
                 optimizer=optimizer,
                 batch_scheduler=scheduler,
+                fgm=fgm if use_fgm else None,
+                awp=awp if use_awp else None,
                 apex=self.apex,
                 gradient_accumulation_steps=1,
                 max_grad_norm=max_grad_norm,
