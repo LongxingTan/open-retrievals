@@ -23,3 +23,13 @@ sh finetune_llm.sh
 
 ## RAG
 - [RAG application with retrieval, rerank in langchain](./rag_langchain.py)
+
+
+## Trainer
+
+- customer trainer
+  - support FGM, AWP
+  - support EMA
+
+- transformer trainer
+  - support deepspeed
