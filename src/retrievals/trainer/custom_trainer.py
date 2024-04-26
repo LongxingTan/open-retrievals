@@ -69,7 +69,10 @@ def train_fn(
             if isinstance(preds, dict) and "loss" in preds:
                 loss = preds["loss"]
             else:
-                loss = criterion(preds[0], preds[1])
+                if isinstance(inputs, dict) and 'weights' in inputs:
+                    loss = criterion(preds[0], labels, inputs['weights'])
+                else:
+                    loss = criterion(preds[0], preds[1])
 
         if gradient_accumulation_steps > 1:
             loss = loss / gradient_accumulation_steps
@@ -255,6 +258,8 @@ class CustomTrainer(object):
         use_fgm: bool = False,
         use_awp: bool = False,
         ema_decay: float = 0,
+        dynamic_margin_fn: Optional[Callable] = None,
+        gradient_checkpointing: bool = False,
         **kwargs,
     ):
         logger.info('-------START TO TRAIN-------')
@@ -270,9 +275,12 @@ class CustomTrainer(object):
             ema_inst = EMA(self.model.to(self.device), ema_decay)
             ema_inst.register()
 
+        if gradient_checkpointing:
+            self.model.gradient_checkpointing_enable()
+
         for epoch in range(epochs):
-            if "dynamic_margin" in kwargs.keys():
-                margin = min(0.1 + epoch * 0.02, 0.4)
+            if dynamic_margin_fn:
+                margin = dynamic_margin_fn(epoch)
                 logger.info(f"[Dynamic margin] Epoch: {epoch}, Margin: {margin}")
                 if criterion:
                     criterion.set_margin(margin)
