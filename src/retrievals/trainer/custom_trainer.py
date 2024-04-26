@@ -229,7 +229,7 @@ def inference_fn(test_loader, model, device):
 
 
 class CustomTrainer(object):
-    def __init__(self, model: Union[str, nn.Module], device: Optional[str] = None, apex=False, teacher=None):
+    def __init__(self, model: Union[str, nn.Module], device: Optional[str] = None, apex: bool = False, teacher=None):
         if not device:
             device = "cuda" if torch.cuda.is_available() else "cpu"
         self.device = device
@@ -257,18 +257,21 @@ class CustomTrainer(object):
     ):
         logger.info('-------START TO TRAIN-------')
         if use_fgm:
+            logger.info('[FGM] Use FGM adversarial')
             fgm = FGM(self.model)
         elif use_awp:
-            awp = None
+            logger.info('[AWP] Use AWP adversarial')
+            awp = AWP(self.model, optimizer)
 
         if ema > 0:
+            logger.info('[EMA] Use EMA while training')
             ema_inst = EMA(self.model, 0.999)
             ema_inst.register()
 
         for epoch in range(epochs):
             if "dynamic_margin" in kwargs.keys():
                 margin = min(0.1 + epoch * 0.02, 0.4)
-                logger.info(f"Epoch: {epoch}, Margin: {margin}")
+                logger.info(f"[Dynamic margin] Epoch: {epoch}, Margin: {margin}")
                 if criterion:
                     criterion.set_margin(margin)
                 elif self.model.loss_fn is not None:
