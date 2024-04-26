@@ -134,7 +134,7 @@ def train_fn(
             )
 
         if wandb and step % print_freq == 0:
-            print({"[loss": losses.val, "[lr": optimizer.param_groups[0]["lr"]})
+            logger.info({"[loss": losses.val, "[lr": optimizer.param_groups[0]["lr"]})
 
         if (step + 1) % save_step == 0 and epoch > -1:
             if ema_inst:
@@ -178,7 +178,7 @@ def valid_fn(
             except ValueError:
                 preds = model(inputs)
             else:
-                print('inputs of model should be with or without labels')
+                logger.warning('inputs of model should be with or without labels')
 
             if isinstance(preds, dict) and "loss" in preds:
                 loss = preds["loss"]
@@ -260,14 +260,14 @@ class CustomTrainer(object):
         logger.info('-------START TO TRAIN-------')
         if use_fgm:
             logger.info('[FGM] Use FGM adversarial')
-            fgm = FGM(self.model)
+            fgm = FGM(self.model.to(self.device))
         elif use_awp:
             logger.info('[AWP] Use AWP adversarial')
-            awp = AWP(self.model, optimizer)
+            awp = AWP(self.model.to(self.device), optimizer)
 
         if ema_decay > 0:
             logger.info('[EMA] Use EMA while training')
-            ema_inst = EMA(self.model, ema_decay)
+            ema_inst = EMA(self.model.to(self.device), ema_decay)
             ema_inst.register()
 
         for epoch in range(epochs):
