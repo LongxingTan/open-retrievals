@@ -6,8 +6,14 @@ from typing import Callable, Dict, List, Literal, Optional, Tuple, Union
 
 import numpy as np
 import torch
+
+# from accelerate import Accelerator
+# from accelerate.logging import get_logger
+# from accelerate.utils import set_seed
 from torch import nn
 from tqdm import tqdm
+
+from src.retrievals.trainer.adversarial import AWP, EMA, FGM
 
 logger = logging.getLogger(__name__)
 
@@ -29,12 +35,14 @@ def train_fn(
     print_freq: int = 100,
     wandb: bool = False,
     device: str = "cuda",
+    teacher=None,
+    teacher_loss: Optional[Callable] = None,
     **kwargs,
 ):
+    start = time.time()
     model.train()
     scaler = torch.cuda.amp.GradScaler(enabled=apex)
     losses = AverageMeter()
-    start = time.time()
     global_step = 0
     save_step = int(len(train_loader) / 1)
 
@@ -63,10 +71,20 @@ def train_fn(
             if isinstance(preds, dict) and "loss" in preds:
                 loss = preds["loss"]
             else:
-                loss = criterion(preds[0], preds[1])
+                if isinstance(inputs, dict) and 'weights' in inputs:
+                    loss = criterion(preds[0], labels, inputs['weights'])
+                else:
+                    loss = criterion(preds[0], preds[1])
+
+        if teacher:
+            with torch.no_grad():
+                teacher_output = teacher(inputs)
+                loss_distill = teacher_loss(preds, teacher_output)
+                loss = loss_distill
 
         if gradient_accumulation_steps > 1:
             loss = loss / gradient_accumulation_steps
+
         losses.update(loss.item(), batch_size)
         scaler.scale(loss).backward()
 
@@ -77,6 +95,7 @@ def train_fn(
         # acc = acc.detach().cpu().item()
         # acc_list.append(acc)
 
+        # ---------------------fgm-------------
         if fgm:
             fgm.attack(epsilon=1.0)  # embedding被修改
             with torch.cuda.amp.autocast(enabled=apex):
@@ -90,9 +109,9 @@ def train_fn(
             losses.update(loss_avg.item(), batch_size)
             scaler.scale(loss_avg).backward()
             fgm.restore()  # 恢复Embedding参数
-        # ---------------------fgm-------------
 
         grad_norm = torch.nn.utils.clip_grad_norm_(model.parameters(), max_grad_norm)
+
         if (step + 1) % gradient_accumulation_steps == 0:
             scaler.step(optimizer)
             scaler.update()
@@ -170,7 +189,7 @@ def valid_fn(
             except ValueError:
                 preds = model(inputs)
             else:
-                print('inputs of model should be with or without labels')
+                logger.warning('inputs of model should be with or without labels')
 
             if isinstance(preds, dict) and "loss" in preds:
                 loss = preds["loss"]
@@ -223,15 +242,17 @@ def inference_fn(test_loader, model, device):
 
 
 class CustomTrainer(object):
-    def __init__(self, model: Union[str, nn.Module], device: Optional[str] = None, apex=False, teacher=None):
+    def __init__(self, model: Union[str, nn.Module], device: Optional[str] = None, apex: bool = False, teacher=None):
         if not device:
             device = "cuda" if torch.cuda.is_available() else "cpu"
         self.device = device
         self.model = model
-        self.teacher = teacher
         self.apex = apex
         self.train_fn = train_fn
         self.valid_fn = valid_fn
+        if teacher:
+            self.teacher = teacher.eval()
+            self.teacher_loss = torch.nn.MSELoss()
 
     def train(
         self,
@@ -244,19 +265,33 @@ class CustomTrainer(object):
         eval_metrics=None,
         data_collator=None,
         max_grad_norm=10,
+        use_fgm: bool = False,
+        use_awp: bool = False,
+        ema_decay: float = 0,
+        dynamic_margin_fn: Optional[Callable] = None,
+        gradient_checkpointing: bool = False,
         **kwargs,
     ):
         logger.info('-------START TO TRAIN-------')
-        # best_score = 0
-        # fgm = FGM(model)
-        # awp = None
-        # ema_inst = EMA(model, 0.999)
-        # ema_inst.register()
+        if use_fgm:
+            logger.info('[FGM] Use FGM adversarial')
+            fgm = FGM(self.model.to(self.device))
+        elif use_awp:
+            logger.info('[AWP] Use AWP adversarial')
+            awp = AWP(self.model.to(self.device), optimizer)
+
+        if ema_decay > 0:
+            logger.info('[EMA] Use EMA while training')
+            ema_inst = EMA(self.model.to(self.device), ema_decay)
+            ema_inst.register()
+
+        if gradient_checkpointing:
+            self.model.gradient_checkpointing_enable()
 
         for epoch in range(epochs):
-            if "dynamic_margin" in kwargs.keys():
-                margin = min(0.1 + epoch * 0.02, 0.4)
-                logger.info(f"Epoch: {epoch}, Margin: {margin}")
+            if dynamic_margin_fn:
+                margin = dynamic_margin_fn(epoch)
+                logger.info(f"[Dynamic margin] Epoch: {epoch}, Margin: {margin}")
                 if criterion:
                     criterion.set_margin(margin)
                 elif self.model.loss_fn is not None:
@@ -279,6 +314,9 @@ class CustomTrainer(object):
                 criterion=criterion,
                 optimizer=optimizer,
                 batch_scheduler=scheduler,
+                fgm=fgm if use_fgm else None,
+                awp=awp if use_awp else None,
+                ema_inst=ema_inst if ema_decay > 0 else None,
                 apex=self.apex,
                 gradient_accumulation_steps=1,
                 max_grad_norm=max_grad_norm,
