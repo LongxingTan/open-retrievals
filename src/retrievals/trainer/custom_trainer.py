@@ -35,6 +35,8 @@ def train_fn(
     print_freq: int = 100,
     wandb: bool = False,
     device: str = "cuda",
+    teacher=None,
+    teacher_loss: Optional[Callable] = None,
     **kwargs,
 ):
     start = time.time()
@@ -73,6 +75,12 @@ def train_fn(
                     loss = criterion(preds[0], labels, inputs['weights'])
                 else:
                     loss = criterion(preds[0], preds[1])
+
+        if teacher:
+            with torch.no_grad():
+                teacher_output = teacher(inputs)
+                loss_distill = teacher_loss(preds, teacher_output)
+                loss = loss_distill
 
         if gradient_accumulation_steps > 1:
             loss = loss / gradient_accumulation_steps
@@ -137,7 +145,7 @@ def train_fn(
             )
 
         if wandb and step % print_freq == 0:
-            logger.info({"[loss": losses.val, "[lr": optimizer.param_groups[0]["lr"]})
+            print({"[loss": losses.val, "[lr": optimizer.param_groups[0]["lr"]})
 
         if (step + 1) % save_step == 0 and epoch > -1:
             if ema_inst:
@@ -239,10 +247,12 @@ class CustomTrainer(object):
             device = "cuda" if torch.cuda.is_available() else "cpu"
         self.device = device
         self.model = model
-        self.teacher = teacher
         self.apex = apex
         self.train_fn = train_fn
         self.valid_fn = valid_fn
+        if teacher:
+            self.teacher = teacher.eval()
+            self.teacher_loss = torch.nn.MSELoss()
 
     def train(
         self,
