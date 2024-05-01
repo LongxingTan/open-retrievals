@@ -1,7 +1,6 @@
 import logging
 from typing import Any, Callable, Dict, Iterable, List, Literal, Optional, Tuple, Union
 
-import faiss
 import numpy as np
 import pandas as pd
 import torch
@@ -95,7 +94,11 @@ class AutoModelForEmbedding(nn.Module):
                 self.config = AutoConfig.from_pretrained(
                     model_name_or_path, output_hidden_states=True, trust_remote_code=trust_remote_code
                 )
-                self.model = AutoModel.from_config(self.config)
+            else:
+                self.config = AutoConfig.from_pretrained(
+                    config_path, output_hidden_states=True, trust_remote_code=trust_remote_code
+                )
+            self.model = AutoModel.from_config(self.config)
         self.loss_fn = loss_fn
 
         if max_length is None:
@@ -382,6 +385,8 @@ class AutoModelForEmbedding(nn.Module):
         return all_embeddings
 
     def build_index(self, inputs: BatchEncoding, batch_size: int = 128, use_gpu: bool = True):
+        import faiss
+
         embeddings = self.encode(inputs, batch_size=batch_size)
         embeddings = np.asarray(embeddings, dtype=np.float32)
         index = faiss.IndexFlatL2(len(embeddings[0]))
