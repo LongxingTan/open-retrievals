@@ -3,6 +3,7 @@ from typing import Any, Callable, Dict, Iterable, List, Literal, Optional, Tuple
 
 import faiss
 import numpy as np
+import pandas as pd
 import torch
 import torch.nn as nn
 from numpy import ndarray
@@ -221,7 +222,7 @@ class AutoModelForEmbedding(nn.Module):
                 device=device,
                 normalize_embeddings=normalize_embeddings,
             )
-        elif isinstance(inputs, (str, List, Tuple)):
+        elif isinstance(inputs, (str, List, Tuple, pd.Series)):
             return self.encode_from_text(
                 sentences=inputs,
                 batch_size=batch_size,
@@ -233,7 +234,7 @@ class AutoModelForEmbedding(nn.Module):
                 normalize_embeddings=normalize_embeddings,
             )
         else:
-            raise ValueError
+            raise ValueError(f'Input type: {type(inputs)}')
 
     def embed_documents(self, texts: List[str]) -> List[List[float]]:
         """Compute doc embeddings using a HuggingFace transformer model."""
