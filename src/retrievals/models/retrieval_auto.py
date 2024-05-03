@@ -63,9 +63,9 @@ class AutoModelForRetrieval(object):
             document_ids = document_ids.values
 
         retrieval = {
-            'query': np.repeat(query_ids, self.top_k),
-            'document': document_ids[indices.ravel()],
-            'scores': dists.ravel(),
+            'query_id': np.repeat(query_ids, self.top_k),
+            'document_id': document_ids[indices.ravel()],
+            'score': dists.ravel(),
         }
         return pd.DataFrame(retrieval)
 
