@@ -181,13 +181,18 @@ class AutoModelForEmbedding(nn.Module):
             outputs["sentence_embedding"] = loss_output["sentence_embedding"]
             return outputs
 
-    def forward_from_loader(self, inputs):
+    def forward_from_loader(self, inputs, without_pooling: bool = False):
         model_output = self.model(inputs['input_ids'], inputs['attention_mask'])
-        if self.pooling is not None:
-            if 'last_hidden_state' in model_output:
-                last_hidden_state = model_output['last_hidden_state']
+        if self.pooling is not None and not without_pooling:
+            if 'hidden_states' not in model_output:
+                if 'last_hidden_state' in model_output:
+                    last_hidden_state = model_output['last_hidden_state']
+                else:
+                    last_hidden_state = model_output[0]
             else:
-                last_hidden_state = model_output[0]
+                hidden_states = model_output['hidden_states']
+                last_hidden_state = torch.cat([hidden_states[0], hidden_states[-1]])
+                # last_hidden_state = (hidden_states[0] + hidden_states[-1]) / 2.
             embeddings = self.pooling(last_hidden_state, inputs["attention_mask"])
 
             if self.normalize_embeddings:
@@ -507,7 +512,9 @@ class PairwiseModel(AutoModelForEmbedding):
             ids = torch.cat([ids1, ids2], dim=0)
             mask = torch.cat([mask1, mask2], dim=0)
 
-            transformer_out = super().forward_from_loader({"input_ids": ids, "attention_mask": mask})
+            transformer_out = super().forward_from_loader(
+                {"input_ids": ids, "attention_mask": mask}, without_pooling=True
+            )
             pooled_output = self.pooling(transformer_out[0], mask)
             pooled_output1 = pooled_output[: len(ids1), :]
             pooled_output2 = pooled_output[len(ids1) :, :]

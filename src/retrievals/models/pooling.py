@@ -52,7 +52,6 @@ class ClsTokenPooling(nn.Module):
 
     def __init__(self):
         super().__init__()
-        self.feat_mult = 1
 
     def forward(
         self,
@@ -118,7 +117,6 @@ class GeMText(nn.Module):
         self.dim = dim
         self.p = nn.Parameter(torch.ones(1) * p)
         self.eps = eps
-        self.feat_mult = 1
 
     def forward(
         self,
