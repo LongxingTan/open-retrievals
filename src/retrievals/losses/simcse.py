@@ -14,11 +14,15 @@ logger = logging.getLogger(__name__)
 
 
 class SimCSE(nn.Module):
-    def __init__(self, criterion: Union[nn.Module, Callable], temperature: float = 0.05):
+    def __init__(
+        self, criterion: Union[nn.Module, Callable], temperature: float = 0.05, dynamic_temperature: bool = False
+    ):
         super().__init__()
-        # TODO: dynamic_temperature
         self.criterion = criterion
         self.temperature = temperature
+        if dynamic_temperature:
+            # TODO: dynamic_temperature
+            self.temperature = nn.Parameter(torch.tensor(temperature))
 
     def forward(
         self,
