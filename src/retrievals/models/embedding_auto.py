@@ -68,7 +68,7 @@ class AutoModelForEmbedding(nn.Module):
         model_name_or_path: str,
         pretrained: bool = True,
         config_path: Optional[str] = None,
-        pooling_method: str = "cls",
+        pooling_method: Optional[str] = "cls",
         normalize_embeddings: bool = False,
         max_length: Optional[int] = None,
         loss_fn: Optional[Callable] = None,
@@ -128,7 +128,7 @@ class AutoModelForEmbedding(nn.Module):
             self.device = device
 
         self.normalize_embeddings = normalize_embeddings
-        self.pooling = AutoPooling(pooling_method)
+        self.pooling = AutoPooling(pooling_method) if pooling_method else None
 
         # self.fc = nn.Linear(768, 1)
         # self._init_weights(self.fc)
@@ -189,6 +189,7 @@ class AutoModelForEmbedding(nn.Module):
                 embeddings = torch.nn.functional.normalize(embeddings, p=2, dim=1)
 
             return embeddings
+        return model_output
 
     def forward_from_text(self, texts):
         batch_dict = self.tokenizer(
@@ -468,12 +469,13 @@ class PairwiseModel(AutoModelForEmbedding):
     ) -> None:
         super().__init__(
             model_name_or_path=model_name_or_path,
-            pooling_method=pooling_method,
+            pooling_method=None,
             normalize_embeddings=normalize_embeddings,
             query_instruction=query_instruction,
             use_fp16=use_fp16,
             loss_fn=None,
         )
+        self.pooling = AutoPooling(pooling_method) if pooling_method else None
         if loss_fn is not None:
             logger.warning("loss_fn in Pairwise embed model, which will be ignored")
 
