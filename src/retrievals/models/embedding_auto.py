@@ -113,6 +113,7 @@ class AutoModelForEmbedding(nn.Module):
 
         if use_fp16:
             self.model.half()
+
         if use_lora:
             # peft config and wrapping
             from peft import LoraConfig, TaskType, get_peft_model
@@ -485,7 +486,7 @@ class PairwiseModel(AutoModelForEmbedding):
 
     def forward(
         self,
-        inputs: List[torch.Tensor],
+        inputs,
         labels: Optional[torch.LongTensor] = None,
         output_attentions: Optional[bool] = None,
         output_hidden_states: Optional[bool] = None,
@@ -502,7 +503,7 @@ class PairwiseModel(AutoModelForEmbedding):
             ids = torch.cat([ids1, ids2], dim=0)
             mask = torch.cat([mask1, mask2], dim=0)
 
-            transformer_out = super().forward({"input_ids": ids, "attention_mask": mask})
+            transformer_out = super().forward_from_loader({"input_ids": ids, "attention_mask": mask})
             pooled_output = self.pooling(transformer_out[0], mask)
             pooled_output1 = pooled_output[: len(ids1), :]
             pooled_output2 = pooled_output[len(ids1) :, :]
