@@ -69,6 +69,33 @@ class AutoModelForRetrieval(object):
         }
         return pd.DataFrame(retrieval)
 
+    def get_rerank_data(self, pred_df):
+        logger.info('Generate rerank samples based on the retrieval prediction with: query_id, document_ids, pred_ids')
+
+        samples = []
+        for _, row in tqdm(pred_df.iterrows(), total=len(pred_df)):
+            query_id = row['query_id']
+            document_ids = row['document_ids']
+            if pd.isna(row['pred_ids']):
+                print(' Error 1 , no pred_ids ...')
+                continue
+            else:
+                pred_ids_list = row['pred_ids'].split()
+
+            if pd.isna(document_ids):
+                print(' Error 2 , no label document_ids ...')
+                for id in pred_ids_list:
+                    samples.append({'query_id': query_id, 'document_id': id, 'label': 0})
+            else:
+                contents = document_ids.split()
+                for id in pred_ids_list:
+                    if id not in contents:
+                        samples.append({'query_id': query_id, 'document_id': id, 'label': 0})
+                    else:
+                        samples.append({'query_id': query_id, 'content_id': id, 'label': 1})
+
+        return pd.DataFrame(samples)
+
 
 class EnsembleRetriever(object):
     def __init__(self, retrievers, weights=None):

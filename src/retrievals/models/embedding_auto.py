@@ -497,8 +497,6 @@ class PairwiseModel(AutoModelForEmbedding):
         if self.cross_encoder:
             ids1, mask1 = input1['input_ids'], input1['attention_mask']
             ids2, mask2 = input2['input_ids'], input2['attention_mask']
-            # ids1, mask1 = input1
-            # ids2, mask2 = input2
             ids = torch.cat([ids1, ids2], dim=0)
             mask = torch.cat([mask1, mask2], dim=0)
 
