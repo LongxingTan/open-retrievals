@@ -87,12 +87,12 @@ class AutoModelForRetrieval(object):
                 for id in pred_ids_list:
                     samples.append({'query_id': query_id, 'document_id': id, 'label': 0})
             else:
-                contents = document_ids.split()
+                documents = document_ids.split()
                 for id in pred_ids_list:
-                    if id not in contents:
+                    if id not in documents:
                         samples.append({'query_id': query_id, 'document_id': id, 'label': 0})
                     else:
-                        samples.append({'query_id': query_id, 'content_id': id, 'label': 1})
+                        samples.append({'query_id': query_id, 'document_id': id, 'label': 1})
 
         return pd.DataFrame(samples)
 
