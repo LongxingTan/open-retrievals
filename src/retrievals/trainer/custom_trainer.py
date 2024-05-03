@@ -270,9 +270,14 @@ class CustomTrainer(object):
         ema_decay: float = 0,
         dynamic_margin_fn: Optional[Callable] = None,
         gradient_checkpointing: bool = False,
+        resume_from_checkpoint: Optional[Union[str, bool]] = None,
         **kwargs,
     ):
         logger.info('-------START TO TRAIN-------')
+        if resume_from_checkpoint is not None:
+            checkpoint = torch.load(resume_from_checkpoint)
+            self.model.load_state_dict(checkpoint['model'])
+
         if use_fgm:
             logger.info('[FGM] Use FGM adversarial')
             fgm = FGM(self.model.to(self.device))

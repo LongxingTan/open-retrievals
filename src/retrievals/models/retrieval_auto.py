@@ -1,7 +1,6 @@
 import logging
 from typing import Literal, Optional, Union
 
-import faiss
 import numpy as np
 import pandas as pd
 import torch
@@ -32,6 +31,8 @@ class AutoModelForRetrieval(object):
             logging.warning('Please provide document_embed for knn/tensor search or index_path for faiss search')
             return
         if index_path is not None:
+            import faiss
+
             faiss_index = faiss.read_index(index_path)
             dists, indices = faiss_search(
                 query_embeddings=query_embed,
@@ -62,11 +63,38 @@ class AutoModelForRetrieval(object):
             document_ids = document_ids.values
 
         retrieval = {
-            'query': np.repeat(query_ids, self.top_k),
-            'document': document_ids[indices.ravel()],
-            'scores': dists.ravel(),
+            'query_id': np.repeat(query_ids, self.top_k),
+            'document_id': document_ids[indices.ravel()],
+            'score': dists.ravel(),
         }
         return pd.DataFrame(retrieval)
+
+    def get_rerank_data(self, pred_df):
+        logger.info('Generate rerank samples based on the retrieval prediction with: query_id, document_ids, pred_ids')
+
+        samples = []
+        for _, row in tqdm(pred_df.iterrows(), total=len(pred_df)):
+            query_id = row['query_id']
+            document_ids = row['document_ids']
+            if pd.isna(row['pred_ids']):
+                print(' Error 1 , no pred_ids ...')
+                continue
+            else:
+                pred_ids_list = row['pred_ids'].split()
+
+            if pd.isna(document_ids):
+                print(' Error 2 , no label document_ids ...')
+                for id in pred_ids_list:
+                    samples.append({'query_id': query_id, 'document_id': id, 'label': 0})
+            else:
+                documents = document_ids.split()
+                for id in pred_ids_list:
+                    if id not in documents:
+                        samples.append({'query_id': query_id, 'document_id': id, 'label': 0})
+                    else:
+                        samples.append({'query_id': query_id, 'document_id': id, 'label': 1})
+
+        return pd.DataFrame(samples)
 
 
 class EnsembleRetriever(object):
@@ -119,7 +147,7 @@ def cosine_similarity_search(
 
 def faiss_search(
     query_embeddings,
-    faiss_index: faiss.Index,
+    faiss_index,
     top_k: int = 100,
     batch_size: int = 128,
     max_length: int = 512,
@@ -146,57 +174,3 @@ def faiss_search(
     all_scores = np.concatenate(all_scores, axis=0)
     all_indices = np.concatenate(all_indices, axis=0)
     return all_scores, all_indices
-
-
-class FaissIndex:
-    def __init__(self, device) -> None:
-        if isinstance(device, torch.device):
-            if device.index is None:
-                device = "cpu"
-            else:
-                device = device.index
-        self.device = device
-
-    def build(self, encoded_corpus, index_factory, metric):
-        if metric == "l2":
-            metric = faiss.METRIC_L2
-        elif metric in ["ip", "cos"]:
-            metric = faiss.METRIC_INNER_PRODUCT
-        else:
-            raise NotImplementedError(f"Metric {metric} not implemented!")
-
-        index = faiss.index_factory(encoded_corpus.shape[1], index_factory, metric)
-
-        if self.device != "cpu":
-            co = faiss.GpuClonerOptions()
-            co.useFloat16 = True
-            # logger.info("using fp16 on GPU...")
-            index = faiss.index_cpu_to_gpu(faiss.StandardGpuResources(), self.device, index, co)
-
-        logging.info("training index...")
-        index.train(encoded_corpus)
-        logging.info("adding embeddings...")
-        index.add(encoded_corpus)
-        self.index = index
-        return index
-
-    def load(self, index_path):
-        logging.info(f"loading index from {index_path}...")
-        index = faiss.read_index(index_path)
-        if self.device != "cpu":
-            co = faiss.GpuClonerOptions()
-            co.useFloat16 = True
-            index = faiss.index_cpu_to_gpu(faiss.StandardGpuResources(), self.device, index, co)
-        self.index = index
-        return index
-
-    def save(self, index_path):
-        logging.info(f"saving index at {index_path}...")
-        if isinstance(self.index, faiss.GpuIndex):
-            index = faiss.index_gpu_to_cpu(self.index)
-        else:
-            index = self.index
-        faiss.write_index(index, index_path)
-
-    def search(self, query, hits):
-        return self.index.search(query, k=hits)

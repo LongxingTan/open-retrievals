@@ -32,7 +32,7 @@ class MeanPooling(nn.Module):
         last hidden state: First element of model_output contains all token embeddings
         """
         # last_hidden_state = model_output[0]
-        attention_mask = attention_mask.unsqueeze(-1).expand(last_hidden_state.size()).float()
+        attention_mask = attention_mask.unsqueeze(-1).float()
         sum_embeddings = torch.sum(last_hidden_state * attention_mask, 1)
         sum_mask = torch.clamp(attention_mask.sum(1), min=1e-9)
         mean_embeddings = sum_embeddings / sum_mask

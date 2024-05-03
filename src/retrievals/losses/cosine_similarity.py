@@ -47,3 +47,15 @@ class Similarity(nn.Module):
 
     def forward(self, x, y):
         return self.cos(x, y) / self.temp
+
+
+class ContrastiveLoss(nn.Module):
+    def __init__(self, margin=0.5):
+        super(ContrastiveLoss, self).__init__()
+        self.margin = margin
+
+    def forward(self, pred: torch.Tensor, label: torch.Tensor):
+        distance = 1.0 - pred
+        loss = label.float() * distance.pow(2) + (1 - label).float() * torch.clamp(self.margin - distance, min=0).pow(2)
+
+        return loss.sum()

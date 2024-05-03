@@ -3,6 +3,9 @@ import torch.nn as nn
 
 
 class PearsonLoss(nn.Module):
+    def __init__(self):
+        super(PearsonLoss, self).__init__()
+
     def forward(self, x, y):
         mean_x = torch.mean(x)
         mean_y = torch.mean(y)

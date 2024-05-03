@@ -1,8 +1,8 @@
 import logging
 from typing import Any, Callable, Dict, Iterable, List, Literal, Optional, Tuple, Union
 
-import faiss
 import numpy as np
+import pandas as pd
 import torch
 import torch.nn as nn
 from numpy import ndarray
@@ -94,7 +94,11 @@ class AutoModelForEmbedding(nn.Module):
                 self.config = AutoConfig.from_pretrained(
                     model_name_or_path, output_hidden_states=True, trust_remote_code=trust_remote_code
                 )
-                self.model = AutoModel.from_config(self.config)
+            else:
+                self.config = AutoConfig.from_pretrained(
+                    config_path, output_hidden_states=True, trust_remote_code=trust_remote_code
+                )
+            self.model = AutoModel.from_config(self.config)
         self.loss_fn = loss_fn
 
         if max_length is None:
@@ -221,7 +225,7 @@ class AutoModelForEmbedding(nn.Module):
                 device=device,
                 normalize_embeddings=normalize_embeddings,
             )
-        elif isinstance(inputs, (str, List, Tuple)):
+        elif isinstance(inputs, (str, List, Tuple, pd.Series)):
             return self.encode_from_text(
                 sentences=inputs,
                 batch_size=batch_size,
@@ -233,7 +237,7 @@ class AutoModelForEmbedding(nn.Module):
                 normalize_embeddings=normalize_embeddings,
             )
         else:
-            raise ValueError
+            raise ValueError(f'Input type: {type(inputs)}')
 
     def embed_documents(self, texts: List[str]) -> List[List[float]]:
         """Compute doc embeddings using a HuggingFace transformer model."""
@@ -381,6 +385,8 @@ class AutoModelForEmbedding(nn.Module):
         return all_embeddings
 
     def build_index(self, inputs: BatchEncoding, batch_size: int = 128, use_gpu: bool = True):
+        import faiss
+
         embeddings = self.encode(inputs, batch_size=batch_size)
         embeddings = np.asarray(embeddings, dtype=np.float32)
         index = faiss.IndexFlatL2(len(embeddings[0]))
@@ -489,8 +495,8 @@ class PairwiseModel(AutoModelForEmbedding):
             input3 = inputs[2]
 
         if self.cross_encoder:
-            ids1, mask1 = input1
-            ids2, mask2 = input2
+            ids1, mask1 = input1['input_ids'], input1['attention_mask']
+            ids2, mask2 = input2['input_ids'], input2['attention_mask']
             ids = torch.cat([ids1, ids2], dim=0)
             mask = torch.cat([mask1, mask2], dim=0)
 
@@ -524,8 +530,29 @@ class ListwiseModel(AutoModelForEmbedding):
     segment_id
     """
 
-    def __init__(self, **kwargs) -> None:
-        super().__init__(**kwargs)
+    def __init__(
+        self,
+        model_name_or_path: str,
+        pooling_method: str = "cls",
+        listwise_pooling: bool = False,
+        num_segments: Optional[int] = None,
+        normalize_embeddings: bool = False,
+        query_instruction: Optional[str] = None,
+        use_fp16: bool = False,
+        temperature: float = 0,
+        dynamic_temperature: bool = False,
+        loss_fn: Union[nn.Module, Callable] = None,
+    ) -> None:
+        super().__init__(
+            model_name_or_path=model_name_or_path,
+            pooling_method=pooling_method,
+            normalize_embeddings=normalize_embeddings,
+            query_instruction=query_instruction,
+            use_fp16=use_fp16,
+            loss_fn=None,
+        )
+        self.pooling_method = pooling_method
+        self.num_segments = num_segments
 
     def forward(
         self,
@@ -535,4 +562,22 @@ class ListwiseModel(AutoModelForEmbedding):
         output_hidden_states: Optional[bool] = None,
         return_dict: Optional[bool] = None,
     ):
-        return
+        encoding = super().forward(inputs)
+
+        res = dict()
+        if self.pooling_method == 'unsorted_segment_mean':
+            encoding = unsorted_segment_mean(
+                encoding, segment_ids=inputs['segment_ids'], num_segments=self.num_segments
+            )
+            res['pred'] = self.fc(encoding[:, 1:])
+        else:
+            encodings = []
+            for i in range(self.num_segments):
+                mask_ = (inputs['segment_ids'] == i + 1).int()
+                encoding_ = self.pooling(encoding, mask_)
+                encoding_ = self.fc(encoding_)
+                encodings.append(encoding_)
+            res['pred'] = torch.stack(encodings, 1)
+
+        res['pred'] = res['pred'].squeeze(-1)
+        return res
