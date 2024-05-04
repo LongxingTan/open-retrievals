@@ -74,6 +74,8 @@ class AutoModelForEmbedding(nn.Module):
         loss_fn: Optional[Callable] = None,
         query_instruction: Optional[str] = None,
         document_instruction: Optional[str] = None,
+        hidden_dropout_prob: float = 0.1,
+        attention_dropout_prob: float = 0.1,
         generation_args: Dict = None,
         use_fp16: bool = False,
         use_lora: bool = False,
@@ -87,17 +89,23 @@ class AutoModelForEmbedding(nn.Module):
             model_name_or_path, return_tensors=False, trust_remote_code=trust_remote_code
         )
 
+        if config_path:
+            self.config = AutoConfig.from_pretrained(
+                config_path, output_hidden_states=True, trust_remote_code=trust_remote_code
+            )
+        elif hidden_dropout_prob > 0 or attention_dropout_prob > 0:
+            self.config = AutoConfig.from_pretrained(
+                model_name_or_path, output_hidden_states=True, trust_remote_code=trust_remote_code
+            )
+            self.config.update(
+                {"hidden_dropout_prob": hidden_dropout_prob, "attention_probs_dropout_prob": attention_dropout_prob}
+            )
+
         if pretrained:
-            self.model = AutoModel.from_pretrained(model_name_or_path, trust_remote_code=trust_remote_code)
+            self.model = AutoModel.from_pretrained(
+                model_name_or_path, config=self.config, trust_remote_code=trust_remote_code
+            )
         else:
-            if config_path is None:
-                self.config = AutoConfig.from_pretrained(
-                    model_name_or_path, output_hidden_states=True, trust_remote_code=trust_remote_code
-                )
-            else:
-                self.config = AutoConfig.from_pretrained(
-                    config_path, output_hidden_states=True, trust_remote_code=trust_remote_code
-                )
             self.model = AutoModel.from_config(self.config)
         self.loss_fn = loss_fn
 
@@ -479,15 +487,14 @@ class PairwiseModel(AutoModelForEmbedding):
     ) -> None:
         super().__init__(
             model_name_or_path=model_name_or_path,
-            pooling_method=None,
+            pooling_method=pooling_method,
             normalize_embeddings=normalize_embeddings,
             query_instruction=query_instruction,
             use_fp16=use_fp16,
             loss_fn=None,
         )
-        self.pooling = AutoPooling(pooling_method) if pooling_method else None
         if loss_fn is not None:
-            logger.warning("loss_fn in Pairwise embed model, which will be ignored")
+            logger.warning("loss_fn in Pairwise model will be ignored")
 
         self.cross_encoder = cross_encoder
         self.temperature = temperature
