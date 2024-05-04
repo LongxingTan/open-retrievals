@@ -192,15 +192,14 @@ class AutoModelForEmbedding(nn.Module):
     def forward_from_loader(self, inputs, without_pooling: bool = False):
         model_output = self.model(inputs['input_ids'], inputs['attention_mask'])
         if self.pooling is not None and not without_pooling:
-            if 'hidden_states' not in model_output:
-                if 'last_hidden_state' in model_output:
-                    last_hidden_state = model_output['last_hidden_state']
-                else:
-                    last_hidden_state = model_output[0]
+            if 'last_hidden_state' in model_output:
+                last_hidden_state = model_output['last_hidden_state']
+            elif 'hidden_states' not in model_output:
+                last_hidden_state = model_output[0]
             else:
                 hidden_states = model_output['hidden_states']
-                last_hidden_state = torch.cat([hidden_states[0], hidden_states[-1]])
-                # last_hidden_state = (hidden_states[0] + hidden_states[-1]) / 2.
+                # last_hidden_state = torch.cat([hidden_states[0], hidden_states[-1]])
+                last_hidden_state = (hidden_states[0] + hidden_states[-1]) / 2.0
             embeddings = self.pooling(last_hidden_state, inputs["attention_mask"])
 
             if self.normalize_embeddings:
