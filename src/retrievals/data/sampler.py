@@ -123,7 +123,9 @@ class GroupSortedBatchSampler(BatchSampler):
 
         for idx in self.sampler:
             indices.append(idx)
-        self.rng.shuffle(indices)
+
+        # if self.shuffle:
+        #     self.rng.shuffle(indices)
 
         for idx in indices:
             group_id = self.group_ids[idx]
@@ -135,11 +137,7 @@ class GroupSortedBatchSampler(BatchSampler):
         l = list(zip(group_indices, indices))
         l.sort()
 
-        batches = []
-        for _, idx in l:
-            batches.append([idx])
-
-        l = np.asarray(l)
+        l = np.asarray([i[-1] for i in l])
         batches = split_batches(l, self.batch_size, drop_last=self.drop_last)
         for batch in batches:
             self.batches.append(list(batch))
@@ -175,8 +173,8 @@ class DistributedBucketSampler(torch.utils.data.distributed.DistributedSampler):
         return
 
 
-def split_batches(a, batch_size, drop_last=False):
-    l = np.split(a, np.arange(batch_size, len(a), batch_size))
+def split_batches(inputs, batch_size: int, drop_last: bool = False):
+    l = np.split(inputs, np.arange(batch_size, len(inputs), batch_size))
     if drop_last:
         if len(l[-1]) != batch_size:
             l = l[:-1]
