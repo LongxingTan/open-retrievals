@@ -87,12 +87,15 @@ class GroupedBatchSampler(BatchSampler):
 
 
 class GroupSortedBatchSampler(BatchSampler):
-    def __init__(self, sampler, group_ids, batch_size, shuffle: bool = True, seed: Optional[int] = None):
+    def __init__(
+        self, sampler, group_ids, batch_size, shuffle: bool = True, drop_last: bool = False, seed: Optional[int] = None
+    ):
         self.sampler = sampler
         self.group_ids = np.asarray(group_ids)
         assert self.group_ids.ndim == 1
         self.batch_size = batch_size
         self.shuffle = shuffle
+        self.drop_last = drop_last
         groups = np.unique(self.group_ids).tolist()
 
         self.batches = []
