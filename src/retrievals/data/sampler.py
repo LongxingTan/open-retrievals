@@ -1,24 +1,43 @@
+"""
+reference
+- gezi @ kaggle
+- https://github.com/Lightning-AI/pytorch-lightning/issues/18391
+"""
+
+import logging
+from typing import Optional
+
 import numpy as np
 import torch
 from torch.utils.data.sampler import BatchSampler, Sampler
+
+logger = logging.getLogger(__name__)
 
 
 class GroupedBatchSampler(BatchSampler):
     """
     It enforces that the batch only contain elements from the same group.
     shuffle should be set to False for custom sampler
-    refer: https://github.com/facebookresearch/detectron2/blob/main/detectron2/data/samplers/grouped_batch_sampler.py
     """
 
-    def __init__(self, sampler, group_ids, batch_size):
+    def __init__(self, sampler, group_ids, batch_size, shuffle: bool = True, seed: Optional[int] = None):
+        """
+        sampler (Sampler): Base sampler.
+        group_ids (list[int]): If the sampler produces indices in range [0, N),
+            `group_ids` must be a list of `N` ints which contains the group id of each sample.
+            The group ids must be a set of integers in the range [0, num_groups).
+        batch_size (int): Size of mini-batch.
+        """
         self.sampler = sampler
         self.group_ids = np.asarray(group_ids)
         assert self.group_ids.ndim == 1
         self.batch_size = batch_size
+        self.shuffle = shuffle
         groups = np.unique(self.group_ids).tolist()
 
         # buffer the indices of each group until batch size is reached
         self.buffer_per_group = {k: [] for k in groups}
+        self.rng = np.random.default_rng(seed)
 
     def __iter__(self):
         for idx in self.sampler:
@@ -30,7 +49,41 @@ class GroupedBatchSampler(BatchSampler):
                 del group_buffer[:]
 
     def __len__(self):
-        return
+        return (len(self.sampler) + self.batch_size - 1) // self.batch_size
+
+    def _create_batches(self):
+        indices = [idx for idx in self.sampler]
+        self.rng.shuffle(indices)
+
+        for idx in indices:
+            group_id = self.group_ids[idx]
+
+            group_buffer = self.buffer_per_group[group_id]
+            visited = self.visited_per_group[group_id]
+
+            added = False
+            for i, visited_set in enumerate(visited):
+                added = True
+                group_buffer[i].append(idx)
+                if len(group_buffer[i]) == self.batch_size:
+                    self.batches.append(group_buffer[i])
+                    group_buffer[i] = None
+                    visited[i] = None
+                break
+
+            self.buffer_per_group[group_id] = [x for x in group_buffer if x is not None]
+            self.visited_per_group[group_id] = [x for x in visited if x is not None]
+            if not added:
+                self.buffer_per_group[group_id].append([idx])
+                self.visited_per_group[group_id].append(set())
+
+        if self.shuffle:
+            self.rng.shuffle(self.batches)
+
+    def _clear(self):
+        self.batches = []
+        self.buffer_per_group = {k: [] for k in self.groups}
+        self.visited_per_group = {k: [] for k in self.groups}
 
 
 class GroupSortedBatchSampler(BatchSampler):

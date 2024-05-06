@@ -5,8 +5,9 @@ import torch.nn as nn
 
 
 class MultiLabelCircleLoss(nn.Module):
-    def __init__(self):
+    def __init__(self, reduction='mean'):
         super().__init__()
+        self.reduction = reduction
         self.inf = 1e12
 
     def forward(self, logits: torch.Tensor, labels: torch.Tensor, mask: Optional[torch.Tensor] = None):
@@ -21,6 +22,6 @@ class MultiLabelCircleLoss(nn.Module):
         loss = neg_loss + pos_loss
         if mask is not None:
             loss /= mask.sum(-1).float() + 1e-12
-        if "mean" == self.reduction:
+        if self.reduction == 'mean':
             loss = loss.mean()
         return loss
