@@ -87,14 +87,62 @@ class GroupedBatchSampler(BatchSampler):
 
 
 class GroupSortedBatchSampler(BatchSampler):
-    def __init__(self):
-        pass
+    def __init__(self, sampler, group_ids, batch_size, shuffle: bool = True, seed: Optional[int] = None):
+        self.sampler = sampler
+        self.group_ids = np.asarray(group_ids)
+        assert self.group_ids.ndim == 1
+        self.batch_size = batch_size
+        self.shuffle = shuffle
+        groups = np.unique(self.group_ids).tolist()
 
-    def __int__(self):
-        pass
+        # buffer the indices of each group until batch size is reached
+        self.buffer_per_group = {k: [] for k in groups}
+        self.rng = np.random.default_rng(seed)
+
+    def __iter__(self):
+        if not self.batches:
+            self._create_batches()
+        for batch in self.batches:
+            yield batch
+        self._clear()
 
     def __len__(self):
-        return
+        if not self.batches:
+            self._create_batches()
+        return len(self.batches)
+
+    def _create_batches(self):
+        indices = []
+        group_id_map = dict()
+        group_idx = 0
+        group_indices = []
+
+        for idx in self.sampler:
+            indices.append(idx)
+        self.rng.shuffle(indices)
+
+        for idx in indices:
+            group_id = self.group_ids[idx]
+            if group_id not in group_id_map:
+                group_id_map[group_id] = group_idx
+                group_idx += 1
+            group_indices.append(group_id_map[group_id])
+
+        l = list(zip(group_indices, indices))
+        l.sort()
+
+        batches = []
+        for _, idx in l:
+            batches.append([idx])
+
+        l = np.asarray(l)
+        batches = split_batches(l, self.batch_size, drop_last=self.drop_last)
+        for batch in batches:
+            self.batches.append(list(batch))
+
+    def _clear(self):
+        self.batches = []
+        # self.buffer_per_group = {k: [] for k in self.groups}
 
 
 class DistributedBucketSampler(torch.utils.data.distributed.DistributedSampler):
@@ -121,3 +169,11 @@ class DistributedBucketSampler(torch.utils.data.distributed.DistributedSampler):
 
     def __len__(self):
         return
+
+
+def split_batches(a, batch_size, drop_last=False):
+    l = np.split(a, np.arange(batch_size, len(a), batch_size))
+    if drop_last:
+        if len(l[-1]) != batch_size:
+            l = l[:-1]
+    return l
