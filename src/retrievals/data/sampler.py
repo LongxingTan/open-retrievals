@@ -95,6 +95,7 @@ class GroupSortedBatchSampler(BatchSampler):
         self.shuffle = shuffle
         groups = np.unique(self.group_ids).tolist()
 
+        self.batches = []
         # buffer the indices of each group until batch size is reached
         self.buffer_per_group = {k: [] for k in groups}
         self.rng = np.random.default_rng(seed)
