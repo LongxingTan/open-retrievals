@@ -15,15 +15,21 @@ logger = logging.getLogger(__name__)
 
 
 class InfoNCE(nn.Module):
+    """
+    https://github.com/RElbers/info-nce-pytorch
+    """
+
     def __init__(
         self,
         criterion: Union[nn.Module, Callable, None] = None,
-        temperature: float = 0.1,
+        temperature: float = 0.02,
+        reduction: str = "mean",
         negative_mode: str = "unpaired",
     ):
         super().__init__()
         self.criterion = criterion
         self.temperature = temperature
+        self.reduction = reduction
         self.negative_mode = negative_mode
 
     def forward(
@@ -40,7 +46,8 @@ class InfoNCE(nn.Module):
             logits2 = logits1.T
             labels = torch.arange(len(logits1), dtype=torch.long, device=device)
             loss = (
-                self.criterion(logits1 / self.temperature, labels) + self.criterion(logits2 / self.temperature, labels)
+                self.criterion(logits1 / self.temperature, labels, reduction=self.reduction)
+                + self.criterion(logits2 / self.temperature, labels, reduction=self.reduction)
             ) / 2
             return loss
         else:
@@ -56,7 +63,10 @@ class InfoNCE(nn.Module):
                 negative_logits = query @ negative_embeddings.transpose(-2, -1)
                 negative_logits = negative_logits.squeeze(1)
 
+            else:
+                raise ValueError(f"negative mode could chose 'unpaired' or 'paired', while got {self.negative_mode}")
+
             # First index in last dimension are the positive samples
             logits = torch.cat([positive_logit, negative_logits], dim=1)
             labels = torch.zeros(len(logits), dtype=torch.long, device=query_embeddings.device)
-            return self.criterion(logits / self.temperature, labels)
+            return self.criterion(logits / self.temperature, labels, reduction=self.reduction)

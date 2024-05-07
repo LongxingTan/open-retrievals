@@ -124,7 +124,7 @@ def train_fn(
             if batch_scheduler:
                 batch_scheduler.step()
 
-        if step % print_freq == 0 or step == (len(train_loader) - 1):
+        if step % print_freq == 0 or (step + 1) == len(train_loader):
             print(
                 "Epoch: [{0}][{1}/{2}] "
                 "Elapsed {remain:s} "
@@ -135,7 +135,7 @@ def train_fn(
                 .format(
                     epoch + 1,
                     step,
-                    len(train_loader),
+                    len(train_loader) - 1,
                     remain=timeSince(start, float(step + 1) / len(train_loader)),
                     loss=losses,
                     grad_norm=grad_norm,
@@ -276,7 +276,7 @@ class CustomTrainer(object):
         logger.info('-------START TO TRAIN-------')
         if resume_from_checkpoint is not None:
             checkpoint = torch.load(resume_from_checkpoint)
-            self.model.load_state_dict(checkpoint['model'])
+            self.model.load_state_dict(checkpoint)
 
         if use_fgm:
             logger.info('[FGM] Use FGM adversarial')
