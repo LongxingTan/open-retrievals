@@ -82,6 +82,7 @@ class AutoModelForEmbedding(nn.Module):
         lora_config=None,
         device: Optional[str] = None,
         trust_remote_code: bool = True,
+        **kwargs,
     ):
         super().__init__()
 
@@ -103,7 +104,7 @@ class AutoModelForEmbedding(nn.Module):
 
         if pretrained:
             self.model = AutoModel.from_pretrained(
-                model_name_or_path, config=self.config, trust_remote_code=trust_remote_code
+                model_name_or_path, config=self.config, trust_remote_code=trust_remote_code, **kwargs
             )
         else:
             self.model = AutoModel.from_config(self.config)
@@ -480,9 +481,8 @@ class PairwiseModel(AutoModelForEmbedding):
         use_fp16: bool = False,
         cross_encoder: bool = False,
         poly_encoder: bool = False,
-        temperature: float = 0,
-        dynamic_temperature: bool = False,
         loss_fn: Union[nn.Module, Callable] = None,
+        **kwargs,
     ) -> None:
         super().__init__(
             model_name_or_path=model_name_or_path,
@@ -491,13 +491,12 @@ class PairwiseModel(AutoModelForEmbedding):
             query_instruction=query_instruction,
             use_fp16=use_fp16,
             loss_fn=None,
+            **kwargs,
         )
         if loss_fn is not None:
             logger.warning("loss_fn in Pairwise model will be ignored")
 
         self.cross_encoder = cross_encoder
-        self.temperature = temperature
-        self.dynamic_temperature = dynamic_temperature
 
     def forward(
         self,
@@ -559,9 +558,8 @@ class ListwiseModel(AutoModelForEmbedding):
         normalize_embeddings: bool = False,
         query_instruction: Optional[str] = None,
         use_fp16: bool = False,
-        temperature: float = 0,
-        dynamic_temperature: bool = False,
         loss_fn: Union[nn.Module, Callable] = None,
+        **kwargs,
     ) -> None:
         super().__init__(
             model_name_or_path=model_name_or_path,
@@ -569,7 +567,8 @@ class ListwiseModel(AutoModelForEmbedding):
             normalize_embeddings=normalize_embeddings,
             query_instruction=query_instruction,
             use_fp16=use_fp16,
-            loss_fn=None,
+            loss_fn=loss_fn,
+            **kwargs,
         )
         self.pooling_method = pooling_method
         self.num_segments = num_segments
