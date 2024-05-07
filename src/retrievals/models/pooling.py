@@ -1,5 +1,3 @@
-from typing import Any
-
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -39,20 +37,11 @@ class MeanPooling(nn.Module):
         return mean_embeddings
 
 
-class AttentionPooling(nn.Module):
-    def __init__(self):
-        super(AttentionPooling, self).__init__()
-
-    def forward(self, last_hidden_state: torch.Tensor, attention_mask: torch.Tensor) -> torch.Tensor:
-        return last_hidden_state[:, 0, :]
-
-
 class ClsTokenPooling(nn.Module):
     """CLS Pooling"""
 
     def __init__(self):
         super().__init__()
-        self.feat_mult = 1
 
     def forward(
         self,
@@ -90,6 +79,14 @@ class LastTokenPooling(nn.Module):
         return emb
 
 
+class AttentionPooling(nn.Module):
+    def __init__(self):
+        super(AttentionPooling, self).__init__()
+
+    def forward(self, last_hidden_state: torch.Tensor, attention_mask: torch.Tensor) -> torch.Tensor:
+        return last_hidden_state[:, 0, :]
+
+
 class WeightedLayerPooling(nn.Module):
     def __init__(self, num_hidden_layers: int, layer_start: int = 4, layer_weights=None):
         super().__init__()
@@ -118,13 +115,11 @@ class GeMText(nn.Module):
         self.dim = dim
         self.p = nn.Parameter(torch.ones(1) * p)
         self.eps = eps
-        self.feat_mult = 1
 
     def forward(
         self,
         x: torch.Tensor,
         attention_mask: torch.Tensor,
-        input_ids: torch.Tensor,
     ) -> torch.Tensor:
         attention_mask_expanded = attention_mask.unsqueeze(-1).expand(x.shape)
         x = (x.clamp(min=self.eps) * attention_mask_expanded).pow(self.p).sum(self.dim)

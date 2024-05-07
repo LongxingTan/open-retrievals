@@ -19,13 +19,14 @@ from transformers import (
     set_seed,
 )
 
-from retrievals.losses import TripletLoss
-from src.retrievals import (
+from retrievals import (
     AutoModelForEmbedding,
     AutoModelForRetrieval,
+    PairwiseModel,
     RetrievalTrainer,
     TripletCollator,
 )
+from retrievals.losses import InfoNCE, TripletLoss
 
 logger = logging.getLogger(__name__)
 
@@ -47,12 +48,6 @@ class ModelArguments:
         default=None,
         metadata={"help": "Pretrained tokenizer name or path if not the same as model_name"},
     )
-    # cache_dir: Optional[str] = field(
-    #     default=None,
-    #     metadata={
-    #         "help": "Where do you want to store the pretrained models downloaded from s3"
-    #     },
-    # )
 
 
 @dataclass
@@ -102,10 +97,9 @@ class TrainingArguments(transformers.TrainingArguments):
     sentence_pooling_method: str = field(default="cls", metadata={"help": "the pooling method, should be cls or mean"})
     normalized: bool = field(default=True)
     use_inbatch_neg: bool = field(default=True, metadata={"help": "Freeze the parameters of position embeddings"})
-    gradient_accumulation_steps: int = 1024
-    fp16: bool = True
+    gradient_accumulation_steps: int = field(default=1024)
+    fp16: bool = field(default=True)
     use_lora: bool = field(default=True)
-    # save_steps
 
 
 @dataclass
@@ -246,8 +240,6 @@ def main():
     )
 
     train_dataset = TrainDatasetForEmbedding(args=data_args, tokenizer=tokenizer)
-    # for i in range(8):
-    #     print(train_dataset[i])
     print(len(train_dataset))
 
     if training_args.use_lora:
@@ -264,7 +256,6 @@ def main():
     )
     optimizer = get_optimizer(model, lr=5e-5, weight_decay=1e-3)
 
-    # TODO: total steps更新
     lr_scheduler = get_scheduler(optimizer, num_train_steps=int(len(train_dataset) / 2 * 1))
 
     trainer = RetrievalTrainer(

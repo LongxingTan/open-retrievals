@@ -68,18 +68,21 @@ class AutoModelForEmbedding(nn.Module):
         model_name_or_path: str,
         pretrained: bool = True,
         config_path: Optional[str] = None,
-        pooling_method: str = "cls",
+        pooling_method: Optional[str] = "cls",
         normalize_embeddings: bool = False,
         max_length: Optional[int] = None,
         loss_fn: Optional[Callable] = None,
         query_instruction: Optional[str] = None,
         document_instruction: Optional[str] = None,
+        hidden_dropout_prob: float = 0.1,
+        attention_dropout_prob: float = 0.1,
         generation_args: Dict = None,
         use_fp16: bool = False,
         use_lora: bool = False,
         lora_config=None,
         device: Optional[str] = None,
         trust_remote_code: bool = True,
+        **kwargs,
     ):
         super().__init__()
 
@@ -87,17 +90,23 @@ class AutoModelForEmbedding(nn.Module):
             model_name_or_path, return_tensors=False, trust_remote_code=trust_remote_code
         )
 
+        if config_path:
+            self.config = AutoConfig.from_pretrained(
+                config_path, output_hidden_states=True, trust_remote_code=trust_remote_code
+            )
+        elif hidden_dropout_prob > 0 or attention_dropout_prob > 0:
+            self.config = AutoConfig.from_pretrained(
+                model_name_or_path, output_hidden_states=True, trust_remote_code=trust_remote_code
+            )
+            self.config.update(
+                {"hidden_dropout_prob": hidden_dropout_prob, "attention_probs_dropout_prob": attention_dropout_prob}
+            )
+
         if pretrained:
-            self.model = AutoModel.from_pretrained(model_name_or_path, trust_remote_code=trust_remote_code)
+            self.model = AutoModel.from_pretrained(
+                model_name_or_path, config=self.config, trust_remote_code=trust_remote_code, **kwargs
+            )
         else:
-            if config_path is None:
-                self.config = AutoConfig.from_pretrained(
-                    model_name_or_path, output_hidden_states=True, trust_remote_code=trust_remote_code
-                )
-            else:
-                self.config = AutoConfig.from_pretrained(
-                    config_path, output_hidden_states=True, trust_remote_code=trust_remote_code
-                )
             self.model = AutoModel.from_config(self.config)
         self.loss_fn = loss_fn
 
@@ -113,6 +122,7 @@ class AutoModelForEmbedding(nn.Module):
 
         if use_fp16:
             self.model.half()
+
         if use_lora:
             # peft config and wrapping
             from peft import LoraConfig, TaskType, get_peft_model
@@ -128,7 +138,7 @@ class AutoModelForEmbedding(nn.Module):
             self.device = device
 
         self.normalize_embeddings = normalize_embeddings
-        self.pooling = AutoPooling(pooling_method)
+        self.pooling = AutoPooling(pooling_method) if pooling_method else None
 
         # self.fc = nn.Linear(768, 1)
         # self._init_weights(self.fc)
@@ -180,15 +190,24 @@ class AutoModelForEmbedding(nn.Module):
             outputs["sentence_embedding"] = loss_output["sentence_embedding"]
             return outputs
 
-    def forward_from_loader(self, inputs):
+    def forward_from_loader(self, inputs, without_pooling: bool = False):
         model_output = self.model(inputs['input_ids'], inputs['attention_mask'])
-        if self.pooling is not None:
-            embeddings = self.pooling(model_output[0], inputs["attention_mask"])
+        if self.pooling is not None and not without_pooling:
+            if 'last_hidden_state' in model_output:
+                last_hidden_state = model_output['last_hidden_state']
+            elif 'hidden_states' not in model_output:
+                last_hidden_state = model_output[0]
+            else:
+                hidden_states = model_output['hidden_states']
+                # last_hidden_state = torch.cat([hidden_states[0], hidden_states[-1]])
+                last_hidden_state = (hidden_states[0] + hidden_states[-1]) / 2.0
+            embeddings = self.pooling(last_hidden_state, inputs["attention_mask"])
 
             if self.normalize_embeddings:
                 embeddings = torch.nn.functional.normalize(embeddings, p=2, dim=1)
 
             return embeddings
+        return model_output
 
     def forward_from_text(self, texts):
         batch_dict = self.tokenizer(
@@ -462,9 +481,8 @@ class PairwiseModel(AutoModelForEmbedding):
         use_fp16: bool = False,
         cross_encoder: bool = False,
         poly_encoder: bool = False,
-        temperature: float = 0,
-        dynamic_temperature: bool = False,
         loss_fn: Union[nn.Module, Callable] = None,
+        **kwargs,
     ) -> None:
         super().__init__(
             model_name_or_path=model_name_or_path,
@@ -473,17 +491,16 @@ class PairwiseModel(AutoModelForEmbedding):
             query_instruction=query_instruction,
             use_fp16=use_fp16,
             loss_fn=None,
+            **kwargs,
         )
         if loss_fn is not None:
-            logger.warning("loss_fn in Pairwise embed model, which will be ignored")
+            logger.warning("loss_fn in Pairwise model will be ignored")
 
         self.cross_encoder = cross_encoder
-        self.temperature = temperature
-        self.dynamic_temperature = dynamic_temperature
 
     def forward(
         self,
-        inputs: List[torch.Tensor],
+        inputs,
         labels: Optional[torch.LongTensor] = None,
         output_attentions: Optional[bool] = None,
         output_hidden_states: Optional[bool] = None,
@@ -500,7 +517,9 @@ class PairwiseModel(AutoModelForEmbedding):
             ids = torch.cat([ids1, ids2], dim=0)
             mask = torch.cat([mask1, mask2], dim=0)
 
-            transformer_out = super().forward({"input_ids": ids, "attention_mask": mask})
+            transformer_out = super().forward_from_loader(
+                {"input_ids": ids, "attention_mask": mask}, without_pooling=True
+            )
             pooled_output = self.pooling(transformer_out[0], mask)
             pooled_output1 = pooled_output[: len(ids1), :]
             pooled_output2 = pooled_output[len(ids1) :, :]
@@ -539,9 +558,8 @@ class ListwiseModel(AutoModelForEmbedding):
         normalize_embeddings: bool = False,
         query_instruction: Optional[str] = None,
         use_fp16: bool = False,
-        temperature: float = 0,
-        dynamic_temperature: bool = False,
         loss_fn: Union[nn.Module, Callable] = None,
+        **kwargs,
     ) -> None:
         super().__init__(
             model_name_or_path=model_name_or_path,
@@ -549,7 +567,8 @@ class ListwiseModel(AutoModelForEmbedding):
             normalize_embeddings=normalize_embeddings,
             query_instruction=query_instruction,
             use_fp16=use_fp16,
-            loss_fn=None,
+            loss_fn=loss_fn,
+            **kwargs,
         )
         self.pooling_method = pooling_method
         self.num_segments = num_segments
