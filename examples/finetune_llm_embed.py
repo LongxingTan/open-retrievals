@@ -243,7 +243,7 @@ def main():
     print(len(train_dataset))
 
     if training_args.use_lora:
-        lora_config = LoraConfig(**json.load(open("lora.json")))
+        lora_config = LoraConfig(**json.load(open("./conf/lora.json")))
     else:
         lora_config = None
 

@@ -8,6 +8,8 @@ class PairCollator(DataCollatorWithPadding):
     def __init__(
         self,
         tokenizer,
+        query_key: str = 'query',
+        positive_key: str = 'pos',
         max_length: Optional[int] = None,
         query_max_length: Optional[int] = None,
         document_max_length: Optional[int] = None,
@@ -15,6 +17,9 @@ class PairCollator(DataCollatorWithPadding):
         self.tokenizer = tokenizer
         if not hasattr(self.tokenizer, "pad_token_id") or self.tokenizer.pad_token is None:
             self.tokenizer.add_special_tokens({"pad_token": "[PAD]"})
+
+        self.query_key = query_key
+        self.positive_key = positive_key
 
         self.query_max_length: int
         self.document_max_length: int
@@ -32,8 +37,8 @@ class PairCollator(DataCollatorWithPadding):
 
     def __call__(self, features: List[Dict[str, Any]]) -> Dict[str, Any]:
         assert (
-            'query' in features[0] and 'pos' in features[0]
-        ), "PairCollator should have 'query' and 'pos' keys in features dict"
+            self.query_key in features[0] and self.positive_key in features[0]
+        ), f"PairCollator should have {self.query_key} and {self.positive_key} in features dict keys"
 
         query_texts = [feature["query"] for feature in features]
         pos_texts = [feature["pos"] for feature in features]
@@ -60,6 +65,9 @@ class TripletCollator(DataCollatorWithPadding):
     def __init__(
         self,
         tokenizer,
+        query_key: str = 'query',
+        positive_key: str = 'pos',
+        negative_key: Optional[str] = 'neg',
         max_length: Optional[int] = None,
         query_max_length: Optional[int] = None,
         document_max_length: Optional[int] = None,
@@ -67,6 +75,10 @@ class TripletCollator(DataCollatorWithPadding):
         self.tokenizer = tokenizer
         if not hasattr(self.tokenizer, "pad_token_id") or self.tokenizer.pad_token is None:
             self.tokenizer.add_special_tokens({"pad_token": "[PAD]"})
+
+        self.query_key = query_key
+        self.positive_key = positive_key
+        self.negative_key = negative_key
 
         self.query_max_length: int
         self.document_max_length: int
@@ -84,12 +96,12 @@ class TripletCollator(DataCollatorWithPadding):
 
     def __call__(self, features: List[Dict[str, Any]]) -> Dict[str, Any]:
         assert (
-            'query' in features[0] and 'pos' in features[0] and 'neg' in features[0]
-        ), "TripletCollator should have 'query', 'pos' and 'neg' keys in features dict"
+            self.positive_key in features[0] and self.positive_key in features[0] and self.negative_key in features[0]
+        ), f"TripletCollator should have {self.query_key}, {self.positive_key} and {self.negative_key} in features dict"
 
-        query_texts = [feature["query"] for feature in features]
-        pos_texts = [feature["pos"] for feature in features]
-        neg_texts = [feature["neg"] for feature in features]
+        query_texts = [feature[self.query_key] for feature in features]
+        pos_texts = [feature[self.positive_key] for feature in features]
+        neg_texts = [feature[self.negative_key] for feature in features]
 
         # if isinstance(query[0], list):
         #     query = sum(query, [])
