@@ -59,6 +59,9 @@ class AutoModelForRetrieval(object):
 
         return dists, indices
 
+    def get_relevant_documents(self, query: str):
+        return
+
     def get_pandas_candidate(self, query_ids, document_ids, dists, indices):
         if isinstance(query_ids, pd.Series):
             query_ids = query_ids.values

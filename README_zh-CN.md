@@ -57,8 +57,8 @@ from retrievals import AutoModelForEmbedding, AutoModelForRetrieval
 
 # 文本示例
 sentences = [
-    "你好，世界", 
-    "你吃饭了吗?", 
+    "你好，世界",
+    "你吃饭了吗?",
     "Open-retrievals 是一个用于检索生成的文本向量库"
 ]
 
