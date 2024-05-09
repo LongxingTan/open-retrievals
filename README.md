@@ -56,21 +56,15 @@ pip install open-retrievals
 
 ## Quick-start
 
+**Use Pretrained weights**
 ```python
-from retrievals import AutoModelForEmbedding, AutoModelForRetrieval
+from retrievals import AutoModelForEmbedding
 
-# Example list of documents
-documents = [
-    "Open-retrievals is a text embedding libraries",
-    "I can use it simply for a SOTA RAG application.",
-]
-
-# This will trigger the model download and initialization
+sentences = ["Hello world", "How are you doing?", "Open-retrievals is a text embedding libraries for RAG application"]
 model_name_or_path = "sentence-transformers/all-MiniLM-L6-v2"
-model = AutoModelForEmbedding(model_name_or_path)
-
-embeddings = model.encode(documents)
-print(embeddings) # Vector of 384 dimensions
+model = AutoModelForEmbedding(model_name_or_path, pooling_method="mean", normalize_embeddings=True)
+sentence_embeddings = model.encode(sentences, convert_to_tensor=True)
+print(sentence_embeddings)
 ```
 
 
@@ -82,12 +76,15 @@ from retrievals import AutoModelForEmbedding, AutoModelForRetrieval
 
 sentences = ['A dog is chasing car.', 'A man is playing a guitar.']
 model_name_or_path = "sentence-transformers/all-MiniLM-L6-v2"
+index_path = './database/faiss'
 model = AutoModelForEmbedding(model_name_or_path)
-model.build_index(sentences)
+model.build_index(sentences, index_path=index_path)
 
 matcher = AutoModelForRetrieval()
-results = matcher.faiss_search("He plays guitar.")
+query_embed = model.encode("He plays guitar.")
+results = matcher.similarity_search(query_embed, index_path=index_path)
 ```
+
 
 **Rerank**
 ```python
@@ -116,15 +113,14 @@ trainer.scheduler = lr_scheduler
 trainer.train()
 ```
 
-**RAG with LangChain**
 
+**RAG with LangChain**
 
 - Prerequisites
 
 ```shell
 pip install langchain
 ```
-
 
 - Server
 
@@ -180,19 +176,8 @@ class DenseRetrieval:
 [//]: # ()
 [//]: # (```)
 
-**Use Pretrained sentence embedding**
-```python
-from retrievals import AutoModelForEmbedding
 
-sentences = ["Hello world", "How are you?"]
-model_name_or_path = "sentence-transformers/all-MiniLM-L6-v2"
-model = AutoModelForEmbedding(model_name_or_path, pooling_method="mean", normalize_embeddings=True)
-sentence_embeddings = model.encode(sentences, convert_to_tensor=True)
-print(sentence_embeddings)
-```
-
-
-**Finetune transformers by contrastive learning**
+**Finetune transformers weights by contrastive learning**
 ```python
 from transformers import AutoTokenizer
 from retrievals import AutoModelForEmbedding, AutoModelForRetrieval, RetrievalTrainer, PairCollator, TripletCollator

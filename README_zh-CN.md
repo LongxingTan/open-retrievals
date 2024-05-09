@@ -49,20 +49,23 @@ pip install open-retrievals
 
 ## 快速入门
 
+**使用预训练权重**
+
 ```python
 from retrievals import AutoModelForEmbedding, AutoModelForRetrieval
 
 # 文本示例
-documents = [
-    "Open-retrievals is a text embedding libraries",
-    "I can use it simply with a SOTA RAG application.",
+sentences = [
+    "你好，世界", 
+    "你吃饭了吗?", 
+    "Open-retrievals 是一个用于检索生成的文本向量库"
 ]
 
 # 向量模型
 model_name_or_path = "sentence-transformers/all-MiniLM-L6-v2"
 model = AutoModelForEmbedding(model_name_or_path)
 
-embeddings = model.encode(documents)
+embeddings = model.encode(sentences)
 print(embeddings) # 384维度的文本向量
 ```
 
