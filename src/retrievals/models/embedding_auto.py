@@ -463,6 +463,13 @@ class AutoModelForEmbedding(nn.Module):
         else:
             return sum([len(t) for t in text])  # Sum of length of individual strings
 
+    @property
+    def __dict__(self):
+        return self.model.__dict__
+
+    def __getattr__(self, name):
+        return getattr(self.model, name)
+
 
 class PairwiseModel(AutoModelForEmbedding):
     """Pairwise Model wrapper
@@ -506,32 +513,36 @@ class PairwiseModel(AutoModelForEmbedding):
         output_hidden_states: Optional[bool] = None,
         return_dict: Optional[bool] = None,
     ):
-        input1 = inputs[0]
-        input2 = inputs[1]
-        if len(inputs) == 3:
-            input3 = inputs[2]
-
-        if self.cross_encoder:
-            ids1, mask1 = input1['input_ids'], input1['attention_mask']
-            ids2, mask2 = input2['input_ids'], input2['attention_mask']
-            ids = torch.cat([ids1, ids2], dim=0)
-            mask = torch.cat([mask1, mask2], dim=0)
-
-            transformer_out = super().forward_from_loader(
-                {"input_ids": ids, "attention_mask": mask}, without_pooling=True
-            )
-            pooled_output = self.pooling(transformer_out[0], mask)
-            pooled_output1 = pooled_output[: len(ids1), :]
-            pooled_output2 = pooled_output[len(ids1) :, :]
-            return pooled_output1, pooled_output2
-        else:
-            # bi-encoder, pooling in each
-            pooled_output1 = super().forward(input1)
-            pooled_output2 = super().forward(input2)
+        if len(inputs) > 1 and len(inputs) <= 3:
+            input1 = inputs[0]
+            input2 = inputs[1]
             if len(inputs) == 3:
-                pooled_output3 = super().forward(input3)
-                return pooled_output1, pooled_output2, pooled_output3
-            return pooled_output1, pooled_output2
+                input3 = inputs[2]
+
+            if self.cross_encoder:
+                ids1, mask1 = input1['input_ids'], input1['attention_mask']
+                ids2, mask2 = input2['input_ids'], input2['attention_mask']
+                ids = torch.cat([ids1, ids2], dim=0)
+                mask = torch.cat([mask1, mask2], dim=0)
+
+                transformer_out = super().forward_from_loader(
+                    {"input_ids": ids, "attention_mask": mask}, without_pooling=True
+                )
+                pooled_output = self.pooling(transformer_out[0], mask)
+                pooled_output1 = pooled_output[: len(ids1), :]
+                pooled_output2 = pooled_output[len(ids1) :, :]
+                return pooled_output1, pooled_output2
+            else:
+                # bi-encoder, pooling in each
+                pooled_output1 = super().forward(input1)
+                pooled_output2 = super().forward(input2)
+                if len(inputs) == 3:
+                    pooled_output3 = super().forward(input3)
+                    return pooled_output1, pooled_output2, pooled_output3
+                return pooled_output1, pooled_output2
+        else:
+            pooled_output = super(PairwiseModel, self).forward(inputs)
+            return pooled_output
 
 
 def unsorted_segment_mean(data: torch.Tensor, segment_ids: torch.Tensor, num_segments: int) -> torch.Tensor:
