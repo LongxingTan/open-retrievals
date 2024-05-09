@@ -62,7 +62,7 @@ from retrievals import AutoModelForEmbedding, AutoModelForRetrieval
 # Example list of documents
 documents = [
     "Open-retrievals is a text embedding libraries",
-    "I can use it simply with a SOTA RAG application.",
+    "I can use it simply for a SOTA RAG application.",
 ]
 
 # This will trigger the model download and initialization

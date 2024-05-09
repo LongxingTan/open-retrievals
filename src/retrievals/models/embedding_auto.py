@@ -507,17 +507,22 @@ class PairwiseModel(AutoModelForEmbedding):
 
     def forward(
         self,
-        inputs,
+        inputs: Union[dict[str, torch.Tensor], list],
+        inputs_pair: Optional[dict[str, torch.Tensor]] = None,
         labels: Optional[torch.LongTensor] = None,
         output_attentions: Optional[bool] = None,
         output_hidden_states: Optional[bool] = None,
         return_dict: Optional[bool] = None,
     ):
-        if len(inputs) > 1 and len(inputs) <= 3:
-            input1 = inputs[0]
-            input2 = inputs[1]
-            if len(inputs) == 3:
-                input3 = inputs[2]
+        if isinstance(inputs, (list, tuple)) and 2 <= len(inputs) <= 3 or inputs_pair is not None:
+            if inputs_pair:
+                input1 = inputs
+                input2 = inputs_pair
+            else:
+                input1 = inputs[0]
+                input2 = inputs[1]
+                if len(inputs) == 3:
+                    input3 = inputs[2]
 
             if self.cross_encoder:
                 ids1, mask1 = input1['input_ids'], input1['attention_mask']
@@ -541,7 +546,7 @@ class PairwiseModel(AutoModelForEmbedding):
                     return pooled_output1, pooled_output2, pooled_output3
                 return pooled_output1, pooled_output2
         else:
-            pooled_output = super(PairwiseModel, self).forward(inputs)
+            pooled_output = super(PairwiseModel, self).forward_from_loader(inputs, without_pooling=False)
             return pooled_output
 
 
