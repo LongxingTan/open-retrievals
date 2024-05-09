@@ -11,9 +11,9 @@ from transformers import (
     AutoTokenizer,
 )
 
-from src.retrievals.data.collator import RerankCollator
-from src.retrievals.models.embedding_auto import get_device_name
-from src.retrievals.models.pooling import AutoPooling
+from ..data.collator import RerankCollator
+from .embedding_auto import get_device_name
+from .pooling import AutoPooling
 
 logger = logging.getLogger(__name__)
 

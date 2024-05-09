@@ -13,7 +13,7 @@ import torch
 from torch import nn
 from tqdm import tqdm
 
-from src.retrievals.trainer.adversarial import AWP, EMA, FGM
+from .adversarial import AWP, EMA, FGM
 
 logger = logging.getLogger(__name__)
 
@@ -242,7 +242,7 @@ def inference_fn(test_loader, model, device):
 
 
 class CustomTrainer(object):
-    def __init__(self, model: Union[str, nn.Module], device: Optional[str] = None, apex: bool = False, teacher=None):
+    def __init__(self, model: Union[nn.Module], device: Optional[str] = None, apex: bool = False, teacher=None):
         if not device:
             device = "cuda" if torch.cuda.is_available() else "cpu"
         self.device = device

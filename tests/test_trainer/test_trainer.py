@@ -20,9 +20,9 @@ from src.retrievals.trainer.trainer import RerankTrainer, RetrievalTrainer
 class PseudoDataset(Dataset):
     def __init__(self):
         self.examples = [
-            {'query': 'how are you', 'pos': 'fine', 'neg': 'and you?'},
-            {'query': 'hallo?', 'pos': 'what is your problem', 'neg': 'I am a doctor'},
-            {'query': 'how are you doing', 'pos': 'survive', 'neg': 'he looks like a dog'},
+            {'query': 'how are you', 'positive': 'fine', 'negative': 'and you?'},
+            {'query': 'hallo?', 'positive': 'what is your problem', 'negative': 'I am a doctor'},
+            {'query': 'how are you doing', 'positive': 'survive', 'negative': 'he looks like a dog'},
         ]
 
     def __len__(self):

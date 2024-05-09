@@ -1,1 +1,1 @@
-from src.retrievals.metrics.mrr import mrr
+from .mrr import mrr

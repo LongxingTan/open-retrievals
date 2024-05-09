@@ -1,9 +1,3 @@
-"""
-reference
-- gezi @ kaggle
-- https://github.com/Lightning-AI/pytorch-lightning/issues/18391
-"""
-
 import logging
 from typing import Optional
 
