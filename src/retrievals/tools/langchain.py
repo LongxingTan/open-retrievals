@@ -12,8 +12,8 @@ from langchain_core.documents import Document
 from langchain_core.embeddings import Embeddings
 from langchain_core.pydantic_v1 import Extra, root_validator
 
-from src.retrievals.models.embedding_auto import AutoModelForEmbedding
-from src.retrievals.models.rerank import RerankModel
+from ..models.embedding_auto import AutoModelForEmbedding
+from ..models.rerank import RerankModel
 
 
 class LangchainEmbedding(AutoModelForEmbedding, Embeddings):

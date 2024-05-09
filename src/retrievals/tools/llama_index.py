@@ -6,7 +6,7 @@ from llama_index.postprocessor.types import BaseNodePostprocessor
 from llama_index.schema import MetadataMode, NodeWithScore, QueryBundle
 from llama_index.utils import infer_torch_device
 
-from src.retrievals import RerankModel
+from ..models.rerank import RerankModel
 
 
 class LlamaIndexReranker(BaseNodePostprocessor):

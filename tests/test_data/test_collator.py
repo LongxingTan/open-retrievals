@@ -23,8 +23,8 @@ class CollatorTest(TestCase):
 
     def test_pair_collator(self):
         features = [
-            {'query': 'how are you', 'pos': 'fine'},
-            {'query': 'hallo?', 'pos': 'what is your problem'},
+            {'query': 'how are you', 'positive': 'fine'},
+            {'query': 'hallo?', 'positive': 'what is your problem'},
         ]
 
         tokenizer = BertTokenizer(self.vocab_file)
@@ -37,8 +37,8 @@ class CollatorTest(TestCase):
 
     def test_triplet_collator(self):
         features = [
-            {'query': 'how are you', 'pos': 'fine', 'neg': 'and you?'},
-            {'query': 'hallo?', 'pos': 'what is your problem', 'neg': 'I am a doctor'},
+            {'query': 'how are you', 'positive': 'fine', 'negative': 'and you?'},
+            {'query': 'hallo?', 'positive': 'what is your problem', 'negative': 'I am a doctor'},
         ]
 
         tokenizer = BertTokenizer(self.vocab_file)

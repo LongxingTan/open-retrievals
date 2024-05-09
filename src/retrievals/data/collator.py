@@ -42,7 +42,7 @@ class PairCollator(DataCollatorWithPadding):
         "you can set the custom key of query_key, positive_key during class init"
 
         query_texts = [feature["query"] for feature in features]
-        pos_texts = [feature["pos"] for feature in features]
+        pos_texts = [feature["positive"] for feature in features]
 
         query_inputs = self.tokenizer(
             query_texts,
