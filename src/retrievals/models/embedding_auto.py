@@ -16,7 +16,7 @@ from transformers import (
     GenerationConfig,
 )
 
-from src.retrievals.models.pooling import AutoPooling
+from .pooling import AutoPooling
 
 logger = logging.getLogger(__name__)
 
@@ -463,12 +463,12 @@ class AutoModelForEmbedding(nn.Module):
         else:
             return sum([len(t) for t in text])  # Sum of length of individual strings
 
-    @property
-    def __dict__(self):
-        return self.model.__dict__
+    # @property
+    # def __dict__(self):
+    #     return self.model.__dict__
 
-    def __getattr__(self, name):
-        return getattr(self.model, name)
+    # def __getattr__(self, name):
+    #     return getattr(self.model, name)
 
 
 class PairwiseModel(AutoModelForEmbedding):

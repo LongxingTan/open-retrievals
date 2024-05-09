@@ -13,7 +13,7 @@ import torch
 from torch import nn
 from tqdm import tqdm
 
-from src.retrievals.trainer.adversarial import AWP, EMA, FGM
+from .adversarial import AWP, EMA, FGM
 
 logger = logging.getLogger(__name__)
 
