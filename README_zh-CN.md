@@ -38,8 +38,8 @@
 **基础**
 ```shell
 pip install transformers
-pip install faiss
-pip install peft
+pip install faiss  # 如有必要
+pip install peft  # 如有必要
 ```
 
 **安装**
