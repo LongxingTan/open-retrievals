@@ -63,7 +63,7 @@ model_name_or_path = "sentence-transformers/all-MiniLM-L6-v2"
 model = AutoModelForEmbedding(model_name_or_path)
 
 embeddings = model.encode(documents)
-len(embeddings) # 384维度的文本向量
+print(embeddings) # 384维度的文本向量
 ```
 
 

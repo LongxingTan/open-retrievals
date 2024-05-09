@@ -409,7 +409,7 @@ class AutoModelForEmbedding(nn.Module):
         embeddings = self.encode(inputs, batch_size=batch_size)
         embeddings = np.asarray(embeddings, dtype=np.float32)
         index = faiss.IndexFlatL2(len(embeddings[0]))
-        if use_gpu:
+        if use_gpu and self.device == 'cuda':
             co = faiss.GpuMultipleClonerOptions()
             co.shard = True
             co.useFloat16 = True
