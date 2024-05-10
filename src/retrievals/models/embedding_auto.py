@@ -80,7 +80,7 @@ class AutoModelForEmbedding(nn.Module):
         lora_config=None,
         device: Optional[str] = None,
         trust_remote_code: bool = True,
-        custom_config_dict: Optional[dict] = None,
+        custom_config_dict: Optional[Dict] = None,
         **kwargs,
     ):
         super().__init__()
@@ -512,8 +512,8 @@ class PairwiseModel(AutoModelForEmbedding):
 
     def forward(
         self,
-        inputs: Union[dict[str, torch.Tensor], list],
-        inputs_pair: Optional[dict[str, torch.Tensor]] = None,
+        inputs: Union[Dict[str, torch.Tensor], list],
+        inputs_pair: Optional[Dict[str, torch.Tensor]] = None,
         labels: Optional[torch.LongTensor] = None,
         output_attentions: Optional[bool] = None,
         output_hidden_states: Optional[bool] = None,
