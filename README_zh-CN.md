@@ -25,11 +25,12 @@
 [![Code Coverage][coverage-image]][coverage-url]
 
 
-**[文档](https://open-retrievals.readthedocs.io)** | **[中文wiki](https://github.com/LongxingTan/open-retrievals/wiki)** | **[Tutorials](https://open-retrievals.readthedocs.io/en/latest/tutorials.html)** | **[Release Notes](https://open-retrievals.readthedocs.io/en/latest/CHANGELOG.html)**
+**[中文wiki](https://github.com/LongxingTan/open-retrievals/wiki)** | **[英文文档](https://open-retrievals.readthedocs.io)** | **[Release Notes](https://open-retrievals.readthedocs.io/en/latest/CHANGELOG.html)**
 
 **Open-Retrievals** 帮助开发者在信息检索、大语言模型等领域便捷地应用与增强文本向量，基于Pytorch、Transformers框架。
 - 对比学习增强性能
 - 支持大语言模型文本向量
+- 快速产出RAG demo
 
 
 ## 安装
@@ -37,8 +38,8 @@
 **基础**
 ```shell
 pip install transformers
-pip install faiss
-pip install peft
+pip install faiss  # 如有必要
+pip install peft  # 如有必要
 ```
 
 **安装**
@@ -49,21 +50,24 @@ pip install open-retrievals
 
 ## 快速入门
 
+**使用预训练权重**
+
 ```python
 from retrievals import AutoModelForEmbedding, AutoModelForRetrieval
 
 # 文本示例
-documents = [
-    "Open-retrievals is a text embedding libraries",
-    "I can use it simply with a SOTA RAG application.",
+sentences = [
+    "你好，世界",
+    "你吃饭了吗?",
+    "Open-retrievals 是一个用于检索生成的文本向量库"
 ]
 
 # 向量模型
 model_name_or_path = "sentence-transformers/all-MiniLM-L6-v2"
 model = AutoModelForEmbedding(model_name_or_path)
 
-embeddings = model.encode(documents)
-len(embeddings) # 384维度的文本向量
+embeddings = model.encode(sentences)
+print(embeddings) # 384维度的文本向量
 ```
 
 

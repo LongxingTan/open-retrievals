@@ -1,3 +1,4 @@
+import copy
 import logging
 import os
 import random
@@ -5,7 +6,6 @@ from typing import Iterable, List, Tuple
 
 import datasets
 from torch.utils.data import Dataset
-from transformers import DataCollatorWithPadding, PreTrainedTokenizer
 
 logger = logging.getLogger(__name__)
 
@@ -47,6 +47,11 @@ class RetrievalDataset(Dataset):
         sample = {"query": query, "pos": pos, "neg": neg}
         return sample
 
+    def dynamic_sample(self, batch_size: int, missing_list=None, wrong_dict=None, max_wrong: int = 16):
+        logger.info('\nDynamic Shuffle Sample...')
+
+        return
+
 
 class RerankDataset(Dataset):
     def __init__(self, args):
@@ -75,5 +80,5 @@ class RerankDataset(Dataset):
         query = self.dataset[item]["query"]
         document = self.dataset[item]['document']
         labels = self.dataset[item]['labels']
-        sample = {"query": query, "document": document, "neg": labels}
+        sample = {"query": query, "document": document, "labels": labels}
         return sample

@@ -25,11 +25,12 @@
 [![Code Coverage][coverage-image]][coverage-url]
 
 
-**[Documentation](https://open-retrievals.readthedocs.io)** | **[Tutorials](https://open-retrievals.readthedocs.io/en/latest/tutorials.html)** | **[中文](https://github.com/LongxingTan/open-retrievals/blob/master/README_zh-CN.md)**
+**[Documentation](https://open-retrievals.readthedocs.io)** | **[中文](https://github.com/LongxingTan/open-retrievals/blob/master/README_zh-CN.md)**
 
 **Open-Retrievals** is an easy-to-use python framework getting SOTA text embeddings, oriented to information retrieval and LLM retrieval augmented generation, based on PyTorch and Transformers.
 - Contrastive learning enhanced embeddings
 - LLM embeddings
+- fast RAG demo
 
 
 ## Installation
@@ -37,8 +38,8 @@
 **Prerequisites**
 ```shell
 pip install transformers
-pip install faiss-cpu
-pip install peft
+pip install faiss-cpu  # if necessary
+pip install peft  # if necessary
 ```
 
 **With pip**
@@ -56,21 +57,15 @@ pip install open-retrievals
 
 ## Quick-start
 
+**Use Pretrained weights**
 ```python
-from retrievals import AutoModelForEmbedding, AutoModelForRetrieval
+from retrievals import AutoModelForEmbedding
 
-# Example list of documents
-documents = [
-    "Open-retrievals is a text embedding libraries",
-    "I can use it simply with a SOTA RAG application.",
-]
-
-# This will trigger the model download and initialization
+sentences = ["Hello world", "How are you doing?", "Open-retrievals is a text embedding libraries for RAG application"]
 model_name_or_path = "sentence-transformers/all-MiniLM-L6-v2"
-model = AutoModelForEmbedding(model_name_or_path)
-
-embeddings = model.encode(documents)
-len(embeddings) # Vector of 384 dimensions
+model = AutoModelForEmbedding(model_name_or_path, pooling_method="mean", normalize_embeddings=True)
+sentence_embeddings = model.encode(sentences, convert_to_tensor=True)
+print(sentence_embeddings)
 ```
 
 
@@ -82,12 +77,15 @@ from retrievals import AutoModelForEmbedding, AutoModelForRetrieval
 
 sentences = ['A dog is chasing car.', 'A man is playing a guitar.']
 model_name_or_path = "sentence-transformers/all-MiniLM-L6-v2"
+index_path = './database/faiss'
 model = AutoModelForEmbedding(model_name_or_path)
-model.build_index(sentences)
+model.build_index(sentences, index_path=index_path)
 
 matcher = AutoModelForRetrieval()
-results = matcher.faiss_search("He plays guitar.")
+query_embed = model.encode("He plays guitar.")
+results = matcher.similarity_search(query_embed, index_path=index_path)
 ```
+
 
 **Rerank**
 ```python
@@ -116,15 +114,14 @@ trainer.scheduler = lr_scheduler
 trainer.train()
 ```
 
-**RAG with LangChain**
 
+**RAG with LangChain**
 
 - Prerequisites
 
 ```shell
 pip install langchain
 ```
-
 
 - Server
 
@@ -180,19 +177,8 @@ class DenseRetrieval:
 [//]: # ()
 [//]: # (```)
 
-**Use Pretrained sentence embedding**
-```python
-from retrievals import AutoModelForEmbedding
 
-sentences = ["Hello world", "How are you?"]
-model_name_or_path = "sentence-transformers/all-MiniLM-L6-v2"
-model = AutoModelForEmbedding(model_name_or_path, pooling_method="mean", normalize_embeddings=True)
-sentence_embeddings = model.encode(sentences, convert_to_tensor=True)
-print(sentence_embeddings)
-```
-
-
-**Finetune transformers by contrastive learning**
+**Finetune transformers weights by contrastive learning**
 ```python
 from transformers import AutoTokenizer
 from retrievals import AutoModelForEmbedding, AutoModelForRetrieval, RetrievalTrainer, PairCollator, TripletCollator
