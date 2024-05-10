@@ -59,7 +59,7 @@ class PairCollator(DataCollatorWithPadding):
             return_tensors="pt",
         )
 
-        return {"query": query_inputs, "pos": pos_inputs}
+        return {"query": query_inputs, "positive": pos_inputs}
 
 
 class TripletCollator(DataCollatorWithPadding):
@@ -134,8 +134,8 @@ class TripletCollator(DataCollatorWithPadding):
 
         return {
             "query": query_inputs,
-            "pos": pos_inputs,
-            "neg": neg_inputs,
+            "positive": pos_inputs,
+            "negative": neg_inputs,
         }
 
 

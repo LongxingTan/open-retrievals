@@ -22,11 +22,11 @@ class RetrievalTrainer(Trainer):
 
     def compute_loss(self, model, inputs, return_outputs=False, **kwargs):
         query = inputs["query"]
-        pos = inputs["pos"]
+        pos = inputs["positive"]
         query_embeddings = model(query)
         pos_embeddings = model(pos)
-        if 'neg' in inputs:
-            neg = inputs["neg"]
+        if 'negative' in inputs:
+            neg = inputs["negative"]
             neg_embeddings = model(neg)
             loss = TripletLoss()(query_embeddings, pos_embeddings, neg_embeddings)
         else:
@@ -35,9 +35,9 @@ class RetrievalTrainer(Trainer):
             return loss
         outputs = dict()
         outputs['query'] = query_embeddings
-        outputs['pos'] = pos_embeddings
-        if 'neg' in inputs:
-            outputs['neg'] = neg_embeddings
+        outputs['positive'] = pos_embeddings
+        if 'negative' in inputs:
+            outputs['negative'] = neg_embeddings
         return (loss, outputs)
 
     def _save(self, output_dir: Optional[str] = None, state_dict=None):
