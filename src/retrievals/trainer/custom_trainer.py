@@ -49,11 +49,17 @@ def train_fn(
     # loss_list = []
     # metrics_list = []
 
-    for step, (inputs, labels) in enumerate(train_loader):
+    for step, inputs in enumerate(train_loader):
+        if isinstance(inputs, (list, tuple)) and len(inputs) == 2:
+            inputs, labels = inputs
+        elif isinstance(inputs, dict):
+            labels = inputs['labels']
+            inputs.pop('labels', None)
+
         if data_collator:
             inputs = data_collator(inputs)
 
-        if isinstance(inputs, list):
+        if isinstance(inputs, (list, tuple)):
             for input in inputs:
                 for k, v in input.items():
                     input[k] = v.to(device)
