@@ -28,8 +28,9 @@ class AutoModelForRetrieval(object):
     ):
         self.top_k = top_k
         if document_embed is None and index_path is None:
-            logging.warning('Please provide document_embed for knn/tensor search or index_path for faiss search')
+            logging.warning('Please provide either document_embed for knn/tensor search or index_path for faiss search')
             return
+
         if index_path is not None:
             import faiss
 
@@ -52,9 +53,14 @@ class AutoModelForRetrieval(object):
             )
 
         else:
-            raise ValueError(f"Only cosine and knn method are supported by similarity_search, while get {self.method}")
+            raise ValueError(
+                f"Only 'cosine' and 'knn' method are supported by similarity_search, while get {self.method}"
+            )
 
         return dists, indices
+
+    def get_relevant_documents(self, query: str):
+        return
 
     def get_pandas_candidate(self, query_ids, document_ids, dists, indices):
         if isinstance(query_ids, pd.Series):
