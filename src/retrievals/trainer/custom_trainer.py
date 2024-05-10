@@ -175,9 +175,16 @@ def valid_fn(
     pred_array = torch.tensor([], device=device)
     label_array = np.array([])
 
-    for step, (inputs, labels) in enumerate(valid_loader):
+    for step, inputs in enumerate(valid_loader):
+        if isinstance(inputs, (list, tuple)) and len(inputs) == 2:
+            inputs, labels = inputs
+        elif isinstance(inputs, dict):
+            labels = inputs['labels']
+            inputs.pop('labels', None)
+
         if data_collator:
             inputs = data_collator(inputs)
+
         for k, v in inputs.items():
             inputs[k] = v.to(device)
         labels = labels.to(device)
