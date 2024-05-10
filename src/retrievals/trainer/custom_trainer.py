@@ -53,6 +53,7 @@ def train_fn(
         if isinstance(inputs, (list, tuple)) and len(inputs) == 2:
             inputs, labels = inputs
         elif isinstance(inputs, dict):
+            assert data_collator is not None, "if labels are in inputs keys, can't set data_collator to None"
             labels = inputs['labels']
             inputs.pop('labels', None)
 

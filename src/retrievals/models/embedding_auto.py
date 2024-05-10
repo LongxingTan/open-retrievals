@@ -74,14 +74,13 @@ class AutoModelForEmbedding(nn.Module):
         loss_fn: Optional[Callable] = None,
         query_instruction: Optional[str] = None,
         document_instruction: Optional[str] = None,
-        hidden_dropout_prob: float = 0.1,
-        attention_dropout_prob: float = 0.1,
         generation_args: Dict = None,
         use_fp16: bool = False,
         use_lora: bool = False,
         lora_config=None,
         device: Optional[str] = None,
         trust_remote_code: bool = True,
+        custom_config_dict: Optional[dict] = None,
         **kwargs,
     ):
         super().__init__()
@@ -94,13 +93,12 @@ class AutoModelForEmbedding(nn.Module):
             self.config = AutoConfig.from_pretrained(
                 config_path, output_hidden_states=True, trust_remote_code=trust_remote_code
             )
-        elif hidden_dropout_prob > 0 or attention_dropout_prob > 0:
+        else:
             self.config = AutoConfig.from_pretrained(
                 model_name_or_path, output_hidden_states=True, trust_remote_code=trust_remote_code
             )
-            self.config.update(
-                {"hidden_dropout_prob": hidden_dropout_prob, "attention_probs_dropout_prob": attention_dropout_prob}
-            )
+        if custom_config_dict:
+            self.config.update(custom_config_dict)
 
         if pretrained:
             self.model = AutoModel.from_pretrained(
@@ -495,8 +493,6 @@ class PairwiseModel(AutoModelForEmbedding):
         model_name_or_path: str,
         pooling_method: str = "cls",
         normalize_embeddings: bool = False,
-        query_instruction: Optional[str] = None,
-        use_fp16: bool = False,
         cross_encoder: bool = False,
         poly_encoder: bool = False,
         loss_fn: Union[nn.Module, Callable] = None,
@@ -506,8 +502,6 @@ class PairwiseModel(AutoModelForEmbedding):
             model_name_or_path=model_name_or_path,
             pooling_method=pooling_method,
             normalize_embeddings=normalize_embeddings,
-            query_instruction=query_instruction,
-            use_fp16=use_fp16,
             loss_fn=None,
             **kwargs,
         )
@@ -583,8 +577,6 @@ class ListwiseModel(AutoModelForEmbedding):
         listwise_pooling: bool = False,
         num_segments: Optional[int] = None,
         normalize_embeddings: bool = False,
-        query_instruction: Optional[str] = None,
-        use_fp16: bool = False,
         loss_fn: Union[nn.Module, Callable] = None,
         **kwargs,
     ) -> None:
@@ -592,8 +584,6 @@ class ListwiseModel(AutoModelForEmbedding):
             model_name_or_path=model_name_or_path,
             pooling_method=pooling_method,
             normalize_embeddings=normalize_embeddings,
-            query_instruction=query_instruction,
-            use_fp16=use_fp16,
             loss_fn=loss_fn,
             **kwargs,
         )
