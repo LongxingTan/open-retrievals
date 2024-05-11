@@ -78,11 +78,18 @@ def train_fn(
             if isinstance(preds, dict) and "loss" in preds:
                 loss = preds["loss"]
             else:
-                if labels:
-                    if 'weights' in inputs:
-                        loss = criterion(preds[0], labels, inputs['weights'])
+                if isinstance(inputs, dict):
+                    if isinstance(preds, dict):
+                        logits = preds['logits']
+                    elif isinstance(preds, (list, tuple)):
+                        logits = preds[0]
                     else:
-                        loss = criterion(preds[0], labels)
+                        logits = preds
+
+                    if 'weights' in inputs:
+                        loss = criterion(logits, labels, inputs['weights'])
+                    else:
+                        loss = criterion(logits, labels)
                 else:
                     loss = criterion(preds[0], preds[1])
 

@@ -131,6 +131,8 @@ class RerankModel(nn.Module):
             else:
                 return logits, loss
         else:
+            if return_dict:
+                return outputs_dict
             return logits
 
     def compute_score(
