@@ -87,9 +87,9 @@ def train_fn(
                         logits = preds
 
                     if 'weights' in inputs:
-                        loss = criterion(logits, labels, inputs['weights'])
+                        loss = criterion(logits, labels.float(), inputs['weights'])
                     else:
-                        loss = criterion(logits, labels)
+                        loss = criterion(logits, labels.float())
                 else:
                     loss = criterion(preds[0], preds[1])
 
