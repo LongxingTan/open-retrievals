@@ -93,13 +93,12 @@ print(indices)
 from transformers import AutoTokenizer
 from retrievals import RerankCollator, RerankModel, RerankTrainer, RerankDataset
 
-train_dataset = RerankDataset(args=data_args)
-tokenizer = AutoTokenizer.from_pretrained(model_args.tokenizer_name, use_fast=False)
+model_name_or_path = "microsoft/mdeberta-v3-base"
 
-model = RerankModel(
-    model_args.model_name_or_path,
-    pooling_method="mean"
-)
+train_dataset = RerankDataset(args=data_args)
+tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, use_fast=False)
+
+model = RerankModel(model_name_or_path, pooling_method="mean")
 optimizer = get_optimizer(model, lr=5e-5, weight_decay=1e-3)
 
 lr_scheduler = get_scheduler(optimizer, num_train_steps=int(len(train_dataset) / 2 * 1))
@@ -186,14 +185,12 @@ from retrievals import AutoModelForEmbedding, AutoModelForRetrieval, RetrievalTr
 from retrievals.losses import ArcFaceAdaptiveMarginLoss, InfoNCE, SimCSE, TripletLoss
 from retrievals.data import  RetrievalDataset, RerankDataset
 
+model_name_or_path = "sentence-transformers/paraphrase-multilingual-mpnet-base-v2"
 
 train_dataset = RetrievalDataset(args=data_args)
-tokenizer = AutoTokenizer.from_pretrained(model_args.tokenizer_name, use_fast=False)
+tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, use_fast=False)
 
-model = AutoModelForEmbedding(
-    model_args.model_name_or_path,
-    pooling_method="cls"
-)
+model = AutoModelForEmbedding(model_name_or_path, pooling_method="cls")
 optimizer = get_optimizer(model, lr=5e-5, weight_decay=1e-3)
 
 lr_scheduler = get_scheduler(optimizer, num_train_steps=int(len(train_dataset) / 2 * 1))
@@ -212,7 +209,6 @@ trainer.train()
 
 **Finetune LLM for embedding by Contrastive learning**
 ```python
-
 from retrievals import AutoModelForEmbedding
 
 model = AutoModelForEmbedding(
@@ -236,6 +232,7 @@ document_embeddings = model.encode(document_texts, convert_to_tensor=True)
 matcher = AutoModelForRetrieval(method='cosine')
 dists, indices = matcher.similarity_search(query_embeddings, document_embeddings, top_k=1)
 ```
+
 
 ## Reference & Acknowledge
 - [sentence-transformers](https://github.com/UKPLab/sentence-transformers)
