@@ -1,4 +1,5 @@
 import logging
+import time
 from typing import Literal, Optional, Union
 
 import numpy as np
@@ -34,13 +35,19 @@ class AutoModelForRetrieval(object):
         if index_path is not None:
             import faiss
 
+            start_time = time.time()
             faiss_index = faiss.read_index(index_path)
-            dists, indices = faiss_search(
-                query_embeddings=query_embed,
-                faiss_index=faiss_index,
-                top_k=top_k,
-                batch_size=batch_size,
-            )
+            logger.info(f'Loading faiss index successfully, elapsed time: {time.time()-start_time:.2}s')
+
+            if batch_size < 1:
+                dists, indices = faiss_index.search(query_embed.astype(np.float32), k=top_k)
+            else:
+                dists, indices = faiss_search(
+                    query_embeddings=query_embed,
+                    faiss_index=faiss_index,
+                    top_k=top_k,
+                    batch_size=batch_size,
+                )
 
         elif self.method == "knn":
             neighbors_model = NearestNeighbors(n_neighbors=top_k, metric="cosine", n_jobs=-1)
@@ -166,6 +173,7 @@ def faiss_search(
     #     queries["query"], batch_size=batch_size, max_length=max_length
     # )
     query_size = len(query_embeddings)
+    assert query_size > 0, 'Please make sure the query_embeddings is not empty'
 
     all_scores = []
     all_indices = []
