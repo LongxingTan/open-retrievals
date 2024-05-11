@@ -1,4 +1,5 @@
 import logging
+import os
 from typing import Any, Callable, Dict, Iterable, List, Literal, Optional, Tuple, Union
 
 import numpy as np
@@ -432,6 +433,11 @@ class AutoModelForEmbedding(nn.Module):
 
         if index_path:
             logger.info(f'Save faiss index to: {index_path}')
+            if os.path.isdir(index_path):
+                index_path = index_path + 'faiss.index'
+            if not os.path.exists(os.path.dirname(index_path)):
+                os.makedirs(os.path.dirname(index_path))
+
             index_cpu = faiss.index_gpu_to_cpu(index)
             faiss.write_index(index_cpu, index_path)
         return index

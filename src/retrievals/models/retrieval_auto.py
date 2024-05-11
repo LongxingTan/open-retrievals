@@ -19,14 +19,20 @@ class AutoModelForRetrieval(object):
 
     def similarity_search(
         self,
-        query_embed: torch.Tensor,
+        query_embed: Union[torch.Tensor, np.ndarray],
         document_embed: Optional[torch.Tensor] = None,
         index_path: Optional[str] = None,
-        top_k: int = 1,
+        top_k: int = 3,
         batch_size: int = -1,
         convert_to_numpy: bool = True,
         **kwargs,
     ):
+        if len(query_embed.shape) == 1:
+            if isinstance(query_embed, np.ndarray):
+                query_embed = query_embed.reshape(1, -1)
+            else:
+                query_embed = query_embed.view(1, -1)
+
         self.top_k = top_k
         if document_embed is None and index_path is None:
             logging.warning('Please provide either document_embed for knn/tensor search or index_path for faiss search')
@@ -48,6 +54,7 @@ class AutoModelForRetrieval(object):
                     top_k=top_k,
                     batch_size=batch_size,
                 )
+            return dists, indices
 
         elif self.method == "knn":
             neighbors_model = NearestNeighbors(n_neighbors=top_k, metric="cosine", n_jobs=-1)
@@ -159,7 +166,7 @@ def cosine_similarity_search(
 
 
 def faiss_search(
-    query_embeddings,
+    query_embed,
     faiss_index,
     top_k: int = 100,
     batch_size: int = 128,
@@ -172,7 +179,7 @@ def faiss_search(
     # query_embeddings = model.encode_queries(
     #     queries["query"], batch_size=batch_size, max_length=max_length
     # )
-    query_size = len(query_embeddings)
+    query_size = len(query_embed)
     assert query_size > 0, 'Please make sure the query_embeddings is not empty'
 
     all_scores = []
@@ -180,7 +187,7 @@ def faiss_search(
 
     for i in tqdm(range(0, query_size, batch_size), desc="Searching"):
         j = min(i + batch_size, query_size)
-        query_embedding = query_embeddings[i:j]
+        query_embedding = query_embed[i:j]
         score, index = faiss_index.search(query_embedding.astype(np.float32), k=top_k)
         all_scores.append(score)
         all_indices.append(index)
