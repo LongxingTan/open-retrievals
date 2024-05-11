@@ -115,6 +115,8 @@ class AutoModelForEmbedding(nn.Module):
                 and hasattr(self.tokenizer, "model_max_length")
             ):
                 max_length = min(self.model.config.max_position_embeddings, self.tokenizer.model_max_length)
+        else:
+            logger.info('max_length will only work if the encode or forward function input text directly')
 
         self.max_length = max_length
 
@@ -406,15 +408,19 @@ class AutoModelForEmbedding(nn.Module):
         inputs: Union[DataLoader, Dict, List, str],
         index_path: Optional[str] = None,
         batch_size: int = 128,
+        show_progress_bar: bool = None,
         use_gpu: bool = True,
     ):
         import faiss
 
-        embeddings = self.encode(inputs, batch_size=batch_size, convert_to_numpy=True)
+        embeddings = self.encode(
+            inputs, batch_size=batch_size, convert_to_numpy=True, show_progress_bar=show_progress_bar
+        )
         embeddings = np.asarray(embeddings, dtype=np.float32)
 
         index = faiss.IndexFlatL2(len(embeddings[0]))
         if use_gpu and self.device == 'cuda':
+            logger.info('Build index use faiss-gpu')
             co = faiss.GpuMultipleClonerOptions()
             co.shard = True
             co.useFloat16 = True
