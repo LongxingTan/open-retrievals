@@ -72,14 +72,17 @@ def train_fn(
         batch_size = labels.size(0)
         with torch.cuda.amp.autocast(enabled=apex):
             if criterion is None:
-                preds = model(inputs, labels)
+                preds = model(inputs=inputs, labels=labels)
             else:
-                preds = model(inputs)
+                preds = model(inputs=inputs)
             if isinstance(preds, dict) and "loss" in preds:
                 loss = preds["loss"]
             else:
-                if isinstance(inputs, dict) and 'weights' in inputs:
-                    loss = criterion(preds[0], labels, inputs['weights'])
+                if labels:
+                    if 'weights' in inputs:
+                        loss = criterion(preds[0], labels, inputs['weights'])
+                    else:
+                        loss = criterion(preds[0], labels)
                 else:
                     loss = criterion(preds[0], preds[1])
 
