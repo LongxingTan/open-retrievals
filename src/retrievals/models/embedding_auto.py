@@ -5,7 +5,6 @@ import numpy as np
 import pandas as pd
 import torch
 import torch.nn as nn
-from numpy import ndarray
 from torch.utils.data import DataLoader
 from tqdm.autonotebook import trange
 from transformers import (
@@ -243,7 +242,7 @@ class AutoModelForEmbedding(nn.Module):
                 device=device,
                 normalize_embeddings=normalize_embeddings,
             )
-        elif isinstance(inputs, (str, List, Tuple, pd.Series)):
+        elif isinstance(inputs, (str, List, Tuple, pd.Series, np.ndarray)):
             return self.encode_from_text(
                 sentences=inputs,
                 batch_size=batch_size,
@@ -267,8 +266,13 @@ class AutoModelForEmbedding(nn.Module):
         return self.embed_documents([text])[0]
 
     def encode_from_loader(
-        self, loader, convert_to_numpy: bool = True, device: str = None, normalize_embeddings: bool = False, **kwargs
-    ) -> Union[List[torch.Tensor], ndarray, torch.Tensor]:
+        self,
+        loader: DataLoader,
+        convert_to_numpy: bool = True,
+        device: str = None,
+        normalize_embeddings: bool = False,
+        **kwargs,
+    ) -> Union[List[torch.Tensor], np.ndarray, torch.Tensor]:
         self.model.eval()
         self.model.to(device or self.device)
         all_embeddings = []
@@ -292,7 +296,7 @@ class AutoModelForEmbedding(nn.Module):
 
     def encode_from_text(
         self,
-        sentences: Union[str, List[str]],
+        sentences: Union[str, List[str], Tuple[str], pd.Series, np.ndarray],
         batch_size: int = 128,
         show_progress_bar: bool = None,
         output_value: str = "sentence_embedding",
@@ -300,7 +304,7 @@ class AutoModelForEmbedding(nn.Module):
         convert_to_tensor: bool = False,
         device: str = None,
         normalize_embeddings: bool = False,
-    ) -> Union[List[torch.Tensor], ndarray, torch.Tensor]:
+    ) -> Union[List[torch.Tensor], np.ndarray, torch.Tensor]:
         """
         Computes sentence embeddings from sentence-transformers library.
 
@@ -438,7 +442,7 @@ class AutoModelForEmbedding(nn.Module):
     def search(self):
         return
 
-    def similarity(self, queries: Union[str, List[str]], keys: Union[str, List[str], ndarray]):
+    def similarity(self, queries: Union[str, List[str]], keys: Union[str, List[str], np.ndarray]):
         return
 
     def save(self, path: str):

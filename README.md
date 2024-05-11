@@ -77,13 +77,14 @@ from retrievals import AutoModelForEmbedding, AutoModelForRetrieval
 
 sentences = ['A dog is chasing car.', 'A man is playing a guitar.']
 model_name_or_path = "sentence-transformers/all-MiniLM-L6-v2"
-index_path = './database/faiss'
+index_path = './database/faiss/faiss.index'
 model = AutoModelForEmbedding(model_name_or_path)
 model.build_index(sentences, index_path=index_path)
 
-matcher = AutoModelForRetrieval()
 query_embed = model.encode("He plays guitar.")
-results = matcher.similarity_search(query_embed, index_path=index_path)
+matcher = AutoModelForRetrieval()
+dists, indices = matcher.similarity_search(query_embed, index_path=index_path)
+print(indices)
 ```
 
 
