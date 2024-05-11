@@ -1,5 +1,6 @@
 import logging
 import os
+import time
 from typing import Any, Callable, Dict, Iterable, List, Literal, Optional, Tuple, Union
 
 import numpy as np
@@ -417,6 +418,9 @@ class AutoModelForEmbedding(nn.Module):
     ):
         import faiss
 
+        logger.info("Start to build index")
+        start_time = time.time()
+
         embeddings = self.encode(
             inputs, batch_size=batch_size, convert_to_numpy=True, show_progress_bar=show_progress_bar
         )
@@ -440,6 +444,8 @@ class AutoModelForEmbedding(nn.Module):
 
             index_cpu = faiss.index_gpu_to_cpu(index)
             faiss.write_index(index_cpu, index_path)
+
+        logger.info(f'Build index successfully, saved in {index_path}, elapsed: {time.time() - start_time:.2}s')
         return index
 
     def add_to_index(self):
