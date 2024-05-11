@@ -236,7 +236,6 @@ class AutoModelForEmbedding(nn.Module):
         if isinstance(inputs, (DataLoader, BatchEncoding, Dict)):
             return self.encode_from_loader(
                 loader=inputs,
-                batch_size=batch_size,
                 show_progress_bar=show_progress_bar,
                 output_value=output_value,
                 convert_to_numpy=convert_to_numpy,
@@ -428,8 +427,9 @@ class AutoModelForEmbedding(nn.Module):
         index.add(embeddings)
 
         if index_path:
-            logger.info(f'save faiss index to: {index_path}')
-            faiss.write_index(index, index_path)
+            logger.info(f'Save faiss index to: {index_path}')
+            index_cpu = faiss.index_gpu_to_cpu(index)
+            faiss.write_index(index_cpu, index_path)
         return index
 
     def add_to_index(self):
