@@ -49,7 +49,7 @@ class AutoModelForRetrieval(object):
                 dists, indices = faiss_index.search(query_embed.astype(np.float32), k=top_k)
             else:
                 dists, indices = faiss_search(
-                    query_embeddings=query_embed,
+                    query_embed=query_embed,
                     faiss_index=faiss_index,
                     top_k=top_k,
                     batch_size=batch_size,
