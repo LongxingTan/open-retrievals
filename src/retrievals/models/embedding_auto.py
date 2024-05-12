@@ -1,11 +1,12 @@
 import logging
+import os
+import time
 from typing import Any, Callable, Dict, Iterable, List, Literal, Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
 import torch
 import torch.nn as nn
-from numpy import ndarray
 from torch.utils.data import DataLoader
 from tqdm.autonotebook import trange
 from transformers import (
@@ -115,6 +116,8 @@ class AutoModelForEmbedding(nn.Module):
                 and hasattr(self.tokenizer, "model_max_length")
             ):
                 max_length = min(self.model.config.max_position_embeddings, self.tokenizer.model_max_length)
+        else:
+            logger.info('max_length will only work if the encode or forward function input text directly')
 
         self.max_length = max_length
 
@@ -234,7 +237,6 @@ class AutoModelForEmbedding(nn.Module):
         if isinstance(inputs, (DataLoader, BatchEncoding, Dict)):
             return self.encode_from_loader(
                 loader=inputs,
-                batch_size=batch_size,
                 show_progress_bar=show_progress_bar,
                 output_value=output_value,
                 convert_to_numpy=convert_to_numpy,
@@ -242,7 +244,7 @@ class AutoModelForEmbedding(nn.Module):
                 device=device,
                 normalize_embeddings=normalize_embeddings,
             )
-        elif isinstance(inputs, (str, List, Tuple, pd.Series)):
+        elif isinstance(inputs, (str, List, Tuple, pd.Series, np.ndarray)):
             return self.encode_from_text(
                 sentences=inputs,
                 batch_size=batch_size,
@@ -266,8 +268,13 @@ class AutoModelForEmbedding(nn.Module):
         return self.embed_documents([text])[0]
 
     def encode_from_loader(
-        self, loader, convert_to_numpy: bool = True, device: str = None, normalize_embeddings: bool = False, **kwargs
-    ) -> Union[List[torch.Tensor], ndarray, torch.Tensor]:
+        self,
+        loader: DataLoader,
+        convert_to_numpy: bool = True,
+        device: str = None,
+        normalize_embeddings: bool = False,
+        **kwargs,
+    ) -> Union[List[torch.Tensor], np.ndarray, torch.Tensor]:
         self.model.eval()
         self.model.to(device or self.device)
         all_embeddings = []
@@ -291,7 +298,7 @@ class AutoModelForEmbedding(nn.Module):
 
     def encode_from_text(
         self,
-        sentences: Union[str, List[str]],
+        sentences: Union[str, List[str], Tuple[str], pd.Series, np.ndarray],
         batch_size: int = 128,
         show_progress_bar: bool = None,
         output_value: str = "sentence_embedding",
@@ -299,7 +306,7 @@ class AutoModelForEmbedding(nn.Module):
         convert_to_tensor: bool = False,
         device: str = None,
         normalize_embeddings: bool = False,
-    ) -> Union[List[torch.Tensor], ndarray, torch.Tensor]:
+    ) -> Union[List[torch.Tensor], np.ndarray, torch.Tensor]:
         """
         Computes sentence embeddings from sentence-transformers library.
 
@@ -406,15 +413,22 @@ class AutoModelForEmbedding(nn.Module):
         inputs: Union[DataLoader, Dict, List, str],
         index_path: Optional[str] = None,
         batch_size: int = 128,
+        show_progress_bar: bool = None,
         use_gpu: bool = True,
     ):
         import faiss
 
-        embeddings = self.encode(inputs, batch_size=batch_size, convert_to_numpy=True)
+        logger.info("Start to build index")
+        start_time = time.time()
+
+        embeddings = self.encode(
+            inputs, batch_size=batch_size, convert_to_numpy=True, show_progress_bar=show_progress_bar
+        )
         embeddings = np.asarray(embeddings, dtype=np.float32)
 
         index = faiss.IndexFlatL2(len(embeddings[0]))
         if use_gpu and self.device == 'cuda':
+            logger.info('Build index use faiss-gpu')
             co = faiss.GpuMultipleClonerOptions()
             co.shard = True
             co.useFloat16 = True
@@ -422,8 +436,16 @@ class AutoModelForEmbedding(nn.Module):
         index.add(embeddings)
 
         if index_path:
-            logger.info(f'save faiss index to: {index_path}')
-            faiss.write_index(index, index_path)
+            logger.info(f'Save faiss index to: {index_path}')
+            if os.path.isdir(index_path):
+                index_path = index_path + 'faiss.index'
+            if not os.path.exists(os.path.dirname(index_path)):
+                os.makedirs(os.path.dirname(index_path))
+
+            index_cpu = faiss.index_gpu_to_cpu(index)
+            faiss.write_index(index_cpu, index_path)
+
+        logger.info(f'Build index successfully, saved in {index_path}, elapsed: {time.time() - start_time:.2}s')
         return index
 
     def add_to_index(self):
@@ -432,7 +454,7 @@ class AutoModelForEmbedding(nn.Module):
     def search(self):
         return
 
-    def similarity(self, queries: Union[str, List[str]], keys: Union[str, List[str], ndarray]):
+    def similarity(self, queries: Union[str, List[str]], keys: Union[str, List[str], np.ndarray]):
         return
 
     def save(self, path: str):

@@ -100,13 +100,19 @@ class RerankModel(nn.Module):
 
     def forward(
         self,
-        input_ids: torch.Tensor,
+        input_ids: Optional[torch.Tensor] = None,
         attention_mask: Optional[torch.Tensor] = None,
+        inputs: Optional[Dict[str, torch.Tensor]] = None,
         labels: Optional[torch.Tensor] = None,
         return_dict: Optional[bool] = True,
         **kwargs,
     ) -> Union[Dict[str, torch.Tensor], torch.Tensor]:
-        features = self.encode(input_ids=input_ids, attention_mask=attention_mask)
+        if input_ids:
+            features = self.encode(input_ids=input_ids, attention_mask=attention_mask)
+        elif inputs:
+            features = self.encode(**inputs)
+        else:
+            raise ValueError("input_ids(tensor) and inputs(dict) can't be empty as the same time")
         logits = self.classifier(features).reshape(-1)
 
         if return_dict:
@@ -125,6 +131,8 @@ class RerankModel(nn.Module):
             else:
                 return logits, loss
         else:
+            if return_dict:
+                return outputs_dict
             return logits
 
     def compute_score(

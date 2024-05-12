@@ -1,16 +1,17 @@
 import logging
 
 import torch
+from torch import nn
 
 logger = logging.getLogger(__name__)
 
 
 class FGM:
-    def __init__(self, model):
+    def __init__(self, model: nn.Module):
         self.model = model
         self.backup = dict()
 
-    def attack(self, epsilon=1.0, emb_name="word_embeddings"):
+    def attack(self, epsilon: float = 1.0, emb_name: str = "word_embeddings"):
         # emb_name参数要换成你模型中embedding的参数名
         for name, param in self.model.named_parameters():
             if param.requires_grad and emb_name in name:
@@ -20,7 +21,7 @@ class FGM:
                     r_at = epsilon * param.grad / norm
                     param.data.add_(r_at)
 
-    def restore(self, emb_name="word_embeddings"):
+    def restore(self, emb_name: str = "word_embeddings"):
         # emb_name这个参数要换成你模型中embedding的参数名
         for name, param in self.model.named_parameters():
             if param.requires_grad and emb_name in name:
@@ -30,7 +31,7 @@ class FGM:
 
 
 class EMA:
-    def __init__(self, model, decay):
+    def __init__(self, model: nn.Module, decay: float = 0.999):
         self.model = model
         self.decay = decay
         self.shadow = dict()
@@ -64,12 +65,14 @@ class EMA:
 
 
 class PGD:
-    def __init__(self, model):
+    def __init__(self, model: nn.Module):
         self.model = model
         self.emb_backup = dict()
         self.grad_backup = dict()
 
-    def attack(self, epsilon=1.0, alpha=0.3, emb_name="word_embeddings", is_first_attack=False):
+    def attack(
+        self, epsilon: float = 1.0, alpha: float = 0.3, emb_name: str = "word_embeddings", is_first_attack: bool = False
+    ):
         # emb_name这个参数要换成你模型中embedding的参数名
         for name, param in self.model.named_parameters():
             if param.requires_grad and emb_name in name:
@@ -81,7 +84,7 @@ class PGD:
                     param.data.add_(r_at)
                     param.data = self.project(name, param.data, epsilon)
 
-    def restore(self, emb_name="word_embeddings"):
+    def restore(self, emb_name: str = "word_embeddings"):
         # emb_name这个参数要换成你模型中embedding的参数名
         for name, param in self.model.named_parameters():
             if param.requires_grad and emb_name in name:
@@ -109,13 +112,13 @@ class PGD:
 class AWP:
     def __init__(
         self,
-        model,
+        model: nn.Module,
         optimizer,
-        adv_param="weight",
-        adv_lr=1,
-        adv_eps=0.2,
-        start_epoch=0,
-        adv_step=1,
+        adv_param: str = "weight",
+        adv_lr: float = 1,
+        adv_eps: float = 0.2,
+        start_epoch: int = 0,
+        adv_step: int = 1,
         scaler=None,
     ):
         self.model = model

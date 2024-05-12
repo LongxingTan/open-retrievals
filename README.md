@@ -77,31 +77,42 @@ from retrievals import AutoModelForEmbedding, AutoModelForRetrieval
 
 sentences = ['A dog is chasing car.', 'A man is playing a guitar.']
 model_name_or_path = "sentence-transformers/all-MiniLM-L6-v2"
-index_path = './database/faiss'
+index_path = './database/faiss/faiss.index'
 model = AutoModelForEmbedding(model_name_or_path)
 model.build_index(sentences, index_path=index_path)
 
-matcher = AutoModelForRetrieval()
 query_embed = model.encode("He plays guitar.")
-results = matcher.similarity_search(query_embed, index_path=index_path)
+matcher = AutoModelForRetrieval()
+dists, indices = matcher.similarity_search(query_embed, index_path=index_path)
+print(indices)
 ```
 
 
 **Rerank**
 ```python
-from transformers import AutoTokenizer
+from torch.optim import AdamW
+from transformers import AutoTokenizer, TrainingArguments, get_cosine_schedule_with_warmup
 from retrievals import RerankCollator, RerankModel, RerankTrainer, RerankDataset
 
+model_name_or_path: str = "microsoft/mdeberta-v3-base"
+learning_rate: float = 3e-5
+batch_size: int = 64
+epochs: int = 3
+
 train_dataset = RerankDataset(args=data_args)
-tokenizer = AutoTokenizer.from_pretrained(model_args.tokenizer_name, use_fast=False)
+tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, use_fast=False)
 
-model = RerankModel(
-    model_args.model_name_or_path,
-    pooling_method="mean"
+model = RerankModel(model_name_or_path, pooling_method="mean")
+optimizer = AdamW(model.parameters(), lr=learning_rate)
+num_train_steps = int(len(train_dataset) / batch_size * epochs)
+scheduler = get_cosine_schedule_with_warmup(optimizer, num_warmup_steps=100, num_training_steps=num_train_steps)
+
+training_args = TrainingArguments(
+    learning_rate=2e-5,
+    per_device_train_batch_size=1,
+    num_train_epochs=2,
+    output_dir = './checkpoints',
 )
-optimizer = get_optimizer(model, lr=5e-5, weight_decay=1e-3)
-
-lr_scheduler = get_scheduler(optimizer, num_train_steps=int(len(train_dataset) / 2 * 1))
 
 trainer = RerankTrainer(
     model=model,
@@ -110,8 +121,9 @@ trainer = RerankTrainer(
     data_collator=RerankCollator(tokenizer, max_length=data_args.query_max_len),
 )
 trainer.optimizer = optimizer
-trainer.scheduler = lr_scheduler
+trainer.scheduler = scheduler
 trainer.train()
+trainer.save_model('weights')
 ```
 
 
@@ -142,7 +154,7 @@ class DenseRetrieval:
         self.retriever = vectordb.as_retriever(retrieval_args)
 
         reranker_args = {
-            "model": "../../inputs/bce-reranker-base_v1",
+            "model": "maidalun1020/bce-reranker-base_v1",
             "top_n": 7,
             "device": "cuda",
             "use_fp16": True,
@@ -185,14 +197,12 @@ from retrievals import AutoModelForEmbedding, AutoModelForRetrieval, RetrievalTr
 from retrievals.losses import ArcFaceAdaptiveMarginLoss, InfoNCE, SimCSE, TripletLoss
 from retrievals.data import  RetrievalDataset, RerankDataset
 
+model_name_or_path = "sentence-transformers/paraphrase-multilingual-mpnet-base-v2"
 
 train_dataset = RetrievalDataset(args=data_args)
-tokenizer = AutoTokenizer.from_pretrained(model_args.tokenizer_name, use_fast=False)
+tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, use_fast=False)
 
-model = AutoModelForEmbedding(
-    model_args.model_name_or_path,
-    pooling_method="cls"
-)
+model = AutoModelForEmbedding(model_name_or_path, pooling_method="cls")
 optimizer = get_optimizer(model, lr=5e-5, weight_decay=1e-3)
 
 lr_scheduler = get_scheduler(optimizer, num_train_steps=int(len(train_dataset) / 2 * 1))
@@ -211,7 +221,6 @@ trainer.train()
 
 **Finetune LLM for embedding by Contrastive learning**
 ```python
-
 from retrievals import AutoModelForEmbedding
 
 model = AutoModelForEmbedding(
@@ -235,6 +244,7 @@ document_embeddings = model.encode(document_texts, convert_to_tensor=True)
 matcher = AutoModelForRetrieval(method='cosine')
 dists, indices = matcher.similarity_search(query_embeddings, document_embeddings, top_k=1)
 ```
+
 
 ## Reference & Acknowledge
 - [sentence-transformers](https://github.com/UKPLab/sentence-transformers)
