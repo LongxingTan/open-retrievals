@@ -143,7 +143,7 @@ class AutoModelForEmbeddingTest(TestCase, ModelTesterMixin):
             [
                 ("Hello Word, a test sentence", "Second input for model"),
                 ("My second tuple", "With two inputs"),
-                ("Final tuple", "final test"),
+                ("Final tuple", "final test Oh"),
             ]
         )
         assert emb.shape == (3, 384)
