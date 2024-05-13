@@ -187,7 +187,12 @@ class RerankCollator(DataCollatorWithPadding):
             labels = [feature['labels'] for feature in features]
 
         batch = self.tokenizer(
-            text=query_texts, text_pair=document_texts, truncation=True, max_length=self.max_length, return_tensors="pt"
+            text=query_texts,
+            text_pair=document_texts,
+            padding=True,
+            truncation=True,
+            max_length=self.max_length,
+            return_tensors="pt",
         )
 
         # for key in ['input_ids', 'attention_mask']:

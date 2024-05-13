@@ -56,7 +56,7 @@ class DataArguments:
     train_data: str = field(default=None, metadata={"help": "Path to train data"})
     train_group_size: int = field(default=8)
 
-    query_max_len: int = field(
+    query_max_length: int = field(
         default=32,
         metadata={
             "help": "The maximum total input sequence length after tokenization for document. Sequences longer "
@@ -64,7 +64,7 @@ class DataArguments:
         },
     )
 
-    document_max_len: int = field(
+    document_max_length: int = field(
         default=128,
         metadata={
             "help": "The maximum total input sequence length after tokenization for document. Sequences longer "

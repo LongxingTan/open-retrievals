@@ -54,14 +54,14 @@ class ModelArguments:
 class DataArguments:
     train_data: str = field(default=None, metadata={"help": "Path to train data"})
     train_group_size: int = field(default=8)
-    query_max_len: int = field(
+    query_max_length: int = field(
         default=32,
         metadata={
             "help": "The maximum total input sequence length after tokenization for document. Sequences longer "
             "than this will be truncated, sequences shorter will be padded."
         },
     )
-    document_max_len: int = field(
+    document_max_length: int = field(
         default=32,
         metadata={
             "help": "The maximum total input sequence length after tokenization for document. Sequences longer "
@@ -262,7 +262,7 @@ def main():
         model=model,
         args=training_args,
         train_dataset=train_dataset,
-        data_collator=TripletCollator(tokenizer, max_length=data_args.query_max_len),
+        data_collator=TripletCollator(tokenizer, max_length=data_args.query_max_length),
         loss_fn=TripletLoss(),
     )
     trainer.optimizer = optimizer
