@@ -76,7 +76,13 @@ class AutoModelForRetrieval(object):
     def get_relevant_documents(self, query: str):
         return
 
-    def get_pandas_candidate(self, query_ids, document_ids, dists, indices):
+    def get_pandas_candidate(
+        self,
+        query_ids: Union[pd.Series, np.ndarray],
+        document_ids: Union[pd.Series, np.ndarray],
+        dists: np.ndarray,
+        indices: np.ndarray,
+    ):
         if isinstance(query_ids, pd.Series):
             query_ids = query_ids.values
         if isinstance(document_ids, pd.Series):
@@ -84,35 +90,46 @@ class AutoModelForRetrieval(object):
 
         retrieval = {
             'query_id': np.repeat(query_ids, self.top_k),
-            'document_id': document_ids[indices.ravel()],
+            'predict_id': document_ids[indices.ravel()],
             'score': dists.ravel(),
         }
         return pd.DataFrame(retrieval)
 
-    def get_rerank_df(self, pred_df):
+    def get_rerank_df(
+        self,
+        input_df,
+        method=None,
+        query_key: str = 'query_id',
+        document_key: str = 'document_id',
+        predict_key: str = 'predict_id',
+    ):
+        """
+        1: the candidate is in ground truth pool
+        2: the candidate is related or not with query
+        """
         logger.info('Generate rerank samples based on the retrieval prediction with: query_id, document_ids, pred_ids')
 
         samples = []
-        for _, row in tqdm(pred_df.iterrows(), total=len(pred_df)):
-            query_id = row['query_id']
-            document_ids = row['document_ids']
-            if pd.isna(row['pred_ids']):
-                print(' Error 1 , no pred_ids ...')
+        for _, row in tqdm(input_df.iterrows(), total=len(input_df)):
+            query_id = row[query_key]
+            document_ids = row[document_key]
+            if pd.isna(row[predict_key]):
+                print(f' Data error, no {predict_key} in input_df')
                 continue
             else:
-                pred_ids_list = row['pred_ids'].split()
+                predict_ids_list = row[predict_key].split()
 
             if pd.isna(document_ids):
-                print(' Error 2 , no label document_ids ...')
-                for id in pred_ids_list:
-                    samples.append({'query_id': query_id, 'document_id': id, 'label': 0})
+                print(f' Data Error, the ground truth {document_key} is none')
+                for id in predict_ids_list:
+                    samples.append({query_key: query_id, document_key: id, 'label': 0})
             else:
                 documents = document_ids.split()
-                for id in pred_ids_list:
+                for id in predict_ids_list:
                     if id not in documents:
-                        samples.append({'query_id': query_id, 'document_id': id, 'label': 0})
+                        samples.append({query_key: query_id, document_key: id, 'label': 0})
                     else:
-                        samples.append({'query_id': query_id, 'document_id': id, 'label': 1})
+                        samples.append({query_key: query_id, document_key: id, 'label': 1})
 
         return pd.DataFrame(samples)
 
