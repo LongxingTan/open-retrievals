@@ -27,7 +27,8 @@
 
 **[中文wiki](https://github.com/LongxingTan/open-retrievals/wiki)** | **[英文文档](https://open-retrievals.readthedocs.io)** | **[Release Notes](https://open-retrievals.readthedocs.io/en/latest/CHANGELOG.html)**
 
-**Open-Retrievals** 帮助开发者在信息检索、大语言模型等领域便捷地应用与增强文本向量，基于Pytorch、Transformers框架。
+**Open-Retrievals** 帮助开发者在信息检索、大语言模型等领域便捷地应用文本向量，快速搭建检索、排序、RAG等应用。
+- 基于Pytorch、Transformers框架
 - 对比学习增强性能
 - 支持大语言模型文本向量
 - 快速产出RAG demo
@@ -176,6 +177,7 @@ class DenseRetrieval:
 
 
 ## 参考与致谢
+
 - [sentence-transformers](https://github.com/UKPLab/sentence-transformers)
 - [FlagEmbedding](https://github.com/FlagOpen/FlagEmbedding)
 - [uniem](https://github.com/wangyuxinwhy/uniem)

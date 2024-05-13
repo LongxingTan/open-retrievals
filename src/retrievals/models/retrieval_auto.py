@@ -82,7 +82,7 @@ class AutoModelForRetrieval(object):
         document_ids: Union[pd.Series, np.ndarray],
         dists: np.ndarray,
         indices: np.ndarray,
-    ):
+    ) -> pd.DataFrame:
         if isinstance(query_ids, pd.Series):
             query_ids = query_ids.values
         if isinstance(document_ids, pd.Series):
@@ -97,12 +97,12 @@ class AutoModelForRetrieval(object):
 
     def get_rerank_df(
         self,
-        input_df,
+        input_df: pd.DataFrame,
         method=None,
         query_key: str = 'query_id',
         document_key: str = 'document_id',
         predict_key: str = 'predict_id',
-    ):
+    ) -> pd.DataFrame:
         """
         1: the candidate is in ground truth pool
         2: the candidate is related or not with query

@@ -135,12 +135,15 @@ class RerankModel(nn.Module):
                 return outputs_dict
             return logits
 
+    @torch.no_grad()
     def compute_score(
         self,
         text: Union[List[str], str],
         text_pair: Union[List[str], str],
         data_collator: Optional[RerankCollator] = None,
         batch_size: int = 128,
+        max_length: int = 512,
+        normalize: bool = False,
         show_progress_bar: bool = None,
         **kwargs,
     ):
@@ -149,35 +152,46 @@ class RerankModel(nn.Module):
         if isinstance(text_pair, str):
             text_pair = [text_pair]
         assert len(text) == len(text_pair), f"Length of text {len(text)} and text_pair {len(text_pair)} should be same"
+        assert data_collator is not None, "please provide valid collator"
         batch_size = min(batch_size, len(text))
 
         if not data_collator:
             data_collator = RerankCollator(tokenizer=self.tokenizer)
 
-        with torch.no_grad():
-            scores_list: List = []
-            for i in range(0, len(text), batch_size):
-                text_batch = [{'query': text[i], 'document': text_pair[i]} for i in range(i, i + batch_size)]
-                batch = data_collator(text_batch)
-                scores = (
-                    self.model(batch['input_ids'], batch['attention_mask'], return_dict=True).logits.view(-1).float()
-                )
+        scores_list: List[float] = []
+        for i in range(0, len(text), batch_size):
+            text_batch = [{'query': text[i], 'document': text_pair[i]} for i in range(i, i + batch_size)]
+            batch = data_collator(text_batch)
+            scores = self.model(batch['input_ids'], batch['attention_mask'], return_dict=True).logits.view(-1).float()
+            if normalize:
                 scores = torch.sigmoid(scores)
-                scores_list.extend(scores.cpu().numpy().tolist())
+            scores_list.extend(scores.cpu().numpy().tolist())
 
+        if len(scores_list) == 1:
+            return scores_list[0]
         return scores_list
 
+    @torch.no_grad()
     def rerank(
         self,
         query: Union[List[str], str],
-        document: List[str],
+        document: Union[List[str], str],
         data_collator: Optional[RerankCollator] = None,
         batch_size: int = 32,
+        max_length: int = 512,
+        normalize: bool = False,
         show_progress_bar: bool = None,
         return_dict: bool = True,
         **kwargs,
     ):
-        merge_scores = self.compute_score(query, document, data_collator, batch_size, show_progress_bar)
+        merge_scores = self.compute_score(
+            text=query,
+            text_pair=document,
+            data_collator=data_collator,
+            batch_size=batch_size,
+            normalize=normalize,
+            show_progress_bar=show_progress_bar,
+        )
 
         merge_scores_argsort = np.argsort(merge_scores)[::-1]
         sorted_document = []
