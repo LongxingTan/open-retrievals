@@ -5,7 +5,6 @@ from typing import Dict, List, Tuple, Union
 def mrr(
     qrels: Dict[str, Dict[str, int]], results: Dict[str, Dict[str, float]], k_values: List[int]
 ) -> Tuple[Dict[str, float]]:
-    # from BEIR
     MRR = {}
 
     for k in k_values:

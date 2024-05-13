@@ -8,6 +8,7 @@ import pandas as pd
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
+from tqdm.auto import tqdm
 from tqdm.autonotebook import trange
 from transformers import (
     AutoConfig,
@@ -339,9 +340,7 @@ class AutoModelForEmbedding(nn.Module):
             convert_to_numpy = False
 
         input_was_string = False
-        if isinstance(sentences, str) or not hasattr(
-            sentences, "__len__"
-        ):  # Cast an individual sentence to a list with length 1
+        if isinstance(sentences, str) or not hasattr(sentences, "__len__"):
             sentences = [sentences]
             input_was_string = True
 

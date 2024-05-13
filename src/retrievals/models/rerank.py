@@ -4,6 +4,7 @@ from typing import Callable, Dict, List, Optional, Tuple, Union
 import numpy as np
 import torch
 import torch.nn as nn
+from tqdm.auto import tqdm
 from transformers import (
     AutoConfig,
     AutoModel,
