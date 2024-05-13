@@ -9,8 +9,6 @@ import logging
 
 import pandas as pd
 import requests
-from langchain_community.document_loaders.pdf import BaseLoader
-from langchain_core.documents import Document
 
 logger = logging.getLogger(__name__)
 
