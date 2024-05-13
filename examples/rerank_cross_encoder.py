@@ -56,14 +56,14 @@ class ModelArguments:
 class DataArguments:
     train_data: str = field(default=None, metadata={"help": "Path to train data"})
     train_group_size: int = field(default=8)
-    query_max_len: int = field(
+    query_max_length: int = field(
         default=32,
         metadata={
             "help": "The maximum total input sequence length after tokenization for document. Sequences longer "
             "than this will be truncated, sequences shorter will be padded."
         },
     )
-    document_max_len: int = field(
+    document_max_length: int = field(
         default=32,
         metadata={
             "help": "The maximum total input sequence length after tokenization for document. Sequences longer "
@@ -105,11 +105,11 @@ class TrainingArguments(transformers.TrainingArguments):
 
 
 class RerankTrainingDataset(Dataset):
-    def __init__(self, df, tokenizer: transformers.PreTrainedTokenizer, max_len: int):
+    def __init__(self, df, tokenizer: transformers.PreTrainedTokenizer, max_length: int):
         self.tokenizer = tokenizer
         dataset = datasets.Dataset.from_pandas(df)
         self.tokenizer = tokenizer
-        data_dict = dataset.map(partial(preprocess, tokenizer=tokenizer, max_len=max_len), batched=True)
+        data_dict = dataset.map(partial(preprocess, tokenizer=tokenizer, max_length=max_length), batched=True)
 
         self.input_ids = data_dict["input_ids"]
         self.attention_mask = data_dict["attention_mask"]
@@ -126,13 +126,13 @@ class RerankTrainingDataset(Dataset):
         )
 
 
-def preprocess(examples, tokenizer, max_len):
+def preprocess(examples, tokenizer, max_length):
     tokenized_text = tokenizer(
         examples["query"],
         examples["document"],
         padding="max_length",
         truncation="longest_first",
-        max_length=max_len,
+        max_length=max_length,
         add_special_tokens=True,
         return_tensors="pt",
     )
@@ -193,7 +193,7 @@ def main():
 
     df = pd.read_csv(data_args.train_data)
 
-    train_dataset = RerankTrainingDataset(df=df, tokenizer=tokenizer, max_len=data_args.query_max_len)
+    train_dataset = RerankTrainingDataset(df=df, tokenizer=tokenizer, max_length=data_args.query_max_len)
     # eval_dataset = RerankTrainingDataset()
 
     loss_fn = nn.BCEWithLogitsLoss(reduction="mean")

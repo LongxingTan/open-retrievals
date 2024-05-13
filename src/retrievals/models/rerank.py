@@ -1,5 +1,5 @@
 import logging
-from typing import Callable, Dict, List, Optional, Union
+from typing import Callable, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 import torch
@@ -106,7 +106,7 @@ class RerankModel(nn.Module):
         labels: Optional[torch.Tensor] = None,
         return_dict: Optional[bool] = True,
         **kwargs,
-    ) -> Union[Dict[str, torch.Tensor], torch.Tensor]:
+    ) -> Union[Dict[str, torch.Tensor], Tuple[torch.Tensor, torch.Tensor], torch.Tensor]:
         if input_ids:
             features = self.encode(input_ids=input_ids, attention_mask=attention_mask)
         elif inputs:

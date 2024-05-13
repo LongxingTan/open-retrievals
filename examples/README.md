@@ -18,7 +18,7 @@ sh finetune_llm.sh
 
 
 ## Rerank
-- [Cross-encoder rerank](./rerank_cross_encoder.py)
+- [Cross-encoder Rerank using T2Ranking data](./rerank_cross_encoder.py)
 
 
 ## RAG

@@ -118,7 +118,7 @@ trainer = RerankTrainer(
     model=model,
     args=training_args,
     train_dataset=train_dataset,
-    data_collator=RerankCollator(tokenizer, max_length=data_args.query_max_len),
+    data_collator=RerankCollator(tokenizer, max_length=data_args.query_max_length),
 )
 trainer.optimizer = optimizer
 trainer.scheduler = scheduler
@@ -211,7 +211,7 @@ trainer = RetrievalTrainer(
     model=model,
     args=training_args,
     train_dataset=train_dataset,
-    data_collator=TripletCollator(tokenizer, max_length=data_args.query_max_len),
+    data_collator=TripletCollator(tokenizer, max_length=data_args.query_max_length),
     loss_fn=TripletLoss(),
 )
 trainer.optimizer = optimizer
