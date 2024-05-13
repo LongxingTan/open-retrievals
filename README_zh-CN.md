@@ -29,9 +29,10 @@
 
 **Open-Retrievals** 帮助开发者在信息检索、大语言模型等领域便捷地应用文本向量，快速搭建检索、排序、RAG等应用。
 - 基于Pytorch、Transformers框架
-- 对比学习增强性能
-- 支持大语言模型文本向量
-- 快速产出RAG demo
+- 多种对比学习进行文本向量微调
+- 支持大语言模型LLM文本向量
+- 支持point-wise、pairwise、listwise训练
+- 支持Langchain、LLamaIndex快速产出RAG demo
 
 
 ## 安装
@@ -114,19 +115,29 @@ results = matcher.faiss_search("He plays guitar.")
 
 **重排**
 ```python
-from transformers import AutoTokenizer
+from torch.optim import AdamW
+from transformers import AutoTokenizer, TrainingArguments, get_cosine_schedule_with_warmup
 from retrievals import RerankCollator, RerankModel, RerankTrainer, RerankDataset
 
+model_name_or_path: str = "microsoft/mdeberta-v3-base"
+learning_rate: float = 3e-5
+batch_size: int = 64
+epochs: int = 3
+
 train_dataset = RerankDataset(args=data_args)
-tokenizer = AutoTokenizer.from_pretrained(model_args.tokenizer_name, use_fast=False)
+tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, use_fast=False)
 
-model = RerankModel(
-    model_args.model_name_or_path,
-    pooling_method="mean"
+model = RerankModel(model_name_or_path, pooling_method="mean")
+optimizer = AdamW(model.parameters(), lr=learning_rate)
+num_train_steps = int(len(train_dataset) / batch_size * epochs)
+scheduler = get_cosine_schedule_with_warmup(optimizer, num_warmup_steps=100, num_training_steps=num_train_steps)
+
+training_args = TrainingArguments(
+    learning_rate=2e-5,
+    per_device_train_batch_size=1,
+    num_train_epochs=2,
+    output_dir = './checkpoints',
 )
-optimizer = get_optimizer(model, lr=5e-5, weight_decay=1e-3)
-
-lr_scheduler = get_scheduler(optimizer, num_train_steps=int(len(train_dataset) / 2 * 1))
 
 trainer = RerankTrainer(
     model=model,
@@ -135,8 +146,9 @@ trainer = RerankTrainer(
     data_collator=RerankCollator(tokenizer, max_length=data_args.query_max_len),
 )
 trainer.optimizer = optimizer
-trainer.scheduler = lr_scheduler
+trainer.scheduler = scheduler
 trainer.train()
+trainer.save_model('weights')
 ```
 
 **LangChain RAG**
