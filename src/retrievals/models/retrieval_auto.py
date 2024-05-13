@@ -1,6 +1,6 @@
 import logging
 import time
-from typing import Literal, Optional, Union
+from typing import Literal, Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -26,7 +26,7 @@ class AutoModelForRetrieval(object):
         batch_size: int = -1,
         convert_to_numpy: bool = True,
         **kwargs,
-    ):
+    ) -> Tuple[np.ndarray, np.ndarray]:
         if len(query_embed.shape) == 1:
             if isinstance(query_embed, np.ndarray):
                 query_embed = query_embed.reshape(1, -1)
@@ -89,7 +89,7 @@ class AutoModelForRetrieval(object):
         }
         return pd.DataFrame(retrieval)
 
-    def get_rerank_data(self, pred_df):
+    def get_rerank_df(self, pred_df):
         logger.info('Generate rerank samples based on the retrieval prediction with: query_id, document_ids, pred_ids')
 
         samples = []
@@ -166,12 +166,11 @@ def cosine_similarity_search(
 
 
 def faiss_search(
-    query_embed,
+    query_embed: torch.Tensor,
     faiss_index,
     top_k: int = 100,
     batch_size: int = 128,
-    max_length: int = 512,
-):
+) -> Tuple[np.ndarray, np.ndarray]:
     """
     1. Encode queries into dense embeddings;
     2. Search through faiss index

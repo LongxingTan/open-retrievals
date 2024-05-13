@@ -39,7 +39,7 @@ class RerankModel(nn.Module):
         )
 
         self.model = AutoModelForSequenceClassification.from_pretrained(
-            model_name_or_path, trust_remote_code=trust_remote_code
+            model_name_or_path, trust_remote_code=trust_remote_code, **kwargs
         )
         if gradient_checkpointing:
             self.model.graident_checkpointing_enable()
@@ -55,14 +55,14 @@ class RerankModel(nn.Module):
             from peft import LoraConfig, TaskType, get_peft_model
 
             if not lora_config:
-                raise ValueError("If use_lora is true, please provide a valid lora_config")
+                raise ValueError("If use_lora is true, please provide a valid lora_config from peft")
             self.model = get_peft_model(self.model, lora_config)
             self.model.print_trainable_parameters()
 
         self.pooling = AutoPooling(pooling_method)
         num_features = self.model.config.hidden_size
         self.classifier = nn.Linear(num_features, 1)
-        # self._init_weights(self.classifier)
+        self._init_weights(self.classifier)
         self.loss_fn = loss_fn
 
         if max_length is None:
