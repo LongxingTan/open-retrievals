@@ -23,6 +23,7 @@ sh finetune_llm.sh
 
 ## RAG
 - [RAG application with retrieval, rerank in langchain](./rag_langchain.py)
+- [A RAG app demo](./rag_app/README.md)
 
 
 ## Trainer
