@@ -5,7 +5,7 @@
 
 accelerate launch \
     --config_file conf/conf_llm.yaml \
-    finetune_llm_embed.py \
+    embed_llm_finetune.py \
     --model_name_or_path mistralai/Mistral-7B-v0.1 \
     --train_data /root/kaggle101/examples/FlagEmbedding/examples/finetune/toy_finetune_data.jsonl \
     --output_dir modeloutput \
