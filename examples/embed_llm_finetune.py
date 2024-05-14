@@ -52,7 +52,7 @@ class ModelArguments:
 
 @dataclass
 class DataArguments:
-    train_data: str = field(default=None, metadata={"help": "Path to train data"})
+    train_data: str = field(default="intfloat/personalized_passkey_retrieval", metadata={"help": "Path to train data"})
     train_group_size: int = field(default=8)
     query_max_length: int = field(
         default=32,
@@ -136,7 +136,8 @@ class TrainDatasetForEmbedding(Dataset):
                 train_datasets.append(temp_dataset)
             self.dataset = datasets.concatenate_datasets(train_datasets)
         else:
-            self.dataset = datasets.load_dataset("json", data_files=args.train_data, split="train")
+            # self.dataset = datasets.load_dataset("json", data_files=args.train_data, split="train")
+            self.dataset = datasets.load_dataset(args.train_data)
 
     def __len__(self):
         return len(self.dataset)
