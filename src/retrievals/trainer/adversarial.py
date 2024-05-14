@@ -1,4 +1,5 @@
 import logging
+from typing import Dict
 
 import torch
 from torch import nn
@@ -9,11 +10,11 @@ logger = logging.getLogger(__name__)
 class FGM:
     def __init__(self, model: nn.Module):
         self.model = model
-        self.backup = dict()
+        self.backup: Dict[str, torch.Tensor] = dict()
 
     def attack(self, epsilon: float = 1.0, emb_name: str = "word_embeddings"):
         """
-        emb_name: set to your model's embedding name
+        emb_name: model's embedding name
         """
         for name, param in self.model.named_parameters():
             if param.requires_grad and emb_name in name:
@@ -25,16 +26,33 @@ class FGM:
 
     def restore(self, emb_name: str = "word_embeddings"):
         """
-        emb_name: set to your model's embedding name
+        emb_name: model's embedding name
         """
         for name, param in self.model.named_parameters():
             if param.requires_grad and emb_name in name:
                 assert name in self.backup
                 param.data = self.backup[name]
-        self.backup = dict()
+        self.backup.clear()
 
 
 class EMA:
+    """
+    init:
+    ema = EMA(model, 0.999)
+    ema.register()
+
+    train:
+    def train():
+        optimizer.step()
+        ema.update()
+
+    eval:
+    def evaluate():
+        ema.apply_shadow()
+        # evaluate
+        ema.restore()
+    """
+
     def __init__(self, model: nn.Module, decay: float = 0.999):
         self.model = model
         self.decay = decay
@@ -123,8 +141,8 @@ class AWP:
         model: nn.Module,
         optimizer,
         adv_param: str = "weight",
-        adv_lr: float = 1,
-        adv_eps: float = 0.2,
+        adv_lr: float = 0.0001,
+        adv_eps: float = 0.001,
         start_epoch: int = 0,
         adv_step: int = 1,
         scaler=None,
@@ -140,8 +158,8 @@ class AWP:
         self.backup_eps = dict()
         self.scaler = scaler
 
-    def attack_backward(self, inputs, criterion, labels):
-        if self.adv_lr == 0:
+    def attack_backward(self, inputs, criterion, labels, epoch):
+        if self.adv_lr == 0 or epoch < self.start_epoch:
             return None
 
         self._save()
@@ -150,7 +168,7 @@ class AWP:
             with torch.cuda.amp.autocast():
                 y_preds = self.model(inputs)
                 adv_loss = criterion(y_preds.view(-1, 1), labels.view(-1, 1))
-                # adv_loss, tr_logits = self.model(input_ids=x, attention_mask=attention_mask, labels=y)
+                # adv_loss, logits = self.model(input_ids=x, attention_mask=attention_mask, labels=y)
                 # adv_loss = adv_loss.mean()
             self.optimizer.zero_grad()
             self.scaler.scale(adv_loss).backward()
