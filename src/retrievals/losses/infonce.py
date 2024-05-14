@@ -4,7 +4,7 @@
 """
 
 import logging
-from typing import Callable, Optional, Union
+from typing import Callable, Literal, Optional, Union
 
 import torch
 import torch.distributed.nn
@@ -23,7 +23,7 @@ class InfoNCE(nn.Module):
         self,
         criterion: Union[nn.Module, Callable, None] = None,
         temperature: float = 0.02,
-        negative_mode: str = "unpaired",
+        negative_mode: Literal['paired', 'unpaired'] = "unpaired",
     ):
         super().__init__()
         self.criterion = criterion

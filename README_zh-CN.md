@@ -29,9 +29,9 @@
 
 **Open-Retrievals** 帮助开发者在信息检索、大语言模型等领域便捷地应用文本向量，快速搭建检索、排序、RAG等应用。
 - 基于Pytorch、Transformers框架
-- 多种对比学习进行文本向量微调
-- 支持大语言模型LLM文本向量
 - 支持point-wise、pairwise、listwise训练
+- 多种对比学习进行文本向量微调、rerank微调
+- 支持大语言模型LLM文本向量微调
 - 支持Langchain、LLamaIndex快速产出RAG demo
 
 

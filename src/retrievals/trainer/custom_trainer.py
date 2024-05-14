@@ -114,7 +114,8 @@ def train_fn(
 
         # ---------------------fgm-------------
         if fgm:
-            fgm.attack(epsilon=1.0)  # embedding被修改
+            # attach the embedding
+            fgm.attack(epsilon=1.0)
             with torch.cuda.amp.autocast(enabled=apex):
                 preds = model(inputs)
                 if isinstance(preds, dict) and "loss" in preds:
@@ -125,7 +126,8 @@ def train_fn(
                 loss_avg = loss_avg / gradient_accumulation_steps
             losses.update(loss_avg.item(), batch_size)
             scaler.scale(loss_avg).backward()
-            fgm.restore()  # 恢复Embedding参数
+            # restore the embedding
+            fgm.restore()
 
         grad_norm = torch.nn.utils.clip_grad_norm_(model.parameters(), max_grad_norm)
 
@@ -388,7 +390,7 @@ class CustomTrainer(object):
         return V
 
     def save_state(self, output_dir: Optional[str] = None):
-        # TODO: remove the loss_fn
+        # TODO: remove the loss_fn while save weights
         if not output_dir:
             output_dir = "./model.pth"
         torch.save(self.model.state_dict(), output_dir)

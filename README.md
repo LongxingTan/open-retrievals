@@ -129,8 +129,6 @@ trainer.save_model('weights')
 
 **RAG with LangChain**
 
-- Prerequisites
-
 ```shell
 pip install langchain
 ```

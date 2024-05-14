@@ -2,11 +2,18 @@ from typing import Any, List, Optional
 
 from llama_index.bridge.pydantic import Field, PrivateAttr
 from llama_index.callbacks import CBEventType, EventPayload
+from llama_index.core.base.embeddings.base import BaseEmbedding
 from llama_index.postprocessor.types import BaseNodePostprocessor
 from llama_index.schema import MetadataMode, NodeWithScore, QueryBundle
 from llama_index.utils import infer_torch_device
 
+from ..models.embedding_auto import AutoModelForEmbedding
 from ..models.rerank import RerankModel
+
+
+class LlamaIndexEmbedding(AutoModelForEmbedding, BaseEmbedding):
+    def __init__(self, embed_dim: int, **kwargs: Any):
+        super(LlamaIndexEmbedding, self).__init__(embed_dim)
 
 
 class LlamaIndexReranker(BaseNodePostprocessor):
