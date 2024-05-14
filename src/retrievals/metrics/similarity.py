@@ -4,16 +4,13 @@ from https://github.com/UKPLab/sentence-transformers
 
 
 import logging
-from typing import Dict, Optional, Union, overload
 
-import numpy as np
 import torch
-from torch import Tensor
 
 logger = logging.getLogger(__name__)
 
 
-def pytorch_cos_sim(a: Tensor, b: Tensor) -> Tensor:
+def pytorch_cos_sim(a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
     """
     Computes the cosine similarity cos_sim(a[i], b[j]) for all i and j.
 
@@ -22,7 +19,7 @@ def pytorch_cos_sim(a: Tensor, b: Tensor) -> Tensor:
     return cos_sim(a, b)
 
 
-def cos_sim(a: Tensor, b: Tensor) -> Tensor:
+def cos_sim(a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
     """
     Computes the cosine similarity cos_sim(a[i], b[j]) for all i and j.
 
@@ -45,7 +42,7 @@ def cos_sim(a: Tensor, b: Tensor) -> Tensor:
     return torch.mm(a_norm, b_norm.transpose(0, 1))
 
 
-def dot_score(a: Tensor, b: Tensor) -> Tensor:
+def dot_score(a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
     """
     Computes the dot-product dot_prod(a[i], b[j]) for all i and j.
 
@@ -66,7 +63,7 @@ def dot_score(a: Tensor, b: Tensor) -> Tensor:
     return torch.mm(a, b.transpose(0, 1))
 
 
-def pairwise_dot_score(a: Tensor, b: Tensor) -> Tensor:
+def pairwise_dot_score(a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
     """
     Computes the pairwise dot-product dot_prod(a[i], b[i])
 
@@ -81,7 +78,7 @@ def pairwise_dot_score(a: Tensor, b: Tensor) -> Tensor:
     return (a * b).sum(dim=-1)
 
 
-def pairwise_cos_sim(a: Tensor, b: Tensor) -> Tensor:
+def pairwise_cos_sim(a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
     """
     Computes the pairwise cossim cos_sim(a[i], b[i])
 
@@ -96,7 +93,7 @@ def pairwise_cos_sim(a: Tensor, b: Tensor) -> Tensor:
     return pairwise_dot_score(normalize_embeddings(a), normalize_embeddings(b))
 
 
-def pairwise_angle_sim(x: Tensor, y: Tensor) -> Tensor:
+def pairwise_angle_sim(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
     """
     Computes the absolute normalized angle distance;
     see AnglELoss or https://arxiv.org/abs/2309.12871v1
@@ -129,7 +126,7 @@ def pairwise_angle_sim(x: Tensor, y: Tensor) -> Tensor:
     return torch.abs(norm_angle)
 
 
-def normalize_embeddings(embeddings: Tensor) -> Tensor:
+def normalize_embeddings(embeddings: torch.Tensor) -> torch.Tensor:
     """
     Normalizes the embeddings matrix, so that each sentence embedding has unit length
     """
