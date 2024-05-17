@@ -137,6 +137,7 @@ pip install langchain
 
 ```python
 from retrievals.tools.langchain import LangchainEmbedding, LangchainReranker
+from retrievals import RerankModel
 from langchain.retrievers import ContextualCompressionRetriever
 from langchain_community.vectorstores import Chroma as Vectorstore
 
@@ -151,13 +152,8 @@ class DenseRetrieval:
         retrieval_args = {"search_type" :"similarity", "score_threshold": 0.15, "k": 30}
         self.retriever = vectordb.as_retriever(retrieval_args)
 
-        reranker_args = {
-            "model": "maidalun1020/bce-reranker-base_v1",
-            "top_n": 7,
-            "device": "cuda",
-            "use_fp16": True,
-        }
-        self.reranker = LangchainReranker(**reranker_args)
+        ranker = RerankModel("maidalun1020/bce-reranker-base_v1", use_fp16=True)
+        self.reranker = LangchainReranker(model=ranker, top_n=7)
         self.compression_retriever = ContextualCompressionRetriever(
             base_compressor=self.reranker, base_retriever=self.retriever
         )
