@@ -10,10 +10,11 @@ from langchain_community.vectorstores.utils import DistanceStrategy
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from transformers.generation import GenerationConfig
 
-from retrievals.tools.langchain import LangchainEmbedding, LangchainReranker, RagFeature
+from retrievals.tools.langchain import LangchainEmbedding, LangchainReranker
 
 
 class CFG:
+    file = 'llama.pdf'
     retrieval_model = 'BAAI/bge-large-zh'
     rerank_model = ''
     llm_model = 'Qwen/Qwen-7B-Chat'
@@ -23,7 +24,7 @@ embed_model = LangchainEmbedding(model_name_or_path=CFG.retrieval_model)
 rerank_model = LangchainReranker(model_name_or_path=CFG.rerank_model, top_n=5, device='cuda')
 
 
-documents = PyPDFLoader("llama.pdf").load()
+documents = PyPDFLoader(CFG.file).load()
 text_splitter = RecursiveCharacterTextSplitter(chunk_size=1500, chunk_overlap=200)
 texts = text_splitter.split_documents(documents)
 
@@ -54,7 +55,5 @@ query_pipeline = transformers.pipeline(
 )
 
 llm = HuggingFacePipeline(pipeline=query_pipeline)
-
 qa = RetrievalQA.from_chain_type(llm=llm, chain_type="stuff", retriever=retriever, verbose=True)
-
 qa.run('看了这篇文章后你有何感想?')
