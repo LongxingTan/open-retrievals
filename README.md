@@ -142,28 +142,23 @@ from langchain.retrievers import ContextualCompressionRetriever
 from langchain_community.vectorstores import Chroma as Vectorstore
 
 
-class DenseRetrieval:
-    def __init__(self, persist_directory):
-        embeddings = LangchainEmbedding(model_name="BAAI/bge-large-zh-v1.5")
-        vectordb = Vectorstore(
-            persist_directory=persist_directory,
-            embedding_function=embeddings,
-        )
-        retrieval_args = {"search_type" :"similarity", "score_threshold": 0.15, "k": 30}
-        self.retriever = vectordb.as_retriever(retrieval_args)
+persist_directory = './database/faiss.index'
+embeddings = LangchainEmbedding(model_name="BAAI/bge-large-zh-v1.5")
+vectordb = Vectorstore(
+    persist_directory=persist_directory,
+    embedding_function=embeddings,
+)
+retrieval_args = {"search_type" :"similarity", "score_threshold": 0.15, "k": 30}
+retriever = vectordb.as_retriever(retrieval_args)
 
-        ranker = RerankModel("maidalun1020/bce-reranker-base_v1", use_fp16=True)
-        self.reranker = LangchainReranker(model=ranker, top_n=7)
-        self.compression_retriever = ContextualCompressionRetriever(
-            base_compressor=self.reranker, base_retriever=self.retriever
-        )
+rank = RerankModel("maidalun1020/bce-reranker-base_v1", use_fp16=True)
+reranker = LangchainReranker(model=rank, top_n=7)
+compression_retriever = ContextualCompressionRetriever(
+    base_compressor=reranker, base_retriever=retriever
+)
 
-    def query(
-        self,
-        question: str
-    ):
-        docs = self.compression_retriever.get_relevant_documents(question)
-        return docs
+query = 'what is open-retrievals?'
+docs = compression_retriever.get_relevant_documents(query)
 ```
 
 [//]: # (**RAG with LLamaIndex**)
