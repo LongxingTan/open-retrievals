@@ -25,21 +25,21 @@
 [![Code Coverage][coverage-image]][coverage-url]
 
 
-**[Documentation](https://open-retrievals.readthedocs.io)** | **[中文](https://github.com/LongxingTan/open-retrievals/blob/master/README_zh-CN.md)** | **[日本語](https://github.com/LongxingTan/open-retrievals/blob/master/README_ja-JP.md)
+**[ドキュメント](https://open-retrievals.readthedocs.io)** | **[英語](https://github.com/LongxingTan/open-retrievals/blob/master/README.md)** | **[中文](https://github.com/LongxingTan/open-retrievals/blob/master/README_zh-CN.md)**
 
-**Open-Retrievals** is an easy-to-use python framework getting SOTA text embeddings, oriented to information retrieval and LLM retrieval augmented generation, based on PyTorch and Transformers.
-- Contrastive learning enhanced embeddings
-- LLM embeddings
-- fast RAG demo
+**Open-Retrievals** は、PyTorch と Transformers をベースとした、情報検索と LLM 検索拡張生成を指向した、SOTA テキスト埋め込みを取得する使いやすい Python フレームワークです。
+- 対照学習エンベッディング
+- LLM エンベッディング
+- 高速 RAG デモ
 
 
-## Installation
+## インストール
 
-**Prerequisites**
+**必須条件**
 ```shell
 pip install transformers
-pip install faiss-cpu  # if necessary
-pip install peft  # if necessary
+pip install faiss-cpu  # 必要な場合
+pip install peft  # 必要な場合
 ```
 
 **With pip**
@@ -55,9 +55,9 @@ pip install open-retrievals
 
 [//]: # (```)
 
-## Quick-start
+## クイックスタート
 
-**Use Pretrained weights**
+**事前訓練されたウェイトを使用**
 ```python
 from retrievals import AutoModelForEmbedding
 
@@ -69,9 +69,9 @@ print(sentence_embeddings)
 ```
 
 
-## Usage
+## 使用方法
 
-**Build Index and Retrieval**
+**インデックスの構築と検索**
 ```python
 from retrievals import AutoModelForEmbedding, AutoModelForRetrieval
 
@@ -88,7 +88,7 @@ print(indices)
 ```
 
 
-**Rerank**
+**リランク**
 ```python
 from torch.optim import AdamW
 from transformers import AutoTokenizer, TrainingArguments, get_cosine_schedule_with_warmup
@@ -127,13 +127,13 @@ trainer.save_model('weights')
 ```
 
 
-**RAG with LangChain**
+**LangChain を使用した RAG**
 
 ```shell
 pip install langchain
 ```
 
-- Server
+- サーバー
 
 ```python
 from retrievals.tools.langchain import LangchainEmbedding, LangchainReranker
@@ -179,7 +179,7 @@ docs = compression_retriever.get_relevant_documents(query)
 [//]: # (```)
 
 
-**Finetune transformers weights by contrastive learning**
+**コントラスト学習による transformers のウェイトのファインチューニング**
 ```python
 from transformers import AutoTokenizer
 from retrievals import AutoModelForEmbedding, AutoModelForRetrieval, RetrievalTrainer, PairCollator, TripletCollator
@@ -208,7 +208,7 @@ trainer.scheduler = lr_scheduler
 trainer.train()
 ```
 
-**Finetune LLM for embedding by Contrastive learning**
+**対照学習による埋め込み LLM のファインチューニング**
 ```python
 from retrievals import AutoModelForEmbedding
 
@@ -219,7 +219,7 @@ model = AutoModelForEmbedding(
 )
 ```
 
-**Search by Cosine similarity/KNN**
+**コサイン類似度/KNN による検索**
 ```python
 from retrievals import AutoModelForEmbedding, AutoModelForRetrieval
 
@@ -235,7 +235,7 @@ dists, indices = matcher.similarity_search(query_embeddings, document_embeddings
 ```
 
 
-## Reference & Acknowledge
+## 参考資料と謝辞
 - [sentence-transformers](https://github.com/UKPLab/sentence-transformers)
 - [FlagEmbedding](https://github.com/FlagOpen/FlagEmbedding)
 - [uniem](https://github.com/wangyuxinwhy/uniem)
