@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 
 class AutoModelForRetrieval(object):
-    def __init__(self, method: Literal['cosine', 'knn', None] = "cosine") -> None:
+    def __init__(self, model=None, method: Literal['cosine', 'knn', None] = "cosine") -> None:
         super().__init__()
         self.method = method
 
@@ -72,6 +72,9 @@ class AutoModelForRetrieval(object):
             )
 
         return dists, indices
+
+    def search(self):
+        return
 
     def get_relevant_documents(self, query: str):
         return

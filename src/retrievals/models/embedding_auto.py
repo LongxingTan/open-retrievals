@@ -19,6 +19,7 @@ from transformers import (
 )
 
 from .pooling import AutoPooling
+from .retrieval_auto import AutoModelForRetrieval
 
 logger = logging.getLogger(__name__)
 
@@ -450,11 +451,13 @@ class AutoModelForEmbedding(nn.Module):
     def add_to_index(self):
         return
 
-    def search(self):
-        return
-
     def similarity(self, queries: Union[str, List[str]], keys: Union[str, List[str], np.ndarray]):
         return
+
+    @classmethod
+    def as_retriever(cls, retrieval_args, **kwargs):
+        embedding_model = cls(**kwargs)
+        return AutoModelForRetrieval(embedding_model, **retrieval_args)
 
     def save(self, path: str):
         """
