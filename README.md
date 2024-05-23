@@ -29,8 +29,8 @@
 
 **Open-retrievals** simplifies text embeddings, retrievals, ranking, and RAG applications using PyTorch and Transformers. This user-friendly Python framework is designed for information retrieval and LLM-enhanced generation.
 - Contrastive learning enhanced embeddings/ LLM embeddings
-- Rerank
-- Fast RAG demo
+- Cross-encoder and ColBERT Rerank
+- Fast RAG demo integrated with Langchain and LlamaIndex
 
 
 ## Installation
