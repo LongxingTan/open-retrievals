@@ -59,7 +59,7 @@ pip install open-retrievals
 
 Open-retrievals make it easy to get text embeddings, text retrievals, ranking and RAG applications
 
-**Use Pretrained weights**
+**Text embeddings from Pretrained weights**
 ```python
 from retrievals import AutoModelForEmbedding
 
@@ -70,7 +70,7 @@ sentence_embeddings = model.encode(sentences, convert_to_tensor=True)
 print(sentence_embeddings)
 ```
 
-**Finetune by contrastive learning**
+**Text embedding model fine-tuned by contrastive learning**
 ```python
 from transformers import AutoTokenizer
 from retrievals import AutoModelForEmbedding, AutoModelForRetrieval, RetrievalTrainer, PairCollator, TripletCollator
@@ -102,7 +102,7 @@ trainer.train()
 
 ## Usage
 
-**Build Index and Retrieval Search**
+**Build index for dense retrieval search**
 ```python
 from retrievals import AutoModelForEmbedding, AutoModelForRetrieval
 
@@ -119,7 +119,7 @@ print(indices)
 ```
 
 
-**Rerank**
+**Finetune Rerank model**
 ```python
 from torch.optim import AdamW
 from transformers import AutoTokenizer, TrainingArguments, get_cosine_schedule_with_warmup
@@ -210,7 +210,7 @@ docs = compression_retriever.get_relevant_documents(query)
 [//]: # (```)
 
 
-**Search by Cosine similarity/KNN**
+**Semantic search by cosine similarity/KNN**
 ```python
 from retrievals import AutoModelForEmbedding, AutoModelForRetrieval
 
