@@ -67,10 +67,10 @@ class AutoModelForEmbedding(nn.Module):
 
     def __init__(
         self,
-        model_name_or_path: str,
+        model_name_or_path: Optional[str] = None,
+        pooling_method: Optional[str] = "cls",
         pretrained: bool = True,
         config_path: Optional[str] = None,
-        pooling_method: Optional[str] = "cls",
         normalize_embeddings: bool = False,
         max_length: Optional[int] = None,
         loss_fn: Optional[Callable] = None,
@@ -468,10 +468,9 @@ class AutoModelForEmbedding(nn.Module):
         self.tokenizer.save_pretrained(path)
 
     @classmethod
-    def from_pretrained(cls, model_name_or_path: str, **kwargs):
-        embedder = AutoModel.from_pretrained(model_name_or_path)
-        tokenizer = AutoTokenizer.from_pretrained(model_name_or_path)
-        return cls(embedder, tokenizer, **kwargs)
+    def from_pretrained(cls, model_name_or_path: str, pooling_method: Optional[str] = "cls", **kwargs):
+        embed_model = AutoModel.from_pretrained(model_name_or_path)
+        return cls(embed_model, pooling_method=pooling_method, **kwargs)
 
     def save_pretrained(self, output_path: str):
         self.tokenizer.save_pretrained(output_path)

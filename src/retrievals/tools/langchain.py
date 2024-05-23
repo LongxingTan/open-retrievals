@@ -1,11 +1,10 @@
-from typing import Any, Dict, Optional, Sequence
+from typing import Any, Dict, List, Optional, Sequence
 
 from langchain.callbacks.manager import Callbacks
 from langchain.retrievers.document_compressors.base import BaseDocumentCompressor
 from langchain_core.documents import Document
 from langchain_core.embeddings import Embeddings
-from langchain_core.pydantic_v1 import Extra, root_validator
-from pydantic.v1 import PrivateAttr
+from langchain_core.retrievers import BaseRetriever
 
 from ..models.embedding_auto import AutoModelForEmbedding
 from ..models.rerank import RerankModel
@@ -14,6 +13,21 @@ from ..models.rerank import RerankModel
 class LangchainEmbedding(AutoModelForEmbedding, Embeddings):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+
+
+class LangchainRetrieval(BaseRetriever):
+    model: Any
+    kwargs: dict = {}
+
+    def _get_relevant_documents(
+        self,
+        query: str,
+        *,
+        run_manager: CallbackManagerForRetrieverRun,  # noqa
+    ) -> List[Document]:
+        """Get documents relevant to a query."""
+        docs = self.model.search(query, **self.kwargs)
+        return [Document(page_content=doc["content"], metadata=doc.get("document_metadata", {})) for doc in docs]
 
 
 class LangchainReranker(BaseDocumentCompressor):
