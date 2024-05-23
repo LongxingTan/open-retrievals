@@ -25,7 +25,7 @@
 [![Code Coverage][coverage-image]][coverage-url]
 
 
-**[Documentation](https://open-retrievals.readthedocs.io)** | **[中文](https://github.com/LongxingTan/open-retrievals/blob/master/README_zh-CN.md)** | **[日本語](https://github.com/LongxingTan/open-retrievals/blob/master/README_ja-JP.md)
+**[Documentation](https://open-retrievals.readthedocs.io)** | **[中文](https://github.com/LongxingTan/open-retrievals/blob/master/README_zh-CN.md)** | **[日本語](https://github.com/LongxingTan/open-retrievals/blob/master/README_ja-JP.md)**
 
 **Open-Retrievals** is an easy-to-use python framework getting SOTA text embeddings, oriented to information retrieval and LLM retrieval augmented generation, based on PyTorch and Transformers.
 - Contrastive learning enhanced embeddings
@@ -57,6 +57,8 @@ pip install open-retrievals
 
 ## Quick-start
 
+Open-retrievals make it easy to get text embeddings, text retrievals, ranking and RAG applications
+
 **Use Pretrained weights**
 ```python
 from retrievals import AutoModelForEmbedding
@@ -68,10 +70,39 @@ sentence_embeddings = model.encode(sentences, convert_to_tensor=True)
 print(sentence_embeddings)
 ```
 
+**Finetune by contrastive learning**
+```python
+from transformers import AutoTokenizer
+from retrievals import AutoModelForEmbedding, AutoModelForRetrieval, RetrievalTrainer, PairCollator, TripletCollator
+from retrievals.losses import ArcFaceAdaptiveMarginLoss, InfoNCE, SimCSE, TripletLoss
+from retrievals.data import  RetrievalDataset, RerankDataset
+
+model_name_or_path = "sentence-transformers/paraphrase-multilingual-mpnet-base-v2"
+
+train_dataset = RetrievalDataset(args=data_args)
+tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, use_fast=False)
+
+model = AutoModelForEmbedding(model_name_or_path, pooling_method="cls")
+optimizer = get_optimizer(model, lr=5e-5, weight_decay=1e-3)
+
+lr_scheduler = get_scheduler(optimizer, num_train_steps=int(len(train_dataset) / 2 * 1))
+
+trainer = RetrievalTrainer(
+    model=model,
+    args=training_args,
+    train_dataset=train_dataset,
+    data_collator=TripletCollator(tokenizer, max_length=data_args.query_max_length),
+    loss_fn=TripletLoss(),
+)
+trainer.optimizer = optimizer
+trainer.scheduler = lr_scheduler
+trainer.train()
+```
+
 
 ## Usage
 
-**Build Index and Retrieval**
+**Build Index and Retrieval Search**
 ```python
 from retrievals import AutoModelForEmbedding, AutoModelForRetrieval
 
@@ -178,46 +209,6 @@ docs = compression_retriever.get_relevant_documents(query)
 [//]: # ()
 [//]: # (```)
 
-
-**Finetune transformers weights by contrastive learning**
-```python
-from transformers import AutoTokenizer
-from retrievals import AutoModelForEmbedding, AutoModelForRetrieval, RetrievalTrainer, PairCollator, TripletCollator
-from retrievals.losses import ArcFaceAdaptiveMarginLoss, InfoNCE, SimCSE, TripletLoss
-from retrievals.data import  RetrievalDataset, RerankDataset
-
-model_name_or_path = "sentence-transformers/paraphrase-multilingual-mpnet-base-v2"
-
-train_dataset = RetrievalDataset(args=data_args)
-tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, use_fast=False)
-
-model = AutoModelForEmbedding(model_name_or_path, pooling_method="cls")
-optimizer = get_optimizer(model, lr=5e-5, weight_decay=1e-3)
-
-lr_scheduler = get_scheduler(optimizer, num_train_steps=int(len(train_dataset) / 2 * 1))
-
-trainer = RetrievalTrainer(
-    model=model,
-    args=training_args,
-    train_dataset=train_dataset,
-    data_collator=TripletCollator(tokenizer, max_length=data_args.query_max_length),
-    loss_fn=TripletLoss(),
-)
-trainer.optimizer = optimizer
-trainer.scheduler = lr_scheduler
-trainer.train()
-```
-
-**Finetune LLM for embedding by Contrastive learning**
-```python
-from retrievals import AutoModelForEmbedding
-
-model = AutoModelForEmbedding(
-    "mistralai/Mistral-7B-v0.1",
-    pooling_method='cls',
-    query_instruction=f'Instruct: Retrieve semantically similar text\nQuery: '
-)
-```
 
 **Search by Cosine similarity/KNN**
 ```python
