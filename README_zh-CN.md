@@ -52,16 +52,16 @@ pip install open-retrievals
 
 ## 快速入门
 
-**使用预训练权重**
+**使用预训练权重的文本向量**
 
 ```python
 from retrievals import AutoModelForEmbedding, AutoModelForRetrieval
 
 # 文本示例
 sentences = [
-    "你好，世界",
-    "你吃饭了吗?",
-    "Open-retrievals 是一个用于检索生成的文本向量库"
+    "在1974年，第一次在东南亚打自由搏击就得了冠军",
+    "1982年打赢了日本重炮手雷龙，接着连续三年打败所有日本空手道高手，赢得全日本自由搏击冠军",
+    "中国古拳法唯一传人鬼王达，被喻为空手道的克星，绰号“魔鬼筋肉人”"
 ]
 
 # 向量模型
@@ -70,6 +70,65 @@ model = AutoModelForEmbedding(model_name_or_path)
 
 embeddings = model.encode(sentences)
 print(embeddings) # 384维度的文本向量
+```
+
+**使用Faiss向量数据库检索**
+```python
+from retrievals import AutoModelForEmbedding, AutoModelForRetrieval
+
+index_path = './database/faiss/faiss.index'
+sentences = ['A dog is chasing car.', 'A man is playing a guitar.']
+model_name_or_path = "sentence-transformers/all-MiniLM-L6-v2"
+model = AutoModelForEmbedding(model_name_or_path)
+model.build_index(sentences, index_path=index_path)
+
+query_embed = model.encode("He plays guitar.")
+matcher = AutoModelForRetrieval()
+dists, indices = matcher.similarity_search(query_embed, index_path=index_path)
+print(indices)
+```
+
+**重排**
+```python
+from retrievals import RerankModel
+
+model_name_or_path: str = "microsoft/mdeberta-v3-base"
+rerank_model = RerankModel(model_name_or_path)
+rerank_model.eval()
+rerank_model.to("cuda")
+rerank_model.compute_score(
+    [["在1974年，第一次在东南亚打自由搏击就得了冠军", "1982年打赢了日本重炮手雷龙"],
+     ["铁砂掌，源于泗水铁掌帮，三日练成，收费六百", "铁布衫，源于福建省以北70公里，五日练成，收费八百"]]
+)
+```
+
+**RAG应用**
+
+**LangChain RAG**
+```python
+from retrievals.tools.langchain import LangchainEmbedding, LangchainReranker
+from retrievals import RerankModel
+from langchain.retrievers import ContextualCompressionRetriever
+from langchain_community.vectorstores import Chroma as Vectorstore
+
+
+persist_directory = './database/faiss.index'
+embeddings = LangchainEmbedding(model_name="BAAI/bge-large-zh-v1.5")
+vectordb = Vectorstore(
+    persist_directory=persist_directory,
+    embedding_function=embeddings,
+)
+retrieval_args = {"search_type" :"similarity", "score_threshold": 0.15, "k": 30}
+retriever = vectordb.as_retriever(retrieval_args)
+
+rank = RerankModel("maidalun1020/bce-reranker-base_v1", use_fp16=True)
+reranker = LangchainReranker(model=rank, top_n=7)
+compression_retriever = ContextualCompressionRetriever(
+    base_compressor=reranker, base_retriever=retriever
+)
+
+query = 'what is open-retrievals?'
+docs = compression_retriever.get_relevant_documents(query)
 ```
 
 
@@ -86,7 +145,7 @@ sentence_embeddings = model.encode(sentences, convert_to_tensor=True)
 print(sentence_embeddings)
 ```
 
-**基于余弦相似度和紧邻搜索**
+**基于余弦相似度和近邻搜索**
 ```python
 from retrievals import AutoModelForEmbedding, AutoModelForRetrieval
 
@@ -100,20 +159,8 @@ matcher = AutoModelForRetrieval(method='cosine')
 dists, indices = matcher.similarity_search(query_embeddings, document_embeddings, top_k=1)
 ```
 
-**Faiss向量数据库检索**
-```python
-from retrievals import AutoModelForEmbedding, AutoModelForRetrieval
 
-sentences = ['A woman is reading.', 'A man is playing a guitar.']
-model_name_or_path = "sentence-transformers/all-MiniLM-L6-v2"
-model = AutoModelForEmbedding(model_name_or_path)
-model.build_index(sentences)
-
-matcher = AutoModelForRetrieval()
-results = matcher.faiss_search("He plays guitar.")
-```
-
-**重排**
+**微调重排模型**
 ```python
 from torch.optim import AdamW
 from transformers import AutoTokenizer, TrainingArguments, get_cosine_schedule_with_warmup
@@ -149,33 +196,6 @@ trainer.optimizer = optimizer
 trainer.scheduler = scheduler
 trainer.train()
 trainer.save_model('weights')
-```
-
-**LangChain RAG**
-```python
-from retrievals.tools.langchain import LangchainEmbedding, LangchainReranker
-from retrievals import RerankModel
-from langchain.retrievers import ContextualCompressionRetriever
-from langchain_community.vectorstores import Chroma as Vectorstore
-
-
-persist_directory = './database/faiss.index'
-embeddings = LangchainEmbedding(model_name="BAAI/bge-large-zh-v1.5")
-vectordb = Vectorstore(
-    persist_directory=persist_directory,
-    embedding_function=embeddings,
-)
-retrieval_args = {"search_type" :"similarity", "score_threshold": 0.15, "k": 30}
-retriever = vectordb.as_retriever(retrieval_args)
-
-rank = RerankModel("maidalun1020/bce-reranker-base_v1", use_fp16=True)
-reranker = LangchainReranker(model=rank, top_n=7)
-compression_retriever = ContextualCompressionRetriever(
-    base_compressor=reranker, base_retriever=retriever
-)
-
-query = 'what is open-retrievals?'
-docs = compression_retriever.get_relevant_documents(query)
 ```
 
 

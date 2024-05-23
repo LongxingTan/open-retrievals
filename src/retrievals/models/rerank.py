@@ -1,5 +1,5 @@
 import logging
-from typing import Callable, Dict, List, Optional, Tuple, Union
+from typing import Callable, Dict, List, Literal, Optional, Tuple, Union
 
 import numpy as np
 import torch
@@ -32,6 +32,7 @@ class RerankModel(nn.Module):
         gradient_checkpointing: bool = False,
         device: Optional[str] = None,
         trust_remote_code: bool = False,
+        loss_type: Literal['classfication'] = 'classfication',
         **kwargs,
     ):
         super().__init__()
@@ -226,3 +227,16 @@ class RerankModel(nn.Module):
         Same function to save
         """
         return self.save(path)
+
+    @classmethod
+    def from_pretrained(
+        cls,
+        model_name_or_path,
+        loss_type='classfication',
+        num_labels=1,
+        device='cpu',
+    ):
+        hf_model = AutoModelForSequenceClassification.from_pretrained(model_name_or_path, num_labels=num_labels)
+        tokenizer = AutoTokenizer.from_pretrained(model_name_or_path)
+        reranker = cls(hf_model, tokenizer, device=device, loss_type=loss_type)
+        return reranker
