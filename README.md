@@ -27,7 +27,8 @@
 
 **[Documentation](https://open-retrievals.readthedocs.io)** | **[中文](https://github.com/LongxingTan/open-retrievals/blob/master/README_zh-CN.md)** | **[日本語](https://github.com/LongxingTan/open-retrievals/blob/master/README_ja-JP.md)**
 
-**Open-Retrievals** is an easy-to-use python framework getting SOTA text embeddings, oriented to information retrieval and LLM retrieval augmented generation, based on PyTorch and Transformers.
+**Open-retrievals** makes it easy to get text embeddings, text retrievals, ranking and RAG applications, based on PyTorch and Transformers.
+It's an easy-to-use python framework, oriented to information retrieval and LLM retrieval augmented generation.
 - Contrastive learning enhanced embeddings
 - LLM embeddings
 - fast RAG demo
@@ -56,8 +57,6 @@ pip install open-retrievals
 [//]: # (```)
 
 ## Quick-start
-
-Open-retrievals make it easy to get text embeddings, text retrievals, ranking and RAG applications
 
 **Text embeddings from Pretrained weights**
 ```python
