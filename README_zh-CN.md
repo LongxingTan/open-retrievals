@@ -72,6 +72,7 @@ print(embeddings) # 384维度的文本向量
 ```
 
 **使用Faiss向量数据库检索**
+
 ```python
 from retrievals import AutoModelForEmbedding, AutoModelForRetrieval
 
@@ -88,6 +89,7 @@ print(indices)
 ```
 
 **重排**
+
 ```python
 from retrievals import RerankModel
 
@@ -130,10 +132,8 @@ query = 'what is open-retrievals?'
 docs = compression_retriever.get_relevant_documents(query)
 ```
 
-
-## 高阶使用
-
 **w微调文本向量模型**
+
 ```python
 from transformers import AutoTokenizer
 from retrievals import AutoModelForEmbedding, AutoModelForRetrieval, RetrievalTrainer, PairCollator, TripletCollator
@@ -164,6 +164,7 @@ trainer.train()
 
 
 **基于余弦相似度和近邻搜索**
+
 ```python
 from retrievals import AutoModelForEmbedding, AutoModelForRetrieval
 
@@ -179,6 +180,7 @@ dists, indices = matcher.similarity_search(query_embeddings, document_embeddings
 
 
 **微调重排模型**
+
 ```python
 from torch.optim import AdamW
 from transformers import AutoTokenizer, TrainingArguments, get_cosine_schedule_with_warmup
