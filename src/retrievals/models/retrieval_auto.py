@@ -1,6 +1,6 @@
 import logging
 import time
-from typing import Literal, Optional, Tuple, Union
+from typing import List, Literal, Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -80,7 +80,7 @@ class AutoModelForRetrieval(object):
     def search(self):
         return
 
-    def similarity(self, query, document):
+    def similarity(self, queries: Union[str, List[str]], keys: Union[str, List[str], np.ndarray]):
         return
 
     def get_relevant_documents(self, query: str):
