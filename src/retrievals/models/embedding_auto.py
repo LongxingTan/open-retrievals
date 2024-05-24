@@ -426,6 +426,11 @@ class AutoModelForEmbedding(nn.Module):
         return
 
     @classmethod
+    def to_train(cls, train_type: Literal['pointwise', 'pairwise', 'listwise'], **kwargs):
+        model_class = {'pointwise': None, 'pairwise': PairwiseModel, 'listwise': ListwiseModel}.get(train_type.lower())
+        return cls(model_class(**kwargs))
+
+    @classmethod
     def as_retriever(cls, retrieval_args, **kwargs):
         embedding_model = cls(**kwargs)
         return AutoModelForRetrieval(embedding_model, **retrieval_args)
