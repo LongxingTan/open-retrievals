@@ -97,8 +97,12 @@ class RerankModel(nn.Module):
 
         if labels is not None:
             if not self.loss_fn:
-                logger.warning('loss_fn is not setup, use BCEWithLogitsLoss')
-                self.loss_fn = nn.BCEWithLogitsLoss(reduction='mean')
+                if self.loss_type == 'regression':
+                    logits = torch.sigmoid(logits)
+                    self.loss_fn = nn.MSELoss()
+
+                elif self.loss_type == 'classfication':
+                    self.loss_fn = nn.BCEWithLogitsLoss(reduction='mean')
 
             loss = self.loss_fn(logits, labels.float())
             if return_dict:
@@ -209,7 +213,7 @@ class RerankModel(nn.Module):
         cls,
         model_name_or_path: str,
         pooling_method: str = 'mean',
-        loss_type: Literal['classfication'] = 'classfication',
+        loss_type: Literal['classification', 'regression'] = 'classification',
         num_labels: int = 1,
         gradient_checkpointing: bool = False,
         trust_remote_code: bool = False,
