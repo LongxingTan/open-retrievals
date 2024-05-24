@@ -98,8 +98,6 @@ trainer.train()
 ```
 
 
-## Usage
-
 **Index building for dense retrieval search**
 ```python
 from retrievals import AutoModelForEmbedding, AutoModelForRetrieval
