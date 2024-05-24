@@ -57,7 +57,7 @@ pip install open-retrievals
 
 ## Quick-start
 
-**Text embeddings from Pretrained weights**
+**Text embedding from Pretrained weights**
 ```python
 from retrievals import AutoModelForEmbedding
 
@@ -100,7 +100,7 @@ trainer.train()
 
 ## Usage
 
-**Build index for dense retrieval search**
+**Index building for dense retrieval search**
 ```python
 from retrievals import AutoModelForEmbedding, AutoModelForRetrieval
 
@@ -117,7 +117,7 @@ print(indices)
 ```
 
 
-**Finetune Rerank model**
+**Finetuning for rerank models**
 ```python
 from torch.optim import AdamW
 from transformers import AutoTokenizer, TrainingArguments, get_cosine_schedule_with_warmup
@@ -156,7 +156,7 @@ trainer.save_model('weights')
 ```
 
 
-**RAG with LangChain**
+**RAG with LangChain integration**
 
 ```shell
 pip install langchain
