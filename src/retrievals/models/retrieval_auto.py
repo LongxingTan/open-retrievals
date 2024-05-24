@@ -108,7 +108,6 @@ class AutoModelForRetrieval(object):
     def get_rerank_df(
         self,
         input_df: pd.DataFrame,
-        method=None,
         query_key: str = 'query_id',
         document_key: str = 'document_id',
         predict_key: str = 'predict_id',

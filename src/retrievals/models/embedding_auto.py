@@ -34,9 +34,6 @@ class AutoModelForEmbedding(nn.Module):
         from the Hugging Face Hub with that name.
     """
 
-    encode_kwargs: Dict[str, Any] = dict()
-    show_progress: bool = False
-
     def __init__(
         self,
         model_name_or_path: Optional[str] = None,
@@ -422,7 +419,7 @@ class AutoModelForEmbedding(nn.Module):
     def add_to_index(self):
         return
 
-    def to_train(self, train_type: Literal['pointwise', 'pairwise', 'listwise'], **kwargs):
+    def set_train_type(self, train_type: Literal['pointwise', 'pairwise', 'listwise'], **kwargs):
         model_class = {'pointwise': None, 'pairwise': PairwiseModel, 'listwise': ListwiseModel}
         model_class = model_class.get(train_type.lower(), AutoModelForEmbedding)
         return model_class(**kwargs)
