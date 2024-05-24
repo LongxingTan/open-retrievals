@@ -2,7 +2,7 @@
 
 
 ## Finetune
-- [Text embeddings finetune with contrastive learning](./embed_pairwise_finetune.py)
+- [Text embeddings finetune with contrastive learning](0_embeddings/embed_pairwise_finetune.py)
 
 ```shell
 python embed_pointwise_finetune.py
@@ -24,15 +24,15 @@ python retrieval_faiss.py
 ```
 
 ## Rerank
-- [Cross-encoder Rerank using T2Ranking data](./rerank_cross_encoder.py)
+- [Cross-encoder Rerank using T2Ranking data](2_rerank/rerank_cross_encoder.py)
 
 ```shell
 python rerank_cross_encoder.py
 ```
 
 ## RAG
-- [RAG application with retrieval, rerank in langchain](./rag_langchain.py)
-- [A RAG app demo](./rag_app/README.md)
+- [RAG application with retrieval, rerank in langchain](3_rag/rag_langchain.py)
+- [A RAG app demo](3_rag/README.md)
 
 ```shell
 python rag_langchain.py

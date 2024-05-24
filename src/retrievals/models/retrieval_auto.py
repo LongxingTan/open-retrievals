@@ -76,6 +76,9 @@ class AutoModelForRetrieval(object):
     def search(self):
         return
 
+    def similarity(self, query, document):
+        return
+
     def get_relevant_documents(self, query: str):
         return
 
