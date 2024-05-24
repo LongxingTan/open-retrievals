@@ -19,38 +19,10 @@ from transformers import (
 )
 
 from .pooling import AutoPooling
+from .retrieval_auto import AutoModelForRetrieval
+from .utils import batch_to_device, get_device_name
 
 logger = logging.getLogger(__name__)
-
-
-def get_device_name() -> Literal["mps", "cuda", "cpu"]:
-    """
-    Returns the name of the device where this module is running on.
-    It's a simple implementation that doesn't cover cases when more powerful GPUs are available and
-    not a primary device ('cuda:0') or MPS device is available, but not configured properly:
-    https://pytorch.org/docs/master/notes/mps.html
-
-    :return: Device name, like 'cuda' or 'cpu'
-    """
-    if torch.cuda.is_available():
-        return "cuda"
-    elif torch.backends.mps.is_available():
-        return "mps"
-    else:
-        return "cpu"
-
-
-def batch_to_device(batch: Dict, target_device: str) -> Dict[str, torch.Tensor]:
-    """
-    send a pytorch batch to a device (CPU/GPU)
-    """
-    for key in batch:
-        if isinstance(batch[key], torch.Tensor):
-            batch[key] = batch[key].to(target_device)
-        else:
-            print(batch[key])
-            batch[key] = torch.tensor(batch[key], dtype=torch.long).to(target_device)
-    return batch
 
 
 class AutoModelForEmbedding(nn.Module):
@@ -62,15 +34,12 @@ class AutoModelForEmbedding(nn.Module):
         from the Hugging Face Hub with that name.
     """
 
-    encode_kwargs: Dict[str, Any] = dict()
-    show_progress: bool = False
-
     def __init__(
         self,
-        model_name_or_path: str,
+        model_name_or_path: Optional[str] = None,
+        pooling_method: Optional[str] = "cls",
         pretrained: bool = True,
         config_path: Optional[str] = None,
-        pooling_method: Optional[str] = "cls",
         normalize_embeddings: bool = False,
         max_length: Optional[int] = None,
         loss_fn: Optional[Callable] = None,
@@ -450,11 +419,15 @@ class AutoModelForEmbedding(nn.Module):
     def add_to_index(self):
         return
 
-    def search(self):
-        return
+    def set_train_type(self, train_type: Literal['pointwise', 'pairwise', 'listwise'], **kwargs):
+        model_class = {'pointwise': None, 'pairwise': PairwiseModel, 'listwise': ListwiseModel}
+        model_class = model_class.get(train_type.lower(), AutoModelForEmbedding)
+        return model_class(**kwargs)
 
-    def similarity(self, queries: Union[str, List[str]], keys: Union[str, List[str], np.ndarray]):
-        return
+    @classmethod
+    def as_retriever(cls, retrieval_args, **kwargs):
+        embedding_model = cls(**kwargs)
+        return AutoModelForRetrieval(embedding_model, **retrieval_args)
 
     def save(self, path: str):
         """
@@ -468,10 +441,9 @@ class AutoModelForEmbedding(nn.Module):
         self.tokenizer.save_pretrained(path)
 
     @classmethod
-    def from_pretrained(cls, model_name_or_path: str, **kwargs):
-        embedder = AutoModel.from_pretrained(model_name_or_path)
-        tokenizer = AutoTokenizer.from_pretrained(model_name_or_path)
-        return cls(embedder, tokenizer, **kwargs)
+    def from_pretrained(cls, model_name_or_path: str, pooling_method: Optional[str] = "cls", **kwargs):
+        embed_model = AutoModel.from_pretrained(model_name_or_path)
+        return cls(embed_model, pooling_method=pooling_method, **kwargs)
 
     def save_pretrained(self, output_path: str):
         self.tokenizer.save_pretrained(output_path)

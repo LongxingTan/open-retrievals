@@ -22,17 +22,17 @@ class RerankModelTest(TestCase, ModelTesterMixin):
         # self.config_tester = ConfigTester()
         model_name_or_path = 'BAAI/bge-reranker-base'
         self.data_collator = RerankCollator(AutoTokenizer.from_pretrained(model_name_or_path))
-        self.model = RerankModel(model_name_or_path, pooling_method="mean")
+        self.model = RerankModel.from_pretrained(model_name_or_path, pooling_method="mean")
 
     def tearDown(self):
         shutil.rmtree(self.output_dir)
 
     def test_compute_score(self):
         text = '张华考上了北京大学'
-        text_pair = ['李萍进了中等技术学校', '我在百货公司当售货员', '我们都有光明的前途']
-        text = [text] * len(text_pair)
-        scores = self.model.compute_score(text, text_pair=text_pair, data_collator=self.data_collator)
-        document_ranked = self.model.rerank(text, text_pair, data_collator=self.data_collator)
+        text_list = ['李萍进了中等技术学校', '我在百货公司当售货员', '我们都有光明的前途']
+        text_pairs = [[text, i] for i in text_list]
+        scores = self.model.compute_score(text_pairs=text_pairs, data_collator=self.data_collator)
+        document_ranked = self.model.rerank(query=text, document=text_list, data_collator=self.data_collator)
 
         print(scores)
         print(document_ranked)

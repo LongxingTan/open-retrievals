@@ -1,10 +1,11 @@
 import logging
 import time
-from typing import Literal, Optional, Tuple, Union
+from typing import List, Literal, Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
 import torch
+import torch.nn as nn
 from sklearn.neighbors import NearestNeighbors
 from tqdm import tqdm
 from tqdm.autonotebook import trange
@@ -13,8 +14,11 @@ logger = logging.getLogger(__name__)
 
 
 class AutoModelForRetrieval(object):
-    def __init__(self, method: Literal['cosine', 'knn', None] = "cosine") -> None:
+    def __init__(
+        self, embedding_model: Optional[nn.Module] = None, method: Literal['cosine', 'knn', None] = "cosine"
+    ) -> None:
         super().__init__()
+        self.embedding_model = embedding_model
         self.method = method
 
     def similarity_search(
@@ -73,6 +77,12 @@ class AutoModelForRetrieval(object):
 
         return dists, indices
 
+    def search(self):
+        return
+
+    def similarity(self, queries: Union[str, List[str]], keys: Union[str, List[str], np.ndarray]):
+        return
+
     def get_relevant_documents(self, query: str):
         return
 
@@ -98,7 +108,6 @@ class AutoModelForRetrieval(object):
     def get_rerank_df(
         self,
         input_df: pd.DataFrame,
-        method=None,
         query_key: str = 'query_id',
         document_key: str = 'document_id',
         predict_key: str = 'predict_id',

@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 
 class CosineSimilarity(nn.Module):
-    def __init__(self, temperature: float = 0.0, dynamic_temperature=False):
+    def __init__(self, temperature: float = 0.05, dynamic_temperature=False):
         super().__init__()
         self.temperature = temperature
         self.dynamic_temperature = dynamic_temperature

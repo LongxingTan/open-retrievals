@@ -13,8 +13,8 @@ from transformers import (
 )
 
 from ..data.collator import RerankCollator
-from .embedding_auto import get_device_name
 from .pooling import AutoPooling
+from .utils import get_device_name
 
 logger = logging.getLogger(__name__)
 
@@ -22,49 +22,23 @@ logger = logging.getLogger(__name__)
 class RerankModel(nn.Module):
     def __init__(
         self,
-        model_name_or_path: str = None,
+        model: Optional[nn.Module] = None,
+        tokenizer=None,
         pooling_method: str = 'mean',
         loss_fn: Union[nn.Module, Callable] = None,
         max_length: Optional[int] = None,
-        use_fp16: bool = False,
-        use_lora: bool = False,
-        lora_config=None,
-        gradient_checkpointing: bool = False,
-        device: Optional[str] = None,
-        trust_remote_code: bool = False,
-        loss_type: Literal['classfication'] = 'classfication',
         **kwargs,
     ):
         super().__init__()
-        self.tokenizer = AutoTokenizer.from_pretrained(
-            model_name_or_path, return_tensors=False, trust_remote_code=trust_remote_code
-        )
 
-        self.model = AutoModelForSequenceClassification.from_pretrained(
-            model_name_or_path, trust_remote_code=trust_remote_code, **kwargs
-        )
-        if gradient_checkpointing:
-            self.model.graident_checkpointing_enable()
-        if device is None:
-            self.device = get_device_name()
-        else:
-            self.device = device
-
-        if use_fp16:
-            self.model.half()
-        if use_lora:
-            # peft config and wrapping
-            from peft import LoraConfig, TaskType, get_peft_model
-
-            if not lora_config:
-                raise ValueError("If use_lora is true, please provide a valid lora_config from peft")
-            self.model = get_peft_model(self.model, lora_config)
-            self.model.print_trainable_parameters()
-
+        self.model: Optional[nn.Module] = model
+        self.tokenizer = tokenizer
         self.pooling = AutoPooling(pooling_method)
-        num_features = self.model.config.hidden_size
-        self.classifier = nn.Linear(num_features, 1)
-        self._init_weights(self.classifier)
+
+        if self.model:
+            num_features: int = self.model.config.hidden_size
+            self.classifier = nn.Linear(num_features, 1)
+            self._init_weights(self.classifier)
         self.loss_fn = loss_fn
 
         if max_length is None:
@@ -123,8 +97,12 @@ class RerankModel(nn.Module):
 
         if labels is not None:
             if not self.loss_fn:
-                logger.warning('loss_fn is not setup, use BCEWithLogitsLoss')
-                self.loss_fn = nn.BCEWithLogitsLoss(reduction='mean')
+                if self.loss_type == 'regression':
+                    logits = torch.sigmoid(logits)
+                    self.loss_fn = nn.MSELoss()
+
+                elif self.loss_type == 'classfication':
+                    self.loss_fn = nn.BCEWithLogitsLoss(reduction='mean')
 
             loss = self.loss_fn(logits, labels.float())
             if return_dict:
@@ -140,8 +118,7 @@ class RerankModel(nn.Module):
     @torch.no_grad()
     def compute_score(
         self,
-        text: Union[List[str], str],
-        text_pair: Union[List[str], str],
+        text_pairs: Union[List[Tuple[str, str]], Tuple[str, str], List[str]],
         data_collator: Optional[RerankCollator] = None,
         batch_size: int = 128,
         max_length: int = 512,
@@ -149,20 +126,17 @@ class RerankModel(nn.Module):
         show_progress_bar: bool = None,
         **kwargs,
     ):
-        if isinstance(text, str):
-            text = [text]
-        if isinstance(text_pair, str):
-            text_pair = [text_pair]
-        assert len(text) == len(text_pair), f"Length of text {len(text)} and text_pair {len(text_pair)} should be same"
-        assert data_collator is not None, "please provide valid collator"
-        batch_size = min(batch_size, len(text))
+        if isinstance(text_pairs[0], str):
+            text_pairs = [text_pairs]
+
+        batch_size = min(batch_size, len(text_pairs))
 
         if not data_collator:
             data_collator = RerankCollator(tokenizer=self.tokenizer)
 
         scores_list: List[float] = []
-        for i in range(0, len(text), batch_size):
-            text_batch = [{'query': text[i], 'document': text_pair[i]} for i in range(i, i + batch_size)]
+        for i in range(0, len(text_pairs), batch_size):
+            text_batch = [{'query': text_pairs[i][0], 'document': text_pairs[i][1]} for i in range(i, i + batch_size)]
             batch = data_collator(text_batch)
             scores = self.model(batch['input_ids'], batch['attention_mask'], return_dict=True).logits.view(-1).float()
             if normalize:
@@ -186,9 +160,15 @@ class RerankModel(nn.Module):
         return_dict: bool = True,
         **kwargs,
     ):
+        if isinstance(query, str):
+            text_pairs = [(query, doc) for doc in document]
+        elif isinstance(query, (list, tuple)):
+            text_pairs = [(q, doc) for q, doc in zip(query, document)]
+        else:
+            pass
+
         merge_scores = self.compute_score(
-            text=query,
-            text_pair=document,
+            text_pairs=text_pairs,
             data_collator=data_collator,
             batch_size=batch_size,
             normalize=normalize,
@@ -231,12 +211,45 @@ class RerankModel(nn.Module):
     @classmethod
     def from_pretrained(
         cls,
-        model_name_or_path,
-        loss_type='classfication',
-        num_labels=1,
-        device='cpu',
+        model_name_or_path: str,
+        pooling_method: str = 'mean',
+        loss_type: Literal['classification', 'regression'] = 'classification',
+        num_labels: int = 1,
+        gradient_checkpointing: bool = False,
+        trust_remote_code: bool = False,
+        use_fp16: bool = False,
+        use_lora: bool = False,
+        lora_config=None,
+        device: Optional[str] = None,
+        **kwargs,
     ):
-        hf_model = AutoModelForSequenceClassification.from_pretrained(model_name_or_path, num_labels=num_labels)
-        tokenizer = AutoTokenizer.from_pretrained(model_name_or_path)
-        reranker = cls(hf_model, tokenizer, device=device, loss_type=loss_type)
+        tokenizer = AutoTokenizer.from_pretrained(
+            model_name_or_path, return_tensors=False, trust_remote_code=trust_remote_code
+        )
+
+        model = AutoModelForSequenceClassification.from_pretrained(
+            model_name_or_path, num_labels=num_labels, trust_remote_code=trust_remote_code, **kwargs
+        )
+        if gradient_checkpointing:
+            model.graident_checkpointing_enable()
+
+        if device is None:
+            device = get_device_name()
+        else:
+            device = device
+
+        if use_fp16:
+            model.half()
+        if use_lora:
+            # peft config and wrapping
+            from peft import LoraConfig, TaskType, get_peft_model
+
+            if not lora_config:
+                raise ValueError("If use_lora is true, please provide a valid lora_config from peft")
+            model = get_peft_model(model, lora_config)
+            model.print_trainable_parameters()
+
+        reranker = cls(
+            model=model, tokenizer=tokenizer, pooling_method=pooling_method, device=device, loss_type=loss_type
+        )
         return reranker
