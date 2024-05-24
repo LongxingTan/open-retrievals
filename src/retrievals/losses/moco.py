@@ -3,7 +3,7 @@ from torch import nn
 
 
 class MoCoLoss(nn.Module):
-    def __init__(self, temperature=0.07):
+    def __init__(self, temperature=0.05):
         super(MoCoLoss, self).__init__()
         self.temperature = temperature
 

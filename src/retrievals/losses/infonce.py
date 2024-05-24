@@ -22,7 +22,7 @@ class InfoNCE(nn.Module):
     def __init__(
         self,
         criterion: Union[nn.Module, Callable, None] = None,
-        temperature: float = 0.02,
+        temperature: float = 0.05,
         negative_mode: Literal['paired', 'unpaired'] = "unpaired",
     ):
         super().__init__()
