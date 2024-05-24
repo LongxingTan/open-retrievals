@@ -17,7 +17,7 @@ class LangchainEmbedding(AutoModelForEmbedding, Embeddings):
 
 class LangchainRetrieval(BaseRetriever):
     model: Any
-    kwargs: dict = {}
+    kwargs: dict = dict()
 
     def _get_relevant_documents(
         self,
@@ -32,7 +32,7 @@ class LangchainRetrieval(BaseRetriever):
 
 class LangchainReranker(BaseDocumentCompressor):
     model: Any
-    kwargs: dict = {}
+    kwargs: dict = dict()
     k: int = 5
 
     class Config:

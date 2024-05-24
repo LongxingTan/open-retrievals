@@ -31,13 +31,14 @@ class RerankModel(nn.Module):
     ):
         super().__init__()
 
-        self.model = model
+        self.model: Optional[nn.Module] = model
         self.tokenizer = tokenizer
         self.pooling = AutoPooling(pooling_method)
 
-        num_features = self.model.config.hidden_size
-        self.classifier = nn.Linear(num_features, 1)
-        self._init_weights(self.classifier)
+        if self.model:
+            num_features: int = self.model.config.hidden_size
+            self.classifier = nn.Linear(num_features, 1)
+            self._init_weights(self.classifier)
         self.loss_fn = loss_fn
 
         if max_length is None:
@@ -113,7 +114,7 @@ class RerankModel(nn.Module):
     @torch.no_grad()
     def compute_score(
         self,
-        text_pairs: Union[List[Tuple[str, str]], Tuple[str, str], List[str, str]],
+        text_pairs: Union[List[Tuple[str, str]], Tuple[str, str], List[str]],
         data_collator: Optional[RerankCollator] = None,
         batch_size: int = 128,
         max_length: int = 512,
@@ -131,7 +132,7 @@ class RerankModel(nn.Module):
 
         scores_list: List[float] = []
         for i in range(0, len(text_pairs), batch_size):
-            text_batch = [{'query': text_pairs[i], 'document': text_pairs[i]} for i in range(i, i + batch_size)]
+            text_batch = [{'query': text_pairs[i][0], 'document': text_pairs[i][1]} for i in range(i, i + batch_size)]
             batch = data_collator(text_batch)
             scores = self.model(batch['input_ids'], batch['attention_mask'], return_dict=True).logits.view(-1).float()
             if normalize:
@@ -155,9 +156,15 @@ class RerankModel(nn.Module):
         return_dict: bool = True,
         **kwargs,
     ):
+        if isinstance(query, str):
+            text_pairs = [(query, doc) for doc in document]
+        elif isinstance(query, (list, tuple)):
+            text_pairs = [(q, doc) for q, doc in zip(query, document)]
+        else:
+            pass
+
         merge_scores = self.compute_score(
-            text=query,
-            text_pair=document,
+            text_pairs=text_pairs,
             data_collator=data_collator,
             batch_size=batch_size,
             normalize=normalize,
@@ -200,9 +207,10 @@ class RerankModel(nn.Module):
     @classmethod
     def from_pretrained(
         cls,
-        model_name_or_path: Optional[str] = None,
+        model_name_or_path: str,
+        pooling_method: str = 'mean',
         loss_type: Literal['classfication'] = 'classfication',
-        num_labels=1,
+        num_labels: int = 1,
         gradient_checkpointing: bool = False,
         trust_remote_code: bool = False,
         use_fp16: bool = False,
@@ -237,5 +245,7 @@ class RerankModel(nn.Module):
             model = get_peft_model(model, lora_config)
             model.print_trainable_parameters()
 
-        reranker = cls(model=model, tokenizer=tokenizer, device=device, loss_type=loss_type)
+        reranker = cls(
+            model=model, tokenizer=tokenizer, pooling_method=pooling_method, device=device, loss_type=loss_type
+        )
         return reranker
