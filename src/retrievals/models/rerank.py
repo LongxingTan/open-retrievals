@@ -13,8 +13,8 @@ from transformers import (
 )
 
 from ..data.collator import RerankCollator
-from .embedding_auto import get_device_name
 from .pooling import AutoPooling
+from .utils import get_device_name
 
 logger = logging.getLogger(__name__)
 

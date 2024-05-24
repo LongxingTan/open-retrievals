@@ -5,6 +5,7 @@ from typing import Literal, Optional, Tuple, Union
 import numpy as np
 import pandas as pd
 import torch
+import torch.nn as nn
 from sklearn.neighbors import NearestNeighbors
 from tqdm import tqdm
 from tqdm.autonotebook import trange
@@ -13,8 +14,11 @@ logger = logging.getLogger(__name__)
 
 
 class AutoModelForRetrieval(object):
-    def __init__(self, model=None, method: Literal['cosine', 'knn', None] = "cosine") -> None:
+    def __init__(
+        self, embedding_model: Optional[nn.Module] = None, method: Literal['cosine', 'knn', None] = "cosine"
+    ) -> None:
         super().__init__()
+        self.embedding_model = embedding_model
         self.method = method
 
     def similarity_search(
