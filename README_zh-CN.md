@@ -94,7 +94,7 @@ print(indices)
 from retrievals import RerankModel
 
 model_name_or_path: str = "microsoft/mdeberta-v3-base"
-rerank_model = RerankModel(model_name_or_path)
+rerank_model = RerankModel.from_pretrained(model_name_or_path)
 rerank_model.eval()
 rerank_model.to("cuda")
 rerank_model.compute_score(
