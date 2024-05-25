@@ -18,7 +18,7 @@ class LangchainEmbedding(AutoModelForEmbedding, Embeddings):
     encode_kwargs: Dict[str, Any] = dict()
 
     def __init__(self, **kwargs):
-        Embeddings.__init__(self, **kwargs)
+        Embeddings.__init__(self)
         AutoModelForEmbedding.__init__(model_name_or_path=self.model_name, **kwargs)
 
     def embed_documents(self, texts: List[str]) -> List[List[float]]:
