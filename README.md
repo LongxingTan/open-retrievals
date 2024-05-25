@@ -100,6 +100,7 @@ rerank_model.compute_score(["In 1974, I won the championship in Southeast Asia i
 ```shell
 pip install langchain
 pip install langchain_community
+pip install chromadb
 ```
 
 ```python
@@ -109,7 +110,7 @@ from langchain.retrievers import ContextualCompressionRetriever
 from langchain_community.vectorstores import Chroma as Vectorstore
 
 persist_directory = './database/faiss.index'
-embeddings = LangchainEmbedding(model_name="BAAI/bge-large-zh-v1.5")
+embeddings = LangchainEmbedding(model_name_or_path="BAAI/bge-large-zh-v1.5")
 vectordb = Vectorstore(
     persist_directory=persist_directory,
     embedding_function=embeddings,
