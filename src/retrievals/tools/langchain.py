@@ -1,8 +1,7 @@
 from typing import Any, Dict, List, Optional, Sequence
 
-from langchain.callbacks.manager import Callbacks
+from langchain.callbacks.manager import CallbackManagerForRetrieverRun, Callbacks
 from langchain.retrievers.document_compressors.base import BaseDocumentCompressor
-from langchain.callbacks.manager import CallbackManagerForRetrieverRun
 from langchain_core.documents import Document
 from langchain_core.embeddings import Embeddings
 from langchain_core.retrievers import BaseRetriever
@@ -12,8 +11,24 @@ from ..models.rerank import RerankModel
 
 
 class LangchainEmbedding(AutoModelForEmbedding, Embeddings):
+    client: Any
+    model_name: Optional[str] = None
+    cache_folder: Optional[str] = None
+    model_kwargs: Dict[str, Any] = dict()
+    encode_kwargs: Dict[str, Any] = dict()
+
     def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+        Embeddings.__init__(self, self.model_name, **kwargs)
+        AutoModelForEmbedding.__init__(model_name_or_path=self.model_name, **kwargs)
+
+    def embed_documents(self, texts: List[str]) -> List[List[float]]:
+        """Compute doc embeddings using a HuggingFace transformer model."""
+        embeddings = self.encode(texts, **self.encode_kwargs)
+        return embeddings.tolist()
+
+    def embed_query(self, text: str) -> List[float]:
+        """Compute query embeddings using a HuggingFace transformer model."""
+        return self.embed_documents([text])[0]
 
 
 class LangchainRetrieval(BaseRetriever):
