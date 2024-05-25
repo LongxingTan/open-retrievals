@@ -230,7 +230,7 @@ class AutoModelForEmbedding(nn.Module):
 
     def embed_documents(self, texts: List[str]) -> List[List[float]]:
         """Compute doc embeddings using a HuggingFace transformer model."""
-        embeddings = self.encode(texts, show_progress_bar=self.show_progress, **self.encode_kwargs)
+        embeddings = self.encode(texts, **self.encode_kwargs)
         return embeddings.tolist()
 
     def embed_query(self, text: str) -> List[float]:
