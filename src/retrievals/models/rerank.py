@@ -192,23 +192,6 @@ class RerankModel(nn.Module):
         else:
             return sorted_document
 
-    def save(self, path: str):
-        """
-        Saves all model and tokenizer to path
-        """
-        if path is None:
-            return
-
-        logger.info("Save model to {}".format(path))
-        self.model.save_pretrained(path)
-        self.tokenizer.save_pretrained(path)
-
-    def save_pretrained(self, path: str):
-        """
-        Same function to save
-        """
-        return self.save(path)
-
     @classmethod
     def from_pretrained(
         cls,
@@ -254,3 +237,20 @@ class RerankModel(nn.Module):
             model=model, tokenizer=tokenizer, pooling_method=pooling_method, device=device, loss_type=loss_type
         )
         return reranker
+
+    def save(self, path: str):
+        """
+        Saves all model and tokenizer to path
+        """
+        if path is None:
+            return
+
+        logger.info("Save model to {}".format(path))
+        self.model.save_pretrained(path)
+        self.tokenizer.save_pretrained(path)
+
+    def save_pretrained(self, path: str):
+        """
+        Same function to save
+        """
+        return self.save(path)
