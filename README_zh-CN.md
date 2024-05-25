@@ -116,8 +116,8 @@ vectordb = Vectorstore(
 retrieval_args = {"search_type" :"similarity", "score_threshold": 0.15, "k": 30}
 retriever = vectordb.as_retriever(retrieval_args)
 
-rank = RerankModel("maidalun1020/bce-reranker-base_v1", use_fp16=True)
-reranker = LangchainReranker(model=rank, top_n=7)
+ranker = RerankModel.from_pretrained("maidalun1020/bce-reranker-base_v1")
+reranker = LangchainReranker(model=ranker, top_n=7)
 compression_retriever = ContextualCompressionRetriever(
     base_compressor=reranker, base_retriever=retriever
 )
