@@ -55,6 +55,7 @@ pip install open-retrievals
 
 [//]: # (```)
 
+
 ## Quick-start
 
 **Text embedding from Pretrained weights**
@@ -67,6 +68,81 @@ model = AutoModelForEmbedding(model_name_or_path, pooling_method="mean")
 sentence_embeddings = model.encode(sentences, normalize_embeddings=True, convert_to_tensor=True)
 print(sentence_embeddings)
 ```
+
+**Index building for dense retrieval search**
+```python
+from retrievals import AutoModelForEmbedding, AutoModelForRetrieval
+
+sentences = ['A dog is chasing car.', 'A man is playing a guitar.']
+model_name_or_path = "sentence-transformers/all-MiniLM-L6-v2"
+index_path = './database/faiss/faiss.index'
+model = AutoModelForEmbedding(model_name_or_path)
+model.build_index(sentences, index_path=index_path)
+
+query_embed = model.encode("He plays guitar.")
+matcher = AutoModelForRetrieval()
+dists, indices = matcher.similarity_search(query_embed, index_path=index_path)
+print(indices)
+```
+
+**Rerank using pretrained weights**
+```python
+from retrievals import RerankModel
+
+model_name_or_path: str = "microsoft/mdeberta-v3-base"
+rerank_model = RerankModel.from_pretrained(model_name_or_path)
+rerank_model.eval()
+rerank_model.to("cuda")
+rerank_model.compute_score(["In 1974, I won the championship in Southeast Asia in my first kickboxing match," "In 1982, I defeated the heavy hitter Ryu Long."])
+```
+
+**RAG with LangChain integration**
+```shell
+pip install langchain
+```
+
+- Server
+```python
+from retrievals.tools.langchain import LangchainEmbedding, LangchainReranker
+from retrievals import RerankModel
+from langchain.retrievers import ContextualCompressionRetriever
+from langchain_community.vectorstores import Chroma as Vectorstore
+
+persist_directory = './database/faiss.index'
+embeddings = LangchainEmbedding(model_name="BAAI/bge-large-zh-v1.5")
+vectordb = Vectorstore(
+    persist_directory=persist_directory,
+    embedding_function=embeddings,
+)
+retrieval_args = {"search_type" :"similarity", "score_threshold": 0.15, "k": 30}
+retriever = vectordb.as_retriever(retrieval_args)
+
+rank = RerankModel("maidalun1020/bce-reranker-base_v1", use_fp16=True)
+reranker = LangchainReranker(model=rank, top_n=7)
+compression_retriever = ContextualCompressionRetriever(
+    base_compressor=reranker, base_retriever=retriever
+)
+
+query = 'what is open-retrievals?'
+docs = compression_retriever.get_relevant_documents(query)
+```
+
+[//]: # (**RAG with LLamaIndex**)
+
+[//]: # ()
+[//]: # (```shell)
+
+[//]: # (pip install llamaindex)
+
+[//]: # (```)
+
+[//]: # ()
+[//]: # ()
+[//]: # (```python)
+
+[//]: # ()
+[//]: # ()
+[//]: # (```)
 
 **Text embedding model fine-tuned by contrastive learning**
 ```python
@@ -113,24 +189,6 @@ trainer.scheduler = scheduler
 trainer.train()
 ```
 
-
-**Index building for dense retrieval search**
-```python
-from retrievals import AutoModelForEmbedding, AutoModelForRetrieval
-
-sentences = ['A dog is chasing car.', 'A man is playing a guitar.']
-model_name_or_path = "sentence-transformers/all-MiniLM-L6-v2"
-index_path = './database/faiss/faiss.index'
-model = AutoModelForEmbedding(model_name_or_path)
-model.build_index(sentences, index_path=index_path)
-
-query_embed = model.encode("He plays guitar.")
-matcher = AutoModelForRetrieval()
-dists, indices = matcher.similarity_search(query_embed, index_path=index_path)
-print(indices)
-```
-
-
 **Finetuning for rerank models**
 ```python
 from torch.optim import AdamW
@@ -168,59 +226,6 @@ trainer.scheduler = scheduler
 trainer.train()
 trainer.save_model('weights')
 ```
-
-
-**RAG with LangChain integration**
-
-```shell
-pip install langchain
-```
-
-- Server
-
-```python
-from retrievals.tools.langchain import LangchainEmbedding, LangchainReranker
-from retrievals import RerankModel
-from langchain.retrievers import ContextualCompressionRetriever
-from langchain_community.vectorstores import Chroma as Vectorstore
-
-
-persist_directory = './database/faiss.index'
-embeddings = LangchainEmbedding(model_name="BAAI/bge-large-zh-v1.5")
-vectordb = Vectorstore(
-    persist_directory=persist_directory,
-    embedding_function=embeddings,
-)
-retrieval_args = {"search_type" :"similarity", "score_threshold": 0.15, "k": 30}
-retriever = vectordb.as_retriever(retrieval_args)
-
-rank = RerankModel("maidalun1020/bce-reranker-base_v1", use_fp16=True)
-reranker = LangchainReranker(model=rank, top_n=7)
-compression_retriever = ContextualCompressionRetriever(
-    base_compressor=reranker, base_retriever=retriever
-)
-
-query = 'what is open-retrievals?'
-docs = compression_retriever.get_relevant_documents(query)
-```
-
-[//]: # (**RAG with LLamaIndex**)
-
-[//]: # ()
-[//]: # (```shell)
-
-[//]: # (pip install llamaindex)
-
-[//]: # (```)
-
-[//]: # ()
-[//]: # ()
-[//]: # (```python)
-
-[//]: # ()
-[//]: # ()
-[//]: # (```)
-
 
 **Semantic search by cosine similarity/KNN**
 ```python
