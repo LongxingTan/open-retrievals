@@ -61,19 +61,19 @@ pip install open-retrievals
 ```python
 from retrievals import AutoModelForEmbedding
 
-sentences = ["Hello world", "How are you doing?", "Open-retrievals is a text embedding libraries for RAG application"]
+sentences = ["Hello NLP", "Open-retrievals is designed for retrieval, rerank and RAG"]
 model_name_or_path = "sentence-transformers/all-MiniLM-L6-v2"
-model = AutoModelForEmbedding(model_name_or_path, pooling_method="mean", normalize_embeddings=True)
-sentence_embeddings = model.encode(sentences, convert_to_tensor=True)
+model = AutoModelForEmbedding(model_name_or_path, pooling_method="mean")
+sentence_embeddings = model.encode(sentences, normalize_embeddings=True, convert_to_tensor=True)
 print(sentence_embeddings)
 ```
 
 **Text embedding model fine-tuned by contrastive learning**
 ```python
-from transformers import AutoTokenizer
-from retrievals import AutoModelForEmbedding, AutoModelForRetrieval, RetrievalTrainer, PairCollator, TripletCollator
+from transformers import AutoTokenizer, AdamW, get_linear_schedule_with_warmup, TrainingArguments
+from retrievals import AutoModelForEmbedding, RetrievalTrainer, PairCollator, TripletCollator
 from retrievals.losses import ArcFaceAdaptiveMarginLoss, InfoNCE, SimCSE, TripletLoss
-from retrievals.data import  RetrievalDataset, RerankDataset
+from retrievals.data import  RetrievalDataset
 
 model_name_or_path = "sentence-transformers/paraphrase-multilingual-mpnet-base-v2"
 
@@ -81,19 +81,35 @@ train_dataset = RetrievalDataset(args=data_args)
 tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, use_fast=False)
 
 model = AutoModelForEmbedding(model_name_or_path, pooling_method="cls")
-optimizer = get_optimizer(model, lr=5e-5, weight_decay=1e-3)
 
-lr_scheduler = get_scheduler(optimizer, num_train_steps=int(len(train_dataset) / 2 * 1))
+no_decay = ['bias', 'LayerNorm.weight']
+optimizer_grouped_parameters = [
+    {'params': [p for n, p in model.named_parameters() if p.requires_grad and not any(nd in n for nd in no_decay)], 'weight_decay': 1e-3},
+    {'params': [p for n, p in model.named_parameters() if p.requires_grad and any(nd in n for nd in no_decay)], 'weight_decay': 0.0}
+]
+optimizer = AdamW(optimizer_grouped_parameters, lr=5e-5)
+num_train_steps=int(len(train_dataset) / 2 * 1)
+scheduler = get_linear_schedule_with_warmup(
+    optimizer,
+    num_warmup_steps=0.05 * num_train_steps,
+    num_training_steps=num_train_steps,
+    )
+
+training_arguments = TrainingArguments(
+    output_dir='./',
+    num_train_epochs=3,
+    per_device_train_batch_size=128,
+)
 
 trainer = RetrievalTrainer(
     model=model,
-    args=training_args,
+    args=training_arguments,
     train_dataset=train_dataset,
-    data_collator=TripletCollator(tokenizer, max_length=data_args.query_max_length),
+    data_collator=TripletCollator(tokenizer, max_length=512),
     loss_fn=TripletLoss(),
 )
 trainer.optimizer = optimizer
-trainer.scheduler = lr_scheduler
+trainer.scheduler = scheduler
 trainer.train()
 ```
 
