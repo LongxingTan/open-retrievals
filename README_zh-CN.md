@@ -128,8 +128,8 @@ compression_retriever = ContextualCompressionRetriever(
     base_compressor=reranker, base_retriever=retriever
 )
 
-query = 'what is open-retrievals?'
-docs = compression_retriever.get_relevant_documents(query)
+query = '1974年，谁获得了东南亚自由搏击的冠军？'
+docs = compression_retriever.invoke(query)
 ```
 
 **微调文本向量模型**

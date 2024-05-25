@@ -125,7 +125,7 @@ compression_retriever = ContextualCompressionRetriever(
 )
 
 query = 'what is open-retrievals?'
-docs = compression_retriever.get_relevant_documents(query)
+docs = compression_retriever.invoke(query)
 ```
 
 [//]: # (**RAG with LLamaIndex**)
