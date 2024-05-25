@@ -88,7 +88,7 @@ class RerankModel(nn.Module):
             module.bias.data.zero_()
             module.weight.data.fill_(1.0)
 
-    def encode(self, input_ids: torch.Tensor, attention_mask: torch.Tensor) -> torch.Tensor:
+    def encode(self, input_ids: torch.Tensor, attention_mask: torch.Tensor) -> torch.Tensor:      
         outputs = self.model(input_ids, attention_mask, output_hidden_states=True)
         if hasattr(outputs, 'last_hidden_state'):
             hidden_state = outputs.last_hidden_state
@@ -100,13 +100,20 @@ class RerankModel(nn.Module):
 
     def forward(
         self,
-        input_ids: torch.Tensor,
+        input_ids: Optional[torch.Tensor] = None,
         attention_mask: Optional[torch.Tensor] = None,
+        inputs: Optional[Dict[str, torch.Tensor]] = None,
         labels: Optional[torch.Tensor] = None,
         return_dict: Optional[bool] = True,
         **kwargs,
     ) -> Union[Dict[str, torch.Tensor], torch.Tensor]:
-        features = self.encode(input_ids=input_ids, attention_mask=attention_mask)
+        if input_ids:
+            features = self.encode(input_ids=input_ids, attention_mask=attention_mask)
+        elif inputs:
+            features = self.encode(**inputs)
+        else:
+            raise ValueError("input_ids(tensor) and inputs(dict) can't be empty as the same time")
+
         logits = self.classifier(features).reshape(-1)
 
         if return_dict:
@@ -125,6 +132,8 @@ class RerankModel(nn.Module):
             else:
                 return logits, loss
         else:
+            if return_dict:
+                return outputs_dict
             return logits
 
     def compute_score(

@@ -53,6 +53,7 @@ def train_fn(
         if isinstance(inputs, (list, tuple)) and len(inputs) == 2:
             inputs, labels = inputs
         elif isinstance(inputs, dict):
+            assert data_collator is not None, "if labels are in inputs keys, can't set data_collator to None"
             labels = inputs['labels']
             inputs.pop('labels', None)
 
@@ -64,21 +65,31 @@ def train_fn(
                 for k, v in input.items():
                     input[k] = v.to(device)
         else:
-            for k, v in inputs.items():
+            for k, v in inputs.items():              
                 inputs[k] = v.to(device)
         labels = labels.to(device)
 
         batch_size = labels.size(0)
         with torch.cuda.amp.autocast(enabled=apex):
             if criterion is None:
-                preds = model(inputs, labels)
+                preds = model(inputs=inputs, labels=labels)
             else:
-                preds = model(inputs)
+                preds = model(inputs=inputs)
             if isinstance(preds, dict) and "loss" in preds:
                 loss = preds["loss"]
             else:
-                if isinstance(inputs, dict) and 'weights' in inputs:
-                    loss = criterion(preds[0], labels, inputs['weights'])
+                if isinstance(inputs, dict):
+                    if isinstance(preds, dict):
+                        logits = preds['logits']
+                    elif isinstance(preds, (list, tuple)):
+                        logits = preds[0]
+                    else:
+                        logits = preds
+
+                    if 'weights' in inputs:
+                        loss = criterion(logits, labels.float(), inputs['weights'])
+                    else:
+                        loss = criterion(logits, labels.float())
                 else:
                     loss = criterion(preds[0], preds[1])
 

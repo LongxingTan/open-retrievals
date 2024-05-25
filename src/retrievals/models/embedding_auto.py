@@ -1,11 +1,13 @@
+import os
 import logging
+import os
+import time
 from typing import Any, Callable, Dict, Iterable, List, Literal, Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
 import torch
 import torch.nn as nn
-from numpy import ndarray
 from torch.utils.data import DataLoader
 from tqdm.autonotebook import trange
 from transformers import (
@@ -74,14 +76,13 @@ class AutoModelForEmbedding(nn.Module):
         loss_fn: Optional[Callable] = None,
         query_instruction: Optional[str] = None,
         document_instruction: Optional[str] = None,
-        hidden_dropout_prob: float = 0.1,
-        attention_dropout_prob: float = 0.1,
         generation_args: Dict = None,
         use_fp16: bool = False,
         use_lora: bool = False,
         lora_config=None,
         device: Optional[str] = None,
         trust_remote_code: bool = True,
+        custom_config_dict: Optional[Dict] = None,
         **kwargs,
     ):
         super().__init__()
@@ -94,13 +95,12 @@ class AutoModelForEmbedding(nn.Module):
             self.config = AutoConfig.from_pretrained(
                 config_path, output_hidden_states=True, trust_remote_code=trust_remote_code
             )
-        elif hidden_dropout_prob > 0 or attention_dropout_prob > 0:
+        else:
             self.config = AutoConfig.from_pretrained(
                 model_name_or_path, output_hidden_states=True, trust_remote_code=trust_remote_code
             )
-            self.config.update(
-                {"hidden_dropout_prob": hidden_dropout_prob, "attention_probs_dropout_prob": attention_dropout_prob}
-            )
+        if custom_config_dict:
+            self.config.update(custom_config_dict)
 
         if pretrained:
             self.model = AutoModel.from_pretrained(
@@ -117,6 +117,8 @@ class AutoModelForEmbedding(nn.Module):
                 and hasattr(self.tokenizer, "model_max_length")
             ):
                 max_length = min(self.model.config.max_position_embeddings, self.tokenizer.model_max_length)
+        else:
+            logger.info('max_length will only work if the encode or forward function input text directly')
 
         self.max_length = max_length
 
@@ -236,7 +238,6 @@ class AutoModelForEmbedding(nn.Module):
         if isinstance(inputs, (DataLoader, BatchEncoding, Dict)):
             return self.encode_from_loader(
                 loader=inputs,
-                batch_size=batch_size,
                 show_progress_bar=show_progress_bar,
                 output_value=output_value,
                 convert_to_numpy=convert_to_numpy,
@@ -244,7 +245,8 @@ class AutoModelForEmbedding(nn.Module):
                 device=device,
                 normalize_embeddings=normalize_embeddings,
             )
-        elif isinstance(inputs, (str, List, Tuple, pd.Series)):
+
+        elif isinstance(inputs, (str, List, Tuple, pd.Series, np.ndarray)):
             return self.encode_from_text(
                 sentences=inputs,
                 batch_size=batch_size,
@@ -268,8 +270,13 @@ class AutoModelForEmbedding(nn.Module):
         return self.embed_documents([text])[0]
 
     def encode_from_loader(
-        self, loader, convert_to_numpy: bool = True, device: str = None, normalize_embeddings: bool = False, **kwargs
-    ) -> Union[List[torch.Tensor], ndarray, torch.Tensor]:
+        self,
+        loader: DataLoader,
+        convert_to_numpy: bool = True,
+        device: str = None,
+        normalize_embeddings: bool = False,
+        **kwargs,
+    ) -> Union[List[torch.Tensor], np.ndarray, torch.Tensor]:
         self.model.eval()
         self.model.to(device or self.device)
         all_embeddings = []
@@ -293,7 +300,7 @@ class AutoModelForEmbedding(nn.Module):
 
     def encode_from_text(
         self,
-        sentences: Union[str, List[str]],
+        sentences: Union[str, List[str], Tuple[str], pd.Series, np.ndarray],
         batch_size: int = 128,
         show_progress_bar: bool = None,
         output_value: str = "sentence_embedding",
@@ -301,7 +308,7 @@ class AutoModelForEmbedding(nn.Module):
         convert_to_tensor: bool = False,
         device: str = None,
         normalize_embeddings: bool = False,
-    ) -> Union[List[torch.Tensor], ndarray, torch.Tensor]:
+    ) -> Union[List[torch.Tensor], np.ndarray, torch.Tensor]:
         """
         Computes sentence embeddings from sentence-transformers library.
 
@@ -408,15 +415,21 @@ class AutoModelForEmbedding(nn.Module):
         inputs: Union[DataLoader, Dict, List, str],
         index_path: Optional[str] = None,
         batch_size: int = 128,
+        show_progress_bar: bool = None,
         use_gpu: bool = True,
     ):
         import faiss
+        logger.info("Start to build index")
+        start_time = time.time()
 
-        embeddings = self.encode(inputs, batch_size=batch_size, convert_to_numpy=True)
+        embeddings = self.encode(
+            inputs, batch_size=batch_size, convert_to_numpy=True, show_progress_bar=show_progress_bar
+        )
         embeddings = np.asarray(embeddings, dtype=np.float32)
 
         index = faiss.IndexFlatL2(len(embeddings[0]))
         if use_gpu and self.device == 'cuda':
+            logger.info('Build index use faiss-gpu')
             co = faiss.GpuMultipleClonerOptions()
             co.shard = True
             co.useFloat16 = True
@@ -424,8 +437,16 @@ class AutoModelForEmbedding(nn.Module):
         index.add(embeddings)
 
         if index_path:
-            logger.info(f'save faiss index to: {index_path}')
-            faiss.write_index(index, index_path)
+            logger.info(f'Save faiss index to: {index_path}')
+            if os.path.isdir(index_path):
+                index_path = index_path + 'faiss.index'
+            if not os.path.exists(os.path.dirname(index_path)):
+                os.makedirs(os.path.dirname(index_path))
+
+            index_cpu = faiss.index_gpu_to_cpu(index)
+            faiss.write_index(index_cpu, index_path)
+
+        logger.info(f'Build index successfully, saved in {index_path}, elapsed: {time.time() - start_time:.2}s')
         return index
 
     def add_to_index(self):
@@ -434,7 +455,7 @@ class AutoModelForEmbedding(nn.Module):
     def search(self):
         return
 
-    def similarity(self, queries: Union[str, List[str]], keys: Union[str, List[str], ndarray]):
+    def similarity(self, queries: Union[str, List[str]], keys: Union[str, List[str], np.ndarray]):
         return
 
     def save(self, path: str):
@@ -495,8 +516,6 @@ class PairwiseModel(AutoModelForEmbedding):
         model_name_or_path: str,
         pooling_method: str = "cls",
         normalize_embeddings: bool = False,
-        query_instruction: Optional[str] = None,
-        use_fp16: bool = False,
         cross_encoder: bool = False,
         poly_encoder: bool = False,
         loss_fn: Union[nn.Module, Callable] = None,
@@ -506,8 +525,6 @@ class PairwiseModel(AutoModelForEmbedding):
             model_name_or_path=model_name_or_path,
             pooling_method=pooling_method,
             normalize_embeddings=normalize_embeddings,
-            query_instruction=query_instruction,
-            use_fp16=use_fp16,
             loss_fn=None,
             **kwargs,
         )
@@ -515,29 +532,29 @@ class PairwiseModel(AutoModelForEmbedding):
             logger.warning("loss_fn in Pairwise model will be ignored")
 
         self.cross_encoder = cross_encoder
+        self.logit_scale = torch.nn.Parameter(torch.ones([]) * np.log(1 / 0.07))
 
     def forward(
         self,
-        inputs: Union[dict[str, torch.Tensor], list],
-        inputs_pair: Optional[dict[str, torch.Tensor]] = None,
+        ids1, 
+        mask1, 
+        ids2=None, 
+        mask2=None,
+        # inputs,
         labels: Optional[torch.LongTensor] = None,
         output_attentions: Optional[bool] = None,
         output_hidden_states: Optional[bool] = None,
         return_dict: Optional[bool] = None,
     ):
-        if isinstance(inputs, (list, tuple)) and 2 <= len(inputs) <= 3 or inputs_pair is not None:
-            if inputs_pair:
-                input1 = inputs
-                input2 = inputs_pair
-            else:
-                input1 = inputs[0]
-                input2 = inputs[1]
-                if len(inputs) == 3:
-                    input3 = inputs[2]
+        if ids2 is not None and mask2 is not None:
+            # input1 = inputs[0]
+            # input2 = inputs[1]
+            # if len(inputs) == 3:
+            #     input3 = inputs[2]
 
             if self.cross_encoder:
-                ids1, mask1 = input1['input_ids'], input1['attention_mask']
-                ids2, mask2 = input2['input_ids'], input2['attention_mask']
+                # ids1, mask1 = input1['input_ids'], input1['attention_mask']
+                # ids2, mask2 = input2['input_ids'], input2['attention_mask']
                 ids = torch.cat([ids1, ids2], dim=0)
                 mask = torch.cat([mask1, mask2], dim=0)
 
@@ -547,7 +564,7 @@ class PairwiseModel(AutoModelForEmbedding):
                 pooled_output = self.pooling(transformer_out[0], mask)
                 pooled_output1 = pooled_output[: len(ids1), :]
                 pooled_output2 = pooled_output[len(ids1) :, :]
-                return pooled_output1, pooled_output2
+                return pooled_output1, pooled_output2, transformer_out[0] * mask.unsqueeze(-1)
             else:
                 # bi-encoder, pooling in each
                 pooled_output1 = super().forward(input1)
@@ -557,8 +574,12 @@ class PairwiseModel(AutoModelForEmbedding):
                     return pooled_output1, pooled_output2, pooled_output3
                 return pooled_output1, pooled_output2
         else:
-            pooled_output = super(PairwiseModel, self).forward_from_loader(inputs, without_pooling=False)
-            return pooled_output
+            transformer_out = super().forward_from_loader(
+                {"input_ids": ids1, "attention_mask": mask1}, without_pooling=False
+            )
+            # pooled_output = self.pooling(transformer_out[0], mask1)
+            return transformer_out
+
 
 
 def unsorted_segment_mean(data: torch.Tensor, segment_ids: torch.Tensor, num_segments: int) -> torch.Tensor:
@@ -583,8 +604,6 @@ class ListwiseModel(AutoModelForEmbedding):
         listwise_pooling: bool = False,
         num_segments: Optional[int] = None,
         normalize_embeddings: bool = False,
-        query_instruction: Optional[str] = None,
-        use_fp16: bool = False,
         loss_fn: Union[nn.Module, Callable] = None,
         **kwargs,
     ) -> None:
@@ -592,8 +611,6 @@ class ListwiseModel(AutoModelForEmbedding):
             model_name_or_path=model_name_or_path,
             pooling_method=pooling_method,
             normalize_embeddings=normalize_embeddings,
-            query_instruction=query_instruction,
-            use_fp16=use_fp16,
             loss_fn=loss_fn,
             **kwargs,
         )

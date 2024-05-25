@@ -1,13 +1,8 @@
-from dataclasses import dataclass, field
 from typing import Any, Dict, Optional, Sequence
+from pydantic.v1 import PrivateAttr
 
 from langchain.callbacks.manager import Callbacks
 from langchain.retrievers.document_compressors.base import BaseDocumentCompressor
-from langchain.text_splitter import (
-    CharacterTextSplitter,
-    MarkdownHeaderTextSplitter,
-    MarkdownTextSplitter,
-)
 from langchain_core.documents import Document
 from langchain_core.embeddings import Embeddings
 from langchain_core.pydantic_v1 import Extra, root_validator
@@ -22,37 +17,23 @@ class LangchainEmbedding(AutoModelForEmbedding, Embeddings):
 
 
 class LangchainReranker(BaseDocumentCompressor):
+    model: Any
+    kwargs: dict = {}
+    k: int = 5
+
     class Config:
         """Configuration for this pydantic object."""
 
-        extra = Extra.forbid
         arbitrary_types_allowed = True
 
-    def __init__(
-        self,
-        model_name_or_path: str,
-        top_n: int = 3,
-        device: str = "cuda",
-        max_length: int = 1024,
-        batch_size: int = 32,
-        show_progress_bar: bool = None,
-        num_workers: int = 0,
-    ):
-        self._model = RerankModel(model_name_or_path=model_name_or_path, max_length=max_length, device=device)
-        super().__init__(
-            model=model_name_or_path,
-            top_n=top_n,
-            device=device,
-            max_length=max_length,
-            batch_size=batch_size,
-            num_workers=num_workers,
-        )
+
 
     def compress_documents(
         self,
         documents: Sequence[Document],
         query: str,
         callbacks: Optional[Callbacks] = None,
+            **kwargs
     ) -> Sequence[Document]:
         """
         Compress documents using `BCEmbedding RerankerModel API`.
@@ -80,7 +61,7 @@ class LangchainReranker(BaseDocumentCompressor):
             else:
                 invalid_doc_list.append(d)
 
-        rerank_result = self._model.rerank(query, passages)
+        rerank_result = self.model.rerank(query, passages)
         final_results = []
         for score, doc_id in zip(rerank_result['rerank_scores'], rerank_result['rerank_ids']):
             doc = valid_doc_list[doc_id]

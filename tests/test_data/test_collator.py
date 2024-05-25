@@ -32,8 +32,8 @@ class CollatorTest(TestCase):
         batch = data_collator(features)
         self.assertEqual(batch['query']['input_ids'].shape, torch.Size([2, 5]))
         self.assertEqual(batch['query']['attention_mask'].shape, torch.Size([2, 5]))
-        self.assertEqual(batch['pos']['input_ids'].shape, torch.Size([2, 6]))
-        self.assertEqual(batch['pos']['attention_mask'].shape, torch.Size([2, 6]))
+        self.assertEqual(batch['positive']['input_ids'].shape, torch.Size([2, 6]))
+        self.assertEqual(batch['positive']['attention_mask'].shape, torch.Size([2, 6]))
 
     def test_triplet_collator(self):
         features = [
@@ -46,7 +46,7 @@ class CollatorTest(TestCase):
         batch = data_collator(features)
         self.assertEqual(batch['query']['input_ids'].shape, torch.Size([2, 5]))
         self.assertEqual(batch['query']['attention_mask'].shape, torch.Size([2, 5]))
-        self.assertEqual(batch['pos']['input_ids'].shape, torch.Size([2, 6]))
-        self.assertEqual(batch['pos']['attention_mask'].shape, torch.Size([2, 6]))
-        self.assertEqual(batch['neg']['input_ids'].shape, torch.Size([2, 6]))
-        self.assertEqual(batch['neg']['attention_mask'].shape, torch.Size([2, 6]))
+        self.assertEqual(batch['positive']['input_ids'].shape, torch.Size([2, 6]))
+        self.assertEqual(batch['positive']['attention_mask'].shape, torch.Size([2, 6]))
+        self.assertEqual(batch['negative']['input_ids'].shape, torch.Size([2, 6]))
+        self.assertEqual(batch['negative']['attention_mask'].shape, torch.Size([2, 6]))
