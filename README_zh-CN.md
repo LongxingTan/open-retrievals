@@ -113,7 +113,7 @@ from retrievals import RerankModel
 from langchain.retrievers import ContextualCompressionRetriever
 from langchain_community.vectorstores import Chroma as Vectorstore
 
-persist_directory = './database/faiss.index'
+persist_directory = './database/faiss/faiss.index'
 embeddings = LangchainEmbedding(model_name_or_path="BAAI/bge-large-zh-v1.5")
 vectordb = Vectorstore(
     persist_directory=persist_directory,
