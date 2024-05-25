@@ -99,9 +99,9 @@ rerank_model.compute_score(["In 1974, I won the championship in Southeast Asia i
 **RAG with LangChain integration**
 ```shell
 pip install langchain
+pip install langchain_community
 ```
 
-- Server
 ```python
 from retrievals.tools.langchain import LangchainEmbedding, LangchainReranker
 from retrievals import RerankModel
