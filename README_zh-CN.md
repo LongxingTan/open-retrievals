@@ -133,32 +133,22 @@ from retrievals import AutoModelForEmbedding, RetrievalTrainer, PairCollator, Tr
 from retrievals.losses import ArcFaceAdaptiveMarginLoss, InfoNCE, SimCSE, TripletLoss
 from retrievals.data import  RetrievalDataset
 
-model_name_or_path = "sentence-transformers/paraphrase-multilingual-mpnet-base-v2"
+model_name_or_path: str = "sentence-transformers/paraphrase-multilingual-mpnet-base-v2"
+batch_size: int = 128
+epochs: int = 3
 
 train_dataset = RetrievalDataset(args=data_args)
 tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, use_fast=False)
-
 model = AutoModelForEmbedding(model_name_or_path, pooling_method="cls")
-
-no_decay = ['bias', 'LayerNorm.weight']
-optimizer_grouped_parameters = [
-    {'params': [p for n, p in model.named_parameters() if p.requires_grad and not any(nd in n for nd in no_decay)], 'weight_decay': 1e-3},
-    {'params': [p for n, p in model.named_parameters() if p.requires_grad and any(nd in n for nd in no_decay)], 'weight_decay': 0.0}
-]
-optimizer = AdamW(optimizer_grouped_parameters, lr=5e-5)
-num_train_steps=int(len(train_dataset) / 2 * 1)
-scheduler = get_linear_schedule_with_warmup(
-    optimizer,
-    num_warmup_steps=0.05 * num_train_steps,
-    num_training_steps=num_train_steps,
-    )
+optimizer = AdamW(model.parameters(), lr=5e-5)
+num_train_steps=int(len(train_dataset) / batch_size * epochs)
+scheduler = get_linear_schedule_with_warmup(optimizer, num_warmup_steps=0.05 * num_train_steps, num_training_steps=num_train_steps)
 
 training_arguments = TrainingArguments(
     output_dir='./',
-    num_train_epochs=3,
-    per_device_train_batch_size=128,
+    num_train_epochs=epochs,
+    per_device_train_batch_size=batch_size,
 )
-
 trainer = RetrievalTrainer(
     model=model,
     args=training_arguments,
@@ -192,30 +182,29 @@ from transformers import AutoTokenizer, TrainingArguments, get_cosine_schedule_w
 from retrievals import RerankCollator, RerankModel, RerankTrainer, RerankDataset
 
 model_name_or_path: str = "microsoft/mdeberta-v3-base"
+query_max_length: int = 512
 learning_rate: float = 3e-5
 batch_size: int = 64
 epochs: int = 3
 
 train_dataset = RerankDataset(args=data_args)
 tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, use_fast=False)
-
 model = RerankModel(model_name_or_path, pooling_method="mean")
 optimizer = AdamW(model.parameters(), lr=learning_rate)
 num_train_steps = int(len(train_dataset) / batch_size * epochs)
-scheduler = get_cosine_schedule_with_warmup(optimizer, num_warmup_steps=100, num_training_steps=num_train_steps)
+scheduler = get_cosine_schedule_with_warmup(optimizer, num_warmup_steps=0.05 * num_train_steps, num_training_steps=num_train_steps)
 
 training_args = TrainingArguments(
-    learning_rate=2e-5,
-    per_device_train_batch_size=1,
-    num_train_epochs=2,
+    learning_rate=learning_rate,
+    per_device_train_batch_size=batch_size,
+    num_train_epochs=epochs,
     output_dir = './checkpoints',
 )
-
 trainer = RerankTrainer(
     model=model,
     args=training_args,
     train_dataset=train_dataset,
-    data_collator=RerankCollator(tokenizer, max_length=data_args.query_max_length),
+    data_collator=RerankCollator(tokenizer, max_length=query_max_length),
 )
 trainer.optimizer = optimizer
 trainer.scheduler = scheduler
