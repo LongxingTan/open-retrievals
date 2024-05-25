@@ -200,7 +200,7 @@ class RerankModel(nn.Module):
         loss_type: Literal['classification', 'regression'] = 'classification',
         num_labels: int = 1,
         gradient_checkpointing: bool = False,
-        trust_remote_code: bool = False,
+        trust_remote_code: bool = True,
         use_fp16: bool = False,
         use_lora: bool = False,
         lora_config=None,
