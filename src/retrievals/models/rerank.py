@@ -10,6 +10,7 @@ from transformers import (
     AutoModel,
     AutoModelForSequenceClassification,
     AutoTokenizer,
+    PreTrainedTokenizer,
 )
 
 from ..data.collator import RerankCollator
@@ -23,7 +24,7 @@ class RerankModel(nn.Module):
     def __init__(
         self,
         model: Optional[nn.Module] = None,
-        tokenizer=None,
+        tokenizer: Optional[PreTrainedTokenizer] = None,
         pooling_method: str = 'mean',
         loss_fn: Union[nn.Module, Callable] = None,
         max_length: Optional[int] = None,
