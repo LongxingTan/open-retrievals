@@ -19,7 +19,7 @@ class LangchainEmbedding(AutoModelForEmbedding, Embeddings):
 
     def __init__(self, **kwargs):
         Embeddings.__init__(self)
-        AutoModelForEmbedding.__init__(model_name_or_path=self.model_name, **kwargs)
+        AutoModelForEmbedding.__init__(self, model_name_or_path=self.model_name, **kwargs)
 
     def embed_documents(self, texts: List[str]) -> List[List[float]]:
         """Compute doc embeddings using a HuggingFace transformer model."""
