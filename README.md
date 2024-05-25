@@ -224,7 +224,6 @@ trainer = RerankTrainer(
 trainer.optimizer = optimizer
 trainer.scheduler = scheduler
 trainer.train()
-trainer.save_model('weights')
 ```
 
 **Semantic search by cosine similarity/KNN**
