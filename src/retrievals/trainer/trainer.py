@@ -10,7 +10,7 @@ from transformers.tokenization_utils_base import PreTrainedTokenizerBase
 from transformers.trainer_callback import TrainerCallback
 from transformers.trainer_utils import EvalPrediction
 
-from ..losses.triplet import TripletLoss
+from ..losses import InfoNCE, SimCSE, TripletLoss
 
 logger = logging.getLogger(__name__)
 
