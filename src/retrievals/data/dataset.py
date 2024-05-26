@@ -79,14 +79,17 @@ class RerankDataset(Dataset):
                 temp_dataset = datasets.load_dataset(
                     "json",
                     data_files=os.path.join(data_name_or_path, file),
-                    split="train",
                     cache_dir=cache_dir,
                 )
 
                 train_datasets.append(temp_dataset)
             dataset = datasets.concatenate_datasets(train_datasets)
+
         else:
-            dataset = datasets.load_dataset("json", data_files=data_name_or_path, split="train")
+            dataset = datasets.load_dataset("json", data_files=data_name_or_path)
+
+        if 'train' in dataset:
+            dataset = dataset['train']
 
         if positive_key and positive_key in dataset:
             dataset = self.generate_samples(dataset)

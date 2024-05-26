@@ -36,6 +36,7 @@ class PairCollator(DataCollatorWithPadding):
             self.document_max_length = document_max_length
 
     def __call__(self, features: List[Dict[str, Any]]) -> Dict[str, Any]:
+        assert len(features) > 0
         assert (
             self.query_key in features[0] and self.positive_key in features[0]
         ), f"PairCollator should have {self.query_key} and {self.positive_key} in features, while get {features[0]}"
@@ -96,6 +97,7 @@ class TripletCollator(DataCollatorWithPadding):
             self.document_max_length = document_max_length
 
     def __call__(self, features: List[Dict[str, Any]]) -> Dict[str, Any]:
+        assert len(features) > 0
         assert (
             self.positive_key in features[0] and self.positive_key in features[0] and self.negative_key in features[0]
         ), f"TripletCollator should have {self.query_key}, {self.positive_key} and {self.negative_key} in features dict"
@@ -171,6 +173,7 @@ class RerankCollator(DataCollatorWithPadding):
             self.document_max_length = document_max_length
 
     def __call__(self, features: Union[List[Dict[str, Any]], List]) -> BatchEncoding:
+        assert len(features) > 0
         if isinstance(features[0], dict):
             assert (
                 self.query_key in features[0] and self.document_key in features[0]
