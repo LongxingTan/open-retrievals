@@ -118,6 +118,7 @@ class RerankDataset(Dataset):
 
             negative_samples = data[self.negative_key]
             if self.negative_numbers:
+                # TODO: random strategy
                 negative_samples = negative_samples[: self.negative_numbers]
             for text_neg in negative_samples:
                 samples.append([data[self.query_key], text_neg, 0])
