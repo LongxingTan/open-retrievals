@@ -31,6 +31,7 @@ class RerankModel(nn.Module):
         tokenizer: Optional[PreTrainedTokenizer] = None,
         pooling_method: str = 'mean',
         loss_fn: Union[nn.Module, Callable] = None,
+        loss_type: Literal['classification', 'regression'] = 'classification',
         max_length: Optional[int] = None,
         **kwargs,
     ):
@@ -45,6 +46,7 @@ class RerankModel(nn.Module):
             self.classifier = nn.Linear(num_features, 1)
             self._init_weights(self.classifier)
         self.loss_fn = loss_fn
+        self.loss_type = loss_type
 
         if max_length is None:
             if (
@@ -106,7 +108,7 @@ class RerankModel(nn.Module):
                     logits = torch.sigmoid(logits)
                     self.loss_fn = nn.MSELoss()
 
-                elif self.loss_type == 'classfication':
+                elif self.loss_type == 'classification':
                     self.loss_fn = nn.BCEWithLogitsLoss(reduction='mean')
 
             loss = self.loss_fn(logits, labels.float())
