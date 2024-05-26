@@ -88,9 +88,9 @@ class RerankModel(nn.Module):
         return_dict: Optional[bool] = True,
         **kwargs,
     ) -> Union[Dict[str, torch.Tensor], Tuple[torch.Tensor, torch.Tensor], torch.Tensor]:
-        if input_ids:
+        if input_ids is not None:
             features = self.encode(input_ids=input_ids, attention_mask=attention_mask)
-        elif inputs:
+        elif inputs is not None:
             features = self.encode(**inputs)
         else:
             raise ValueError("input_ids(tensor) and inputs(dict) can't be empty as the same time")
