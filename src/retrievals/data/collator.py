@@ -36,9 +36,10 @@ class PairCollator(DataCollatorWithPadding):
             self.document_max_length = document_max_length
 
     def __call__(self, features: List[Dict[str, Any]]) -> Dict[str, Any]:
+        assert len(features) > 0
         assert (
             self.query_key in features[0] and self.positive_key in features[0]
-        ), f"PairCollator should have {self.query_key} and {self.positive_key} in features dict, "
+        ), f"PairCollator should have {self.query_key} and {self.positive_key} in features, while get {features[0]}"
         "you can set the custom key of query_key, positive_key during class init"
 
         query_texts = [feature["query"] for feature in features]
@@ -96,6 +97,7 @@ class TripletCollator(DataCollatorWithPadding):
             self.document_max_length = document_max_length
 
     def __call__(self, features: List[Dict[str, Any]]) -> Dict[str, Any]:
+        assert len(features) > 0
         assert (
             self.positive_key in features[0] and self.positive_key in features[0] and self.negative_key in features[0]
         ), f"TripletCollator should have {self.query_key}, {self.positive_key} and {self.negative_key} in features dict"
@@ -160,6 +162,8 @@ class RerankCollator(DataCollatorWithPadding):
         self.document_max_length: int
         if query_max_length:
             self.query_max_length = query_max_length
+        if document_max_length:
+            self.document_max_length = document_max_length
         elif max_length:
             self.query_max_length = max_length
             self.document_max_length = max_length
@@ -167,10 +171,8 @@ class RerankCollator(DataCollatorWithPadding):
             self.query_max_length = tokenizer.model_max_length
             self.document_max_length = tokenizer.model_max_length
 
-        if document_max_length:
-            self.document_max_length = document_max_length
-
     def __call__(self, features: Union[List[Dict[str, Any]], List]) -> BatchEncoding:
+        assert len(features) > 0
         if isinstance(features[0], dict):
             assert (
                 self.query_key in features[0] and self.document_key in features[0]
@@ -191,7 +193,7 @@ class RerankCollator(DataCollatorWithPadding):
             text_pair=document_texts,
             padding=True,
             truncation=True,
-            max_length=self.max_length,
+            max_length=self.query_max_length,
             return_tensors="pt",
         )
 
@@ -199,5 +201,5 @@ class RerankCollator(DataCollatorWithPadding):
         #     batch[key] = torch.tensor(batch[key], dtype=torch.int64)
 
         if labels is not None:
-            batch['labels'] = torch.tensor(batch['labels'], dtype=torch.float32)
+            batch['labels'] = torch.tensor(labels, dtype=torch.float32)
         return batch

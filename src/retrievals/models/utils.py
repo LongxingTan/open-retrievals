@@ -28,6 +28,5 @@ def batch_to_device(batch: Dict, target_device: str) -> Dict[str, torch.Tensor]:
         if isinstance(batch[key], torch.Tensor):
             batch[key] = batch[key].to(target_device)
         else:
-            print(batch[key])
             batch[key] = torch.tensor(batch[key], dtype=torch.long).to(target_device)
     return batch

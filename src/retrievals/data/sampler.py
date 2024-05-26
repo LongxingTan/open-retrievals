@@ -3,6 +3,7 @@ from typing import Optional
 
 import numpy as np
 import torch
+from torch.utils.data import DistributedSampler
 from torch.utils.data.sampler import BatchSampler, Sampler
 
 logger = logging.getLogger(__name__)
@@ -173,3 +174,8 @@ def split_batches(inputs, batch_size: int, drop_last: bool = False):
         if len(l[-1]) != batch_size:
             l = l[:-1]
     return l
+
+
+class SyncedSampler(DistributedSampler):
+    def __init__(self):
+        super(SyncedSampler, self).__init__()

@@ -40,10 +40,10 @@ def train_fn(
     **kwargs,
 ):
     start = time.time()
+    global_step = 0
     model.train()
     scaler = torch.cuda.amp.GradScaler(enabled=apex)
     losses = AverageMeter()
-    global_step = 0
     save_step = int(len(train_loader) / 1)
 
     # loss_list = []
@@ -62,8 +62,11 @@ def train_fn(
 
         if isinstance(inputs, (list, tuple)):
             for input in inputs:
-                for k, v in input.items():
-                    input[k] = v.to(device)
+                if isinstance(input, dict):
+                    for k, v in input.items():
+                        input[k] = v.to(device)
+                else:
+                    input = input.to(device)
         else:
             for k, v in inputs.items():
                 inputs[k] = v.to(device)
@@ -72,9 +75,15 @@ def train_fn(
         batch_size = labels.size(0)
         with torch.cuda.amp.autocast(enabled=apex):
             if criterion is None:
-                preds = model(inputs=inputs, labels=labels)
+                try:
+                    preds = model(inputs=inputs, labels=labels)
+                except ValueError:
+                    preds = model(**inputs, labels=labels)
             else:
-                preds = model(inputs=inputs)
+                try:
+                    preds = model(inputs=inputs)
+                except ValueError:
+                    preds = model(**inputs)
             if isinstance(preds, dict) and "loss" in preds:
                 loss = preds["loss"]
             else:
@@ -253,7 +262,7 @@ def valid_fn(
 
 
 def inference_fn(test_loader, model, device):
-    preds = []
+    preds: List[np.ndarray] = []
     model.eval()
     model.to(device)
     tk0 = tqdm(test_loader, total=len(test_loader))

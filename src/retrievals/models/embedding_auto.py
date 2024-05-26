@@ -228,15 +228,6 @@ class AutoModelForEmbedding(nn.Module):
         else:
             raise ValueError(f'Input type: {type(inputs)}')
 
-    def embed_documents(self, texts: List[str]) -> List[List[float]]:
-        """Compute doc embeddings using a HuggingFace transformer model."""
-        embeddings = self.encode(texts, show_progress_bar=self.show_progress, **self.encode_kwargs)
-        return embeddings.tolist()
-
-    def embed_query(self, text: str) -> List[float]:
-        """Compute query embeddings using a HuggingFace transformer model."""
-        return self.embed_documents([text])[0]
-
     def encode_from_loader(
         self,
         loader: DataLoader,
@@ -420,8 +411,8 @@ class AutoModelForEmbedding(nn.Module):
         return
 
     def set_train_type(self, train_type: Literal['pointwise', 'pairwise', 'listwise'], **kwargs):
-        model_class = {'pointwise': None, 'pairwise': PairwiseModel, 'listwise': ListwiseModel}
-        model_class = model_class.get(train_type.lower(), AutoModelForEmbedding)
+        model_class = {'pointwise': self, 'pairwise': PairwiseModel, 'listwise': ListwiseModel}
+        model_class = model_class.get(train_type.lower())
         return model_class(**kwargs)
 
     @classmethod

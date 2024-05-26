@@ -21,7 +21,7 @@ class InfoNCE(nn.Module):
 
     def __init__(
         self,
-        criterion: Union[nn.Module, Callable, None] = None,
+        criterion: Union[nn.Module, Callable, None] = nn.CrossEntropyLoss(label_smoothing=0.05),
         temperature: float = 0.05,
         negative_mode: Literal['paired', 'unpaired'] = "unpaired",
     ):

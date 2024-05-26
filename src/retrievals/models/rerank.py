@@ -10,6 +10,11 @@ from transformers import (
     AutoModel,
     AutoModelForSequenceClassification,
     AutoTokenizer,
+    PreTrainedTokenizer,
+)
+from transformers.modeling_outputs import (
+    BaseModelOutputWithPooling,
+    SequenceClassifierOutput,
 )
 
 from ..data.collator import RerankCollator
@@ -23,9 +28,10 @@ class RerankModel(nn.Module):
     def __init__(
         self,
         model: Optional[nn.Module] = None,
-        tokenizer=None,
+        tokenizer: Optional[PreTrainedTokenizer] = None,
         pooling_method: str = 'mean',
         loss_fn: Union[nn.Module, Callable] = None,
+        loss_type: Literal['classification', 'regression'] = 'classification',
         max_length: Optional[int] = None,
         **kwargs,
     ):
@@ -40,6 +46,7 @@ class RerankModel(nn.Module):
             self.classifier = nn.Linear(num_features, 1)
             self._init_weights(self.classifier)
         self.loss_fn = loss_fn
+        self.loss_type = loss_type
 
         if max_length is None:
             if (
@@ -65,7 +72,7 @@ class RerankModel(nn.Module):
             module.weight.data.fill_(1.0)
 
     def encode(self, input_ids: torch.Tensor, attention_mask: torch.Tensor) -> torch.Tensor:
-        outputs = self.model(input_ids, attention_mask, output_hidden_states=True)
+        outputs: SequenceClassifierOutput = self.model(input_ids, attention_mask, output_hidden_states=True)
         if hasattr(outputs, 'last_hidden_state'):
             hidden_state = outputs.last_hidden_state
             embeddings = self.pooling(hidden_state, attention_mask)
@@ -83,9 +90,9 @@ class RerankModel(nn.Module):
         return_dict: Optional[bool] = True,
         **kwargs,
     ) -> Union[Dict[str, torch.Tensor], Tuple[torch.Tensor, torch.Tensor], torch.Tensor]:
-        if input_ids:
+        if input_ids is not None:
             features = self.encode(input_ids=input_ids, attention_mask=attention_mask)
-        elif inputs:
+        elif inputs is not None:
             features = self.encode(**inputs)
         else:
             raise ValueError("input_ids(tensor) and inputs(dict) can't be empty as the same time")
@@ -101,7 +108,7 @@ class RerankModel(nn.Module):
                     logits = torch.sigmoid(logits)
                     self.loss_fn = nn.MSELoss()
 
-                elif self.loss_type == 'classfication':
+                elif self.loss_type == 'classification':
                     self.loss_fn = nn.BCEWithLogitsLoss(reduction='mean')
 
             loss = self.loss_fn(logits, labels.float())
@@ -191,23 +198,6 @@ class RerankModel(nn.Module):
         else:
             return sorted_document
 
-    def save(self, path: str):
-        """
-        Saves all model and tokenizer to path
-        """
-        if path is None:
-            return
-
-        logger.info("Save model to {}".format(path))
-        self.model.save_pretrained(path)
-        self.tokenizer.save_pretrained(path)
-
-    def save_pretrained(self, path: str):
-        """
-        Same function to save
-        """
-        return self.save(path)
-
     @classmethod
     def from_pretrained(
         cls,
@@ -216,7 +206,7 @@ class RerankModel(nn.Module):
         loss_type: Literal['classification', 'regression'] = 'classification',
         num_labels: int = 1,
         gradient_checkpointing: bool = False,
-        trust_remote_code: bool = False,
+        trust_remote_code: bool = True,
         use_fp16: bool = False,
         use_lora: bool = False,
         lora_config=None,
@@ -253,3 +243,20 @@ class RerankModel(nn.Module):
             model=model, tokenizer=tokenizer, pooling_method=pooling_method, device=device, loss_type=loss_type
         )
         return reranker
+
+    def save(self, path: str):
+        """
+        Saves all model and tokenizer to path
+        """
+        if path is None:
+            return
+
+        logger.info("Save model to {}".format(path))
+        self.model.save_pretrained(path)
+        self.tokenizer.save_pretrained(path)
+
+    def save_pretrained(self, path: str):
+        """
+        Same function to save
+        """
+        return self.save(path)

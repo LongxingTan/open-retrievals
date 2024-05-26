@@ -1,6 +1,6 @@
 from typing import Any, Dict, List, Optional, Sequence
 
-from langchain.callbacks.manager import Callbacks
+from langchain.callbacks.manager import CallbackManagerForRetrieverRun, Callbacks
 from langchain.retrievers.document_compressors.base import BaseDocumentCompressor
 from langchain_core.documents import Document
 from langchain_core.embeddings import Embeddings
@@ -11,8 +11,40 @@ from ..models.rerank import RerankModel
 
 
 class LangchainEmbedding(AutoModelForEmbedding, Embeddings):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+    """
+    Example:
+        .. code-block:: python
+
+            from langchain_community.embeddings import HuggingFaceBgeEmbeddings
+
+            model_name_or_path = "BAAI/bge-large-en"
+            model_kwargs = {'device': 'cpu'}
+            encode_kwargs = {'normalize_embeddings': True}
+            hf = LangchainEmbeddings(
+                model_name_or_path=model_name_or_path,
+                model_kwargs=model_kwargs,
+                encode_kwargs=encode_kwargs
+            )
+    """
+
+    client: Any
+    model_name_or_path: Optional[str] = None
+    cache_folder: Optional[str] = None
+    model_kwargs: Dict[str, Any] = dict()
+    encode_kwargs: Dict[str, Any] = dict()
+
+    def __init__(self, **kwargs: Any):
+        Embeddings.__init__(self)
+        AutoModelForEmbedding.__init__(self, **kwargs)
+
+    def embed_documents(self, texts: List[str]) -> List[List[float]]:
+        """Compute doc embeddings using a HuggingFace transformer model."""
+        embeddings = self.encode(texts, **self.encode_kwargs)
+        return embeddings.tolist()
+
+    def embed_query(self, text: str) -> List[float]:
+        """Compute query embeddings using a HuggingFace transformer model."""
+        return self.embed_documents([text])[0]
 
 
 class LangchainRetrieval(BaseRetriever):
