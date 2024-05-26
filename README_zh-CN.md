@@ -186,19 +186,18 @@ dists, indices = matcher.similarity_search(query_embeddings, document_embeddings
 
 **微调重排模型**
 ```python
-from torch.optim import AdamW
-from transformers import AutoTokenizer, TrainingArguments, get_cosine_schedule_with_warmup
+from transformers import AutoTokenizer, TrainingArguments, get_cosine_schedule_with_warmup, AdamW
 from retrievals import RerankCollator, RerankModel, RerankTrainer, RerankDataset
 
 model_name_or_path: str = "microsoft/mdeberta-v3-base"
-query_max_length: int = 512
+max_length: int = 128
 learning_rate: float = 3e-5
-batch_size: int = 64
+batch_size: int = 4
 epochs: int = 3
 
-train_dataset = RerankDataset(args=data_args)
+train_dataset = RerankDataset('./t2rank.json', positive_key='pos', negative_key='neg')
 tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, use_fast=False)
-model = RerankModel(model_name_or_path, pooling_method="mean")
+model = RerankModel.from_pretrained(model_name_or_path, pooling_method="mean")
 optimizer = AdamW(model.parameters(), lr=learning_rate)
 num_train_steps = int(len(train_dataset) / batch_size * epochs)
 scheduler = get_cosine_schedule_with_warmup(optimizer, num_warmup_steps=0.05 * num_train_steps, num_training_steps=num_train_steps)
@@ -208,12 +207,13 @@ training_args = TrainingArguments(
     per_device_train_batch_size=batch_size,
     num_train_epochs=epochs,
     output_dir = './checkpoints',
+    remove_unused_columns=False,
 )
 trainer = RerankTrainer(
     model=model,
     args=training_args,
     train_dataset=train_dataset,
-    data_collator=RerankCollator(tokenizer, max_length=query_max_length),
+    data_collator=RerankCollator(tokenizer, max_length=max_length),
 )
 trainer.optimizer = optimizer
 trainer.scheduler = scheduler
