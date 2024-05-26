@@ -38,7 +38,7 @@ class PairCollator(DataCollatorWithPadding):
     def __call__(self, features: List[Dict[str, Any]]) -> Dict[str, Any]:
         assert (
             self.query_key in features[0] and self.positive_key in features[0]
-        ), f"PairCollator should have {self.query_key} and {self.positive_key} in features dict, "
+        ), f"PairCollator should have {self.query_key} and {self.positive_key} in features, while get {features[0]}"
         "you can set the custom key of query_key, positive_key during class init"
 
         query_texts = [feature["query"] for feature in features]
