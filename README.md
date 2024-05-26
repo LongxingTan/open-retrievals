@@ -147,16 +147,18 @@ docs = compression_retriever.invoke(query)
 
 **Text embedding model fine-tuned by contrastive learning**
 ```python
+import torch.nn as nn
+from datasets import load_dataset
 from transformers import AutoTokenizer, AdamW, get_linear_schedule_with_warmup, TrainingArguments
 from retrievals import AutoModelForEmbedding, RetrievalTrainer, PairCollator, TripletCollator
 from retrievals.losses import ArcFaceAdaptiveMarginLoss, InfoNCE, SimCSE, TripletLoss
-from retrievals.data import  RetrievalDataset
 
 model_name_or_path: str = "sentence-transformers/paraphrase-multilingual-mpnet-base-v2"
 batch_size: int = 128
 epochs: int = 3
 
-train_dataset = RetrievalDataset(args=data_args)
+train_dataset = load_dataset('shibing624/nli_zh', 'STS-B')['train']
+train_dataset = train_dataset.rename_columns({'sentence1': 'query', 'sentence2': 'positive'})
 tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, use_fast=False)
 model = AutoModelForEmbedding(model_name_or_path, pooling_method="cls")
 optimizer = AdamW(model.parameters(), lr=5e-5)
@@ -167,13 +169,14 @@ training_arguments = TrainingArguments(
     output_dir='./',
     num_train_epochs=epochs,
     per_device_train_batch_size=batch_size,
+    remove_unused_columns=False,
 )
 trainer = RetrievalTrainer(
     model=model,
     args=training_arguments,
     train_dataset=train_dataset,
-    data_collator=TripletCollator(tokenizer, max_length=512),
-    loss_fn=TripletLoss(),
+    data_collator=PairCollator(tokenizer, max_length=512),
+    loss_fn=InfoNCE(nn.CrossEntropyLoss(label_smoothing=0.05)),
 )
 trainer.optimizer = optimizer
 trainer.scheduler = scheduler
