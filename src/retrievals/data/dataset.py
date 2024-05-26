@@ -66,12 +66,12 @@ class RerankDataset(Dataset):
         query_key='query',
         positive_key: Optional[str] = None,
         negative_key: Optional[str] = None,
-        negetive_numbers: Optional[int] = None,
+        negative_numbers: Optional[int] = None,
     ):
         self.query_key = query_key
         self.positive_key = positive_key
         self.negative_key = negative_key
-        self.negative_numbers = negetive_numbers
+        self.negative_numbers = negative_numbers
 
         if os.path.isdir(data_name_or_path):
             train_datasets = []
@@ -91,7 +91,7 @@ class RerankDataset(Dataset):
         if 'train' in dataset:
             dataset = dataset['train']
 
-        if positive_key and positive_key in dataset:
+        if positive_key:
             dataset = self.generate_samples(dataset)
 
         self.dataset = dataset
