@@ -202,5 +202,5 @@ class RerankCollator(DataCollatorWithPadding):
         #     batch[key] = torch.tensor(batch[key], dtype=torch.int64)
 
         if labels is not None:
-            batch['labels'] = torch.tensor(batch['labels'], dtype=torch.float32)
+            batch['labels'] = torch.tensor(labels, dtype=torch.float32)
         return batch
