@@ -27,10 +27,10 @@
 
 **[Documentation](https://open-retrievals.readthedocs.io)** | **[中文](https://github.com/LongxingTan/open-retrievals/blob/master/README_zh-CN.md)** | **[日本語](https://github.com/LongxingTan/open-retrievals/blob/master/README_ja-JP.md)**
 
-**Open-Retrievals** is an easy-to-use python framework getting SOTA text embeddings, oriented to information retrieval and LLM retrieval augmented generation, based on PyTorch and Transformers.
-- Contrastive learning enhanced embeddings
-- LLM embeddings
-- fast RAG demo
+**Open-retrievals** simplifies text embeddings, retrievals, ranking, and RAG applications using PyTorch and Transformers. This user-friendly framework is designed for information retrieval and LLM-enhanced generation.
+- Contrastive learning enhanced embeddings/ LLM embeddings
+- Cross-encoder and ColBERT Rerank
+- Fast RAG demo integrated with Langchain and LlamaIndex
 
 
 ## Installation
@@ -55,54 +55,21 @@ pip install open-retrievals
 
 [//]: # (```)
 
+
 ## Quick-start
 
-Open-retrievals make it easy to get text embeddings, text retrievals, ranking and RAG applications
-
-**Use Pretrained weights**
+**Text embedding from Pretrained weights**
 ```python
 from retrievals import AutoModelForEmbedding
 
-sentences = ["Hello world", "How are you doing?", "Open-retrievals is a text embedding libraries for RAG application"]
+sentences = ["Hello NLP", "Open-retrievals is designed for retrieval, rerank and RAG"]
 model_name_or_path = "sentence-transformers/all-MiniLM-L6-v2"
-model = AutoModelForEmbedding(model_name_or_path, pooling_method="mean", normalize_embeddings=True)
-sentence_embeddings = model.encode(sentences, convert_to_tensor=True)
+model = AutoModelForEmbedding(model_name_or_path, pooling_method="mean")
+sentence_embeddings = model.encode(sentences, normalize_embeddings=True, convert_to_tensor=True)
 print(sentence_embeddings)
 ```
 
-**Finetune by contrastive learning**
-```python
-from transformers import AutoTokenizer
-from retrievals import AutoModelForEmbedding, AutoModelForRetrieval, RetrievalTrainer, PairCollator, TripletCollator
-from retrievals.losses import ArcFaceAdaptiveMarginLoss, InfoNCE, SimCSE, TripletLoss
-from retrievals.data import  RetrievalDataset, RerankDataset
-
-model_name_or_path = "sentence-transformers/paraphrase-multilingual-mpnet-base-v2"
-
-train_dataset = RetrievalDataset(args=data_args)
-tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, use_fast=False)
-
-model = AutoModelForEmbedding(model_name_or_path, pooling_method="cls")
-optimizer = get_optimizer(model, lr=5e-5, weight_decay=1e-3)
-
-lr_scheduler = get_scheduler(optimizer, num_train_steps=int(len(train_dataset) / 2 * 1))
-
-trainer = RetrievalTrainer(
-    model=model,
-    args=training_args,
-    train_dataset=train_dataset,
-    data_collator=TripletCollator(tokenizer, max_length=data_args.query_max_length),
-    loss_fn=TripletLoss(),
-)
-trainer.optimizer = optimizer
-trainer.scheduler = lr_scheduler
-trainer.train()
-```
-
-
-## Usage
-
-**Build Index and Retrieval Search**
+**Index building for dense retrieval search**
 ```python
 from retrievals import AutoModelForEmbedding, AutoModelForRetrieval
 
@@ -118,53 +85,23 @@ dists, indices = matcher.similarity_search(query_embed, index_path=index_path)
 print(indices)
 ```
 
-
-**Rerank**
+**Rerank using pretrained weights**
 ```python
-from torch.optim import AdamW
-from transformers import AutoTokenizer, TrainingArguments, get_cosine_schedule_with_warmup
-from retrievals import RerankCollator, RerankModel, RerankTrainer, RerankDataset
+from retrievals import RerankModel
 
 model_name_or_path: str = "microsoft/mdeberta-v3-base"
-learning_rate: float = 3e-5
-batch_size: int = 64
-epochs: int = 3
-
-train_dataset = RerankDataset(args=data_args)
-tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, use_fast=False)
-
-model = RerankModel(model_name_or_path, pooling_method="mean")
-optimizer = AdamW(model.parameters(), lr=learning_rate)
-num_train_steps = int(len(train_dataset) / batch_size * epochs)
-scheduler = get_cosine_schedule_with_warmup(optimizer, num_warmup_steps=100, num_training_steps=num_train_steps)
-
-training_args = TrainingArguments(
-    learning_rate=2e-5,
-    per_device_train_batch_size=1,
-    num_train_epochs=2,
-    output_dir = './checkpoints',
-)
-
-trainer = RerankTrainer(
-    model=model,
-    args=training_args,
-    train_dataset=train_dataset,
-    data_collator=RerankCollator(tokenizer, max_length=data_args.query_max_length),
-)
-trainer.optimizer = optimizer
-trainer.scheduler = scheduler
-trainer.train()
-trainer.save_model('weights')
+rerank_model = RerankModel.from_pretrained(model_name_or_path)
+rerank_model.eval()
+rerank_model.to("cuda")
+rerank_model.compute_score(["In 1974, I won the championship in Southeast Asia in my first kickboxing match," "In 1982, I defeated the heavy hitter Ryu Long."])
 ```
 
-
-**RAG with LangChain**
-
+**RAG with LangChain integration**
 ```shell
 pip install langchain
+pip install langchain_community
+pip install chromadb
 ```
-
-- Server
 
 ```python
 from retrievals.tools.langchain import LangchainEmbedding, LangchainReranker
@@ -172,9 +109,8 @@ from retrievals import RerankModel
 from langchain.retrievers import ContextualCompressionRetriever
 from langchain_community.vectorstores import Chroma as Vectorstore
 
-
-persist_directory = './database/faiss.index'
-embeddings = LangchainEmbedding(model_name="BAAI/bge-large-zh-v1.5")
+persist_directory = './database/faiss/faiss.index'
+embeddings = LangchainEmbedding(model_name_or_path="BAAI/bge-large-zh-v1.5")
 vectordb = Vectorstore(
     persist_directory=persist_directory,
     embedding_function=embeddings,
@@ -182,14 +118,14 @@ vectordb = Vectorstore(
 retrieval_args = {"search_type" :"similarity", "score_threshold": 0.15, "k": 30}
 retriever = vectordb.as_retriever(retrieval_args)
 
-rank = RerankModel("maidalun1020/bce-reranker-base_v1", use_fp16=True)
-reranker = LangchainReranker(model=rank, top_n=7)
+ranker = RerankModel.from_pretrained("maidalun1020/bce-reranker-base_v1")
+reranker = LangchainReranker(model=ranker, top_n=7)
 compression_retriever = ContextualCompressionRetriever(
     base_compressor=reranker, base_retriever=retriever
 )
 
 query = 'what is open-retrievals?'
-docs = compression_retriever.get_relevant_documents(query)
+docs = compression_retriever.invoke(query)
 ```
 
 [//]: # (**RAG with LLamaIndex**)
@@ -209,8 +145,82 @@ docs = compression_retriever.get_relevant_documents(query)
 [//]: # ()
 [//]: # (```)
 
+**Text embedding model fine-tuned by contrastive learning**
+```python
+import torch.nn as nn
+from datasets import load_dataset
+from transformers import AutoTokenizer, AdamW, get_linear_schedule_with_warmup, TrainingArguments
+from retrievals import AutoModelForEmbedding, RetrievalTrainer, PairCollator, TripletCollator
+from retrievals.losses import ArcFaceAdaptiveMarginLoss, InfoNCE, SimCSE, TripletLoss
 
-**Search by Cosine similarity/KNN**
+model_name_or_path: str = "sentence-transformers/paraphrase-multilingual-mpnet-base-v2"
+batch_size: int = 128
+epochs: int = 3
+
+train_dataset = load_dataset('shibing624/nli_zh', 'STS-B')['train']
+train_dataset = train_dataset.rename_columns({'sentence1': 'query', 'sentence2': 'positive'})
+tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, use_fast=False)
+model = AutoModelForEmbedding(model_name_or_path, pooling_method="cls")
+# model.set_train_type('pointwise')  # 'pointwise', 'pairwise', 'listwise'
+optimizer = AdamW(model.parameters(), lr=5e-5)
+num_train_steps=int(len(train_dataset) / batch_size * epochs)
+scheduler = get_linear_schedule_with_warmup(optimizer, num_warmup_steps=0.05 * num_train_steps, num_training_steps=num_train_steps)
+
+training_arguments = TrainingArguments(
+    output_dir='./',
+    num_train_epochs=epochs,
+    per_device_train_batch_size=batch_size,
+    remove_unused_columns=False,
+)
+trainer = RetrievalTrainer(
+    model=model,
+    args=training_arguments,
+    train_dataset=train_dataset,
+    data_collator=PairCollator(tokenizer, max_length=512),
+    loss_fn=InfoNCE(nn.CrossEntropyLoss(label_smoothing=0.05)),
+)
+trainer.optimizer = optimizer
+trainer.scheduler = scheduler
+trainer.train()
+```
+
+**Fine-tuning of rerank models**
+```python
+from transformers import AutoTokenizer, TrainingArguments, get_cosine_schedule_with_warmup, AdamW
+from retrievals import RerankCollator, RerankModel, RerankTrainer, RerankDataset
+
+model_name_or_path: str = "microsoft/mdeberta-v3-base"
+max_length: int = 128
+learning_rate: float = 3e-5
+batch_size: int = 4
+epochs: int = 3
+
+train_dataset = RerankDataset('./t2rank.json', positive_key='pos', negative_key='neg')
+tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, use_fast=False)
+model = RerankModel.from_pretrained(model_name_or_path, pooling_method="mean")
+optimizer = AdamW(model.parameters(), lr=learning_rate)
+num_train_steps = int(len(train_dataset) / batch_size * epochs)
+scheduler = get_cosine_schedule_with_warmup(optimizer, num_warmup_steps=0.05 * num_train_steps, num_training_steps=num_train_steps)
+
+training_args = TrainingArguments(
+    learning_rate=learning_rate,
+    per_device_train_batch_size=batch_size,
+    num_train_epochs=epochs,
+    output_dir = './checkpoints',
+    remove_unused_columns=False,
+)
+trainer = RerankTrainer(
+    model=model,
+    args=training_args,
+    train_dataset=train_dataset,
+    data_collator=RerankCollator(tokenizer, max_length=max_length),
+)
+trainer.optimizer = optimizer
+trainer.scheduler = scheduler
+trainer.train()
+```
+
+**Semantic search by cosine similarity/KNN**
 ```python
 from retrievals import AutoModelForEmbedding, AutoModelForRetrieval
 
