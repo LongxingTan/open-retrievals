@@ -2,10 +2,11 @@ import copy
 import logging
 import os
 import random
-from typing import Iterable, List, Optional, Tuple
+from typing import Iterable, List, Optional, Tuple, Union
 
 import datasets
 from torch.utils.data import Dataset
+from transformers import BatchEncoding, PreTrainedTokenizer
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +35,7 @@ class RetrievalDataset(Dataset):
     def __len__(self):
         return len(self.dataset)
 
-    def __getitem__(self, item):
+    def __getitem__(self, item) -> Union[dict[str, str], List[BatchEncoding]]:
         query = self.dataset[item]["query"]
         if isinstance(self.dataset[item]["pos"], Iterable):
             pos = random.choice(self.dataset[item]["pos"])
@@ -65,12 +66,12 @@ class RerankDataset(Dataset):
         query_key='query',
         positive_key: Optional[str] = None,
         negative_key: Optional[str] = None,
-        negetiva_numbers: Optional[int] = None,
+        negetive_numbers: Optional[int] = None,
     ):
         self.query_key = query_key
         self.positive_key = positive_key
         self.negative_key = negative_key
-        self.negative_numbers = negetiva_numbers
+        self.negative_numbers = negetive_numbers
 
         if os.path.isdir(data_name_or_path):
             train_datasets = []
@@ -97,9 +98,12 @@ class RerankDataset(Dataset):
         return len(self.dataset)
 
     def __getitem__(self, item):
-        query = self.dataset[item][self.query_key]
-        document = self.dataset[item]['document']
-        labels = self.dataset[item]['labels']
+        if isinstance(self.dataset[item], dict):
+            query = self.dataset[item][self.query_key]
+            document = self.dataset[item]['document']
+            labels = self.dataset[item]['labels']
+        else:
+            query, document, labels = self.dataset[item]
         sample = {"query": query, "document": document, "labels": labels}
         return sample
 

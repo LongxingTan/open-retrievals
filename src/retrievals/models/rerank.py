@@ -12,6 +12,10 @@ from transformers import (
     AutoTokenizer,
     PreTrainedTokenizer,
 )
+from transformers.modeling_outputs import (
+    BaseModelOutputWithPooling,
+    SequenceClassifierOutput,
+)
 
 from ..data.collator import RerankCollator
 from .pooling import AutoPooling
@@ -66,7 +70,7 @@ class RerankModel(nn.Module):
             module.weight.data.fill_(1.0)
 
     def encode(self, input_ids: torch.Tensor, attention_mask: torch.Tensor) -> torch.Tensor:
-        outputs = self.model(input_ids, attention_mask, output_hidden_states=True)
+        outputs: SequenceClassifierOutput = self.model(input_ids, attention_mask, output_hidden_states=True)
         if hasattr(outputs, 'last_hidden_state'):
             hidden_state = outputs.last_hidden_state
             embeddings = self.pooling(hidden_state, attention_mask)
