@@ -26,6 +26,7 @@ class LangchainEmbedding(AutoModelForEmbedding, Embeddings):
                 encode_kwargs=encode_kwargs
             )
     """
+
     client: Any
     model_name_or_path: Optional[str] = None
     cache_folder: Optional[str] = None
