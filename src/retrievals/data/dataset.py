@@ -2,7 +2,7 @@ import copy
 import logging
 import os
 import random
-from typing import Iterable, List, Optional, Tuple, Union
+from typing import Dict, Iterable, List, Optional, Tuple, Union
 
 import datasets
 from torch.utils.data import Dataset
@@ -35,7 +35,7 @@ class RetrievalDataset(Dataset):
     def __len__(self):
         return len(self.dataset)
 
-    def __getitem__(self, item) -> Union[dict[str, str], List[BatchEncoding]]:
+    def __getitem__(self, item) -> Union[Dict[str, str], List[BatchEncoding]]:
         query = self.dataset[item]["query"]
         if isinstance(self.dataset[item]["pos"], Iterable):
             pos = random.choice(self.dataset[item]["pos"])
