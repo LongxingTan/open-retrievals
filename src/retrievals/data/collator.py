@@ -162,15 +162,14 @@ class RerankCollator(DataCollatorWithPadding):
         self.document_max_length: int
         if query_max_length:
             self.query_max_length = query_max_length
+        if document_max_length:
+            self.document_max_length = document_max_length
         elif max_length:
             self.query_max_length = max_length
             self.document_max_length = max_length
         else:
             self.query_max_length = tokenizer.model_max_length
             self.document_max_length = tokenizer.model_max_length
-
-        if document_max_length:
-            self.document_max_length = document_max_length
 
     def __call__(self, features: Union[List[Dict[str, Any]], List]) -> BatchEncoding:
         assert len(features) > 0
@@ -194,7 +193,7 @@ class RerankCollator(DataCollatorWithPadding):
             text_pair=document_texts,
             padding=True,
             truncation=True,
-            max_length=self.max_length,
+            max_length=self.query_max_length,
             return_tensors="pt",
         )
 
