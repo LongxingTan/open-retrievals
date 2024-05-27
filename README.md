@@ -97,11 +97,11 @@ print(indices)
 ```python
 from retrievals import RerankModel
 
-model_name_or_path: str = "microsoft/mdeberta-v3-base"
+model_name_or_path: str = "BAAI/bge-reranker-base"
 rerank_model = RerankModel.from_pretrained(model_name_or_path)
 rerank_model.eval()
-rerank_model.to("cuda")
-rerank_model.compute_score(["In 1974, I won the championship in Southeast Asia in my first kickboxing match," "In 1982, I defeated the heavy hitter Ryu Long."])
+scores_list = rerank_model.compute_score(["In 1974, I won the championship in Southeast Asia in my first kickboxing match", "In 1982, I defeated the heavy hitter Ryu Long."])
+print(scores_list)
 ```
 
 **RAG with LangChain integration**

@@ -98,14 +98,14 @@ print(indices)
 ```python
 from retrievals import RerankModel
 
-model_name_or_path: str = "microsoft/mdeberta-v3-base"
+model_name_or_path: str = "BAAI/bge-reranker-base"
 rerank_model = RerankModel.from_pretrained(model_name_or_path)
 rerank_model.eval()
-rerank_model.to("cuda")
-rerank_model.compute_score(
+scores_list = rerank_model.compute_score(
     [["在1974年，第一次在东南亚打自由搏击就得了冠军", "1982年打赢了日本重炮手雷龙"],
      ["铁砂掌，源于泗水铁掌帮，三日练成，收费六百", "铁布衫，源于福建省以北70公里，五日练成，收费八百"]]
 )
+print(scores_list)
 ```
 
 **Langchain RAG应用**
