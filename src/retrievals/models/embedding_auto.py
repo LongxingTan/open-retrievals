@@ -456,6 +456,16 @@ class AutoModelForEmbedding(nn.Module):
         else:
             return sum([len(t) for t in text])  # Sum of length of individual strings
 
+    def push_to_hub(self, hub_model_id: str, private: bool = True, **kwargs):
+        """push model to hub
+
+        :param hub_model_id: str, hub model id.
+        :param private: bool, whether push to private repo. Default True.
+        :param kwargs: other kwargs for `push_to_hub` method.
+        """
+        self.tokenizer.push_to_hub(hub_model_id, private=private, **kwargs)
+        self.backbone.push_to_hub(hub_model_id, private=private, **kwargs)
+
     # @property
     # def __dict__(self):
     #     return self.model.__dict__

@@ -1,6 +1,9 @@
-from typing import Dict, Literal
+import re
+from typing import Dict, List, Literal
 
 import torch
+
+DEFAULT_LLM_PATTERNS = [r'.*llama.*', r'.*qwen.*', r'.*baichuan.*', r'.*mistral.*', r'.*intern.*']
 
 
 def get_device_name() -> Literal["mps", "cuda", "cpu"]:
@@ -30,3 +33,15 @@ def batch_to_device(batch: Dict, target_device: str) -> Dict[str, torch.Tensor]:
         else:
             batch[key] = torch.tensor(batch[key], dtype=torch.long).to(target_device)
     return batch
+
+
+def check_casual_llm(model_name_or_path: str, llm_regex_patterns: List[str] = None) -> bool:
+    if llm_regex_patterns is not None:
+        llm_regex_patterns += DEFAULT_LLM_PATTERNS
+    else:
+        llm_regex_patterns = DEFAULT_LLM_PATTERNS
+    model_name_or_path = model_name_or_path.lower()
+    for pattern in llm_regex_patterns:
+        if re.match(pattern, model_name_or_path):
+            return True
+    return False
