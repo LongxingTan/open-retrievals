@@ -271,7 +271,7 @@ class RerankModel(nn.Module):
         return self.save(path)
 
 
-class ColBERT(nn.Module, RerankModel):
+class ColBERT(RerankModel):
     def __init__(
         self,
         **kwargs,
