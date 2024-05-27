@@ -187,9 +187,10 @@ trainer.train()
 ```python
 from retrievals import AutoModelForEmbedding, AutoModelForRetrieval
 
-query_texts = []
-document_texts = []
-model = AutoModelForEmbedding('')
+query_texts = ['A dog is chasing car.']
+document_texts = ['A man is playing a guitar.', 'A bee is flying low']
+model_name_or_path = "sentence-transformers/all-MiniLM-L6-v2"
+model = AutoModelForEmbedding(model_name_or_path)
 query_embeddings = model.encode(query_texts, convert_to_tensor=True)
 document_embeddings = model.encode(document_texts, convert_to_tensor=True)
 
