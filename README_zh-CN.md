@@ -43,13 +43,22 @@ pip install faiss  # 如有必要
 pip install peft  # 如有必要
 ```
 
-**安装**
+**pip安装**
 ```shell
 pip install open-retrievals
 ```
 
+**源码安装**
+```shell
+git clone https://github.com/LongxingTan/open-retrievals
+cd open-retrievals
+pip install -e .
+```
+
 
 ## 快速入门
+
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1-WBMisdWLeHUKlzJ2DrREXY_kSV8vjP3?usp=sharing)
 
 **使用预训练权重的文本向量**
 ```python
@@ -90,14 +99,13 @@ print(indices)
 ```python
 from retrievals import RerankModel
 
-model_name_or_path: str = "microsoft/mdeberta-v3-base"
+model_name_or_path: str = "BAAI/bge-reranker-base"
 rerank_model = RerankModel.from_pretrained(model_name_or_path)
-rerank_model.eval()
-rerank_model.to("cuda")
-rerank_model.compute_score(
+scores_list = rerank_model.compute_score(
     [["在1974年，第一次在东南亚打自由搏击就得了冠军", "1982年打赢了日本重炮手雷龙"],
      ["铁砂掌，源于泗水铁掌帮，三日练成，收费六百", "铁布衫，源于福建省以北70公里，五日练成，收费八百"]]
 )
+print(scores_list)
 ```
 
 **Langchain RAG应用**
@@ -133,6 +141,9 @@ docs = compression_retriever.invoke(query)
 ```
 
 **微调文本向量模型**
+
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/17KXe2lnNRID-HiVvMtzQnONiO74oGs91?usp=sharing)
+
 ```python
 import torch.nn as nn
 from datasets import load_dataset
@@ -154,7 +165,7 @@ num_train_steps=int(len(train_dataset) / batch_size * epochs)
 scheduler = get_linear_schedule_with_warmup(optimizer, num_warmup_steps=0.05 * num_train_steps, num_training_steps=num_train_steps)
 
 training_arguments = TrainingArguments(
-    output_dir='./',
+    output_dir='./checkpoints',
     num_train_epochs=epochs,
     per_device_train_batch_size=batch_size,
     remove_unused_columns=False,
@@ -175,9 +186,10 @@ trainer.train()
 ```python
 from retrievals import AutoModelForEmbedding, AutoModelForRetrieval
 
-query_texts = []
-document_texts = []
-model = AutoModelForEmbedding('')
+query_texts = ['A dog is chasing car.']
+document_texts = ['A man is playing a guitar.', 'A bee is flying low']
+model_name_or_path = "sentence-transformers/all-MiniLM-L6-v2"
+model = AutoModelForEmbedding(model_name_or_path)
 query_embeddings = model.encode(query_texts, convert_to_tensor=True)
 document_embeddings = model.encode(document_texts, convert_to_tensor=True)
 
@@ -186,11 +198,14 @@ dists, indices = matcher.similarity_search(query_embeddings, document_embeddings
 ```
 
 **微调重排模型**
+
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1QvbUkZtG56SXomGYidwI4RQzwODQrWNm?usp=sharing)
+
 ```python
 from transformers import AutoTokenizer, TrainingArguments, get_cosine_schedule_with_warmup, AdamW
 from retrievals import RerankCollator, RerankModel, RerankTrainer, RerankDataset
 
-model_name_or_path: str = "microsoft/mdeberta-v3-base"
+model_name_or_path: str = "microsoft/deberta-v3-base"
 max_length: int = 128
 learning_rate: float = 3e-5
 batch_size: int = 4

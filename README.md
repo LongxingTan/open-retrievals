@@ -55,8 +55,17 @@ pip install open-retrievals
 
 [//]: # (```)
 
+**With source code**
+```shell
+git clone https://github.com/LongxingTan/open-retrievals
+cd open-retrievals
+pip install -e .
+```
+
 
 ## Quick-start
+
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1-WBMisdWLeHUKlzJ2DrREXY_kSV8vjP3?usp=sharing)
 
 **Text embedding from Pretrained weights**
 ```python
@@ -89,11 +98,10 @@ print(indices)
 ```python
 from retrievals import RerankModel
 
-model_name_or_path: str = "microsoft/mdeberta-v3-base"
+model_name_or_path: str = "BAAI/bge-reranker-base"
 rerank_model = RerankModel.from_pretrained(model_name_or_path)
-rerank_model.eval()
-rerank_model.to("cuda")
-rerank_model.compute_score(["In 1974, I won the championship in Southeast Asia in my first kickboxing match," "In 1982, I defeated the heavy hitter Ryu Long."])
+scores_list = rerank_model.compute_score(["In 1974, I won the championship in Southeast Asia in my first kickboxing match", "In 1982, I defeated the heavy hitter Ryu Long."])
+print(scores_list)
 ```
 
 **RAG with LangChain integration**
@@ -146,6 +154,9 @@ docs = compression_retriever.invoke(query)
 [//]: # (```)
 
 **Text embedding model fine-tuned by contrastive learning**
+
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/17KXe2lnNRID-HiVvMtzQnONiO74oGs91?usp=sharing)
+
 ```python
 import torch.nn as nn
 from datasets import load_dataset
@@ -167,7 +178,7 @@ num_train_steps=int(len(train_dataset) / batch_size * epochs)
 scheduler = get_linear_schedule_with_warmup(optimizer, num_warmup_steps=0.05 * num_train_steps, num_training_steps=num_train_steps)
 
 training_arguments = TrainingArguments(
-    output_dir='./',
+    output_dir='./checkpoints',
     num_train_epochs=epochs,
     per_device_train_batch_size=batch_size,
     remove_unused_columns=False,
@@ -185,11 +196,14 @@ trainer.train()
 ```
 
 **Fine-tuning of rerank models**
+
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1QvbUkZtG56SXomGYidwI4RQzwODQrWNm?usp=sharing)
+
 ```python
 from transformers import AutoTokenizer, TrainingArguments, get_cosine_schedule_with_warmup, AdamW
 from retrievals import RerankCollator, RerankModel, RerankTrainer, RerankDataset
 
-model_name_or_path: str = "microsoft/mdeberta-v3-base"
+model_name_or_path: str = "microsoft/deberta-v3-base"
 max_length: int = 128
 learning_rate: float = 3e-5
 batch_size: int = 4

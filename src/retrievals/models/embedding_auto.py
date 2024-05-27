@@ -1,7 +1,7 @@
 import logging
 import os
 import time
-from typing import Any, Callable, Dict, Iterable, List, Literal, Optional, Tuple, Union
+from typing import Callable, Dict, Iterable, List, Literal, Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -13,6 +13,7 @@ from tqdm.autonotebook import trange
 from transformers import (
     AutoConfig,
     AutoModel,
+    AutoModelForCausalLM,
     AutoTokenizer,
     BatchEncoding,
     GenerationConfig,
@@ -20,7 +21,7 @@ from transformers import (
 
 from .pooling import AutoPooling
 from .retrieval_auto import AutoModelForRetrieval
-from .utils import batch_to_device, get_device_name
+from .utils import batch_to_device, check_casual_lm, get_device_name
 
 logger = logging.getLogger(__name__)
 
@@ -51,6 +52,7 @@ class AutoModelForEmbedding(nn.Module):
         lora_config=None,
         device: Optional[str] = None,
         trust_remote_code: bool = True,
+        causal_lm: bool = False,
         custom_config_dict: Optional[Dict] = None,
         **kwargs,
     ):
@@ -71,12 +73,20 @@ class AutoModelForEmbedding(nn.Module):
         if custom_config_dict:
             self.config.update(custom_config_dict)
 
-        if pretrained:
-            self.model = AutoModel.from_pretrained(
-                model_name_or_path, config=self.config, trust_remote_code=trust_remote_code, **kwargs
-            )
+        if causal_lm or check_casual_lm(model_name_or_path):
+            if pretrained:
+                self.model = AutoModelForCausalLM.from_pretrained(
+                    model_name_or_path, config=self.config, trust_remote_code=trust_remote_code, **kwargs
+                )
+            else:
+                self.model = AutoModelForCausalLM.from_config(self.config)
         else:
-            self.model = AutoModel.from_config(self.config)
+            if pretrained:
+                self.model = AutoModel.from_pretrained(
+                    model_name_or_path, config=self.config, trust_remote_code=trust_remote_code, **kwargs
+                )
+            else:
+                self.model = AutoModel.from_config(self.config)
         self.loss_fn = loss_fn
 
         if max_length is None:
@@ -455,6 +465,16 @@ class AutoModelForEmbedding(nn.Module):
             return len(text)
         else:
             return sum([len(t) for t in text])  # Sum of length of individual strings
+
+    def push_to_hub(self, hub_model_id: str, private: bool = True, **kwargs):
+        """push model to hub
+
+        :param hub_model_id: str, hub model id.
+        :param private: bool, whether push to private repo. Default True.
+        :param kwargs: other kwargs for `push_to_hub` method.
+        """
+        self.tokenizer.push_to_hub(hub_model_id, private=private, **kwargs)
+        self.backbone.push_to_hub(hub_model_id, private=private, **kwargs)
 
     # @property
     # def __dict__(self):
