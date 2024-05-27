@@ -19,7 +19,7 @@ from transformers.modeling_outputs import (
 
 from ..data.collator import RerankCollator
 from .pooling import AutoPooling
-from .utils import get_device_name
+from .utils import check_casual_lm, get_device_name
 
 logger = logging.getLogger(__name__)
 
@@ -75,10 +75,13 @@ class RerankModel(nn.Module):
         outputs: SequenceClassifierOutput = self.model(input_ids, attention_mask, output_hidden_states=True)
         if hasattr(outputs, 'last_hidden_state'):
             hidden_state = outputs.last_hidden_state
-            embeddings = self.pooling(hidden_state, attention_mask)
         else:
             hidden_state = outputs.hidden_states[1]
+
+        if self.pooling:
             embeddings = self.pooling(hidden_state, attention_mask)
+        else:
+            embeddings = self.classifier(hidden_state[:, 1:])
         return embeddings
 
     def forward(
@@ -122,6 +125,11 @@ class RerankModel(nn.Module):
                 return outputs_dict
             return logits
 
+    def set_model_type(self, model_type: Literal['cross-encoder', 'colbert'], **kwargs):
+        model_class = {'cross-encoder': self, 'colbert': ColBERT}
+        model_class = model_class.get(model_type.lower())
+        return model_class(**kwargs)
+
     @torch.no_grad()
     def compute_score(
         self,
@@ -133,6 +141,7 @@ class RerankModel(nn.Module):
         show_progress_bar: bool = None,
         **kwargs,
     ):
+        self.model.eval()
         if isinstance(text_pairs[0], str):
             text_pairs = [text_pairs]
 
@@ -260,3 +269,36 @@ class RerankModel(nn.Module):
         Same function to save
         """
         return self.save(path)
+
+
+class ColBERT(nn.Module, RerankModel):
+    def __init__(
+        self,
+        **kwargs,
+    ):
+        super(ColBERT, self).__init__(**kwargs)
+
+    def forward(
+        self,
+        query_input_ids,
+        query_attention_mask,
+        pos_input_ids,
+        pos_attention_mask,
+        neg_input_ids=None,
+        neg_attention_mask=None,
+        return_dict: Optional[bool] = True,
+    ):
+        query_embedding = self.encode(query_input_ids, query_attention_mask)
+        pos_embedding = self.encode(pos_input_ids, pos_attention_mask)
+
+        if neg_input_ids and neg_attention_mask:
+            neg_embedding = self.encode(neg_input_ids, neg_attention_mask)
+        else:
+            neg_embedding = None
+
+        score = self.loss_fn(query_embedding, pos_embedding, neg_embedding)
+        if return_dict:
+            outputs_dict = dict()
+            outputs_dict['score'] = score
+            return outputs_dict
+        return score
