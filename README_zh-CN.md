@@ -101,7 +101,6 @@ from retrievals import RerankModel
 
 model_name_or_path: str = "BAAI/bge-reranker-base"
 rerank_model = RerankModel.from_pretrained(model_name_or_path)
-rerank_model.eval()
 scores_list = rerank_model.compute_score(
     [["在1974年，第一次在东南亚打自由搏击就得了冠军", "1982年打赢了日本重炮手雷龙"],
      ["铁砂掌，源于泗水铁掌帮，三日练成，收费六百", "铁布衫，源于福建省以北70公里，五日练成，收费八百"]]
@@ -166,7 +165,7 @@ num_train_steps=int(len(train_dataset) / batch_size * epochs)
 scheduler = get_linear_schedule_with_warmup(optimizer, num_warmup_steps=0.05 * num_train_steps, num_training_steps=num_train_steps)
 
 training_arguments = TrainingArguments(
-    output_dir='./',
+    output_dir='./checkpoints',
     num_train_epochs=epochs,
     per_device_train_batch_size=batch_size,
     remove_unused_columns=False,
@@ -206,7 +205,7 @@ dists, indices = matcher.similarity_search(query_embeddings, document_embeddings
 from transformers import AutoTokenizer, TrainingArguments, get_cosine_schedule_with_warmup, AdamW
 from retrievals import RerankCollator, RerankModel, RerankTrainer, RerankDataset
 
-model_name_or_path: str = "microsoft/mdeberta-v3-base"
+model_name_or_path: str = "microsoft/deberta-v3-base"
 max_length: int = 128
 learning_rate: float = 3e-5
 batch_size: int = 4

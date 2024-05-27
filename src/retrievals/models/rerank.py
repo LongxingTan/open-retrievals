@@ -141,6 +141,7 @@ class RerankModel(nn.Module):
         show_progress_bar: bool = None,
         **kwargs,
     ):
+        self.model.eval()
         if isinstance(text_pairs[0], str):
             text_pairs = [text_pairs]
 
