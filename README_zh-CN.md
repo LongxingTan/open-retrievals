@@ -57,6 +57,7 @@ pip install -e .
 
 
 ## 快速入门
+
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1-WBMisdWLeHUKlzJ2DrREXY_kSV8vjP3?usp=sharing)
 
 **使用预训练权重的文本向量**
@@ -141,6 +142,9 @@ docs = compression_retriever.invoke(query)
 ```
 
 **微调文本向量模型**
+
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/17KXe2lnNRID-HiVvMtzQnONiO74oGs91?usp=sharing)
+
 ```python
 import torch.nn as nn
 from datasets import load_dataset
@@ -194,6 +198,9 @@ dists, indices = matcher.similarity_search(query_embeddings, document_embeddings
 ```
 
 **微调重排模型**
+
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1QvbUkZtG56SXomGYidwI4RQzwODQrWNm?usp=sharing)
+
 ```python
 from transformers import AutoTokenizer, TrainingArguments, get_cosine_schedule_with_warmup, AdamW
 from retrievals import RerankCollator, RerankModel, RerankTrainer, RerankDataset
