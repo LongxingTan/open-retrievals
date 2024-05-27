@@ -55,6 +55,13 @@ pip install open-retrievals
 
 [//]: # (```)
 
+**With source code**
+```shell
+git clone https://github.com/LongxingTan/open-retrievals
+cd open-retrievals
+pip install -e .
+```
+
 
 ## Quick-start
 

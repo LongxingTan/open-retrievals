@@ -43,9 +43,16 @@ pip install faiss  # 如有必要
 pip install peft  # 如有必要
 ```
 
-**安装**
+**pip安装**
 ```shell
 pip install open-retrievals
+```
+
+**源码安装**
+```shell
+git clone https://github.com/LongxingTan/open-retrievals
+cd open-retrievals
+pip install -e .
 ```
 
 
