@@ -57,6 +57,7 @@ pip install -e .
 
 
 ## 快速入门
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1-WBMisdWLeHUKlzJ2DrREXY_kSV8vjP3?usp=sharing)
 
 **使用预训练权重的文本向量**
 ```python

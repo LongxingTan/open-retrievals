@@ -57,6 +57,7 @@ pip install open-retrievals
 
 
 ## クイックスタート
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1-WBMisdWLeHUKlzJ2DrREXY_kSV8vjP3?usp=sharing)
 
 **事前訓練されたウェイトを使用**
 ```python
