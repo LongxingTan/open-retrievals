@@ -64,6 +64,7 @@ pip install -e .
 
 
 ## Quick-start
+
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1-WBMisdWLeHUKlzJ2DrREXY_kSV8vjP3?usp=sharing)
 
 **Text embedding from Pretrained weights**
@@ -154,6 +155,9 @@ docs = compression_retriever.invoke(query)
 [//]: # (```)
 
 **Text embedding model fine-tuned by contrastive learning**
+
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/17KXe2lnNRID-HiVvMtzQnONiO74oGs91?usp=sharing)
+
 ```python
 import torch.nn as nn
 from datasets import load_dataset
@@ -193,6 +197,9 @@ trainer.train()
 ```
 
 **Fine-tuning of rerank models**
+
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1QvbUkZtG56SXomGYidwI4RQzwODQrWNm?usp=sharing)
+
 ```python
 from transformers import AutoTokenizer, TrainingArguments, get_cosine_schedule_with_warmup, AdamW
 from retrievals import RerankCollator, RerankModel, RerankTrainer, RerankDataset
