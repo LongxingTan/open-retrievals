@@ -35,7 +35,7 @@ def batch_to_device(batch: Dict, target_device: str) -> Dict[str, torch.Tensor]:
     return batch
 
 
-def check_casual_llm(model_name_or_path: str, llm_regex_patterns: List[str] = None) -> bool:
+def check_casual_lm(model_name_or_path: str, llm_regex_patterns: List[str] = None) -> bool:
     if llm_regex_patterns is not None:
         llm_regex_patterns += DEFAULT_LLM_PATTERNS
     else:

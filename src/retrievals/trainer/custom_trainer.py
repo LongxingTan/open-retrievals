@@ -35,7 +35,7 @@ def train_fn(
     print_freq: int = 100,
     wandb: bool = False,
     device: str = "cuda",
-    teacher=None,
+    teacher: Optional[nn.Module] = None,
     teacher_loss: Optional[Callable] = None,
     **kwargs,
 ):
