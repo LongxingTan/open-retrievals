@@ -19,7 +19,7 @@ from transformers.modeling_outputs import (
 
 from ..data.collator import RerankCollator
 from .pooling import AutoPooling
-from .utils import get_device_name
+from .utils import check_casual_lm, get_device_name
 
 logger = logging.getLogger(__name__)
 
