@@ -149,18 +149,25 @@ class LangchainLLM(LLM):
         run_manager: Optional[CallbackManagerForLLMRun] = None,
         **kwargs: Any,
     ):
-        tensor_inputs = self.tokenizer.batch_encode_plus([prompt], padding='longest', return_tensors='pt')
-        output = self.model.generate(
-            **tensor_inputs,
-            max_new_tokens=self.max_tokens,
-            do_sample=True,
-            temperature=self.temperature,
-            top_p=self.top_p,
-        )
-        response = self.tokenizer.batch_decode(
-            output.cpu()[:, tensor_inputs["input_ids"].shape[-1] :], skip_special_tokens=True
-        )[0]
-        return response
+        if hasattr(self.model, 'chat') and callable(self.model.chat):
+            response, _ = self.model.chat(self.tokenizer, prompt, history=self.history)
+            self.history = self.history + [[None, response]]
+            return response
+        else:
+            tensor_inputs = self.tokenizer.batch_encode_plus([prompt], padding='longest', return_tensors='pt')
+            output = self.model.generate(
+                **tensor_inputs,
+                max_new_tokens=self.max_tokens,
+                do_sample=True,
+                temperature=self.temperature,
+                top_p=self.top_p,
+            )
+            response = self.tokenizer.batch_decode(
+                output.cpu()[:, tensor_inputs["input_ids"].shape[-1] :], skip_special_tokens=True
+            )[0]
+
+            self.history = self.history + [[None, response]]
+            return response
 
     @property
     def _llm_type(self):
