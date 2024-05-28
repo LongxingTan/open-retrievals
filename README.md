@@ -127,7 +127,7 @@ vectordb = Vectorstore(
     embedding_function=embeddings,
 )
 retrieval_args = {"search_type" :"similarity", "score_threshold": 0.15, "k": 30}
-retriever = vectordb.as_retriever(retrieval_args)
+retriever = vectordb.as_retriever(**retrieval_args)
 
 ranker = RerankModel.from_pretrained("maidalun1020/bce-reranker-base_v1")
 reranker = LangchainReranker(model=ranker, top_n=7)
@@ -139,22 +139,15 @@ query = 'what is open-retrievals?'
 docs = compression_retriever.invoke(query)
 ```
 
-[//]: # (**RAG with LLamaIndex**)
+**RAG with LLamaIndex**
 
-[//]: # ()
-[//]: # (```shell)
+```shell
+pip install llamaindex
+```
 
-[//]: # (pip install llamaindex)
+```python
 
-[//]: # (```)
-
-[//]: # ()
-[//]: # ()
-[//]: # (```python)
-
-[//]: # ()
-[//]: # ()
-[//]: # (```)
+```
 
 **Text embedding model fine-tuned by contrastive learning**
 

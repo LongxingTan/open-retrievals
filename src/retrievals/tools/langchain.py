@@ -127,7 +127,7 @@ class LangchainReranker(BaseDocumentCompressor):
 class LangchainLLM(LLM):
     tokenizer: AutoTokenizer = None
     model: AutoModelForCausalLM = None
-    max_token: int = 10000
+    max_tokens: int = 10000
     temperature: float = 0.1
     top_p: float = 0.9
     history: List[str] = []

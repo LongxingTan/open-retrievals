@@ -108,7 +108,7 @@ scores_list = rerank_model.compute_score(
 print(scores_list)
 ```
 
-**Langchain RAG应用**
+**搭配Langchain构建RAG应用**
 
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1fJC-8er-a4NRkdJkwWr4On7lGt9rAO4P?usp=sharing)
 
@@ -131,7 +131,7 @@ vectordb = Vectorstore(
     embedding_function=embeddings,
 )
 retrieval_args = {"search_type" :"similarity", "score_threshold": 0.15, "k": 30}
-retriever = vectordb.as_retriever(retrieval_args)
+retriever = vectordb.as_retriever(**retrieval_args)
 
 ranker = RerankModel.from_pretrained("maidalun1020/bce-reranker-base_v1")
 reranker = LangchainReranker(model=ranker, top_n=7)
@@ -141,6 +141,16 @@ compression_retriever = ContextualCompressionRetriever(
 
 query = '1974年，谁获得了东南亚自由搏击的冠军？'
 docs = compression_retriever.invoke(query)
+```
+
+**搭配LLamaIndex构建RAG应用**
+
+```shell
+pip install llamaindex
+```
+
+```python
+
 ```
 
 **微调文本向量模型**
