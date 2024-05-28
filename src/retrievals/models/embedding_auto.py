@@ -385,7 +385,7 @@ class AutoModelForEmbedding(nn.Module):
         split_documents: bool = False,
         batch_size: int = 128,
         show_progress_bar: bool = None,
-        use_gpu: bool = True,
+        use_gpu: bool = False,
     ):
         import faiss
 
@@ -413,8 +413,9 @@ class AutoModelForEmbedding(nn.Module):
             if not os.path.exists(os.path.dirname(index_path)):
                 os.makedirs(os.path.dirname(index_path))
 
-            index_cpu = faiss.index_gpu_to_cpu(index)
-            faiss.write_index(index_cpu, index_path)
+            if use_gpu and self.device == 'cuda':
+                index = faiss.index_gpu_to_cpu(index)
+            faiss.write_index(index, index_path)
 
         logger.info(f'Build index successfully, saved in {index_path}, elapsed: {time.time() - start_time:.2}s')
         return index
