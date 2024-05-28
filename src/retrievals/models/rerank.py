@@ -169,6 +169,7 @@ class RerankModel(nn.Module):
         query: Union[List[str], str],
         document: Union[List[str], str],
         data_collator: Optional[RerankCollator] = None,
+        max_chunks_per_doc: int = 100,
         batch_size: int = 32,
         max_length: int = 512,
         normalize: bool = False,
