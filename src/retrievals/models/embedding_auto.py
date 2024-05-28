@@ -381,6 +381,8 @@ class AutoModelForEmbedding(nn.Module):
         self,
         inputs: Union[DataLoader, Dict, List, str],
         index_path: Optional[str] = None,
+        max_document_length: int = 512,
+        split_documents: bool = False,
         batch_size: int = 128,
         show_progress_bar: bool = None,
         use_gpu: bool = True,

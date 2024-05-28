@@ -1,10 +1,13 @@
 from typing import Any, Dict, List, Optional, Sequence
 
+import torch
 from langchain.callbacks.manager import CallbackManagerForRetrieverRun, Callbacks
+from langchain.llms.base import LLM
 from langchain.retrievers.document_compressors.base import BaseDocumentCompressor
 from langchain_core.documents import Document
 from langchain_core.embeddings import Embeddings
 from langchain_core.retrievers import BaseRetriever
+from transformers import AutoModelForCausalLM, AutoTokenizer
 
 from ..models.embedding_auto import AutoModelForEmbedding
 from ..models.rerank import RerankModel
@@ -113,3 +116,19 @@ class LangchainReranker(BaseDocumentCompressor):
 
         final_results = final_results[: self.top_n]
         return final_results
+
+
+class LangchainLLM(LLM):
+    tokenizer: AutoTokenizer = None
+    model: AutoModelForCausalLM = None
+
+    def __init__(self, model_name_or_path: str, trust_remote_code: bool = True):
+        self.tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, trust_remote_code=trust_remote_code)
+        self.model = AutoModelForCausalLM.from_pretrained(model_name_or_path, trust_remote_code=trust_remote_code)
+        self.model.to(torch.bfloat16)
+        self.model.cuda()
+        self.model.eval()
+
+    def _call(self, prompt: str, stop=None, run_manager=None, **kwargs):
+        message = [(prompt, "")]
+        response, history = self.model.chat(self.tokenizer, prompt, history=message)
