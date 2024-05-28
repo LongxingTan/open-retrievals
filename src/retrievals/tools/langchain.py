@@ -1,9 +1,13 @@
+import logging
 from typing import Any, Dict, List, Optional, Sequence
 
-import torch
-from langchain.callbacks.manager import CallbackManagerForRetrieverRun, Callbacks
 from langchain.llms.base import LLM
 from langchain.retrievers.document_compressors.base import BaseDocumentCompressor
+from langchain_core.callbacks.manager import (
+    CallbackManagerForLLMRun,
+    CallbackManagerForRetrieverRun,
+    Callbacks,
+)
 from langchain_core.documents import Document
 from langchain_core.embeddings import Embeddings
 from langchain_core.retrievers import BaseRetriever
@@ -11,6 +15,8 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 
 from ..models.embedding_auto import AutoModelForEmbedding
 from ..models.rerank import RerankModel
+
+logger = logging.getLogger(__name__)
 
 
 class LangchainEmbedding(AutoModelForEmbedding, Embeddings):
@@ -121,14 +127,41 @@ class LangchainReranker(BaseDocumentCompressor):
 class LangchainLLM(LLM):
     tokenizer: AutoTokenizer = None
     model: AutoModelForCausalLM = None
+    max_token: int = 10000
+    temperature: float = 0.1
+    top_p: float = 0.9
+    history = []
 
     def __init__(self, model_name_or_path: str, trust_remote_code: bool = True):
+        super(LangchainLLM, self).__init__()
         self.tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, trust_remote_code=trust_remote_code)
-        self.model = AutoModelForCausalLM.from_pretrained(model_name_or_path, trust_remote_code=trust_remote_code)
-        self.model.to(torch.bfloat16)
-        self.model.cuda()
-        self.model.eval()
+        if self.tokenizer.pad_token is None:
+            self.tokenizer.add_special_tokens({'pad_token': '[PAD]'})
+        self.model = AutoModelForCausalLM.from_pretrained(
+            model_name_or_path, trust_remote_code=trust_remote_code
+        ).cuda()
+        self.model = self.model.eval()
 
-    def _call(self, prompt: str, stop=None, run_manager=None, **kwargs):
-        message = [(prompt, "")]
-        response, history = self.model.chat(self.tokenizer, prompt, history=message)
+    def _call(
+        self,
+        prompt: str,
+        stop: Optional[List[str]] = None,
+        run_manager: Optional[CallbackManagerForLLMRun] = None,
+        **kwargs: Any,
+    ):
+        tensor_inputs = self.tokenizer.batch_encode_plus([prompt], padding='longest', return_tensors='pt')
+        output = self.model.generate(
+            **tensor_inputs,
+            max_new_tokens=self.max_tokens,
+            do_sample=True,
+            temperature=self.temperature,
+            top_p=self.top_p,
+        )
+        response = self.tokenizer.batch_decode(
+            output.cpu()[:, tensor_inputs["input_ids"].shape[-1] :], skip_special_tokens=True
+        )[0]
+        return response
+
+    @property
+    def _llm_type(self):
+        return "Open-retrievals-llm"
