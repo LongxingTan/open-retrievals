@@ -39,7 +39,7 @@ class LlamaIndexReranker(BaseNodePostprocessor):
 
     @classmethod
     def class_name(cls):
-        return 'RetrievalsRank'
+        return 'OpenRetrievalsRank'
 
     def _postprocess_nodes(
         self,

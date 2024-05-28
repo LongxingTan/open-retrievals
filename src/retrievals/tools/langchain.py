@@ -130,16 +130,16 @@ class LangchainLLM(LLM):
     max_token: int = 10000
     temperature: float = 0.1
     top_p: float = 0.9
-    history = []
+    history: List[str] = []
 
-    def __init__(self, model_name_or_path: str, trust_remote_code: bool = True):
+    def __init__(self, model_name_or_path: str, trust_remote_code: bool = True, **kwargs: Any):
         super(LangchainLLM, self).__init__()
         self.tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, trust_remote_code=trust_remote_code)
         if self.tokenizer.pad_token is None:
             self.tokenizer.add_special_tokens({'pad_token': '[PAD]'})
-        self.model = AutoModelForCausalLM.from_pretrained(
-            model_name_or_path, trust_remote_code=trust_remote_code
-        ).cuda()
+        self.model = (
+            AutoModelForCausalLM.from_pretrained(model_name_or_path, trust_remote_code=trust_remote_code).half().cuda()
+        )
         self.model = self.model.eval()
 
     def _call(
