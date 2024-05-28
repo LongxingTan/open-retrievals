@@ -129,12 +129,20 @@ class LangchainReranker(BaseDocumentCompressor):
 class LangchainLLM(LLM):
     tokenizer: AutoTokenizer = None
     model: AutoModelForCausalLM = None
-    max_tokens: int = 10000
+    max_tokens: int = 2048
     temperature: float = 0.1
     top_p: float = 0.9
     history: List[str] = []
 
-    def __init__(self, model_name_or_path: str, trust_remote_code: bool = True, **kwargs: Any):
+    def __init__(
+        self,
+        model_name_or_path: str,
+        trust_remote_code: bool = True,
+        temperature: float = 0.1,
+        max_tokens: int = 2048,
+        top_p: float = 0.9,
+        **kwargs: Any,
+    ):
         super(LangchainLLM, self).__init__()
         self.tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, trust_remote_code=trust_remote_code)
         if self.tokenizer.pad_token is None:
@@ -143,6 +151,9 @@ class LangchainLLM(LLM):
             AutoModelForCausalLM.from_pretrained(model_name_or_path, trust_remote_code=trust_remote_code).half().cuda()
         )
         self.model = self.model.eval()
+        self.temperature = temperature
+        self.max_tokens = max_tokens
+        self.top_p = top_p
 
     def _call(
         self,
