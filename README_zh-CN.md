@@ -109,6 +109,9 @@ print(scores_list)
 ```
 
 **Langchain RAG应用**
+
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1fJC-8er-a4NRkdJkwWr4On7lGt9rAO4P?usp=sharing)
+
 ```shell
 pip install langchain
 pip install langchain_community
