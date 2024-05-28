@@ -1,4 +1,4 @@
-from typing import Any, List, Optional
+from typing import Any, Dict, List, Optional
 
 from llama_index.bridge.pydantic import Field, PrivateAttr
 from llama_index.callbacks import CBEventType, EventPayload
@@ -12,28 +12,37 @@ from ..models.embedding_auto import AutoModelForEmbedding
 from ..models.rerank import RerankModel
 
 
-class LlamaIndexEmbedding(AutoModelForEmbedding, BaseEmbedding):
+class LLamaIndexEmbedding(AutoModelForEmbedding, BaseEmbedding):
+    client: Any
+    model_name_or_path: Optional[str] = None
+    cache_folder: Optional[str] = None
+    model_kwargs: Dict[str, Any] = dict()
+    encode_kwargs: Dict[str, Any] = dict()
+
     def __init__(self, embed_dim: int, **kwargs: Any):
-        super(LlamaIndexEmbedding, self).__init__(embed_dim)
+        BaseEmbedding.__init__(self)
+        if 'model_name' in kwargs:
+            kwargs['model_name_or_path'] = kwargs.pop('model_name')
+        AutoModelForEmbedding.__init__(self, **kwargs)
 
 
-class LlamaIndexRetrieval(BaseRetriever):
+class LLamaIndexRetrieval(BaseRetriever):
     def __init__(
         self,
         vector_store,
         embed_model: BaseEmbedding,
         similarity_top_k: int = 2,
     ):
-        super(LlamaIndexRetrieval, self).__init__()
+        super(LLamaIndexRetrieval, self).__init__()
 
 
-class LlamaIndexReranker(BaseNodePostprocessor):
+class LLamaIndexReranker(BaseNodePostprocessor):
     model: str = Field(ddescription="Sentence transformer model name.")
     top_n: int = Field(description="Number of nodes to return sorted by score.")
     _model: Any = PrivateAttr()
 
     def __init__(self, model: str, top_n: int = 5, device: Optional[str] = None, **kwargs):
-        self.model = RerankModel()
+        self.model = RerankModel.from_pretrained(model)
         device = infer_torch_device() if device is None else device
         super().__init__(model=model, top_n=top_n, device=device)
 
@@ -88,3 +97,8 @@ class LlamaIndexReranker(BaseNodePostprocessor):
             event.on_end(payload={EventPayload.NODES: new_nodes})
 
         return new_nodes
+
+
+class LLamaIndexLLM:
+    def __init__(self):
+        pass

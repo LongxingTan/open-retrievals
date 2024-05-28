@@ -143,15 +143,20 @@ query = '1974年，谁获得了东南亚自由搏击的冠军？'
 docs = compression_retriever.invoke(query)
 ```
 
-**搭配LLamaIndex构建RAG应用**
+[//]: # (**搭配LLamaIndex构建RAG应用**)
 
-```shell
-pip install llamaindex
-```
+[//]: # ()
+[//]: # (```shell)
 
-```python
+[//]: # (pip install llamaindex)
 
-```
+[//]: # (```)
+
+[//]: # ()
+[//]: # (```python)
+
+[//]: # ()
+[//]: # (```)
 
 **微调文本向量模型**
 

@@ -44,6 +44,8 @@ class LangchainEmbedding(AutoModelForEmbedding, Embeddings):
 
     def __init__(self, **kwargs: Any):
         Embeddings.__init__(self)
+        if 'model_name' in kwargs:
+            kwargs['model_name_or_path'] = kwargs.pop('model_name')
         AutoModelForEmbedding.__init__(self, **kwargs)
 
     def embed_documents(self, texts: List[str]) -> List[List[float]]:

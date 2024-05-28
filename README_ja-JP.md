@@ -133,15 +133,20 @@ query = 'what is open-retrievals?'
 docs = compression_retriever.invoke(query)
 ```
 
-**RAG with LLamaIndex**
+[//]: # (**RAG with LLamaIndex**)
 
-```shell
-pip install llamaindex
-```
+[//]: # ()
+[//]: # (```shell)
 
-```python
+[//]: # (pip install llamaindex)
 
-```
+[//]: # (```)
+
+[//]: # ()
+[//]: # (```python)
+
+[//]: # ()
+[//]: # (```)
 
 **コントラスト学習による transformers のウェイトのファインチューニング**
 
