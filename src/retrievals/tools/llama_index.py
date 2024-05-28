@@ -12,7 +12,7 @@ from ..models.embedding_auto import AutoModelForEmbedding
 from ..models.rerank import RerankModel
 
 
-class LLamaIndexEmbedding(AutoModelForEmbedding, BaseEmbedding):
+class LlamaIndexEmbedding(AutoModelForEmbedding, BaseEmbedding):
     client: Any
     model_name_or_path: Optional[str] = None
     cache_folder: Optional[str] = None
@@ -26,17 +26,17 @@ class LLamaIndexEmbedding(AutoModelForEmbedding, BaseEmbedding):
         AutoModelForEmbedding.__init__(self, **kwargs)
 
 
-class LLamaIndexRetrieval(BaseRetriever):
+class LlamaIndexRetrieval(BaseRetriever):
     def __init__(
         self,
         vector_store,
         embed_model: BaseEmbedding,
         similarity_top_k: int = 2,
     ):
-        super(LLamaIndexRetrieval, self).__init__()
+        super(LlamaIndexRetrieval, self).__init__()
 
 
-class LLamaIndexReranker(BaseNodePostprocessor):
+class LlamaIndexReranker(BaseNodePostprocessor):
     model: str = Field(ddescription="Sentence transformer model name.")
     top_n: int = Field(description="Number of nodes to return sorted by score.")
     _model: Any = PrivateAttr()
@@ -99,6 +99,6 @@ class LLamaIndexReranker(BaseNodePostprocessor):
         return new_nodes
 
 
-class LLamaIndexLLM:
+class LlamaIndexLLM:
     def __init__(self):
         pass
