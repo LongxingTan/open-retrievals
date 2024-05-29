@@ -195,13 +195,17 @@ class RerankModel(nn.Module):
             tokenizer=self.tokenizer,
         )
 
-        merge_scores = self.compute_score(
+        tot_scores = self.compute_score(
             text_pairs=text_pairs,
             data_collator=data_collator,
             batch_size=batch_size,
             normalize=normalize,
             show_progress_bar=show_progress_bar,
         )
+
+        merge_scores = [0 for _ in range(len(document))]
+        for pid, score in zip(sentence_pairs_pids, tot_scores):
+            merge_scores[pid] = max(merge_scores[pid], score)
 
         merge_scores_argsort = np.argsort(merge_scores)[::-1]
         sorted_document = []
@@ -226,6 +230,7 @@ class RerankModel(nn.Module):
         pooling_method: str = 'mean',
         loss_type: Literal['classification', 'regression'] = 'classification',
         num_labels: int = 1,
+        causal_lm: bool = False,
         gradient_checkpointing: bool = False,
         trust_remote_code: bool = True,
         use_fp16: bool = False,
