@@ -167,8 +167,8 @@ class RerankModel(nn.Module):
     @torch.no_grad()
     def rerank(
         self,
-        query: Union[List[str], str],
-        document: Union[List[str], str],
+        query: str,
+        documents: List[str],
         data_collator: Optional[RerankCollator] = None,
         batch_size: int = 32,
         chunk_max_length: int = 512,
@@ -191,7 +191,7 @@ class RerankModel(nn.Module):
         )
         text_pairs, sentence_pairs_pids = splitter.create_documents(
             query,
-            document,
+            documents,
             tokenizer=self.tokenizer,
         )
 
@@ -203,7 +203,7 @@ class RerankModel(nn.Module):
             show_progress_bar=show_progress_bar,
         )
 
-        merge_scores = [0 for _ in range(len(document))]
+        merge_scores = [0 for _ in range(len(documents))]
         for pid, score in zip(sentence_pairs_pids, tot_scores):
             merge_scores[pid] = max(merge_scores[pid], score)
 
@@ -212,7 +212,7 @@ class RerankModel(nn.Module):
         sorted_scores = []
         for mid in merge_scores_argsort:
             sorted_scores.append(merge_scores[mid])
-            sorted_document.append(document[mid])
+            sorted_document.append(documents[mid])
 
         if return_dict:
             return {
