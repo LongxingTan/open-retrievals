@@ -351,12 +351,12 @@ class ColBERT(RerankModel):
         else:
             neg_embedding = None
 
-        score = self.loss_fn(query_embedding, pos_embedding, neg_embedding)
+        loss = self.loss_fn(query_embedding, pos_embedding, neg_embedding)
         if return_dict:
             outputs_dict = dict()
-            outputs_dict['score'] = score
+            outputs_dict['loss'] = loss
             return outputs_dict
-        return score
+        return loss
 
     @classmethod
     def from_pretrained(
