@@ -198,10 +198,7 @@ class AutoModelForEmbedding(nn.Module):
         **kwargs,
     ) -> Union[List[torch.Tensor], np.ndarray, torch.Tensor]:
         self.model.eval()
-        if device is None:
-            device = self.device
-
-        self.to(device)
+        self.model.to(device or self.device)
 
         all_embeddings = []
 
