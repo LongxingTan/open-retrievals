@@ -41,7 +41,8 @@ class RerankModel(nn.Module):
 
         self.model: Optional[nn.Module] = model
         self.tokenizer = tokenizer
-        self.pooling = AutoPooling(pooling_method)
+        self.pooling_method = pooling_method
+        self.pooling = AutoPooling(self.pooling_method)
 
         if self.model:
             num_features: int = self.model.config.hidden_size
@@ -50,7 +51,7 @@ class RerankModel(nn.Module):
         self.loss_fn = loss_fn
         self.loss_type = loss_type
 
-        if max_length is None:
+        if self.max_length is None:
             if (
                 hasattr(self.model, "config")
                 and hasattr(self.model.config, "max_position_embeddings")
@@ -136,7 +137,14 @@ class RerankModel(nn.Module):
     def set_model_type(self, model_type: Literal['cross-encoder', 'colbert'], **kwargs):
         model_class = {'cross-encoder': self, 'colbert': ColBERT}
         model_class = model_class.get(model_type.lower())
-        return model_class(**kwargs)
+        return model_class(
+            model=self.model,
+            tokenizer=self.tokenizer,
+            pooling_method=self.pooling_method,
+            loss_fn=self.loss_fn,
+            loss_type=self.loss_type,
+            **kwargs,
+        )
 
     @torch.no_grad()
     def compute_score(
@@ -343,6 +351,54 @@ class ColBERT(RerankModel):
             outputs_dict['score'] = score
             return outputs_dict
         return score
+
+    @classmethod
+    def from_pretrained(
+        cls,
+        model_name_or_path: str,
+        pooling_method: str = 'mean',
+        loss_type: Literal['classification', 'regression'] = 'classification',
+        num_labels: int = 1,
+        causal_lm: bool = False,
+        gradient_checkpointing: bool = False,
+        trust_remote_code: bool = True,
+        use_fp16: bool = False,
+        use_lora: bool = False,
+        lora_config=None,
+        device: Optional[str] = None,
+        colbert_dim: int = 1,
+        **kwargs,
+    ):
+        tokenizer = AutoTokenizer.from_pretrained(
+            model_name_or_path, return_tensors=False, trust_remote_code=trust_remote_code
+        )
+
+        model = AutoModelForSequenceClassification.from_pretrained(
+            model_name_or_path, num_labels=num_labels, trust_remote_code=trust_remote_code, **kwargs
+        )
+        if gradient_checkpointing:
+            model.graident_checkpointing_enable()
+
+        if use_fp16:
+            model.half()
+        if use_lora:
+            # peft config and wrapping
+            from peft import LoraConfig, TaskType, get_peft_model
+
+            if not lora_config:
+                raise ValueError("If use_lora is true, please provide a valid lora_config from peft")
+            model = get_peft_model(model, lora_config)
+            model.print_trainable_parameters()
+
+        reranker = cls(
+            model=model,
+            tokenizer=tokenizer,
+            pooling_method=pooling_method,
+            device=device,
+            loss_type=loss_type,
+            colbert_dim=colbert_dim,
+        )
+        return reranker
 
 
 class DocumentSplitter(object):

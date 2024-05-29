@@ -53,6 +53,7 @@ class AutoModelForEmbedding(nn.Module):
         super().__init__()
         self.model = model
         self.tokenizer = tokenizer
+        self.pooling_method = pooling_method
         self.pooling = AutoPooling(pooling_method) if pooling_method else None
         self.loss_fn = loss_fn
 
@@ -374,7 +375,17 @@ class AutoModelForEmbedding(nn.Module):
     def set_train_type(self, train_type: Literal['pointwise', 'pairwise', 'listwise'], **kwargs):
         model_class = {'pointwise': self, 'pairwise': PairwiseModel, 'listwise': ListwiseModel}
         model_class = model_class.get(train_type.lower())
-        return model_class(**kwargs)
+        return model_class(
+            model=self.model,
+            tokenizer=self.tokenizer,
+            pooling_method=self.pooling_method,
+            normalize_embeddings=self.normalize_embeddings,
+            loss_fn=self.loss_fn,
+            query_instruction=self.query_instruction,
+            document_instruction=self.document_instruction,
+            device=self.device,
+            **kwargs,
+        )
 
     @classmethod
     def as_retriever(cls, retrieval_args, **kwargs):
@@ -510,16 +521,18 @@ class PairwiseModel(AutoModelForEmbedding):
 
     def __init__(
         self,
-        model_name_or_path: str,
-        pooling_method: str = "cls",
+        model: Optional[nn.Module] = None,
+        tokenizer: Optional[PreTrainedTokenizer] = None,
+        pooling_method: str = 'cls',
         normalize_embeddings: bool = False,
+        loss_fn: Optional[Callable] = None,
         cross_encoder: bool = False,
         poly_encoder: bool = False,
-        loss_fn: Union[nn.Module, Callable] = None,
         **kwargs,
     ) -> None:
         super().__init__(
-            model_name_or_path=model_name_or_path,
+            model=model,
+            tokenizer=tokenizer,
             pooling_method=pooling_method,
             normalize_embeddings=normalize_embeddings,
             loss_fn=None,
@@ -592,16 +605,18 @@ class ListwiseModel(AutoModelForEmbedding):
 
     def __init__(
         self,
-        model_name_or_path: str,
-        pooling_method: str = "cls",
+        model: Optional[nn.Module] = None,
+        tokenizer: Optional[PreTrainedTokenizer] = None,
+        pooling_method: str = 'cls',
+        normalize_embeddings: bool = False,
+        loss_fn: Optional[Callable] = None,
         listwise_pooling: bool = False,
         num_segments: Optional[int] = None,
-        normalize_embeddings: bool = False,
-        loss_fn: Union[nn.Module, Callable] = None,
         **kwargs,
     ) -> None:
         super().__init__(
-            model_name_or_path=model_name_or_path,
+            model=model,
+            tokenizer=tokenizer,
             pooling_method=pooling_method,
             normalize_embeddings=normalize_embeddings,
             loss_fn=loss_fn,
