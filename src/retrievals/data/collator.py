@@ -197,9 +197,72 @@ class RerankCollator(DataCollatorWithPadding):
             return_tensors="pt",
         )
 
-        # for key in ['input_ids', 'attention_mask']:
-        #     batch[key] = torch.tensor(batch[key], dtype=torch.int64)
-
         if labels is not None:
             batch['labels'] = torch.tensor(labels, dtype=torch.float32)
         return batch
+
+
+class ColBertCollator(DataCollatorWithPadding):
+    def __init__(
+        self,
+        tokenizer,
+        query_key: str = 'query',
+        positive_key: str = 'positive',
+        negative_key: str = 'negative',
+        max_length: Optional[int] = None,
+        query_max_length: Optional[int] = None,
+        document_max_length: Optional[int] = None,
+    ) -> None:
+        self.tokenizer = tokenizer
+        if not hasattr(self.tokenizer, "pad_token_id") or self.tokenizer.pad_token is None:
+            self.tokenizer.add_special_tokens({"pad_token": "[PAD]"})
+
+        self.query_key = query_key
+        self.positive_key = positive_key
+        self.negative_key = negative_key
+
+        self.query_max_length: int
+        self.document_max_length: int
+        if query_max_length:
+            self.query_max_length = query_max_length
+        elif max_length:
+            self.query_max_length = max_length
+            self.document_max_length = max_length
+        else:
+            self.query_max_length = tokenizer.model_max_length
+            self.document_max_length = tokenizer.model_max_length
+
+        if document_max_length:
+            self.document_max_length = document_max_length
+
+    def __call__(self, features: List[Dict[str, Any]]) -> Dict[str, Any]:
+        assert len(features) > 0
+        assert (
+            self.query_key in features[0] and self.positive_key in features[0]
+        ), f"PairCollator should have {self.query_key} and {self.positive_key} in features, while get {features[0]}"
+        "you can set the custom key of query_key, positive_key during class init"
+
+        query_texts = [feature["query"] for feature in features]
+        pos_texts = [feature["positive"] for feature in features]
+
+        query_inputs = self.tokenizer(
+            query_texts,
+            padding=True,
+            max_length=self.query_max_length,
+            truncation=True,
+            return_tensors="pt",
+        )
+        pos_inputs = self.tokenizer(
+            pos_texts,
+            padding=True,
+            max_length=self.document_max_length,
+            truncation=True,
+            return_tensors="pt",
+        )
+
+        return {
+            'query_input_ids': query_inputs['input_ids'],
+            'query_attention_mask': query_inputs['attention_mask'],
+            'pos_input_ids': pos_inputs['input_ids'],
+            'pos_attention_mask': pos_inputs['attention_mask'],
+        }
