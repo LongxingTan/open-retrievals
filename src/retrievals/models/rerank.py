@@ -262,6 +262,7 @@ class RerankModel(nn.Module):
         cls,
         model_name_or_path: str,
         pooling_method: str = 'mean',
+        loss_fn: Union[nn.Module, Callable] = None,
         loss_type: Literal['classification', 'regression'] = 'classification',
         num_labels: int = 1,
         causal_lm: bool = False,
@@ -294,7 +295,12 @@ class RerankModel(nn.Module):
             model.print_trainable_parameters()
 
         reranker = cls(
-            model=model, tokenizer=tokenizer, pooling_method=pooling_method, device=device, loss_type=loss_type
+            model=model,
+            tokenizer=tokenizer,
+            pooling_method=pooling_method,
+            device=device,
+            loss_fn=loss_fn,
+            loss_type=loss_type,
         )
         return reranker
 
