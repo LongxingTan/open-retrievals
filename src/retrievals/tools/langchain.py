@@ -1,13 +1,22 @@
+import logging
 from typing import Any, Dict, List, Optional, Sequence
 
-from langchain.callbacks.manager import CallbackManagerForRetrieverRun, Callbacks
+from langchain.llms.base import LLM
 from langchain.retrievers.document_compressors.base import BaseDocumentCompressor
+from langchain_core.callbacks.manager import (
+    CallbackManagerForLLMRun,
+    CallbackManagerForRetrieverRun,
+    Callbacks,
+)
 from langchain_core.documents import Document
 from langchain_core.embeddings import Embeddings
 from langchain_core.retrievers import BaseRetriever
+from transformers import AutoModelForCausalLM, AutoTokenizer
 
 from ..models.embedding_auto import AutoModelForEmbedding
 from ..models.rerank import RerankModel
+
+logger = logging.getLogger(__name__)
 
 
 class LangchainEmbedding(AutoModelForEmbedding, Embeddings):
@@ -35,7 +44,12 @@ class LangchainEmbedding(AutoModelForEmbedding, Embeddings):
 
     def __init__(self, **kwargs: Any):
         Embeddings.__init__(self)
-        AutoModelForEmbedding.__init__(self, **kwargs)
+        if 'model_name' in kwargs:
+            kwargs['model_name_or_path'] = kwargs.pop('model_name')
+
+        model = AutoModelForEmbedding.from_pretrained(**kwargs)
+        for key, value in model.__dict__.items():
+            self.__dict__[key] = value
 
     def embed_documents(self, texts: List[str]) -> List[List[float]]:
         """Compute doc embeddings using a HuggingFace transformer model."""
@@ -113,3 +127,67 @@ class LangchainReranker(BaseDocumentCompressor):
 
         final_results = final_results[: self.top_n]
         return final_results
+
+
+class LangchainLLM(LLM):
+    tokenizer: AutoTokenizer = None
+    model: AutoModelForCausalLM = None
+    max_tokens: int = 2048
+    temperature: float = 0.1
+    top_p: float = 0.9
+    history: List[str] = []
+
+    def __init__(
+        self,
+        model_name_or_path: str,
+        trust_remote_code: bool = True,
+        temperature: float = 0.1,
+        max_tokens: int = 2048,
+        top_p: float = 0.9,
+        **kwargs: Any,
+    ):
+        super(LangchainLLM, self).__init__()
+        self.tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, trust_remote_code=trust_remote_code)
+        if self.tokenizer.pad_token is None:
+            self.tokenizer.add_special_tokens({'pad_token': '[PAD]'})
+        self.model = (
+            AutoModelForCausalLM.from_pretrained(model_name_or_path, trust_remote_code=trust_remote_code).half().cuda()
+        )
+        self.model = self.model.eval()
+        self.temperature = temperature
+        self.max_tokens = max_tokens
+        self.top_p = top_p
+
+    def _call(
+        self,
+        prompt: str,
+        stop: Optional[List[str]] = None,
+        run_manager: Optional[CallbackManagerForLLMRun] = None,
+        **kwargs: Any,
+    ):
+        if hasattr(self.model, 'chat') and callable(self.model.chat):
+            response, _ = self.model.chat(self.tokenizer, prompt, history=self.history)
+            self.history = self.history + [[None, response]]
+            return response
+        else:
+            batch_inputs = self.tokenizer.batch_encode_plus([prompt], padding='longest', return_tensors='pt')
+            batch_inputs["input_ids"] = batch_inputs["input_ids"].cuda()
+            batch_inputs["attention_mask"] = batch_inputs["attention_mask"].cuda()
+
+            output = self.model.generate(
+                **batch_inputs,
+                max_new_tokens=self.max_tokens,
+                do_sample=True,
+                temperature=self.temperature,
+                top_p=self.top_p,
+            )
+            response = self.tokenizer.batch_decode(
+                output.cpu()[:, batch_inputs["input_ids"].shape[-1] :], skip_special_tokens=True
+            )[0]
+
+            self.history = self.history + [[None, response]]
+            return response
+
+    @property
+    def _llm_type(self):
+        return "Open-retrievals-llm"

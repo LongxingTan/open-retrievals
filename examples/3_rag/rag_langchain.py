@@ -56,4 +56,4 @@ query_pipeline = transformers.pipeline(
 
 llm = HuggingFacePipeline(pipeline=query_pipeline)
 qa = RetrievalQA.from_chain_type(llm=llm, chain_type="stuff", retriever=retriever, verbose=True)
-qa.run('看了这篇文章后你有何感想?')
+qa.run('what is your opinion after reading this document?')

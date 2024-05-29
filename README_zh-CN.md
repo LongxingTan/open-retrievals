@@ -73,7 +73,7 @@ sentences = [
 
 # 向量模型
 model_name_or_path = "sentence-transformers/all-MiniLM-L6-v2"
-model = AutoModelForEmbedding(model_name_or_path)
+model = AutoModelForEmbedding.from_pretrained(model_name_or_path)
 
 embeddings = model.encode(sentences)
 print(embeddings) # 384维度的文本向量
@@ -86,7 +86,7 @@ from retrievals import AutoModelForEmbedding, AutoModelForRetrieval
 index_path = './database/faiss/faiss.index'
 sentences = ['A dog is chasing car.', 'A man is playing a guitar.']
 model_name_or_path = "sentence-transformers/all-MiniLM-L6-v2"
-model = AutoModelForEmbedding(model_name_or_path)
+model = AutoModelForEmbedding.from_pretrained(model_name_or_path)
 model.build_index(sentences, index_path=index_path)
 
 query_embed = model.encode("He plays guitar.")
@@ -108,7 +108,10 @@ scores_list = rerank_model.compute_score(
 print(scores_list)
 ```
 
-**Langchain RAG应用**
+**搭配Langchain构建RAG应用**
+
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1fJC-8er-a4NRkdJkwWr4On7lGt9rAO4P?usp=sharing)
+
 ```shell
 pip install langchain
 pip install langchain_community
@@ -127,11 +130,11 @@ vectordb = Vectorstore(
     persist_directory=persist_directory,
     embedding_function=embeddings,
 )
-retrieval_args = {"search_type" :"similarity", "score_threshold": 0.15, "k": 30}
-retriever = vectordb.as_retriever(retrieval_args)
+retrieval_args = {"search_type" :"similarity", "score_threshold": 0.15, "k": 10}
+retriever = vectordb.as_retriever(**retrieval_args)
 
 ranker = RerankModel.from_pretrained("maidalun1020/bce-reranker-base_v1")
-reranker = LangchainReranker(model=ranker, top_n=7)
+reranker = LangchainReranker(model=ranker, top_n=3)
 compression_retriever = ContextualCompressionRetriever(
     base_compressor=reranker, base_retriever=retriever
 )
@@ -139,6 +142,21 @@ compression_retriever = ContextualCompressionRetriever(
 query = '1974年，谁获得了东南亚自由搏击的冠军？'
 docs = compression_retriever.invoke(query)
 ```
+
+[//]: # (**搭配LLamaIndex构建RAG应用**)
+
+[//]: # ()
+[//]: # (```shell)
+
+[//]: # (pip install llamaindex)
+
+[//]: # (```)
+
+[//]: # ()
+[//]: # (```python)
+
+[//]: # ()
+[//]: # (```)
 
 **微调文本向量模型**
 
@@ -158,7 +176,7 @@ epochs: int = 3
 train_dataset = load_dataset('shibing624/nli_zh', 'STS-B')['train']
 train_dataset = train_dataset.rename_columns({'sentence1': 'query', 'sentence2': 'positive'})
 tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, use_fast=False)
-model = AutoModelForEmbedding(model_name_or_path, pooling_method="cls")
+model = AutoModelForEmbedding.from_pretrained(model_name_or_path, pooling_method="cls")
 # model.set_train_type('pointwise')  # 'pointwise', 'pairwise', 'listwise'
 optimizer = AdamW(model.parameters(), lr=5e-5)
 num_train_steps=int(len(train_dataset) / batch_size * epochs)
@@ -189,7 +207,7 @@ from retrievals import AutoModelForEmbedding, AutoModelForRetrieval
 query_texts = ['A dog is chasing car.']
 document_texts = ['A man is playing a guitar.', 'A bee is flying low']
 model_name_or_path = "sentence-transformers/all-MiniLM-L6-v2"
-model = AutoModelForEmbedding(model_name_or_path)
+model = AutoModelForEmbedding.from_pretrained(model_name_or_path)
 query_embeddings = model.encode(query_texts, convert_to_tensor=True)
 document_embeddings = model.encode(document_texts, convert_to_tensor=True)
 

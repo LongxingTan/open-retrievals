@@ -114,7 +114,7 @@ class AutoModelForEmbeddingTest(TestCase, ModelTesterMixin):
         self.model_tester = AutoModelForEmbeddingTester(self)
         # self.config_tester = ConfigTester()
         model_name_or_path = "sentence-transformers/all-MiniLM-L6-v2"
-        self.model = AutoModelForEmbedding(model_name_or_path, pooling_method="cls")
+        self.model = AutoModelForEmbedding.from_pretrained(model_name_or_path, pooling_method="cls")
 
     def test_config(self):
         pass
@@ -164,7 +164,7 @@ class PairwiseModelTest(TestCase, ModelTesterMixin):
 class ListwiseModelTest(TestCase):
     def setUp(self) -> None:
         pass
-        # self.model = ListwiseModel()
+        # self.model = ListwiseModel.from_pretrained()
 
     def test_unsorted_segment_mean(self):
         input_tensor = torch.tensor([[1.0, 2.0], [3.0, 4.0], [5.0, 6.0], [7.0, 8.0]])

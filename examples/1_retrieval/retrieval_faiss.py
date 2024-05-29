@@ -54,7 +54,7 @@ def build_index():
     )
     dataloader = DataLoader(dataset, batch_size=CFG.batch_size, shuffle=False)
 
-    model = AutoModelForEmbedding(CFG.model_name_or_path, use_fp16=True, max_length=CFG.max_len)
+    model = AutoModelForEmbedding.from_pretrained(CFG.model_name_or_path, use_fp16=True, max_length=CFG.max_len)
 
     print("Start to build index")
     model.build_index(
@@ -72,7 +72,7 @@ def recall():
         axis=1,
     ).values
 
-    model = AutoModelForEmbedding(CFG.model_name_or_path, use_fp16=True, max_length=CFG.max_len)
+    model = AutoModelForEmbedding.from_pretrained(CFG.model_name_or_path, use_fp16=True, max_length=CFG.max_len)
     prompt_embeddings = model.encode(inputs, show_progress_bar=False)
 
     matcher = AutoModelForRetrieval()

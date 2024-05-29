@@ -248,8 +248,8 @@ def main():
     else:
         lora_config = None
 
-    # model = PairwiseModel(model_args.model_name_or_path, pooling_method="mean")
-    model = AutoModelForEmbedding(
+    # model = PairwiseModel.from_pretrained(model_args.model_name_or_path, pooling_method="mean")
+    model = AutoModelForEmbedding.from_pretrained(
         model_args.model_name_or_path,
         pooling_method="last",
         use_lora=training_args.use_lora,

@@ -44,12 +44,6 @@ class ModelArguments:
         metadata={"help": "Pretrained tokenizer name or path if not the same as model_name"},
     )
     pooling_method: str = field(default="mean")
-    # cache_dir: Optional[str] = field(
-    #     default=None,
-    #     metadata={
-    #         "help": "Where do you want to store the pretrained models downloaded from s3"
-    #     },
-    # )
 
 
 @dataclass
@@ -74,10 +68,6 @@ class DataArguments:
         default=100000000,
         metadata={"help": "the max number of examples for each dataset"},
     )
-    query_instruction: str = field(
-        default="Instruct: Retrieve semantically similar text.\nQuery: ", metadata={"help": "instruction for query"}
-    )
-    document_instruction: str = field(default=None, metadata={"help": "instruction for document"})
 
     def __post_init__(self):
         if not os.path.exists(self.train_data):
@@ -98,10 +88,8 @@ class TrainingArguments(transformers.TrainingArguments):
     )
     sentence_pooling_method: str = field(default="cls", metadata={"help": "the pooling method, should be cls or mean"})
     normalized: bool = field(default=True)
-    use_inbatch_neg: bool = field(default=True, metadata={"help": "Freeze the parameters of position embeddings"})
     gradient_accumulation_steps: int = 1024
     fp16: bool = True
-    use_lora: bool = field(default=True)
 
 
 class RerankTrainingDataset(Dataset):
@@ -197,7 +185,7 @@ def main():
     # eval_dataset = RerankTrainingDataset()
 
     loss_fn = nn.BCEWithLogitsLoss(reduction="mean")
-    model = RerankModel(
+    model = RerankModel.from_pretrained(
         model_args.model_name_or_path,
         pooling_method=model_args.pooling_method,
         loss_fn=loss_fn,

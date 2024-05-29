@@ -1,4 +1,4 @@
-from typing import Any, List, Optional
+from typing import Any, Dict, List, Optional
 
 from llama_index.bridge.pydantic import Field, PrivateAttr
 from llama_index.callbacks import CBEventType, EventPayload
@@ -13,8 +13,17 @@ from ..models.rerank import RerankModel
 
 
 class LlamaIndexEmbedding(AutoModelForEmbedding, BaseEmbedding):
+    client: Any
+    model_name_or_path: Optional[str] = None
+    cache_folder: Optional[str] = None
+    model_kwargs: Dict[str, Any] = dict()
+    encode_kwargs: Dict[str, Any] = dict()
+
     def __init__(self, embed_dim: int, **kwargs: Any):
-        super(LlamaIndexEmbedding, self).__init__(embed_dim)
+        BaseEmbedding.__init__(self)
+        if 'model_name' in kwargs:
+            kwargs['model_name_or_path'] = kwargs.pop('model_name')
+        AutoModelForEmbedding.__init__(self, **kwargs)
 
 
 class LlamaIndexRetrieval(BaseRetriever):
@@ -33,13 +42,13 @@ class LlamaIndexReranker(BaseNodePostprocessor):
     _model: Any = PrivateAttr()
 
     def __init__(self, model: str, top_n: int = 5, device: Optional[str] = None, **kwargs):
-        self.model = RerankModel()
+        self.model = RerankModel.from_pretrained(model)
         device = infer_torch_device() if device is None else device
         super().__init__(model=model, top_n=top_n, device=device)
 
     @classmethod
     def class_name(cls):
-        return 'RetrievalsRank'
+        return 'OpenRetrievalsRank'
 
     def _postprocess_nodes(
         self,
@@ -88,3 +97,8 @@ class LlamaIndexReranker(BaseNodePostprocessor):
             event.on_end(payload={EventPayload.NODES: new_nodes})
 
         return new_nodes
+
+
+class LlamaIndexLLM:
+    def __init__(self):
+        pass

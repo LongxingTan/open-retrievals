@@ -224,7 +224,7 @@ def main():
     print(len(train_dataset))
 
     # model = PairwiseModel(model_args.model_name_or_path, pooling_method="mean")
-    model = AutoModelForEmbedding(model_args.model_name_or_path, pooling_method="mean")
+    model = AutoModelForEmbedding.from_pretrained(model_args.model_name_or_path, pooling_method="mean")
     optimizer = get_optimizer(model, lr=5e-5, weight_decay=1e-3)
 
     # TODO: total steps更新

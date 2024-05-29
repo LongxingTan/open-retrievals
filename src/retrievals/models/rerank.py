@@ -1,4 +1,5 @@
 import logging
+from copy import deepcopy
 from typing import Callable, Dict, List, Literal, Optional, Tuple, Union
 
 import numpy as np
@@ -33,6 +34,7 @@ class RerankModel(nn.Module):
         loss_fn: Union[nn.Module, Callable] = None,
         loss_type: Literal['classification', 'regression'] = 'classification',
         max_length: Optional[int] = None,
+        device: Optional[str] = None,
         **kwargs,
     ):
         super().__init__()
@@ -57,6 +59,12 @@ class RerankModel(nn.Module):
                 max_length = min(self.model.config.max_position_embeddings, self.tokenizer.model_max_length)
 
         self.max_length = max_length
+
+        if device is None:
+            self.device = get_device_name()
+        else:
+            self.device = device
+        self.model.to(self.device)
 
     def _init_weights(self, module: nn.Module):
         if isinstance(module, nn.Linear):
@@ -133,7 +141,7 @@ class RerankModel(nn.Module):
     @torch.no_grad()
     def compute_score(
         self,
-        text_pairs: Union[List[Tuple[str, str]], Tuple[str, str], List[str]],
+        text_pairs: Union[List[Tuple[str, str]], Tuple[str, str]],
         data_collator: Optional[RerankCollator] = None,
         batch_size: int = 128,
         max_length: int = 512,
@@ -147,14 +155,30 @@ class RerankModel(nn.Module):
 
         batch_size = min(batch_size, len(text_pairs))
 
-        if not data_collator:
-            data_collator = RerankCollator(tokenizer=self.tokenizer)
+        # if not data_collator:
+        #     data_collator = RerankCollator(tokenizer=self.tokenizer)
 
         scores_list: List[float] = []
         for i in range(0, len(text_pairs), batch_size):
-            text_batch = [{'query': text_pairs[i][0], 'document': text_pairs[i][1]} for i in range(i, i + batch_size)]
-            batch = data_collator(text_batch)
-            scores = self.model(batch['input_ids'], batch['attention_mask'], return_dict=True).logits.view(-1).float()
+            if isinstance(text_pairs[0][0], str):
+                batch = self.tokenizer(
+                    text_pairs[i : i + batch_size],
+                    padding=True,
+                    truncation=True,
+                    max_length=max_length,
+                    return_tensors="pt",
+                )
+            else:
+                batch = self.tokenizer.pad(
+                    text_pairs[i : i + batch_size],
+                    padding=True,
+                    max_length=None,
+                    pad_to_multiple_of=None,
+                    return_tensors='pt',
+                )
+
+            batch_on_device = {k: v.to(self.device) for k, v in batch.items()}
+            scores = self.model(**batch_on_device, return_dict=True).logits.view(-1).float()
             if normalize:
                 scores = torch.sigmoid(scores)
             scores_list.extend(scores.cpu().numpy().tolist())
@@ -166,24 +190,38 @@ class RerankModel(nn.Module):
     @torch.no_grad()
     def rerank(
         self,
-        query: Union[List[str], str],
-        document: Union[List[str], str],
+        query: str,
+        documents: List[str],
         data_collator: Optional[RerankCollator] = None,
         batch_size: int = 32,
-        max_length: int = 512,
+        chunk_max_length: int = 512,
+        chunk_overlap: int = 50,
+        max_chunks_per_doc: int = 100,
         normalize: bool = False,
         show_progress_bar: bool = None,
         return_dict: bool = True,
         **kwargs,
     ):
-        if isinstance(query, str):
-            text_pairs = [(query, doc) for doc in document]
-        elif isinstance(query, (list, tuple)):
-            text_pairs = [(q, doc) for q, doc in zip(query, document)]
-        else:
-            pass
+        # if isinstance(query, str):
+        #     text_pairs = [(query, doc) for doc in document]
+        # elif isinstance(query, (list, tuple)):
+        #     text_pairs = [(q, doc) for q, doc in zip(query, document)]
+        # else:
+        #     pass
 
-        merge_scores = self.compute_score(
+        if query is None or len(query) == 0 or len(documents) == 0:
+            return {'rerank_documents': [], 'rerank_scores': []}
+
+        splitter = DocumentSplitter(
+            chunk_size=chunk_max_length, chunk_overlap=chunk_overlap, max_chunks_per_doc=max_chunks_per_doc
+        )
+        text_pairs, sentence_pairs_pids = splitter.create_documents(
+            query,
+            documents,
+            tokenizer=self.tokenizer,
+        )
+
+        tot_scores = self.compute_score(
             text_pairs=text_pairs,
             data_collator=data_collator,
             batch_size=batch_size,
@@ -191,12 +229,16 @@ class RerankModel(nn.Module):
             show_progress_bar=show_progress_bar,
         )
 
+        merge_scores = [0 for _ in range(len(documents))]
+        for pid, score in zip(sentence_pairs_pids, tot_scores):
+            merge_scores[pid] = max(merge_scores[pid], score)
+
         merge_scores_argsort = np.argsort(merge_scores)[::-1]
         sorted_document = []
         sorted_scores = []
         for mid in merge_scores_argsort:
             sorted_scores.append(merge_scores[mid])
-            sorted_document.append(document[mid])
+            sorted_document.append(documents[mid])
 
         if return_dict:
             return {
@@ -214,6 +256,7 @@ class RerankModel(nn.Module):
         pooling_method: str = 'mean',
         loss_type: Literal['classification', 'regression'] = 'classification',
         num_labels: int = 1,
+        causal_lm: bool = False,
         gradient_checkpointing: bool = False,
         trust_remote_code: bool = True,
         use_fp16: bool = False,
@@ -231,11 +274,6 @@ class RerankModel(nn.Module):
         )
         if gradient_checkpointing:
             model.graident_checkpointing_enable()
-
-        if device is None:
-            device = get_device_name()
-        else:
-            device = device
 
         if use_fp16:
             model.half()
@@ -274,19 +312,22 @@ class RerankModel(nn.Module):
 class ColBERT(RerankModel):
     def __init__(
         self,
+        colbert_dim: int = 1,
         **kwargs,
     ):
+        self.colbert_dim = colbert_dim
         super(ColBERT, self).__init__(**kwargs)
 
     def forward(
         self,
-        query_input_ids,
-        query_attention_mask,
-        pos_input_ids,
-        pos_attention_mask,
-        neg_input_ids=None,
-        neg_attention_mask=None,
+        query_input_ids: Optional[torch.Tensor],
+        query_attention_mask: Optional[torch.Tensor],
+        pos_input_ids: Optional[torch.Tensor],
+        pos_attention_mask: Optional[torch.Tensor],
+        neg_input_ids: Optional[torch.Tensor] = None,
+        neg_attention_mask: Optional[torch.Tensor] = None,
         return_dict: Optional[bool] = True,
+        **kwargs,
     ):
         query_embedding = self.encode(query_input_ids, query_attention_mask)
         pos_embedding = self.encode(pos_input_ids, pos_attention_mask)
@@ -302,3 +343,59 @@ class ColBERT(RerankModel):
             outputs_dict['score'] = score
             return outputs_dict
         return score
+
+
+class DocumentSplitter(object):
+    """
+    Rerank the long document
+    - https://github.com/netease-youdao/BCEmbedding/blob/master/BCEmbedding/models/utils.py
+    """
+
+    def __init__(self, chunk_size: int, chunk_overlap: int = 0, max_chunks_per_doc: int = 32):
+        self.chunk_size = chunk_size
+        self.chunk_overlap = chunk_overlap
+        self.max_chunks_per_doc = max_chunks_per_doc
+
+    def create_documents(self, query, documents, tokenizer):
+        res_merge_inputs = []
+        res_merge_inputs_pids = []
+
+        query_inputs = tokenizer.encode_plus(query, truncation=False, padding=False)
+        sep_id = tokenizer.sep_token_id
+        doc_max_length = self.chunk_size - len(query_inputs['input_ids']) - 2
+
+        for pid, document in enumerate(documents):
+            document_inputs = tokenizer.encode_plus(document, truncation=False, padding=False, add_special_tokens=False)
+            doc_inputs_length = len(document_inputs['input_ids'])
+
+            if doc_inputs_length <= doc_max_length:
+                qc_merge_inputs = self._merge_inputs(query_inputs, document_inputs, sep_id)
+                res_merge_inputs.append(qc_merge_inputs)
+                res_merge_inputs_pids.append(pid)
+            else:
+                start_id = 0
+                while start_id < doc_inputs_length:
+                    end_id = start_id + doc_max_length
+                    sub_document_inputs = {k: v[start_id:end_id] for k, v in document_inputs.items()}
+                    start_id = end_id - self.chunk_overlap if end_id < doc_inputs_length else end_id
+
+                    qp_merge_inputs = self._merge_inputs(query_inputs, sub_document_inputs, sep_id)
+                    res_merge_inputs.append(qp_merge_inputs)
+                    res_merge_inputs_pids.append(pid)
+        return res_merge_inputs, res_merge_inputs_pids
+
+    def _merge_inputs(self, chunk1_raw, chunk2, sep_id):
+        chunk1 = deepcopy(chunk1_raw)
+
+        chunk1['input_ids'].append(sep_id)
+        chunk1['input_ids'].extend(chunk2['input_ids'])
+        chunk1['input_ids'].append(sep_id)
+
+        chunk1['attention_mask'].append(chunk2['attention_mask'][0])
+        chunk1['attention_mask'].extend(chunk2['attention_mask'])
+        chunk1['attention_mask'].append(chunk2['attention_mask'][0])
+
+        if 'token_type_ids' in chunk1:
+            token_type_ids = [1 for _ in range(len(chunk2['token_type_ids']) + 2)]
+            chunk1['token_type_ids'].extend(token_type_ids)
+        return chunk1
