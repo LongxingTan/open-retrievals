@@ -408,6 +408,8 @@ class AutoModelForEmbedding(nn.Module):
         use_lora: bool = False,
         lora_config=None,
         device: Optional[str] = None,
+        query_instruction: Optional[str] = None,
+        document_instruction: Optional[str] = None,
         **kwargs,
     ):
         tokenizer = AutoTokenizer.from_pretrained(
@@ -452,7 +454,15 @@ class AutoModelForEmbedding(nn.Module):
             model = get_peft_model(model, lora_config)
             model.print_trainable_parameters()
 
-        return cls(model=model, tokenizer=tokenizer, pooling_method=pooling_method, device=device, **kwargs)
+        return cls(
+            model=model,
+            tokenizer=tokenizer,
+            pooling_method=pooling_method,
+            device=device,
+            query_instruction=query_instruction,
+            document_instruction=document_instruction,
+            **kwargs,
+        )
 
     def save_pretrained(self, output_path: str):
         self.tokenizer.save_pretrained(output_path)

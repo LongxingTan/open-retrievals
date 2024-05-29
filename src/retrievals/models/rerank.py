@@ -153,7 +153,7 @@ class RerankModel(nn.Module):
 
         scores_list: List[float] = []
         for i in range(0, len(text_pairs), batch_size):
-            if isinstance(text_pairs[0], str):
+            if isinstance(text_pairs[0][0], str):
                 batch = self.tokenizer(
                     text_pairs[i : i + batch_size],
                     padding=True,
