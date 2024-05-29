@@ -32,7 +32,7 @@ class RerankModelTest(TestCase, ModelTesterMixin):
         text_list = ['李萍进了中等技术学校', '我在百货公司当售货员', '我们都有光明的前途']
         text_pairs = [[text, i] for i in text_list]
         scores = self.model.compute_score(text_pairs=text_pairs, data_collator=self.data_collator)
-        document_ranked = self.model.rerank(query=text, document=text_list, data_collator=self.data_collator)
+        document_ranked = self.model.rerank(query=text, documents=text_list, data_collator=self.data_collator)
 
         print(scores)
         print(document_ranked)
