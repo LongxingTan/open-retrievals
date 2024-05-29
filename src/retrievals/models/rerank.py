@@ -333,6 +333,7 @@ class ColBERT(RerankModel):
         pos_attention_mask: Optional[torch.Tensor],
         neg_input_ids: Optional[torch.Tensor] = None,
         neg_attention_mask: Optional[torch.Tensor] = None,
+        labels: Optional[torch.Tensor] = None,
         return_dict: Optional[bool] = True,
         **kwargs,
     ):

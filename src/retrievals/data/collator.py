@@ -184,10 +184,6 @@ class RerankCollator(DataCollatorWithPadding):
             query_texts = [feature[0] for feature in features]
             document_texts = [feature[1] for feature in features]
 
-        labels = None
-        if 'labels' in features[0].keys():
-            labels = [feature['labels'] for feature in features]
-
         batch = self.tokenizer(
             text=query_texts,
             text_pair=document_texts,
@@ -197,7 +193,8 @@ class RerankCollator(DataCollatorWithPadding):
             return_tensors="pt",
         )
 
-        if labels is not None:
+        if 'labels' in features[0].keys():
+            labels = [feature['labels'] for feature in features]
             batch['labels'] = torch.tensor(labels, dtype=torch.float32)
         return batch
 
@@ -260,9 +257,13 @@ class ColBertCollator(DataCollatorWithPadding):
             return_tensors="pt",
         )
 
-        return {
+        batch = {
             'query_input_ids': query_inputs['input_ids'],
             'query_attention_mask': query_inputs['attention_mask'],
             'pos_input_ids': pos_inputs['input_ids'],
             'pos_attention_mask': pos_inputs['attention_mask'],
         }
+        if 'labels' in features[0].keys():
+            labels = [feature['labels'] for feature in features]
+            batch['labels'] = torch.tensor(labels, dtype=torch.float32)
+        return batch
