@@ -81,6 +81,7 @@ class AutoModelForEmbedding(nn.Module):
             self.device = get_device_name()
         else:
             self.device = device
+        self.model.to(self.device)
 
     def _init_weights(self, module: nn.Module):
         if isinstance(module, nn.Linear):
@@ -197,13 +198,17 @@ class AutoModelForEmbedding(nn.Module):
         **kwargs,
     ) -> Union[List[torch.Tensor], np.ndarray, torch.Tensor]:
         self.model.eval()
-        self.model.to(device or self.device)
+        if device is None:
+            device = self.device
+
+        self.to(device)
+
         all_embeddings = []
 
         with torch.no_grad():
             for idx, inputs in enumerate(loader):
                 for k, v in inputs.items():
-                    inputs[k] = v.to(self.device)
+                    inputs[k] = v.to(device or self.device)
                 embeddings = self.forward_from_loader(inputs)
                 embeddings = embeddings.detach()
                 if normalize_embeddings:
