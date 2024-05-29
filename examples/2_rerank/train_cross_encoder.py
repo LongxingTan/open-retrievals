@@ -68,10 +68,6 @@ class DataArguments:
         default=100000000,
         metadata={"help": "the max number of examples for each dataset"},
     )
-    query_instruction: str = field(
-        default="Instruct: Retrieve semantically similar text.\nQuery: ", metadata={"help": "instruction for query"}
-    )
-    document_instruction: str = field(default=None, metadata={"help": "instruction for document"})
 
     def __post_init__(self):
         if not os.path.exists(self.train_data):
@@ -92,7 +88,6 @@ class TrainingArguments(transformers.TrainingArguments):
     )
     sentence_pooling_method: str = field(default="cls", metadata={"help": "the pooling method, should be cls or mean"})
     normalized: bool = field(default=True)
-    use_inbatch_neg: bool = field(default=True, metadata={"help": "Freeze the parameters of position embeddings"})
     gradient_accumulation_steps: int = 1024
     fp16: bool = True
 
