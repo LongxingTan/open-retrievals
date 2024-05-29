@@ -201,20 +201,16 @@ class AutoModelForEmbedding(nn.Module):
         self.model.to(device or self.device)
 
         all_embeddings = []
-
         with torch.no_grad():
             for idx, inputs in enumerate(loader):
-                for k, v in inputs.items():
-                    inputs[k] = v.to(device or self.device)
-                embeddings = self.forward_from_loader(inputs)
+                inputs_on_device = {k: v.to(self.device) for k, v in inputs.items()}
+                embeddings = self.forward_from_loader(inputs_on_device)
                 embeddings = embeddings.detach()
                 if normalize_embeddings:
                     embeddings = torch.nn.functional.normalize(embeddings, p=2, dim=1)
-                if convert_to_numpy:
-                    embeddings = embeddings.cpu()
                 all_embeddings.append(embeddings)
         if convert_to_numpy:
-            all_embeddings = np.concatenate([emb.numpy() for emb in all_embeddings], axis=0)
+            all_embeddings = np.concatenate([emb.cpu().numpy() for emb in all_embeddings], axis=0)
         else:
             all_embeddings = torch.concat(all_embeddings)
         return all_embeddings
