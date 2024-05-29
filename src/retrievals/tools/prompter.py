@@ -6,7 +6,7 @@ from typing import Union
 logger = logging.getLogger(__name__)
 
 
-class Prompter(object):
+class Prompt(object):
     __slots__ = ("template", "_verbose")
 
     def __init__(self, template_name: str = "", verbose: bool = False):
@@ -42,3 +42,9 @@ class Prompter(object):
 
     def get_response(self, output: str) -> str:
         return output.split(self.template["response_split"])[1].strip()
+
+
+class Retrieval:
+    # retrieval prompt
+    generate_cn = "生成检索数据"
+    generate_en = "Generate data"

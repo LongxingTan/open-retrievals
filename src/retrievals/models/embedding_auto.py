@@ -17,6 +17,7 @@ from transformers import (
     AutoTokenizer,
     BatchEncoding,
     GenerationConfig,
+    PreTrainedTokenizer,
 )
 
 from .pooling import AutoPooling
@@ -37,56 +38,22 @@ class AutoModelForEmbedding(nn.Module):
 
     def __init__(
         self,
-        model_name_or_path: Optional[str] = None,
-        pooling_method: Optional[str] = "cls",
-        pretrained: bool = True,
-        config_path: Optional[str] = None,
+        model: Optional[nn.Module] = None,
+        tokenizer: Optional[PreTrainedTokenizer] = None,
+        pooling_method: str = 'cls',
         normalize_embeddings: bool = False,
         max_length: Optional[int] = None,
         loss_fn: Optional[Callable] = None,
         query_instruction: Optional[str] = None,
         document_instruction: Optional[str] = None,
         generation_args: Dict = None,
-        use_fp16: bool = False,
-        use_lora: bool = False,
-        lora_config=None,
         device: Optional[str] = None,
-        trust_remote_code: bool = True,
-        causal_lm: bool = False,
-        custom_config_dict: Optional[Dict] = None,
         **kwargs,
     ):
         super().__init__()
-
-        self.tokenizer = AutoTokenizer.from_pretrained(
-            model_name_or_path, return_tensors=False, trust_remote_code=trust_remote_code
-        )
-
-        if config_path:
-            self.config = AutoConfig.from_pretrained(
-                config_path, output_hidden_states=True, trust_remote_code=trust_remote_code
-            )
-        else:
-            self.config = AutoConfig.from_pretrained(
-                model_name_or_path, output_hidden_states=True, trust_remote_code=trust_remote_code
-            )
-        if custom_config_dict:
-            self.config.update(custom_config_dict)
-
-        if causal_lm or check_casual_lm(model_name_or_path):
-            if pretrained:
-                self.model = AutoModelForCausalLM.from_pretrained(
-                    model_name_or_path, config=self.config, trust_remote_code=trust_remote_code, **kwargs
-                )
-            else:
-                self.model = AutoModelForCausalLM.from_config(self.config)
-        else:
-            if pretrained:
-                self.model = AutoModel.from_pretrained(
-                    model_name_or_path, config=self.config, trust_remote_code=trust_remote_code, **kwargs
-                )
-            else:
-                self.model = AutoModel.from_config(self.config)
+        self.model = model
+        self.tokenizer = tokenizer
+        self.pooling = AutoPooling(pooling_method) if pooling_method else None
         self.loss_fn = loss_fn
 
         if max_length is None:
@@ -100,29 +67,7 @@ class AutoModelForEmbedding(nn.Module):
             logger.info('max_length will only work if the encode or forward function input text directly')
 
         self.max_length = max_length
-
-        if use_fp16:
-            self.model.half()
-
-        if use_lora:
-            # peft config and wrapping
-            from peft import LoraConfig, TaskType, get_peft_model
-
-            if not lora_config:
-                raise ValueError("If use_lora is true, please provide a valid lora_config")
-            self.model = get_peft_model(self.model, lora_config)
-            self.model.print_trainable_parameters()
-
-        if device is None:
-            self.device = get_device_name()
-        else:
-            self.device = device
-
         self.normalize_embeddings = normalize_embeddings
-        self.pooling = AutoPooling(pooling_method) if pooling_method else None
-
-        # self.fc = nn.Linear(768, 1)
-        # self._init_weights(self.fc)
 
         self.query_instruction = query_instruction
         self.document_instruction = document_instruction
@@ -131,6 +76,11 @@ class AutoModelForEmbedding(nn.Module):
             generation_config.update(generation_args)
             generation_config.update({"pad_token_id": self.tokenizer.pad_token_id})
             self.model.generation_config = GenerationConfig(**generation_config)
+
+        if device is None:
+            self.device = get_device_name()
+        else:
+            self.device = device
 
     def _init_weights(self, module: nn.Module):
         if isinstance(module, nn.Linear):
@@ -445,9 +395,64 @@ class AutoModelForEmbedding(nn.Module):
         self.tokenizer.save_pretrained(path)
 
     @classmethod
-    def from_pretrained(cls, model_name_or_path: str, pooling_method: Optional[str] = "cls", **kwargs):
-        embed_model = AutoModel.from_pretrained(model_name_or_path)
-        return cls(embed_model, pooling_method=pooling_method, **kwargs)
+    def from_pretrained(
+        cls,
+        model_name_or_path: Optional[str] = None,
+        pooling_method: Optional[str] = "cls",
+        pretrained: bool = True,
+        config_path: Optional[str] = None,
+        trust_remote_code: bool = True,
+        causal_lm: bool = False,
+        custom_config_dict: Optional[Dict] = None,
+        use_fp16: bool = False,
+        use_lora: bool = False,
+        lora_config=None,
+        device: Optional[str] = None,
+        **kwargs,
+    ):
+        tokenizer = AutoTokenizer.from_pretrained(
+            model_name_or_path, return_tensors=False, trust_remote_code=trust_remote_code
+        )
+
+        if config_path:
+            config = AutoConfig.from_pretrained(
+                config_path, output_hidden_states=True, trust_remote_code=trust_remote_code
+            )
+        else:
+            config = AutoConfig.from_pretrained(
+                model_name_or_path, output_hidden_states=True, trust_remote_code=trust_remote_code
+            )
+        if custom_config_dict:
+            config.update(custom_config_dict)
+
+        if causal_lm or check_casual_lm(model_name_or_path):
+            if pretrained:
+                model = AutoModelForCausalLM.from_pretrained(
+                    model_name_or_path, config=config, trust_remote_code=trust_remote_code, **kwargs
+                )
+            else:
+                model = AutoModelForCausalLM.from_config(config)
+        else:
+            if pretrained:
+                model = AutoModel.from_pretrained(
+                    model_name_or_path, config=config, trust_remote_code=trust_remote_code, **kwargs
+                )
+            else:
+                model = AutoModel.from_config(config)
+
+        if use_fp16:
+            model.half()
+
+        if use_lora:
+            # peft config and wrapping
+            from peft import LoraConfig, TaskType, get_peft_model
+
+            if not lora_config:
+                raise ValueError("If use_lora is true, please provide a valid lora_config")
+            model = get_peft_model(model, lora_config)
+            model.print_trainable_parameters()
+
+        return cls(model=model, tokenizer=tokenizer, pooling_method=pooling_method, device=device, **kwargs)
 
     def save_pretrained(self, output_path: str):
         self.tokenizer.save_pretrained(output_path)

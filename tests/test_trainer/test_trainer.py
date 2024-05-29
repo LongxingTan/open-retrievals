@@ -36,7 +36,7 @@ class TrainerTest(TestCase):
     def setUp(self):
         self.output_dir = tempfile.mkdtemp()
         model_name_or_path = "sentence-transformers/all-MiniLM-L6-v2"
-        self.model = AutoModelForEmbedding(model_name_or_path, pooling_method="cls")
+        self.model = AutoModelForEmbedding.from_pretrained(model_name_or_path, pooling_method="cls")
         self.train_dataset = PseudoDataset()
         self.tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, cache_dir=self.output_dir)
         self.mock_loss_fn = MagicMock()

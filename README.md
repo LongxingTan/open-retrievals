@@ -73,7 +73,7 @@ from retrievals import AutoModelForEmbedding
 
 sentences = ["Hello NLP", "Open-retrievals is designed for retrieval, rerank and RAG"]
 model_name_or_path = "sentence-transformers/all-MiniLM-L6-v2"
-model = AutoModelForEmbedding(model_name_or_path, pooling_method="mean")
+model = AutoModelForEmbedding.from_pretrained(model_name_or_path, pooling_method="mean")
 sentence_embeddings = model.encode(sentences, normalize_embeddings=True, convert_to_tensor=True)
 print(sentence_embeddings)
 ```
@@ -85,7 +85,7 @@ from retrievals import AutoModelForEmbedding, AutoModelForRetrieval
 sentences = ['A dog is chasing car.', 'A man is playing a guitar.']
 model_name_or_path = "sentence-transformers/all-MiniLM-L6-v2"
 index_path = './database/faiss/faiss.index'
-model = AutoModelForEmbedding(model_name_or_path)
+model = AutoModelForEmbedding.from_pretrained(model_name_or_path)
 model.build_index(sentences, index_path=index_path)
 
 query_embed = model.encode("He plays guitar.")
@@ -172,7 +172,7 @@ epochs: int = 3
 train_dataset = load_dataset('shibing624/nli_zh', 'STS-B')['train']
 train_dataset = train_dataset.rename_columns({'sentence1': 'query', 'sentence2': 'positive'})
 tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, use_fast=False)
-model = AutoModelForEmbedding(model_name_or_path, pooling_method="cls")
+model = AutoModelForEmbedding.from_pretrained(model_name_or_path, pooling_method="cls")
 # model.set_train_type('pointwise')  # 'pointwise', 'pairwise', 'listwise'
 optimizer = AdamW(model.parameters(), lr=5e-5)
 num_train_steps=int(len(train_dataset) / batch_size * epochs)
@@ -242,7 +242,7 @@ from retrievals import AutoModelForEmbedding, AutoModelForRetrieval
 query_texts = ['A dog is chasing car.']
 document_texts = ['A man is playing a guitar.', 'A bee is flying low']
 model_name_or_path = "sentence-transformers/all-MiniLM-L6-v2"
-model = AutoModelForEmbedding(model_name_or_path)
+model = AutoModelForEmbedding.from_pretrained(model_name_or_path)
 query_embeddings = model.encode(query_texts, convert_to_tensor=True)
 document_embeddings = model.encode(document_texts, convert_to_tensor=True)
 

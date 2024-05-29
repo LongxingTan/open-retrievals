@@ -8,7 +8,7 @@ from retrievals.pipelines import KnowledgeCenter, ModelCenter
 
 
 class CFG:
-    llm_model_name_or_path = "../models"
+    llm_model_name_or_path = "./models"
     embed_model_name_or_path = "BAAI/bge-large-zh-v1.5"
     vector_db_path = "./database/chroma"
 
