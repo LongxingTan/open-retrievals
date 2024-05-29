@@ -134,7 +134,7 @@ class RerankModel(nn.Module):
     @torch.no_grad()
     def compute_score(
         self,
-        text_pairs: Union[List[Tuple[str, str]], Tuple[str, str], List[str]],
+        text_pairs: Union[List[Tuple[str, str]], Tuple[str, str]],
         data_collator: Optional[RerankCollator] = None,
         batch_size: int = 128,
         max_length: int = 512,
@@ -153,9 +153,25 @@ class RerankModel(nn.Module):
 
         scores_list: List[float] = []
         for i in range(0, len(text_pairs), batch_size):
-            text_batch = [{'query': text_pairs[i][0], 'document': text_pairs[i][1]} for i in range(i, i + batch_size)]
-            batch = data_collator(text_batch)
-            scores = self.model(batch['input_ids'], batch['attention_mask'], return_dict=True).logits.view(-1).float()
+            if isinstance(text_pairs[0], str):
+                batch = self.tokenizer(
+                    text_pairs[i : i + batch_size],
+                    padding=True,
+                    truncation=True,
+                    max_length=max_length,
+                    return_tensors="pt",
+                )
+            else:
+                batch = self.tokenizer.pad(
+                    text_pairs[i : i + batch_size],
+                    padding=True,
+                    max_length=None,
+                    pad_to_multiple_of=None,
+                    return_tensors='pt',
+                )
+
+            batch_on_device = {k: v.to(self.device) for k, v in batch.items()}
+            scores = self.model(**batch_on_device, return_dict=True).logits.view(-1).float()
             if normalize:
                 scores = torch.sigmoid(scores)
             scores_list.extend(scores.cpu().numpy().tolist())
@@ -185,6 +201,9 @@ class RerankModel(nn.Module):
         #     text_pairs = [(q, doc) for q, doc in zip(query, document)]
         # else:
         #     pass
+
+        if query is None or len(query) == 0 or len(documents) == 0:
+            return {'rerank_documents': [], 'rerank_scores': []}
 
         splitter = DocumentSplitter(
             chunk_size=chunk_max_length, chunk_overlap=chunk_overlap, max_chunks_per_doc=max_chunks_per_doc
