@@ -1,4 +1,5 @@
 import logging
+from copy import deepcopy
 from typing import Callable, Dict, List, Literal, Optional, Tuple, Union
 
 import numpy as np
@@ -303,3 +304,53 @@ class ColBERT(RerankModel):
             outputs_dict['score'] = score
             return outputs_dict
         return score
+
+
+class DocumentSplitter(object):
+    # refer: https://github.com/netease-youdao/BCEmbedding/blob/master/BCEmbedding/models/utils.py
+    def __init__(self, chunk_size: int, chunk_overlap: int = 0):
+        self.chunk_size = chunk_size
+        self.chunk_overlap = chunk_overlap
+
+    def create_documents(self, query, documents, tokenizer, max_length):
+        res_merge_inputs = []
+        res_merge_inputs_pids = []
+
+        query_inputs = tokenizer.encode_plus(query, truncation=False, padding=False)
+        sep_id = tokenizer.sep_token_id
+
+        for pid, document in enumerate(documents):
+            document_inputs = tokenizer.encode_plus(document, truncation=False, padding=False, add_special_tokens=False)
+            document_inputs_length = len(document_inputs['input_ids'])
+
+            if document_inputs_length <= max_length:
+                qc_merge_inputs = self._merge_inputs(query_inputs, document_inputs, sep_id)
+                res_merge_inputs.append(qc_merge_inputs)
+                res_merge_inputs_pids.append(pid)
+            else:
+                start_id = 0
+                while start_id < document_inputs_length:
+                    end_id = start_id + max_length
+                    sub_document_inputs = {k: v[start_id:end_id] for k, v in document_inputs.items()}
+                    start_id = end_id - self.chunk_overlap if end_id < document_inputs_length else end_id
+
+                    qp_merge_inputs = self._merge_inputs(query_inputs, sub_document_inputs, sep_id)
+                    res_merge_inputs.append(qp_merge_inputs)
+                    res_merge_inputs_pids.append(pid)
+        return res_merge_inputs, res_merge_inputs_pids
+
+    def _merge_inputs(self, chunk1_raw, chunk2, sep_id):
+        chunk1 = deepcopy(chunk1_raw)
+
+        chunk1['input_ids'].append(sep_id)
+        chunk1['input_ids'].extend(chunk2['input_ids'])
+        chunk1['input_ids'].append(sep_id)
+
+        chunk1['attention_mask'].append(chunk2['attention_mask'][0])
+        chunk1['attention_mask'].extend(chunk2['attention_mask'])
+        chunk1['attention_mask'].append(chunk2['attention_mask'][0])
+
+        if 'token_type_ids' in chunk1:
+            token_type_ids = [1 for _ in range(len(chunk2['token_type_ids']) + 2)]
+            chunk1['token_type_ids'].extend(token_type_ids)
+        return chunk1
