@@ -34,6 +34,7 @@ class RerankModel(nn.Module):
         loss_fn: Union[nn.Module, Callable] = None,
         loss_type: Literal['classification', 'regression'] = 'classification',
         max_length: Optional[int] = None,
+        device: Optional[str] = None,
         **kwargs,
     ):
         super().__init__()
@@ -58,6 +59,11 @@ class RerankModel(nn.Module):
                 max_length = min(self.model.config.max_position_embeddings, self.tokenizer.model_max_length)
 
         self.max_length = max_length
+
+        if device is None:
+            self.device = get_device_name()
+        else:
+            self.device = device
 
     def _init_weights(self, module: nn.Module):
         if isinstance(module, nn.Linear):
@@ -267,11 +273,6 @@ class RerankModel(nn.Module):
         )
         if gradient_checkpointing:
             model.graident_checkpointing_enable()
-
-        if device is None:
-            device = get_device_name()
-        else:
-            device = device
 
         if use_fp16:
             model.half()
