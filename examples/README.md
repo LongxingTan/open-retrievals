@@ -5,7 +5,7 @@
 - [Text embeddings finetune with contrastive learning](0_embeddings/embed_pairwise_finetune.py)
 
 ```shell
-python embed_pointwise_finetune.py
+python embed_pairwise_simple.py
 ```
 
 ```shell
@@ -15,7 +15,6 @@ python embed_pairwise_finetune.py
 ```shell
 sh embed_llm.sh
 ```
-
 
 ## Retrieval
 
@@ -29,6 +28,9 @@ python retrieval_faiss.py
 ```shell
 python train_cross_encoder.py
 ```
+
+- [ColBERT rerank](2_rerank/train_colbert.py)
+
 
 ## RAG
 - [RAG application with retrieval, rerank in langchain](3_rag/rag_langchain.py)
