@@ -178,8 +178,8 @@ class RerankCollator(DataCollatorWithPadding):
                 self.query_key in features[0] and self.document_key in features[0]
             ), f"RerankCollator should have {self.query_key} and {self.document_key} keys in features, "
             "and 'labels' during training"
-            query_texts = [feature["query"] for feature in features]
-            document_texts = [feature['document'] for feature in features]
+            query_texts = [feature[self.query_key] for feature in features]
+            document_texts = [feature[self.document_key] for feature in features]
         else:
             query_texts = [feature[0] for feature in features]
             document_texts = [feature[1] for feature in features]
@@ -239,8 +239,8 @@ class ColBertCollator(DataCollatorWithPadding):
         ), f"PairCollator should have {self.query_key} and {self.positive_key} in features, while get {features[0]}"
         "you can set the custom key of query_key, positive_key during class init"
 
-        query_texts = [feature["query"] for feature in features]
-        pos_texts = [feature["positive"] for feature in features]
+        query_texts = [feature[self.query_key] for feature in features]
+        pos_texts = [feature[self.positive_key] for feature in features]
 
         query_inputs = self.tokenizer(
             query_texts,
