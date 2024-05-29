@@ -155,8 +155,8 @@ class RerankModel(nn.Module):
 
         batch_size = min(batch_size, len(text_pairs))
 
-        if not data_collator:
-            data_collator = RerankCollator(tokenizer=self.tokenizer)
+        # if not data_collator:
+        #     data_collator = RerankCollator(tokenizer=self.tokenizer)
 
         scores_list: List[float] = []
         for i in range(0, len(text_pairs), batch_size):
