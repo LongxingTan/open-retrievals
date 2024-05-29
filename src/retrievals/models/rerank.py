@@ -310,8 +310,10 @@ class RerankModel(nn.Module):
 class ColBERT(RerankModel):
     def __init__(
         self,
+        colbert_dim: int = 1,
         **kwargs,
     ):
+        self.colbert_dim = colbert_dim
         super(ColBERT, self).__init__(**kwargs)
 
     def forward(
