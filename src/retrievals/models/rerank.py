@@ -51,7 +51,7 @@ class RerankModel(nn.Module):
         self.loss_fn = loss_fn
         self.loss_type = loss_type
 
-        if self.max_length is None:
+        if max_length is None:
             if (
                 hasattr(self.model, "config")
                 and hasattr(self.model.config, "max_position_embeddings")
@@ -286,7 +286,6 @@ class RerankModel(nn.Module):
         if use_fp16:
             model.half()
         if use_lora:
-            # peft config and wrapping
             from peft import LoraConfig, TaskType, get_peft_model
 
             if not lora_config:
