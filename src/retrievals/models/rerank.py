@@ -170,20 +170,30 @@ class RerankModel(nn.Module):
         query: Union[List[str], str],
         document: Union[List[str], str],
         data_collator: Optional[RerankCollator] = None,
-        max_chunks_per_doc: int = 100,
         batch_size: int = 32,
-        max_length: int = 512,
+        chunk_max_length: int = 512,
+        chunk_overlap: int = 50,
+        max_chunks_per_doc: int = 100,
         normalize: bool = False,
         show_progress_bar: bool = None,
         return_dict: bool = True,
         **kwargs,
     ):
-        if isinstance(query, str):
-            text_pairs = [(query, doc) for doc in document]
-        elif isinstance(query, (list, tuple)):
-            text_pairs = [(q, doc) for q, doc in zip(query, document)]
-        else:
-            pass
+        # if isinstance(query, str):
+        #     text_pairs = [(query, doc) for doc in document]
+        # elif isinstance(query, (list, tuple)):
+        #     text_pairs = [(q, doc) for q, doc in zip(query, document)]
+        # else:
+        #     pass
+
+        splitter = DocumentSplitter(
+            chunk_size=chunk_max_length, chunk_overlap=chunk_overlap, max_chunks_per_doc=max_chunks_per_doc
+        )
+        text_pairs, sentence_pairs_pids = splitter.create_documents(
+            query,
+            document,
+            tokenizer=self.tokenizer,
+        )
 
         merge_scores = self.compute_score(
             text_pairs=text_pairs,
@@ -282,13 +292,14 @@ class ColBERT(RerankModel):
 
     def forward(
         self,
-        query_input_ids,
-        query_attention_mask,
-        pos_input_ids,
-        pos_attention_mask,
-        neg_input_ids=None,
-        neg_attention_mask=None,
+        query_input_ids: Optional[torch.Tensor],
+        query_attention_mask: Optional[torch.Tensor],
+        pos_input_ids: Optional[torch.Tensor],
+        pos_attention_mask: Optional[torch.Tensor],
+        neg_input_ids: Optional[torch.Tensor] = None,
+        neg_attention_mask: Optional[torch.Tensor] = None,
         return_dict: Optional[bool] = True,
+        **kwargs,
     ):
         query_embedding = self.encode(query_input_ids, query_attention_mask)
         pos_embedding = self.encode(pos_input_ids, pos_attention_mask)
@@ -307,32 +318,38 @@ class ColBERT(RerankModel):
 
 
 class DocumentSplitter(object):
-    # refer: https://github.com/netease-youdao/BCEmbedding/blob/master/BCEmbedding/models/utils.py
-    def __init__(self, chunk_size: int, chunk_overlap: int = 0):
+    """
+    Rerank the long document
+    - https://github.com/netease-youdao/BCEmbedding/blob/master/BCEmbedding/models/utils.py
+    """
+
+    def __init__(self, chunk_size: int, chunk_overlap: int = 0, max_chunks_per_doc: int = 32):
         self.chunk_size = chunk_size
         self.chunk_overlap = chunk_overlap
+        self.max_chunks_per_doc = max_chunks_per_doc
 
-    def create_documents(self, query, documents, tokenizer, max_length):
+    def create_documents(self, query, documents, tokenizer):
         res_merge_inputs = []
         res_merge_inputs_pids = []
 
         query_inputs = tokenizer.encode_plus(query, truncation=False, padding=False)
         sep_id = tokenizer.sep_token_id
+        doc_max_length = self.chunk_size - len(query_inputs['input_ids']) - 2
 
         for pid, document in enumerate(documents):
             document_inputs = tokenizer.encode_plus(document, truncation=False, padding=False, add_special_tokens=False)
-            document_inputs_length = len(document_inputs['input_ids'])
+            doc_inputs_length = len(document_inputs['input_ids'])
 
-            if document_inputs_length <= max_length:
+            if doc_inputs_length <= doc_max_length:
                 qc_merge_inputs = self._merge_inputs(query_inputs, document_inputs, sep_id)
                 res_merge_inputs.append(qc_merge_inputs)
                 res_merge_inputs_pids.append(pid)
             else:
                 start_id = 0
-                while start_id < document_inputs_length:
-                    end_id = start_id + max_length
+                while start_id < doc_inputs_length:
+                    end_id = start_id + doc_max_length
                     sub_document_inputs = {k: v[start_id:end_id] for k, v in document_inputs.items()}
-                    start_id = end_id - self.chunk_overlap if end_id < document_inputs_length else end_id
+                    start_id = end_id - self.chunk_overlap if end_id < doc_inputs_length else end_id
 
                     qp_merge_inputs = self._merge_inputs(query_inputs, sub_document_inputs, sep_id)
                     res_merge_inputs.append(qp_merge_inputs)
