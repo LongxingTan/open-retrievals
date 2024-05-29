@@ -167,7 +167,7 @@ class RerankModel(nn.Module):
         #     data_collator = RerankCollator(tokenizer=self.tokenizer)
 
         scores_list: List[float] = []
-        for i in range(0, len(text_pairs), batch_size):
+        for i in tqdm(range(0, len(text_pairs), batch_size), disable=not show_progress_bar):
             if isinstance(text_pairs[0][0], str):
                 batch = self.tokenizer(
                     text_pairs[i : i + batch_size],

@@ -196,6 +196,7 @@ class AutoModelForEmbedding(nn.Module):
         convert_to_numpy: bool = True,
         device: str = None,
         normalize_embeddings: bool = False,
+        show_progress_bar: bool = None,
         **kwargs,
     ) -> Union[List[torch.Tensor], np.ndarray, torch.Tensor]:
         self.model.eval()
@@ -203,7 +204,7 @@ class AutoModelForEmbedding(nn.Module):
 
         all_embeddings = []
         with torch.no_grad():
-            for idx, inputs in enumerate(loader):
+            for idx, inputs in enumerate(tqdm(loader, disable=not show_progress_bar)):
                 inputs_on_device = {k: v.to(self.device) for k, v in inputs.items()}
                 embeddings = self.forward_from_loader(inputs_on_device)
                 embeddings = embeddings.detach()
