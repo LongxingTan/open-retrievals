@@ -24,10 +24,10 @@ python retrieval_faiss.py
 ```
 
 ## Rerank
-- [Cross-encoder Rerank using T2Ranking data](2_rerank/rerank_cross_encoder.py)
+- [Cross-encoder Rerank using T2Ranking data](2_rerank/train_cross_encoder.py)
 
 ```shell
-python rerank_cross_encoder.py
+python train_cross_encoder.py
 ```
 
 ## RAG

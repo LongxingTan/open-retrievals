@@ -44,12 +44,6 @@ class ModelArguments:
         metadata={"help": "Pretrained tokenizer name or path if not the same as model_name"},
     )
     pooling_method: str = field(default="mean")
-    # cache_dir: Optional[str] = field(
-    #     default=None,
-    #     metadata={
-    #         "help": "Where do you want to store the pretrained models downloaded from s3"
-    #     },
-    # )
 
 
 @dataclass
@@ -101,7 +95,6 @@ class TrainingArguments(transformers.TrainingArguments):
     use_inbatch_neg: bool = field(default=True, metadata={"help": "Freeze the parameters of position embeddings"})
     gradient_accumulation_steps: int = 1024
     fp16: bool = True
-    use_lora: bool = field(default=True)
 
 
 class RerankTrainingDataset(Dataset):
@@ -197,7 +190,7 @@ def main():
     # eval_dataset = RerankTrainingDataset()
 
     loss_fn = nn.BCEWithLogitsLoss(reduction="mean")
-    model = RerankModel(
+    model = RerankModel.from_pretrained(
         model_args.model_name_or_path,
         pooling_method=model_args.pooling_method,
         loss_fn=loss_fn,
