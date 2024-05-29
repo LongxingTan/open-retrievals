@@ -170,16 +170,19 @@ class LangchainLLM(LLM):
             self.history = self.history + [[None, response]]
             return response
         else:
-            tensor_inputs = self.tokenizer.batch_encode_plus([prompt], padding='longest', return_tensors='pt')
+            batch_inputs = self.tokenizer.batch_encode_plus([prompt], padding='longest', return_tensors='pt')
+            batch_inputs["input_ids"] = batch_inputs["input_ids"].cuda()
+            batch_inputs["attention_mask"] = batch_inputs["attention_mask"].cuda()
+
             output = self.model.generate(
-                **tensor_inputs,
+                **batch_inputs,
                 max_new_tokens=self.max_tokens,
                 do_sample=True,
                 temperature=self.temperature,
                 top_p=self.top_p,
             )
             response = self.tokenizer.batch_decode(
-                output.cpu()[:, tensor_inputs["input_ids"].shape[-1] :], skip_special_tokens=True
+                output.cpu()[:, batch_inputs["input_ids"].shape[-1] :], skip_special_tokens=True
             )[0]
 
             self.history = self.history + [[None, response]]
