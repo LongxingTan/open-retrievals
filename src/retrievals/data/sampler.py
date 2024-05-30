@@ -1,5 +1,5 @@
 import logging
-from typing import Optional
+from typing import List, Optional
 
 import numpy as np
 import torch
@@ -15,7 +15,9 @@ class GroupedBatchSampler(BatchSampler):
     shuffle should be set to False for custom sampler
     """
 
-    def __init__(self, sampler, group_ids, batch_size, shuffle: bool = True, seed: Optional[int] = None):
+    def __init__(
+        self, sampler: Sampler, group_ids: List[int], batch_size: int, shuffle: bool = True, seed: Optional[int] = None
+    ):
         """
         sampler (Sampler): Base sampler.
         group_ids (list[int]): If the sampler produces indices in range [0, N),

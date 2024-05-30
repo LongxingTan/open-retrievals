@@ -1,4 +1,4 @@
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import torch
 from transformers import BatchEncoding, DataCollatorWithPadding, PreTrainedTokenizer
@@ -7,7 +7,7 @@ from transformers import BatchEncoding, DataCollatorWithPadding, PreTrainedToken
 class PairCollator(DataCollatorWithPadding):
     def __init__(
         self,
-        tokenizer,
+        tokenizer: PreTrainedTokenizer,
         query_key: str = 'query',
         positive_key: str = 'positive',
         max_length: Optional[int] = None,
@@ -66,7 +66,7 @@ class PairCollator(DataCollatorWithPadding):
 class TripletCollator(DataCollatorWithPadding):
     def __init__(
         self,
-        tokenizer,
+        tokenizer: PreTrainedTokenizer,
         query_key: str = 'query',
         positive_key: str = 'positive',
         negative_key: Optional[str] = 'negative',
@@ -144,7 +144,7 @@ class TripletCollator(DataCollatorWithPadding):
 class RerankCollator(DataCollatorWithPadding):
     def __init__(
         self,
-        tokenizer,
+        tokenizer: PreTrainedTokenizer,
         query_key: str = 'query',
         document_key: str = 'document',
         max_length: Optional[int] = None,
@@ -202,7 +202,7 @@ class RerankCollator(DataCollatorWithPadding):
 class ColBertCollator(DataCollatorWithPadding):
     def __init__(
         self,
-        tokenizer,
+        tokenizer: PreTrainedTokenizer,
         query_key: str = 'query',
         positive_key: str = 'positive',
         negative_key: str = 'negative',

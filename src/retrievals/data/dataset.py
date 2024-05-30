@@ -32,10 +32,10 @@ class RetrievalDataset(Dataset):
         # self.tokenizer = tokenizer
         logger.info("Loaded {} retrieval data.".format(len(self.dataset)))
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.dataset)
 
-    def __getitem__(self, item) -> Union[Dict[str, str], List[BatchEncoding]]:
+    def __getitem__(self, item: int) -> Union[Dict[str, str], List[BatchEncoding]]:
         query = self.dataset[item]["query"]
         if isinstance(self.dataset[item]["pos"], Iterable):
             pos = random.choice(self.dataset[item]["pos"])
@@ -100,7 +100,7 @@ class RerankDataset(Dataset):
     def __len__(self):
         return len(self.dataset)
 
-    def __getitem__(self, item):
+    def __getitem__(self, item: int):
         if isinstance(self.dataset[item], dict):
             query = self.dataset[item][self.query_key]
             document = self.dataset[item]['document']
