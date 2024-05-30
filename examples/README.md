@@ -43,7 +43,7 @@ python train_cross_encoder.py
 
 ## RAG
 - [RAG application with retrieval, rerank in langchain](../reference/rag_langchain.py)
-- [A RAG app demo](3_rag/README.md)
+
 
 ```shell
 cd 3_rag
