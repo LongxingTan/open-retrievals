@@ -200,13 +200,14 @@ class AutoModelForEmbedding(nn.Module):
         show_progress_bar: bool = None,
         **kwargs,
     ) -> Union[List[torch.Tensor], np.ndarray, torch.Tensor]:
+        device = device or self.device
         self.model.eval()
-        self.model.to(device or self.device)
+        self.model.to(device)
 
         all_embeddings = []
         with torch.no_grad():
             for idx, inputs in enumerate(tqdm(loader, desc="Encoding", disable=not show_progress_bar)):
-                inputs_on_device = {k: v.to(self.device) for k, v in inputs.items()}
+                inputs_on_device = {k: v.to(device) for k, v in inputs.items()}
                 embeddings = self.forward_from_loader(inputs_on_device)
                 embeddings = embeddings.detach()
                 if normalize_embeddings:
@@ -247,7 +248,10 @@ class AutoModelForEmbedding(nn.Module):
         :return: By default, a list of tensors is returned. If convert_to_tensor, a stacked tensor is returned.
             If convert_to_numpy, a numpy matrix is returned.
         """
+        device = device or self.device
         self.model.eval()
+        self.model.to(device)
+
         if show_progress_bar is None:
             show_progress_bar = (
                 logger.getEffectiveLevel() == logging.INFO or logger.getEffectiveLevel() == logging.DEBUG
@@ -264,11 +268,6 @@ class AutoModelForEmbedding(nn.Module):
         if isinstance(sentences, str) or not hasattr(sentences, "__len__"):
             sentences = [sentences]
             input_was_string = True
-
-        if device is None:
-            device = self.device
-
-        self.to(device)
 
         all_embeddings = []
         length_sorted_idx = np.argsort([-self._text_length(sentence) for sentence in sentences])
