@@ -304,22 +304,15 @@ class RerankModel(nn.Module):
         )
         return reranker
 
-    def save(self, path: str):
+    def save_pretrained(self, path: str, safe_serialization: bool = True):
         """
         Saves all model and tokenizer to path
         """
-        if path is None:
-            return
-
         logger.info("Save model to {}".format(path))
-        self.model.save_pretrained(path)
+        state_dict = self.model.state_dict()
+        state_dict = type(state_dict)({k: v.clone().cpu() for k, v in state_dict.items()})
+        self.model.save_pretrained(path, state_dict=state_dict, safe_serialization=safe_serialization)
         self.tokenizer.save_pretrained(path)
-
-    def save_pretrained(self, path: str):
-        """
-        Same function to save
-        """
-        return self.save(path)
 
 
 class ColBERT(RerankModel):
@@ -446,7 +439,7 @@ class DocumentSplitter(object):
                     res_merge_inputs_pids.append(pid)
         return res_merge_inputs, res_merge_inputs_pids
 
-    def _merge_inputs(self, chunk1_raw, chunk2, sep_id):
+    def _merge_inputs(self, chunk1_raw, chunk2, sep_id: int):
         chunk1 = deepcopy(chunk1_raw)
 
         chunk1['input_ids'].append(sep_id)
