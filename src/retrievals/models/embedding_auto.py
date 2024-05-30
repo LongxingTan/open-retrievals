@@ -333,8 +333,8 @@ class AutoModelForEmbedding(nn.Module):
         This function will be used for retrieval task
         if there is a instruction for queries, we will add it to the query text
         '''
-        if self.query_instruction_for_retrieval is not None:
-            input_texts = ['{}{}'.format(self.query_instruction_for_retrieval, q) for q in queries]
+        if self.query_instruction is not None:
+            input_texts = ['{}{}'.format(self.query_instruction, q) for q in queries]
         else:
             input_texts = queries
         return self.encode_from_text(input_texts)
