@@ -2,7 +2,7 @@
 
 
 ## Embedding finetune
-- [Text embeddings finetune with contrastive learning](0_embeddings/pairwise_finetune2.py)
+- [Text embeddings finetune with contrastive learning](./0_embeddings/pairwise_finetune2.py)
 
 ```shell
 cd 0_embeddings
@@ -42,7 +42,7 @@ python train_cross_encoder.py
 
 
 ## RAG
-- [RAG application with retrieval, rerank in langchain](../reference/rag_langchain.py)
+- [RAG application with retrieval, rerank in langchain](./3_rag/rag_langchain_demo.py)
 
 
 ```shell
