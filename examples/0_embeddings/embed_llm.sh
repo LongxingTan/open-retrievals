@@ -5,7 +5,7 @@
 
 accelerate launch \
     --config_file conf/conf_llm.yaml \
-    embed_llm_finetune.py \
+    llm_finetune_for_embed.py \
     --model_name_or_path mistralai/Mistral-7B-v0.1 \
     --train_data  \
     --output_dir modeloutput \

@@ -82,13 +82,9 @@ def recall():
         batch_size=512,
         top_k=20,
     )
-    print(indices)
 
     dataset = load_from_disk(CFG.wikipedia_path)
     for i in range(len(df)):
         df.loc[i, "context"] = "-" + "\n-".join([dataset[int(j)]["text"] for j in indices[i]])
-
-    print(df)
-    print(df.columns)
 
     df.to_csv(CFG.output_dir + "context_df.csv", index=False)

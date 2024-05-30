@@ -37,7 +37,7 @@ scheduler = get_linear_schedule_with_warmup(
 )
 
 training_arguments = TrainingArguments(
-    output_dir='./',
+    output_dir='./checkpoints',
     num_train_epochs=epochs,
     per_device_train_batch_size=batch_size,
     remove_unused_columns=False,

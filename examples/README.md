@@ -2,16 +2,20 @@
 
 
 ## Embedding finetune
-- [Text embeddings finetune with contrastive learning](0_embeddings/embed_pairwise_finetune.py)
+- [Text embeddings finetune with contrastive learning](0_embeddings/pairwise_finetune2.py)
 
 ```shell
 cd 0_embeddings
-python embed_pairwise_simple.py
+python pairwise_finetune.py
 ```
 
 ```shell
 cd 0_embeddings
-python embed_pairwise_finetune.py
+
+CUDA_VISIBLE_DEVICES=0 python pairwise_finetune2.py \
+    --model_name_or_path bert-base-multilingual-uncased \
+    --train_data ./example_data/toy_finetune_data.jsonl \
+    --output_dir modeloutput
 ```
 
 ```shell
