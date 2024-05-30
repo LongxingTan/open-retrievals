@@ -79,10 +79,7 @@ class AutoModelForEmbedding(nn.Module):
             generation_config.update({"pad_token_id": self.tokenizer.pad_token_id})
             self.model.generation_config = GenerationConfig(**generation_config)
 
-        if device is None:
-            self.device = get_device_name()
-        else:
-            self.device = device
+        self.device = device or get_device_name()
         self.model.to(self.device)
 
     def _init_weights(self, module: nn.Module):
@@ -225,8 +222,8 @@ class AutoModelForEmbedding(nn.Module):
         batch_size: int = 128,
         show_progress_bar: bool = None,
         output_value: str = "sentence_embedding",
-        convert_to_numpy: bool = True,
-        convert_to_tensor: bool = False,
+        convert_to_numpy: bool = False,
+        convert_to_tensor: bool = True,
         device: str = None,
         normalize_embeddings: bool = False,
     ) -> Union[List[torch.Tensor], np.ndarray, torch.Tensor]:
