@@ -20,7 +20,7 @@ CUDA_VISIBLE_DEVICES=0 python pairwise_finetune2.py \
 
 ```shell
 cd 0_embeddings
-sh embed_llm.sh
+sh llm_embed.sh
 ```
 
 ## Retrieval
