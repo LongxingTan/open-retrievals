@@ -1,4 +1,4 @@
-# Retrievals examples
+# Open-Retrievals examples
 
 
 ## Embedding finetune
