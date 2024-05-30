@@ -1,4 +1,9 @@
-from .data.collator import PairCollator, RerankCollator, TripletCollator
+from .data.collator import (
+    ColBertCollator,
+    PairCollator,
+    RerankCollator,
+    TripletCollator,
+)
 from .data.dataset import RerankDataset, RetrievalDataset
 from .models.embedding_auto import AutoModelForEmbedding, ListwiseModel, PairwiseModel
 from .models.pooling import AutoPooling

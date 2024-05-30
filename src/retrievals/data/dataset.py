@@ -12,30 +12,32 @@ logger = logging.getLogger(__name__)
 
 
 class RetrievalDataset(Dataset):
-    def __init__(self, args):
-        self.args = args
-        if os.path.isdir(args.data_dir):
+    def __init__(self, data_name_or_path: str, cache_dir: Optional[str] = None):
+        if os.path.isdir(data_name_or_path):
             train_datasets = []
-            for file in os.listdir(args.data_dir):
+            for file in os.listdir(data_name_or_path):
                 temp_dataset = datasets.load_dataset(
                     "json",
-                    data_files=os.path.join(args.data_dir, file),
+                    data_files=os.path.join(data_name_or_path, file),
                     split="train",
-                    cache_dir=args.cache_dir_data,
+                    cache_dir=cache_dir,
                 )
 
                 train_datasets.append(temp_dataset)
             self.dataset = datasets.concatenate_datasets(train_datasets)
         else:
-            self.dataset = datasets.load_dataset("json", data_files=args.train_data, split="train")
+            self.dataset = datasets.load_dataset("json", data_files=data_name_or_path)
+
+        if 'train' in self.dataset:
+            self.dataset = self.dataset['train']
 
         # self.tokenizer = tokenizer
         logger.info("Loaded {} retrieval data.".format(len(self.dataset)))
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.dataset)
 
-    def __getitem__(self, item) -> Union[Dict[str, str], List[BatchEncoding]]:
+    def __getitem__(self, item: int) -> Union[Dict[str, str], List[BatchEncoding]]:
         query = self.dataset[item]["query"]
         if isinstance(self.dataset[item]["pos"], Iterable):
             pos = random.choice(self.dataset[item]["pos"])
@@ -100,7 +102,7 @@ class RerankDataset(Dataset):
     def __len__(self):
         return len(self.dataset)
 
-    def __getitem__(self, item):
+    def __getitem__(self, item: int):
         if isinstance(self.dataset[item], dict):
             query = self.dataset[item][self.query_key]
             document = self.dataset[item]['document']

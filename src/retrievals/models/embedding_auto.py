@@ -1,11 +1,12 @@
 import logging
 import os
 import time
-from typing import Callable, Dict, Iterable, List, Literal, Optional, Tuple, Union
+from typing import Callable, Dict, List, Literal, Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
 import torch
+import torch.distributed as dist
 import torch.nn as nn
 from torch.utils.data import DataLoader
 from tqdm.auto import tqdm
@@ -53,6 +54,7 @@ class AutoModelForEmbedding(nn.Module):
         super().__init__()
         self.model = model
         self.tokenizer = tokenizer
+        self.pooling_method = pooling_method
         self.pooling = AutoPooling(pooling_method) if pooling_method else None
         self.loss_fn = loss_fn
 
@@ -195,6 +197,7 @@ class AutoModelForEmbedding(nn.Module):
         convert_to_numpy: bool = True,
         device: str = None,
         normalize_embeddings: bool = False,
+        show_progress_bar: bool = None,
         **kwargs,
     ) -> Union[List[torch.Tensor], np.ndarray, torch.Tensor]:
         self.model.eval()
@@ -202,7 +205,7 @@ class AutoModelForEmbedding(nn.Module):
 
         all_embeddings = []
         with torch.no_grad():
-            for idx, inputs in enumerate(loader):
+            for idx, inputs in enumerate(tqdm(loader, desc="Encoding", disable=not show_progress_bar)):
                 inputs_on_device = {k: v.to(self.device) for k, v in inputs.items()}
                 embeddings = self.forward_from_loader(inputs_on_device)
                 embeddings = embeddings.detach()
@@ -374,23 +377,22 @@ class AutoModelForEmbedding(nn.Module):
     def set_train_type(self, train_type: Literal['pointwise', 'pairwise', 'listwise'], **kwargs):
         model_class = {'pointwise': self, 'pairwise': PairwiseModel, 'listwise': ListwiseModel}
         model_class = model_class.get(train_type.lower())
-        return model_class(**kwargs)
+        return model_class(
+            model=self.model,
+            tokenizer=self.tokenizer,
+            pooling_method=self.pooling_method,
+            normalize_embeddings=self.normalize_embeddings,
+            loss_fn=self.loss_fn,
+            query_instruction=self.query_instruction,
+            document_instruction=self.document_instruction,
+            device=self.device,
+            **kwargs,
+        )
 
     @classmethod
     def as_retriever(cls, retrieval_args, **kwargs):
         embedding_model = cls(**kwargs)
         return AutoModelForRetrieval(embedding_model, **retrieval_args)
-
-    def save(self, path: str):
-        """
-        Saves all model and tokenizer to path
-        """
-        if path is None:
-            return
-
-        logger.info("Save model to {}".format(path))
-        self.model.save_pretrained(path)
-        self.tokenizer.save_pretrained(path)
 
     @classmethod
     def from_pretrained(
@@ -462,9 +464,25 @@ class AutoModelForEmbedding(nn.Module):
             **kwargs,
         )
 
-    def save_pretrained(self, output_path: str):
-        self.tokenizer.save_pretrained(output_path)
-        self.model.config.save_pretrained(output_path)
+    def save_pretrained(self, path: str, safe_serialization: bool = True):
+        """
+        Saves all model and tokenizer to path
+        """
+        logger.info("Save model to {}".format(path))
+        state_dict = self.model.state_dict()
+        state_dict = type(state_dict)({k: v.clone().cpu() for k, v in state_dict.items()})
+        self.model.save_pretrained(path, state_dict=state_dict, safe_serialization=safe_serialization)
+        self.tokenizer.save_pretrained(path)
+
+    def push_to_hub(self, hub_model_id: str, private: bool = True, **kwargs):
+        """push model to hub
+
+        :param hub_model_id: str, hub model id.
+        :param private: bool, whether push to private repo. Default True.
+        :param kwargs: other kwargs for `push_to_hub` method.
+        """
+        self.tokenizer.push_to_hub(hub_model_id, private=private, **kwargs)
+        self.backbone.push_to_hub(hub_model_id, private=private, **kwargs)
 
     def _text_length(self, text: Union[List[int], List[List[int]]]):
         """
@@ -482,22 +500,18 @@ class AutoModelForEmbedding(nn.Module):
         else:
             return sum([len(t) for t in text])  # Sum of length of individual strings
 
-    def push_to_hub(self, hub_model_id: str, private: bool = True, **kwargs):
-        """push model to hub
+    def _dist_gather_tensor(self, t: Optional[torch.Tensor]):
+        if t is None:
+            return None
+        t = t.contiguous()
 
-        :param hub_model_id: str, hub model id.
-        :param private: bool, whether push to private repo. Default True.
-        :param kwargs: other kwargs for `push_to_hub` method.
-        """
-        self.tokenizer.push_to_hub(hub_model_id, private=private, **kwargs)
-        self.backbone.push_to_hub(hub_model_id, private=private, **kwargs)
+        all_tensors = [torch.empty_like(t) for _ in range(self.world_size)]
+        dist.all_gather(all_tensors, t)
 
-    # @property
-    # def __dict__(self):
-    #     return self.model.__dict__
+        all_tensors[self.process_rank] = t
+        all_tensors = torch.cat(all_tensors, dim=0)
 
-    # def __getattr__(self, name):
-    #     return getattr(self.model, name)
+        return all_tensors
 
 
 class PairwiseModel(AutoModelForEmbedding):
@@ -510,16 +524,18 @@ class PairwiseModel(AutoModelForEmbedding):
 
     def __init__(
         self,
-        model_name_or_path: str,
-        pooling_method: str = "cls",
+        model: Optional[nn.Module] = None,
+        tokenizer: Optional[PreTrainedTokenizer] = None,
+        pooling_method: str = 'cls',
         normalize_embeddings: bool = False,
+        loss_fn: Optional[Callable] = None,
         cross_encoder: bool = False,
         poly_encoder: bool = False,
-        loss_fn: Union[nn.Module, Callable] = None,
         **kwargs,
     ) -> None:
         super().__init__(
-            model_name_or_path=model_name_or_path,
+            model=model,
+            tokenizer=tokenizer,
             pooling_method=pooling_method,
             normalize_embeddings=normalize_embeddings,
             loss_fn=None,
@@ -592,16 +608,18 @@ class ListwiseModel(AutoModelForEmbedding):
 
     def __init__(
         self,
-        model_name_or_path: str,
-        pooling_method: str = "cls",
+        model: Optional[nn.Module] = None,
+        tokenizer: Optional[PreTrainedTokenizer] = None,
+        pooling_method: str = 'cls',
+        normalize_embeddings: bool = False,
+        loss_fn: Optional[Callable] = None,
         listwise_pooling: bool = False,
         num_segments: Optional[int] = None,
-        normalize_embeddings: bool = False,
-        loss_fn: Union[nn.Module, Callable] = None,
         **kwargs,
     ) -> None:
         super().__init__(
-            model_name_or_path=model_name_or_path,
+            model=model,
+            tokenizer=tokenizer,
             pooling_method=pooling_method,
             normalize_embeddings=normalize_embeddings,
             loss_fn=loss_fn,

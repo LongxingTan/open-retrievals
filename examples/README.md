@@ -1,25 +1,32 @@
-# Retrievals examples
+# Open-Retrievals examples
 
 
-## Finetune
-- [Text embeddings finetune with contrastive learning](0_embeddings/embed_pairwise_finetune.py)
+## Embedding finetune
+- [Text embeddings finetune with contrastive learning](./0_embeddings/pairwise_finetune2.py)
 
 ```shell
-python embed_pointwise_finetune.py
+cd 0_embeddings
+python pairwise_finetune.py
 ```
 
 ```shell
-python embed_pairwise_finetune.py
+cd 0_embeddings
+
+CUDA_VISIBLE_DEVICES=0 python pairwise_finetune2.py \
+    --model_name_or_path bert-base-multilingual-uncased \
+    --train_data ./example_data/toy_finetune_data.jsonl \
+    --output_dir modeloutput
 ```
 
 ```shell
-sh embed_llm.sh
+cd 0_embeddings
+sh llm_embed.sh
 ```
-
 
 ## Retrieval
 
 ```shell
+cd 1_retrieval
 python retrieval_faiss.py
 ```
 
@@ -27,22 +34,18 @@ python retrieval_faiss.py
 - [Cross-encoder Rerank using T2Ranking data](2_rerank/train_cross_encoder.py)
 
 ```shell
+cd 2_rerank
 python train_cross_encoder.py
 ```
 
+- [ColBERT rerank](2_rerank/train_colbert.py)
+
+
 ## RAG
-- [RAG application with retrieval, rerank in langchain](3_rag/rag_langchain.py)
-- [A RAG app demo](3_rag/README.md)
+- [RAG application with retrieval, rerank in langchain](./3_rag/rag_langchain_demo.py)
+
 
 ```shell
-python rag_langchain.py
+cd 3_rag
+python rag_langchain_demo.py
 ```
-
-## Trainer
-
-- customer trainer
-  - support FGM, AWP
-  - support EMA
-
-- transformer trainer
-  - support deepspeed

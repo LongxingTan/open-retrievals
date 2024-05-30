@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 class AutoModelForRetrieval(object):
     def __init__(
-        self, embedding_model: Optional[nn.Module] = None, method: Literal['cosine', 'knn', None] = "cosine"
+        self, embedding_model: Optional[nn.Module] = None, method: Literal['cosine', 'knn'] = "cosine"
     ) -> None:
         super().__init__()
         self.embedding_model = embedding_model

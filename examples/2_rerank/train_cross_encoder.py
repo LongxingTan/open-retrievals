@@ -16,6 +16,7 @@ from torch.utils.data import DataLoader, Dataset
 from transformers import (
     AutoTokenizer,
     HfArgumentParser,
+    PreTrainedTokenizer,
     get_cosine_schedule_with_warmup,
     set_seed,
 )
@@ -27,10 +28,6 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class ModelArguments:
-    """
-    Arguments pertaining to which model/config/tokenizer we are going to fine-tune from.
-    """
-
     model_name_or_path: str = field(
         default="microsoft/deberta-v3-base",
         metadata={"help": "Path to pretrained model or model identifier from huggingface.co/models"},
@@ -49,16 +46,16 @@ class ModelArguments:
 @dataclass
 class DataArguments:
     train_data: str = field(default=None, metadata={"help": "Path to train data"})
-    train_group_size: int = field(default=8)
+
     query_max_length: int = field(
-        default=32,
+        default=128,
         metadata={
             "help": "The maximum total input sequence length after tokenization for document. Sequences longer "
             "than this will be truncated, sequences shorter will be padded."
         },
     )
     document_max_length: int = field(
-        default=32,
+        default=128,
         metadata={
             "help": "The maximum total input sequence length after tokenization for document. Sequences longer "
             "than this will be truncated, sequences shorter will be padded."
@@ -80,7 +77,7 @@ class TrainingArguments(transformers.TrainingArguments):
     num_train_epochs: int = 1
     per_device_train_batch_size: int = 1
     remove_unused_columns: bool = False
-    cache_dir: Optional[str] = field(default="/root/autodl-tmp/llm_output")
+    cache_dir: Optional[str] = field(default=None)
     negatives_cross_device: bool = field(default=False, metadata={"help": "share negatives across devices"})
     temperature: Optional[float] = field(default=0.02)
     fix_position_embedding: bool = field(
@@ -93,7 +90,7 @@ class TrainingArguments(transformers.TrainingArguments):
 
 
 class RerankTrainingDataset(Dataset):
-    def __init__(self, df, tokenizer: transformers.PreTrainedTokenizer, max_length: int):
+    def __init__(self, df: pd.DataFrame, tokenizer: PreTrainedTokenizer, max_length: int):
         self.tokenizer = tokenizer
         dataset = datasets.Dataset.from_pandas(df)
         self.tokenizer = tokenizer

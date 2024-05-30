@@ -1,3 +1,10 @@
+"""
+CUDA_VISIBLE_DEVICES=0 python pairwise_finetune2.py \
+    --model_name_or_path bert-base-multilingual-uncased \
+    --train_data ./example_data/toy_finetune_data.jsonl \
+    --output_dir modeloutput
+"""
+
 import logging
 import os
 import random
@@ -217,11 +224,7 @@ def main():
         cache_dir=model_args.cache_dir,
         use_fast=False,
     )
-
     train_dataset = TrainDatasetForEmbedding(args=data_args, tokenizer=tokenizer)
-    # for i in range(8):
-    #     print(train_dataset[i])
-    print(len(train_dataset))
 
     # model = PairwiseModel(model_args.model_name_or_path, pooling_method="mean")
     model = AutoModelForEmbedding.from_pretrained(model_args.model_name_or_path, pooling_method="mean")

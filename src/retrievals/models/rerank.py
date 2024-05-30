@@ -41,7 +41,8 @@ class RerankModel(nn.Module):
 
         self.model: Optional[nn.Module] = model
         self.tokenizer = tokenizer
-        self.pooling = AutoPooling(pooling_method)
+        self.pooling_method = pooling_method
+        self.pooling = AutoPooling(self.pooling_method)
 
         if self.model:
             num_features: int = self.model.config.hidden_size
@@ -136,7 +137,14 @@ class RerankModel(nn.Module):
     def set_model_type(self, model_type: Literal['cross-encoder', 'colbert'], **kwargs):
         model_class = {'cross-encoder': self, 'colbert': ColBERT}
         model_class = model_class.get(model_type.lower())
-        return model_class(**kwargs)
+        return model_class(
+            model=self.model,
+            tokenizer=self.tokenizer,
+            pooling_method=self.pooling_method,
+            loss_fn=self.loss_fn,
+            loss_type=self.loss_type,
+            **kwargs,
+        )
 
     @torch.no_grad()
     def compute_score(
@@ -159,7 +167,7 @@ class RerankModel(nn.Module):
         #     data_collator = RerankCollator(tokenizer=self.tokenizer)
 
         scores_list: List[float] = []
-        for i in range(0, len(text_pairs), batch_size):
+        for i in tqdm(range(0, len(text_pairs), batch_size), desc="Scoring", disable=not show_progress_bar):
             if isinstance(text_pairs[0][0], str):
                 batch = self.tokenizer(
                     text_pairs[i : i + batch_size],
@@ -254,6 +262,7 @@ class RerankModel(nn.Module):
         cls,
         model_name_or_path: str,
         pooling_method: str = 'mean',
+        loss_fn: Union[nn.Module, Callable] = None,
         loss_type: Literal['classification', 'regression'] = 'classification',
         num_labels: int = 1,
         causal_lm: bool = False,
@@ -278,7 +287,6 @@ class RerankModel(nn.Module):
         if use_fp16:
             model.half()
         if use_lora:
-            # peft config and wrapping
             from peft import LoraConfig, TaskType, get_peft_model
 
             if not lora_config:
@@ -287,26 +295,24 @@ class RerankModel(nn.Module):
             model.print_trainable_parameters()
 
         reranker = cls(
-            model=model, tokenizer=tokenizer, pooling_method=pooling_method, device=device, loss_type=loss_type
+            model=model,
+            tokenizer=tokenizer,
+            pooling_method=pooling_method,
+            device=device,
+            loss_fn=loss_fn,
+            loss_type=loss_type,
         )
         return reranker
 
-    def save(self, path: str):
+    def save_pretrained(self, path: str, safe_serialization: bool = True):
         """
         Saves all model and tokenizer to path
         """
-        if path is None:
-            return
-
         logger.info("Save model to {}".format(path))
-        self.model.save_pretrained(path)
+        state_dict = self.model.state_dict()
+        state_dict = type(state_dict)({k: v.clone().cpu() for k, v in state_dict.items()})
+        self.model.save_pretrained(path, state_dict=state_dict, safe_serialization=safe_serialization)
         self.tokenizer.save_pretrained(path)
-
-    def save_pretrained(self, path: str):
-        """
-        Same function to save
-        """
-        return self.save(path)
 
 
 class ColBERT(RerankModel):
@@ -326,6 +332,7 @@ class ColBERT(RerankModel):
         pos_attention_mask: Optional[torch.Tensor],
         neg_input_ids: Optional[torch.Tensor] = None,
         neg_attention_mask: Optional[torch.Tensor] = None,
+        labels: Optional[torch.Tensor] = None,
         return_dict: Optional[bool] = True,
         **kwargs,
     ):
@@ -337,12 +344,60 @@ class ColBERT(RerankModel):
         else:
             neg_embedding = None
 
-        score = self.loss_fn(query_embedding, pos_embedding, neg_embedding)
+        loss = self.loss_fn(query_embedding, pos_embedding, neg_embedding)
         if return_dict:
             outputs_dict = dict()
-            outputs_dict['score'] = score
+            outputs_dict['loss'] = loss
             return outputs_dict
-        return score
+        return loss
+
+    @classmethod
+    def from_pretrained(
+        cls,
+        model_name_or_path: str,
+        pooling_method: str = 'mean',
+        loss_type: Literal['classification', 'regression'] = 'classification',
+        num_labels: int = 1,
+        causal_lm: bool = False,
+        gradient_checkpointing: bool = False,
+        trust_remote_code: bool = True,
+        use_fp16: bool = False,
+        use_lora: bool = False,
+        lora_config=None,
+        device: Optional[str] = None,
+        colbert_dim: int = 1,
+        **kwargs,
+    ):
+        tokenizer = AutoTokenizer.from_pretrained(
+            model_name_or_path, return_tensors=False, trust_remote_code=trust_remote_code
+        )
+
+        model = AutoModelForSequenceClassification.from_pretrained(
+            model_name_or_path, num_labels=num_labels, trust_remote_code=trust_remote_code, **kwargs
+        )
+        if gradient_checkpointing:
+            model.graident_checkpointing_enable()
+
+        if use_fp16:
+            model.half()
+        if use_lora:
+            # peft config and wrapping
+            from peft import LoraConfig, TaskType, get_peft_model
+
+            if not lora_config:
+                raise ValueError("If use_lora is true, please provide a valid lora_config from peft")
+            model = get_peft_model(model, lora_config)
+            model.print_trainable_parameters()
+
+        reranker = cls(
+            model=model,
+            tokenizer=tokenizer,
+            pooling_method=pooling_method,
+            device=device,
+            loss_type=loss_type,
+            colbert_dim=colbert_dim,
+        )
+        return reranker
 
 
 class DocumentSplitter(object):
@@ -384,7 +439,7 @@ class DocumentSplitter(object):
                     res_merge_inputs_pids.append(pid)
         return res_merge_inputs, res_merge_inputs_pids
 
-    def _merge_inputs(self, chunk1_raw, chunk2, sep_id):
+    def _merge_inputs(self, chunk1_raw, chunk2, sep_id: int):
         chunk1 = deepcopy(chunk1_raw)
 
         chunk1['input_ids'].append(sep_id)
