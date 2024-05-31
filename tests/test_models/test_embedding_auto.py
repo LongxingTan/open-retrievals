@@ -162,7 +162,8 @@ class PairwiseModelTest(TestCase, ModelTesterMixin):
 
 class ListwiseModelTest(TestCase):
     def setUp(self) -> None:
-        self.model = ListwiseModel.from_pretrained()
+        model_name_or_path = "sentence-transformers/all-MiniLM-L6-v2"
+        self.model = ListwiseModel.from_pretrained(model_name_or_path)
 
     def test_unsorted_segment_mean(self):
         input_tensor = torch.tensor([[1.0, 2.0], [3.0, 4.0], [5.0, 6.0], [7.0, 8.0]])
