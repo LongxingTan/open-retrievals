@@ -3,7 +3,7 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Retrievals Documentation
+Open-Retrievals Documentation
 ======================================
 .. raw:: html
 
@@ -22,7 +22,7 @@ Install the **Prerequisites**
 
 * transformers
 * peft
-* faiss / faiss-gpu
+* faiss-cpu / faiss-gpu
 
 
 Now you are ready, proceed with
@@ -42,7 +42,7 @@ Examples
    :caption: Contents:
 
    quick-start
-   finetune.rst
+   embed.rst
+   retrieval.rst
    rerank.rst
-   information-retrieval.rst
    rag.rst
