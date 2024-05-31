@@ -609,16 +609,6 @@ class PairwiseModel(AutoModelForEmbedding):
             return pooled_output
 
 
-def unsorted_segment_mean(data: torch.Tensor, segment_ids: torch.Tensor, num_segments: int) -> torch.Tensor:
-    result_shape = (num_segments, data.size(1))
-    segment_ids = segment_ids.unsqueeze(-1).expand(-1, data.size(1))
-    result = data.new_full(result_shape, 0)  # init empty result tensor
-    count = data.new_full(result_shape, 0)
-    result.scatter_add_(0, segment_ids, data)
-    count.scatter_add_(0, segment_ids, torch.ones_like(data))
-    return result / count.clamp(min=1)
-
-
 class ListwiseModel(AutoModelForEmbedding):
     """
     segment_id
@@ -644,6 +634,7 @@ class ListwiseModel(AutoModelForEmbedding):
             **kwargs,
         )
         self.pooling_method = pooling_method
+        self.listwise_pooling = listwise_pooling
         self.num_segments = num_segments
 
     def forward(
@@ -658,7 +649,7 @@ class ListwiseModel(AutoModelForEmbedding):
 
         res = dict()
         if self.pooling_method == 'unsorted_segment_mean':
-            encoding = unsorted_segment_mean(
+            encoding = self._unsorted_segment_mean(
                 encoding, segment_ids=inputs['segment_ids'], num_segments=self.num_segments
             )
             res['pred'] = self.fc(encoding[:, 1:])
@@ -673,3 +664,12 @@ class ListwiseModel(AutoModelForEmbedding):
 
         res['pred'] = res['pred'].squeeze(-1)
         return res
+
+    def _unsorted_segment_mean(self, data: torch.Tensor, segment_ids: torch.Tensor, num_segments: int) -> torch.Tensor:
+        result_shape = (num_segments, data.size(1))
+        segment_ids = segment_ids.unsqueeze(-1).expand(-1, data.size(1))
+        result = data.new_full(result_shape, 0)  # init empty result tensor
+        count = data.new_full(result_shape, 0)
+        result.scatter_add_(0, segment_ids, data)
+        count.scatter_add_(0, segment_ids, torch.ones_like(data))
+        return result / count.clamp(min=1)
