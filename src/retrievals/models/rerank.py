@@ -451,7 +451,8 @@ class ColBERT(RerankModel):
     def from_pretrained(
         cls,
         model_name_or_path: str,
-        pooling_method: str = 'mean',
+        save_path: Optional[str] = None,
+        pooling_method: Optional[str] = None,
         loss_type: Literal['classification', 'regression'] = 'classification',
         num_labels: int = 1,
         causal_lm: bool = False,
@@ -471,6 +472,12 @@ class ColBERT(RerankModel):
         model = AutoModelForSequenceClassification.from_pretrained(
             model_name_or_path, num_labels=num_labels, trust_remote_code=trust_remote_code, **kwargs
         )
+
+        if save_path:
+            # TODO: 支持transformers pretrain权重, 以及微调后加载权重
+            model = cls(model=model, tokenizer=tokenizer, pooling_method=pooling_method)
+            model.load_state_dict(torch.load(save_path))
+
         if gradient_checkpointing:
             model.graident_checkpointing_enable()
 
