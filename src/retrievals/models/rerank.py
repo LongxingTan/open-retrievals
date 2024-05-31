@@ -326,7 +326,9 @@ class ColBERT(RerankModel):
         colbert_dim: int = 128,
         **kwargs,
     ):
-        super(ColBERT, self).__init__(pooling_method=None, linear_dim=colbert_dim, **kwargs)
+        if "pooling_method" in kwargs:
+            kwargs.update({'pooling_method': None})
+        super(ColBERT, self).__init__(linear_dim=colbert_dim, **kwargs)
         if self.model:
             num_features: int = self.model.config.hidden_size
 
