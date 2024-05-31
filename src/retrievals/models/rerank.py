@@ -351,6 +351,68 @@ class ColBERT(RerankModel):
             return outputs_dict
         return loss
 
+    def score(
+        self,
+        query_input_ids: Optional[torch.Tensor],
+        query_attention_mask: Optional[torch.Tensor],
+        pos_input_ids: Optional[torch.Tensor],
+        pos_attention_mask: Optional[torch.Tensor],
+    ):
+        query_embedding = self.encode(query_input_ids, query_attention_mask)
+        pos_embedding = self.encode(pos_input_ids, pos_attention_mask)
+
+        token_score = query_embedding @ pos_embedding.transpose(-1, -2)
+        score = token_score.max(-1).values.sum(-1)
+        if len(score.size()) == 1:
+            score = score / query_attention_mask[:, 1:].sum(-1)
+        else:
+            score = score / query_attention_mask[:, 1:].sum(-1, keepdim=True)
+        return score
+
+    @torch.no_grad()
+    def compute_score(
+        self,
+        text_pairs: Union[List[Tuple[str, str]], Tuple[str, str]],
+        batch_size: int = 128,
+        max_length: int = 512,
+        normalize: bool = False,
+        show_progress_bar: bool = None,
+        **kwargs,
+    ):
+        self.model.eval()
+        if isinstance(text_pairs[0], str):
+            text_pairs = [text_pairs]
+
+        batch_size = min(batch_size, len(text_pairs))
+        scores_list: List[float] = []
+        for i in tqdm(range(0, len(text_pairs), batch_size), desc="Scoring", disable=not show_progress_bar):
+            if isinstance(text_pairs[0][0], str):
+                batch = self.tokenizer(
+                    text_pairs[i : i + batch_size],
+                    padding=True,
+                    truncation=True,
+                    max_length=max_length,
+                    return_tensors="pt",
+                )
+            else:
+                batch = self.tokenizer.pad(
+                    text_pairs[i : i + batch_size],
+                    padding=True,
+                    max_length=None,
+                    pad_to_multiple_of=None,
+                    return_tensors='pt',
+                )
+
+            batch_on_device = {k: v.to(self.device) for k, v in batch.items()}
+            scores = self.score(**batch_on_device)
+            if normalize:
+                scores = torch.sigmoid(scores)
+            scores_list.extend(scores.cpu().numpy().tolist())
+
+        if len(scores_list) == 1:
+            return scores_list[0]
+        return scores_list
+
     @classmethod
     def from_pretrained(
         cls,
