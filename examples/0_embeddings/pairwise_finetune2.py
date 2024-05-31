@@ -24,12 +24,7 @@ from transformers import (
     set_seed,
 )
 
-from retrievals import (
-    AutoModelForEmbedding,
-    AutoModelForMatch,
-    RetrievalTrainer,
-    TripletCollator,
-)
+from retrievals import AutoModelForEmbedding, RetrievalTrainer, TripletCollator
 from retrievals.losses import TripletLoss
 
 logger = logging.getLogger(__name__)
@@ -106,7 +101,6 @@ class TrainingArguments(transformers.TrainingArguments):
     sentence_pooling_method: str = field(default="cls", metadata={"help": "the pooling method, should be cls or mean"})
     normalized: bool = field(default=True)
     use_inbatch_neg: bool = field(default=True, metadata={"help": "Freeze the parameters of position embeddings"})
-    # save_steps
 
 
 class TrainDatasetForEmbedding(Dataset):
@@ -211,14 +205,6 @@ def main():
 
     set_seed(training_args.seed)
 
-    # num_labels = 1
-    # config = AutoConfig.from_pretrained(
-    #     model_args.config_name
-    #     if model_args.config_name
-    #     else model_args.model_name_or_path,
-    #     num_labels=num_labels,
-    #     cache_dir=model_args.cache_dir,
-    # )
     tokenizer = AutoTokenizer.from_pretrained(
         (model_args.tokenizer_name if model_args.tokenizer_name else model_args.model_name_or_path),
         cache_dir=model_args.cache_dir,
@@ -249,8 +235,9 @@ def main():
     trainer.scheduler = lr_scheduler
     trainer.train()
 
-    trainer.save_state()
     trainer.save_model(output_dir=training_args.output_dir)
+    if trainer.is_world_process_zero():
+        tokenizer.save_pretrained(training_args.output_dir)
 
 
 if __name__ == "__main__":
