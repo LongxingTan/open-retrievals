@@ -477,6 +477,7 @@ class ColBERT(RerankModel):
             # TODO: 支持transformers pretrain权重, 以及微调后加载权重
             model = cls(model=model, tokenizer=tokenizer, pooling_method=pooling_method)
             model.load_state_dict(torch.load(save_path))
+            return model
 
         if gradient_checkpointing:
             model.graident_checkpointing_enable()
