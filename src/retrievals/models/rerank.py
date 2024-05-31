@@ -35,6 +35,7 @@ class RerankModel(nn.Module):
         loss_type: Literal['classification', 'regression'] = 'classification',
         max_length: Optional[int] = None,
         device: Optional[str] = None,
+        linear_dim: int = 1,
         **kwargs,
     ):
         super().__init__()
@@ -46,7 +47,7 @@ class RerankModel(nn.Module):
 
         if self.model:
             num_features: int = self.model.config.hidden_size
-            self.classifier = nn.Linear(num_features, 1)
+            self.classifier = nn.Linear(num_features, linear_dim)
             self._init_weights(self.classifier)
         self.loss_fn = loss_fn
         self.loss_type = loss_type
@@ -272,6 +273,7 @@ class RerankModel(nn.Module):
         use_lora: bool = False,
         lora_config=None,
         device: Optional[str] = None,
+        linear_dim: int = 1,
         **kwargs,
     ):
         tokenizer = AutoTokenizer.from_pretrained(
@@ -301,6 +303,7 @@ class RerankModel(nn.Module):
             device=device,
             loss_fn=loss_fn,
             loss_type=loss_type,
+            linear_dim=linear_dim,
         )
         return reranker
 
@@ -318,11 +321,12 @@ class RerankModel(nn.Module):
 class ColBERT(RerankModel):
     def __init__(
         self,
-        colbert_dim: int = 1,
+        colbert_dim: int = 128,
+        pooling_method: Optional[str] = None,
         **kwargs,
     ):
         self.colbert_dim = colbert_dim
-        super(ColBERT, self).__init__(**kwargs)
+        super(ColBERT, self).__init__(pooling_method=pooling_method, linear_dim=colbert_dim, **kwargs)
 
     def forward(
         self,
@@ -420,6 +424,8 @@ class ColBERT(RerankModel):
                 .max(-1)
                 .values.sum(-1)
             )
+        else:
+            raise ValueError('similarity_metric should be cosine or l2')
 
     @classmethod
     def from_pretrained(
@@ -435,7 +441,7 @@ class ColBERT(RerankModel):
         use_lora: bool = False,
         lora_config=None,
         device: Optional[str] = None,
-        colbert_dim: int = 1,
+        colbert_dim: int = 128,
         **kwargs,
     ):
         tokenizer = AutoTokenizer.from_pretrained(
