@@ -333,9 +333,9 @@ class ColBERT(RerankModel):
         super(ColBERT, self).__init__(linear_dim=colbert_dim, **kwargs)
         if self.model:
             num_features: int = self.model.config.hidden_size
-
             self.linear = nn.Linear(num_features, colbert_dim)
             self._init_weights(self.linear)
+            self.to(self.device)
 
     def encode(self, input_ids: torch.Tensor, attention_mask: torch.Tensor) -> torch.Tensor:
         outputs: SequenceClassifierOutput = self.model(input_ids, attention_mask, output_hidden_states=True)
