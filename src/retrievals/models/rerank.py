@@ -48,7 +48,7 @@ class RerankModel(nn.Module):
         if self.model:
             num_features: int = self.model.config.hidden_size
             self.classifier = nn.Linear(num_features, 1)
-            self._init_weights(self.classifier)
+            # self._init_weights(self.classifier)
 
         self.loss_fn = loss_fn
         self.loss_type = loss_type
@@ -334,7 +334,7 @@ class ColBERT(RerankModel):
         if self.model:
             num_features: int = self.model.config.hidden_size
             self.linear = nn.Linear(num_features, colbert_dim)
-            self._init_weights(self.linear)
+            # self._init_weights(self.linear)
             self.to(self.device)
 
     def encode(self, input_ids: torch.Tensor, attention_mask: torch.Tensor) -> torch.Tensor:
