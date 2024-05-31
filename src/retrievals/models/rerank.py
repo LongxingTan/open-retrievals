@@ -396,27 +396,30 @@ class ColBERT(RerankModel):
         return {
             "query_input_ids": query_batch_tokens_on_device['input_ids'],
             "query_attention_mask": query_batch_tokens_on_device['attention_mask'],
-            "pos_input_ids": document_batch_tokens_on_device['input_ids'],
-            "pos_attention_mask": document_batch_tokens_on_device['attention_mask'],
+            "doc_input_ids": document_batch_tokens_on_device['input_ids'],
+            "doc_attention_mask": document_batch_tokens_on_device['attention_mask'],
         }
 
     def score(
         self,
-        query_input_ids: Optional[torch.Tensor],
-        query_attention_mask: Optional[torch.Tensor],
-        pos_input_ids: Optional[torch.Tensor],
-        pos_attention_mask: Optional[torch.Tensor],
+        query_input_ids: torch.Tensor,
+        query_attention_mask: torch.Tensor,
+        doc_input_ids: torch.Tensor,
+        doc_attention_mask: torch.Tensor,
+        similarity_metric: str = 'cosine',
     ):
         query_embedding = self.encode(query_input_ids, query_attention_mask)
-        pos_embedding = self.encode(pos_input_ids, pos_attention_mask)
+        doc_embedding = self.encode(doc_input_ids, doc_attention_mask)
 
-        token_score = query_embedding @ pos_embedding.transpose(-1, -2)
-        score = token_score.max(-1).values.sum(-1)
-        if len(score.size()) == 1:
-            score = score / query_attention_mask[:, 1:].sum(-1)
-        else:
-            score = score / query_attention_mask[:, 1:].sum(-1, keepdim=True)
-        return score
+        if similarity_metric == 'cosine':
+            return (query_embedding @ doc_embedding.permute(0, 2, 1)).max(2).values.sum(1)
+
+        elif similarity_metric == 'l2':
+            return (
+                (-1.0 * ((query_embedding.unsqueeze(2) - doc_embedding.unsqueeze(1)) ** 2).sum(-1))
+                .max(-1)
+                .values.sum(-1)
+            )
 
     @classmethod
     def from_pretrained(
