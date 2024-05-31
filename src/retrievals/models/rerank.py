@@ -30,12 +30,11 @@ class RerankModel(nn.Module):
         self,
         model: Optional[nn.Module] = None,
         tokenizer: Optional[PreTrainedTokenizer] = None,
-        pooling_method: str = 'mean',
+        pooling_method: Optional[str] = 'mean',
         loss_fn: Union[nn.Module, Callable] = None,
         loss_type: Literal['classification', 'regression'] = 'classification',
         max_length: Optional[int] = None,
         device: Optional[str] = None,
-        linear_dim: int = 1,
         **kwargs,
     ):
         super().__init__()
@@ -49,9 +48,6 @@ class RerankModel(nn.Module):
             num_features: int = self.model.config.hidden_size
             self.classifier = nn.Linear(num_features, 1)
             self._init_weights(self.classifier)
-        if not self.pooling_method:
-            self.linear = nn.Linear(num_features, linear_dim)
-            self._init_weights(self.linear)
 
         self.loss_fn = loss_fn
         self.loss_type = loss_type
@@ -88,14 +84,16 @@ class RerankModel(nn.Module):
     def encode(self, input_ids: torch.Tensor, attention_mask: torch.Tensor) -> torch.Tensor:
         outputs: SequenceClassifierOutput = self.model(input_ids, attention_mask, output_hidden_states=True)
         if hasattr(outputs, 'last_hidden_state'):
+            # 3D tensor: [batch, seq_len, attention_dim]
             hidden_state = outputs.last_hidden_state
         else:
             hidden_state = outputs.hidden_states[1]
 
         if self.pooling_method:
+            # 2D tensor
             embeddings = self.pooling(hidden_state, attention_mask)
         else:
-            embeddings = self.linear(hidden_state[:, 1:])
+            embeddings = self.classifier(hidden_state[:, 1:])
         return embeddings
 
     def forward(
@@ -326,11 +324,25 @@ class ColBERT(RerankModel):
     def __init__(
         self,
         colbert_dim: int = 128,
-        pooling_method: Optional[str] = None,
         **kwargs,
     ):
-        self.colbert_dim = colbert_dim
-        super(ColBERT, self).__init__(pooling_method=pooling_method, linear_dim=colbert_dim, **kwargs)
+        super(ColBERT, self).__init__(pooling_method=None, linear_dim=colbert_dim, **kwargs)
+        if self.model:
+            num_features: int = self.model.config.hidden_size
+
+            self.linear = nn.Linear(num_features, colbert_dim)
+            self._init_weights(self.linear)
+
+    def encode(self, input_ids: torch.Tensor, attention_mask: torch.Tensor) -> torch.Tensor:
+        outputs: SequenceClassifierOutput = self.model(input_ids, attention_mask, output_hidden_states=True)
+        if hasattr(outputs, 'last_hidden_state'):
+            # 3D tensor: [batch, seq_len, attention_dim]
+            hidden_state = outputs.last_hidden_state
+        else:
+            hidden_state = outputs.hidden_states[1]
+
+        embeddings = self.linear(hidden_state)
+        return embeddings
 
     def forward(
         self,
