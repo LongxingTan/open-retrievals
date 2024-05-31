@@ -393,12 +393,12 @@ class ColBERT(RerankModel):
         )
         document_batch_tokens_on_device = {k: v.to(self.device) for k, v in document_batch_tokens.items()}
 
-        return (
-            query_batch_tokens_on_device['input_ids'],
-            query_batch_tokens_on_device['attention_mask'],
-            document_batch_tokens_on_device['input_ids'],
-            document_batch_tokens_on_device['attention_mask'],
-        )
+        return {
+            "query_input_ids": query_batch_tokens_on_device['input_ids'],
+            "query_attention_mask": query_batch_tokens_on_device['attention_mask'],
+            "pos_input_ids": document_batch_tokens_on_device['input_ids'],
+            "pos_attention_mask": document_batch_tokens_on_device['attention_mask'],
+        }
 
     def score(
         self,
