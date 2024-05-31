@@ -42,7 +42,8 @@ class RerankModel(nn.Module):
         self.model: Optional[nn.Module] = model
         self.tokenizer = tokenizer
         self.pooling_method = pooling_method
-        self.pooling = AutoPooling(self.pooling_method)
+        if pooling_method:
+            self.pooling = AutoPooling(self.pooling_method)
 
         if self.model:
             num_features: int = self.model.config.hidden_size
