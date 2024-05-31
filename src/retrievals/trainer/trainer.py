@@ -1,14 +1,9 @@
 import logging
 import os
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional
 
 import torch.nn as nn
 from transformers import Trainer
-from transformers.modeling_outputs import SequenceClassifierOutput
-from transformers.modeling_utils import PreTrainedModel
-from transformers.tokenization_utils_base import PreTrainedTokenizerBase
-from transformers.trainer_callback import TrainerCallback
-from transformers.trainer_utils import EvalPrediction
 
 from ..losses import InfoNCE, SimCSE, TripletLoss
 
@@ -16,11 +11,11 @@ logger = logging.getLogger(__name__)
 
 
 class RetrievalTrainer(Trainer):
-    def __init__(self, loss_fn, **kwargs):
+    def __init__(self, loss_fn: Callable, **kwargs):
         super().__init__(**kwargs)
         self.loss_fn = loss_fn
 
-    def compute_loss(self, model, inputs, return_outputs=False, **kwargs):
+    def compute_loss(self, model: nn.Module, inputs: Any, return_outputs: bool = False, **kwargs):
         query = inputs["query"]
         pos = inputs["positive"]
         query_embeddings = model(query)
@@ -49,13 +44,13 @@ class RetrievalTrainer(Trainer):
 
 
 class RerankTrainer(Trainer):
-    def __init__(self, loss_fn=None, **kwargs):
+    def __init__(self, loss_fn: Callable = None, **kwargs):
         super().__init__(**kwargs)
         if not loss_fn:
             loss_fn = nn.BCEWithLogitsLoss()
         self.loss_fn = loss_fn
 
-    def compute_loss(self, model, inputs, return_outputs=False, **kwargs):
+    def compute_loss(self, model: nn.Module, inputs, return_outputs=False, **kwargs):
         outputs: dict = model(**inputs)
         loss = outputs['loss']
         return (loss, outputs) if return_outputs else loss

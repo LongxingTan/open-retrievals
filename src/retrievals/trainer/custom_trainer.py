@@ -8,8 +8,6 @@ import numpy as np
 import torch
 
 # from accelerate import Accelerator
-# from accelerate.logging import get_logger
-# from accelerate.utils import set_seed
 from torch import nn
 from tqdm import tqdm
 
