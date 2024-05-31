@@ -40,20 +40,22 @@ class FGM:
 class EMA:
     """Exponential moving average
 
-    init:
-    ema = EMA(model, 0.999)
-    ema.register()
+    Example:
 
-    train:
-    def train():
-        optimizer.step()
-        ema.update()
+        # init:
+        ema = EMA(model, 0.999)
+        ema.register()
 
-    eval:
-    def evaluate():
-        ema.apply_shadow()
-        # evaluate
-        ema.restore()
+        # train:
+        def train():
+            optimizer.step()
+            ema.update()
+
+        # eval:
+        def evaluate():
+            ema.apply_shadow()
+            # evaluation code here
+            ema.restore()
     """
 
     def __init__(self, model: nn.Module, decay: float = 0.999):
