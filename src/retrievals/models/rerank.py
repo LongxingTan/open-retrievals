@@ -351,24 +351,6 @@ class ColBERT(RerankModel):
             return outputs_dict
         return loss
 
-    def score(
-        self,
-        query_input_ids: Optional[torch.Tensor],
-        query_attention_mask: Optional[torch.Tensor],
-        pos_input_ids: Optional[torch.Tensor],
-        pos_attention_mask: Optional[torch.Tensor],
-    ):
-        query_embedding = self.encode(query_input_ids, query_attention_mask)
-        pos_embedding = self.encode(pos_input_ids, pos_attention_mask)
-
-        token_score = query_embedding @ pos_embedding.transpose(-1, -2)
-        score = token_score.max(-1).values.sum(-1)
-        if len(score.size()) == 1:
-            score = score / query_attention_mask[:, 1:].sum(-1)
-        else:
-            score = score / query_attention_mask[:, 1:].sum(-1, keepdim=True)
-        return score
-
     @torch.no_grad()
     def compute_score(
         self,
@@ -386,24 +368,9 @@ class ColBERT(RerankModel):
         batch_size = min(batch_size, len(text_pairs))
         scores_list: List[float] = []
         for i in tqdm(range(0, len(text_pairs), batch_size), desc="Scoring", disable=not show_progress_bar):
-            if isinstance(text_pairs[0][0], str):
-                batch = self.tokenizer(
-                    text_pairs[i : i + batch_size],
-                    padding=True,
-                    truncation=True,
-                    max_length=max_length,
-                    return_tensors="pt",
-                )
-            else:
-                batch = self.tokenizer.pad(
-                    text_pairs[i : i + batch_size],
-                    padding=True,
-                    max_length=None,
-                    pad_to_multiple_of=None,
-                    return_tensors='pt',
-                )
-
-            batch_on_device = {k: v.to(self.device) for k, v in batch.items()}
+            batch_on_device = self.preprocess(
+                text_pairs[i : i + batch_size], query_max_len=max_length, document_max_len=max_length
+            )
             scores = self.score(**batch_on_device)
             if normalize:
                 scores = torch.sigmoid(scores)
@@ -412,6 +379,44 @@ class ColBERT(RerankModel):
         if len(scores_list) == 1:
             return scores_list[0]
         return scores_list
+
+    def preprocess(self, batch_sentence_pair, query_max_len, document_max_len):
+        query_list = [item[0] for item in batch_sentence_pair]
+        document_list = [item[1] for item in batch_sentence_pair]
+
+        query_batch_tokens = self.tokenizer(
+            query_list, padding='max_length', truncation=True, max_length=query_max_len, return_tensors='pt'
+        )
+        query_batch_tokens_on_device = {k: v.to(self.device) for k, v in query_batch_tokens.items()}
+        document_batch_tokens = self.tokenizer(
+            document_list, padding='max_length', truncation=True, max_length=document_max_len, return_tensors='pt'
+        )
+        document_batch_tokens_on_device = {k: v.to(self.device) for k, v in document_batch_tokens.items()}
+
+        return (
+            query_batch_tokens_on_device['input_ids'],
+            query_batch_tokens_on_device['attention_mask'],
+            document_batch_tokens_on_device['input_ids'],
+            document_batch_tokens_on_device['attention_mask'],
+        )
+
+    def score(
+        self,
+        query_input_ids: Optional[torch.Tensor],
+        query_attention_mask: Optional[torch.Tensor],
+        pos_input_ids: Optional[torch.Tensor],
+        pos_attention_mask: Optional[torch.Tensor],
+    ):
+        query_embedding = self.encode(query_input_ids, query_attention_mask)
+        pos_embedding = self.encode(pos_input_ids, pos_attention_mask)
+
+        token_score = query_embedding @ pos_embedding.transpose(-1, -2)
+        score = token_score.max(-1).values.sum(-1)
+        if len(score.size()) == 1:
+            score = score / query_attention_mask[:, 1:].sum(-1)
+        else:
+            score = score / query_attention_mask[:, 1:].sum(-1, keepdim=True)
+        return score
 
     @classmethod
     def from_pretrained(
