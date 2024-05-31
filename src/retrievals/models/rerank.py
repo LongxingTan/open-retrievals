@@ -67,7 +67,8 @@ class RerankModel(nn.Module):
             self.device = get_device_name()
         else:
             self.device = device
-        self.model.to(self.device)
+        # both self.model and self.linear to device
+        self.to(self.device)
 
     def _init_weights(self, module: nn.Module):
         if isinstance(module, nn.Linear):
