@@ -226,12 +226,16 @@ def main():
     )
     train_dataset = TrainDatasetForEmbedding(args=data_args, tokenizer=tokenizer)
 
-    # model = PairwiseModel(model_args.model_name_or_path, pooling_method="mean")
     model = AutoModelForEmbedding.from_pretrained(model_args.model_name_or_path, pooling_method="mean")
+    model = model.set_train_type('pairwise')
+
     optimizer = get_optimizer(model, lr=5e-5, weight_decay=1e-3)
 
-    # TODO: total steps更新
-    lr_scheduler = get_scheduler(optimizer, num_train_steps=int(len(train_dataset) / 2 * 1))
+    device_count = torch.cuda.device_count() if torch.cuda.is_available() else 1
+    num_train_steps = int(
+        len(train_dataset) / (training_args.per_device_train_batch_size * training_args.num_train_epochs * device_count)
+    )
+    lr_scheduler = get_scheduler(optimizer, num_train_steps=num_train_steps)
 
     trainer = RetrievalTrainer(
         model=model,
