@@ -47,8 +47,12 @@ class RerankModel(nn.Module):
 
         if self.model:
             num_features: int = self.model.config.hidden_size
-            self.classifier = nn.Linear(num_features, linear_dim)
+            self.classifier = nn.Linear(num_features, 1)
             self._init_weights(self.classifier)
+        if not self.pooling_method:
+            self.linear = nn.Linear(num_features, linear_dim)
+            self._init_weights(self.linear)
+
         self.loss_fn = loss_fn
         self.loss_type = loss_type
 
@@ -88,10 +92,10 @@ class RerankModel(nn.Module):
         else:
             hidden_state = outputs.hidden_states[1]
 
-        if self.pooling:
+        if self.pooling_method:
             embeddings = self.pooling(hidden_state, attention_mask)
         else:
-            embeddings = self.classifier(hidden_state[:, 1:])
+            embeddings = self.linear(hidden_state[:, 1:])
         return embeddings
 
     def forward(
@@ -360,7 +364,7 @@ class ColBERT(RerankModel):
         self,
         text_pairs: Union[List[Tuple[str, str]], Tuple[str, str]],
         batch_size: int = 128,
-        max_length: int = 512,
+        max_length: int = 256,
         normalize: bool = False,
         show_progress_bar: bool = None,
         **kwargs,
