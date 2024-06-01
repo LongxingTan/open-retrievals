@@ -46,7 +46,7 @@ class PairCollator(DataCollatorWithPadding):
         if isinstance(query_texts[0], str):
             tokenize_fn = self.tokenizer
             tokenize_args = {
-                "padding": True,
+                "truncation": True,
             }
         else:
             tokenize_fn = self.tokenizer.pad
@@ -55,10 +55,14 @@ class PairCollator(DataCollatorWithPadding):
             }
 
         query_inputs = tokenize_fn(
-            query_texts, padding=True, max_length=self.query_max_length, return_tensors="pt", **tokenize_args
+            query_texts, padding="max_length", max_length=self.query_max_length, return_tensors="pt", **tokenize_args
         )
         document_inputs = tokenize_fn(
-            document_texts, padding=True, max_length=self.document_max_length, return_tensors="pt", **tokenize_args
+            document_texts,
+            padding="max_length",
+            max_length=self.document_max_length,
+            return_tensors="pt",
+            **tokenize_args,
         )
 
         return {"query": query_inputs, "document": document_inputs}
@@ -114,7 +118,7 @@ class TripletCollator(DataCollatorWithPadding):
         if isinstance(query_texts[0], str):
             tokenize_fn = self.tokenizer
             tokenize_args = {
-                "padding": True,
+                "truncation": True,
             }
         else:
             tokenize_fn = self.tokenizer.pad
@@ -123,10 +127,10 @@ class TripletCollator(DataCollatorWithPadding):
             }
 
         query_inputs = tokenize_fn(
-            query_texts, padding=True, max_length=self.query_max_length, return_tensors="pt", **tokenize_args
+            query_texts, padding="max_length", max_length=self.query_max_length, return_tensors="pt", **tokenize_args
         )
         pos_inputs = tokenize_fn(
-            pos_texts, padding=True, max_length=self.document_max_length, return_tensors="pt", **tokenize_args
+            pos_texts, padding="max_length", max_length=self.document_max_length, return_tensors="pt", **tokenize_args
         )  # ["input_ids"]
         neg_inputs = tokenize_fn(
             neg_texts, padding=True, max_length=self.document_max_length, return_tensors="pt", **tokenize_args
@@ -172,16 +176,22 @@ class RerankCollator(DataCollatorWithPadding):
 
         if isinstance(query_texts[0], str):
             tokenize_fn = self.tokenizer
+            tokenize_args = {
+                "truncation": True,
+            }
         else:
             tokenize_fn = self.tokenizer.pad
+            tokenize_args = {
+                "pad_to_multiple_of": None,
+            }
 
         batch = tokenize_fn(
             text=query_texts,
             text_pair=document_texts,
-            padding=True,
-            truncation=True,
+            padding="max_length",
             max_length=self.query_max_length,
             return_tensors="pt",
+            **tokenize_args,
         )
 
         if 'labels' in features[0].keys():
@@ -222,22 +232,20 @@ class ColBertCollator(DataCollatorWithPadding):
 
         if isinstance(query_texts[0], str):
             tokenize_fn = self.tokenizer
+            tokenize_args = {
+                "truncation": True,
+            }
         else:
             tokenize_fn = self.tokenizer.pad
+            tokenize_args = {
+                "pad_to_multiple_of": None,
+            }
 
         query_inputs = tokenize_fn(
-            query_texts,
-            padding=True,
-            max_length=self.query_max_length,
-            truncation=True,
-            return_tensors="pt",
+            query_texts, padding="max_length", max_length=self.query_max_length, return_tensors="pt", **tokenize_args
         )
         pos_inputs = tokenize_fn(
-            pos_texts,
-            padding=True,
-            max_length=self.document_max_length,
-            truncation=True,
-            return_tensors="pt",
+            pos_texts, padding="max_length", max_length=self.document_max_length, return_tensors="pt", **tokenize_args
         )
 
         batch = {
