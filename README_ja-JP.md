@@ -200,7 +200,7 @@ batch_size: int = 128
 epochs: int = 3
 
 train_dataset = load_dataset('shibing624/nli_zh', 'STS-B')['train']
-train_dataset = train_dataset.rename_columns({'sentence1': 'query', 'sentence2': 'positive'})
+train_dataset = train_dataset.rename_columns({'sentence1': 'query', 'sentence2': 'document'})
 tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, use_fast=False)
 model = AutoModelForEmbedding.from_pretrained(model_name_or_path, pooling_method="cls")
 # model = model.set_train_type('pointwise')  # 'pointwise', 'pairwise', 'listwise'
@@ -218,7 +218,7 @@ trainer = RetrievalTrainer(
     model=model,
     args=training_arguments,
     train_dataset=train_dataset,
-    data_collator=PairCollator(tokenizer, max_length=512),
+    data_collator=PairCollator(tokenizer, query_max_length=128, document_max_length=128),
     loss_fn=InfoNCE(nn.CrossEntropyLoss(label_smoothing=0.05)),
 )
 trainer.optimizer = optimizer
@@ -269,7 +269,7 @@ trainer = RerankTrainer(
     model=model,
     args=training_args,
     train_dataset=train_dataset,
-    data_collator=RerankCollator(tokenizer, max_length=max_length),
+    data_collator=RerankCollator(tokenizer, query_max_length=max_length, document_max_length=128),
 )
 trainer.optimizer = optimizer
 trainer.scheduler = scheduler

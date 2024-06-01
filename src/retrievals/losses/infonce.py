@@ -24,11 +24,13 @@ class InfoNCE(nn.Module):
         criterion: Union[nn.Module, Callable, None] = nn.CrossEntropyLoss(label_smoothing=0.05),
         temperature: float = 0.05,
         negative_mode: Literal['paired', 'unpaired'] = "unpaired",
+        negative_samples: int = 1,
     ):
         super().__init__()
         self.criterion = criterion
         self.temperature = temperature
         self.negative_mode = negative_mode
+        self.negative_samples = negative_samples
 
     def forward(
         self,
@@ -40,12 +42,18 @@ class InfoNCE(nn.Module):
         positive_embeddings = F.normalize(positive_embeddings, dim=-1)
         device = query_embeddings.device
         if negative_embeddings is None:
-            logits1 = query_embeddings @ positive_embeddings.transpose(-2, -1)
-            logits2 = logits1.T
-            labels = torch.arange(len(logits1), dtype=torch.long, device=device)
-            loss = (
-                self.criterion(logits1 / self.temperature, labels) + self.criterion(logits2 / self.temperature, labels)
-            ) / 2
+            if self.negative_mode == 'unpaired':
+                logits = query_embeddings @ positive_embeddings.transpose(-2, -1)
+                labels = torch.arange(logits.size(0), dtype=torch.long, device=device) * self.negative_samples
+                loss = self.criterion(logits / self.temperature, labels)
+            else:
+                logits1 = query_embeddings @ positive_embeddings.transpose(-2, -1)
+                logits2 = logits1.T
+                labels = torch.arange(logits1.size(0), dtype=torch.long, device=device) * self.negative_samples
+                loss = (
+                    self.criterion(logits1 / self.temperature, labels)
+                    + self.criterion(logits2 / self.temperature, labels)
+                ) / 2
             return loss
         else:
             negative_embeddings = F.normalize(negative_embeddings, dim=-1)

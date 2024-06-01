@@ -1,16 +1,30 @@
 # Open-Retrievals examples
 
 
-## Embedding finetune
-- [Text embeddings finetune with contrastive learning](./0_embeddings/pairwise_finetune2.py)
+## Embedding & Retrieval
 
+[Text embeddings finetune with contrastive learning](./0_embeddings/pairwise_finetune2.py)
+
+**Data Format**
+Training: Each line of the Train file is a training instance
+```
+{'query': TEXT_TYPE, 'positives': List[TEXT_TYPE], 'negatives': List[TEXT_TYPE]}
+...
+```
+Inference/Encoding: Each line of the encoding file is a piece of text to be encoded
+```
+{text_id: "xxx", 'text': TEXT_TYPE}
+...
+```
+
+**Training**
 ```shell
-cd 0_embeddings
+cd 1_retrieval
 python pairwise_finetune.py
 ```
 
 ```shell
-cd 0_embeddings
+cd 1_retrieval
 
 CUDA_VISIBLE_DEVICES=0 python pairwise_finetune2.py \
     --model_name_or_path bert-base-multilingual-uncased \
@@ -19,16 +33,10 @@ CUDA_VISIBLE_DEVICES=0 python pairwise_finetune2.py \
 ```
 
 ```shell
-cd 0_embeddings
+cd 1_retrieval
 sh llm_embed.sh
 ```
 
-## Retrieval
-
-```shell
-cd 1_retrieval
-python retrieval_faiss.py
-```
 
 ## Rerank
 - [Cross-encoder Rerank using T2Ranking data](2_rerank/train_cross_encoder.py)

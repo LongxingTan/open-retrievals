@@ -19,7 +19,7 @@ class MoCoLoss(nn.Module):
 
         logits = torch.cat([logits_pos, logits_neg], dim=1)
 
-        logits /= self.temperature
+        logits = logits / self.temperature
 
         labels = torch.zeros(batch_size, dtype=torch.long).cuda()
         loss = nn.CrossEntropyLoss().cuda()(logits, labels)

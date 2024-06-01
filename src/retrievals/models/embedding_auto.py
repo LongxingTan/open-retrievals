@@ -1,3 +1,4 @@
+import copy
 import logging
 import os
 import time
@@ -79,10 +80,7 @@ class AutoModelForEmbedding(nn.Module):
             generation_config.update({"pad_token_id": self.tokenizer.pad_token_id})
             self.model.generation_config = GenerationConfig(**generation_config)
 
-        if device is None:
-            self.device = get_device_name()
-        else:
-            self.device = device
+        self.device = device or get_device_name()
         self.model.to(self.device)
 
     def _init_weights(self, module: nn.Module):
@@ -200,13 +198,14 @@ class AutoModelForEmbedding(nn.Module):
         show_progress_bar: bool = None,
         **kwargs,
     ) -> Union[List[torch.Tensor], np.ndarray, torch.Tensor]:
+        device = device or self.device
         self.model.eval()
-        self.model.to(device or self.device)
+        self.model.to(device)
 
         all_embeddings = []
         with torch.no_grad():
             for idx, inputs in enumerate(tqdm(loader, desc="Encoding", disable=not show_progress_bar)):
-                inputs_on_device = {k: v.to(self.device) for k, v in inputs.items()}
+                inputs_on_device = {k: v.to(device) for k, v in inputs.items()}
                 embeddings = self.forward_from_loader(inputs_on_device)
                 embeddings = embeddings.detach()
                 if normalize_embeddings:
@@ -224,8 +223,8 @@ class AutoModelForEmbedding(nn.Module):
         batch_size: int = 128,
         show_progress_bar: bool = None,
         output_value: str = "sentence_embedding",
-        convert_to_numpy: bool = True,
-        convert_to_tensor: bool = False,
+        convert_to_numpy: bool = False,
+        convert_to_tensor: bool = True,
         device: str = None,
         normalize_embeddings: bool = False,
     ) -> Union[List[torch.Tensor], np.ndarray, torch.Tensor]:
@@ -247,7 +246,10 @@ class AutoModelForEmbedding(nn.Module):
         :return: By default, a list of tensors is returned. If convert_to_tensor, a stacked tensor is returned.
             If convert_to_numpy, a numpy matrix is returned.
         """
+        device = device or self.device
         self.model.eval()
+        self.model.to(device)
+
         if show_progress_bar is None:
             show_progress_bar = (
                 logger.getEffectiveLevel() == logging.INFO or logger.getEffectiveLevel() == logging.DEBUG
@@ -264,11 +266,6 @@ class AutoModelForEmbedding(nn.Module):
         if isinstance(sentences, str) or not hasattr(sentences, "__len__"):
             sentences = [sentences]
             input_was_string = True
-
-        if device is None:
-            device = self.device
-
-        self.to(device)
 
         all_embeddings = []
         length_sorted_idx = np.argsort([-self._text_length(sentence) for sentence in sentences])
@@ -293,7 +290,7 @@ class AutoModelForEmbedding(nn.Module):
                     for token_emb, attention in zip(out_features[output_value], out_features["attention_mask"]):
                         last_mask_id = len(attention) - 1
                         while last_mask_id > 0 and attention[last_mask_id].item() == 0:
-                            last_mask_id -= 1
+                            last_mask_id = last_mask_id - 1
 
                         embeddings.append(token_emb[0 : last_mask_id + 1])
                 elif output_value is None:  # Return all outputs
@@ -327,6 +324,28 @@ class AutoModelForEmbedding(nn.Module):
             all_embeddings = all_embeddings[0]
 
         return all_embeddings
+
+    def encode_queries(self, queries: List[str], **kwargs) -> np.ndarray:
+        '''
+        This function will be used for retrieval task
+        if there is a instruction for queries, we will add it to the query text
+        '''
+        if self.query_instruction is not None:
+            input_texts = ['{}{}'.format(self.query_instruction, q) for q in queries]
+        else:
+            input_texts = queries
+        return self.encode_from_text(input_texts)
+
+    def encode_corpus(self, corpus: List[Union[Dict[str, str], str]], **kwargs) -> np.ndarray:
+        '''
+        This function will be used for retrieval task
+        encode corpus for retrieval task
+        '''
+        if isinstance(corpus[0], dict):
+            input_texts = ['{} {}'.format(doc.get('title', ''), doc['text']).strip() for doc in corpus]
+        else:
+            input_texts = corpus
+        return self.encode_from_text(input_texts)
 
     def build_index(
         self,
@@ -517,6 +536,7 @@ class AutoModelForEmbedding(nn.Module):
 class PairwiseModel(AutoModelForEmbedding):
     """Pairwise Model wrapper
     - bi_encoder
+        - shared_weights or not
     - cross_encoder
     - poly_encoder
     support: query + pos pair, or query + pos + neg triplet
@@ -531,6 +551,7 @@ class PairwiseModel(AutoModelForEmbedding):
         loss_fn: Optional[Callable] = None,
         cross_encoder: bool = False,
         poly_encoder: bool = False,
+        shared_weights: bool = True,
         **kwargs,
     ) -> None:
         super().__init__(
@@ -545,6 +566,9 @@ class PairwiseModel(AutoModelForEmbedding):
             logger.warning("loss_fn in Pairwise model will be ignored")
 
         self.cross_encoder = cross_encoder
+        self.shared_weights = shared_weights
+        if not shared_weights:
+            self.document_model = copy.deepcopy(self.model)
 
     def forward(
         self,
@@ -580,25 +604,21 @@ class PairwiseModel(AutoModelForEmbedding):
                 return pooled_output1, pooled_output2
             else:
                 # bi-encoder, pooling in each
-                pooled_output1 = super().forward(input1)
-                pooled_output2 = super().forward(input2)
-                if len(inputs) == 3:
-                    pooled_output3 = super().forward(input3)
-                    return pooled_output1, pooled_output2, pooled_output3
-                return pooled_output1, pooled_output2
+                if self.shared_weights:
+                    pooled_output1 = super().forward(input1)
+                    pooled_output2 = super().forward(input2)
+                    if len(inputs) == 3:
+                        pooled_output3 = super().forward(input3)
+                        return pooled_output1, pooled_output2, pooled_output3
+                    return pooled_output1, pooled_output2
+                else:
+                    pooled_output1 = super().forward(input1)
+                    pooled_output2 = self.document_model(input2)
+                    return pooled_output1, pooled_output2
+
         else:
             pooled_output = super(PairwiseModel, self).forward_from_loader(inputs, without_pooling=False)
             return pooled_output
-
-
-def unsorted_segment_mean(data: torch.Tensor, segment_ids: torch.Tensor, num_segments: int) -> torch.Tensor:
-    result_shape = (num_segments, data.size(1))
-    segment_ids = segment_ids.unsqueeze(-1).expand(-1, data.size(1))
-    result = data.new_full(result_shape, 0)  # init empty result tensor
-    count = data.new_full(result_shape, 0)
-    result.scatter_add_(0, segment_ids, data)
-    count.scatter_add_(0, segment_ids, torch.ones_like(data))
-    return result / count.clamp(min=1)
 
 
 class ListwiseModel(AutoModelForEmbedding):
@@ -626,6 +646,7 @@ class ListwiseModel(AutoModelForEmbedding):
             **kwargs,
         )
         self.pooling_method = pooling_method
+        self.listwise_pooling = listwise_pooling
         self.num_segments = num_segments
 
     def forward(
@@ -640,7 +661,7 @@ class ListwiseModel(AutoModelForEmbedding):
 
         res = dict()
         if self.pooling_method == 'unsorted_segment_mean':
-            encoding = unsorted_segment_mean(
+            encoding = self._unsorted_segment_mean(
                 encoding, segment_ids=inputs['segment_ids'], num_segments=self.num_segments
             )
             res['pred'] = self.fc(encoding[:, 1:])
@@ -655,3 +676,12 @@ class ListwiseModel(AutoModelForEmbedding):
 
         res['pred'] = res['pred'].squeeze(-1)
         return res
+
+    def _unsorted_segment_mean(self, data: torch.Tensor, segment_ids: torch.Tensor, num_segments: int) -> torch.Tensor:
+        result_shape = (num_segments, data.size(1))
+        segment_ids = segment_ids.unsqueeze(-1).expand(-1, data.size(1))
+        result = data.new_full(result_shape, 0)  # init empty result tensor
+        count = data.new_full(result_shape, 0)
+        result.scatter_add_(0, segment_ids, data)
+        count.scatter_add_(0, segment_ids, torch.ones_like(data))
+        return result / count.clamp(min=1)

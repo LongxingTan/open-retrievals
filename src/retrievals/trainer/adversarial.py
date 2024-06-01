@@ -8,6 +8,8 @@ logger = logging.getLogger(__name__)
 
 
 class FGM:
+    """Fast Gradient Sign Attack"""
+
     def __init__(self, model: nn.Module):
         self.model = model
         self.backup: Dict[str, torch.Tensor] = dict()
@@ -36,21 +38,24 @@ class FGM:
 
 
 class EMA:
-    """
-    init:
-    ema = EMA(model, 0.999)
-    ema.register()
+    """Exponential moving average
 
-    train:
-    def train():
-        optimizer.step()
-        ema.update()
+    Example:
 
-    eval:
-    def evaluate():
-        ema.apply_shadow()
-        # evaluate
-        ema.restore()
+        # init:
+        ema = EMA(model, 0.999)
+        ema.register()
+
+        # train:
+        def train():
+            optimizer.step()
+            ema.update()
+
+        # eval:
+        def evaluate():
+            ema.apply_shadow()
+            # evaluation code here
+            ema.restore()
     """
 
     def __init__(self, model: nn.Module, decay: float = 0.999):

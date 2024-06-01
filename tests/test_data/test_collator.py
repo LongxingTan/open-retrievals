@@ -23,17 +23,17 @@ class CollatorTest(TestCase):
 
     def test_pair_collator(self):
         features = [
-            {'query': 'how are you', 'positive': 'fine'},
-            {'query': 'hallo?', 'positive': 'what is your problem'},
+            {'query': 'how are you', 'document': 'fine'},
+            {'query': 'hallo?', 'document': 'what is your problem'},
         ]
 
         tokenizer = BertTokenizer(self.vocab_file)
-        data_collator = PairCollator(tokenizer=tokenizer)
+        data_collator = PairCollator(tokenizer=tokenizer, query_max_length=10, document_max_length=11)
         batch = data_collator(features)
-        self.assertEqual(batch['query']['input_ids'].shape, torch.Size([2, 5]))
-        self.assertEqual(batch['query']['attention_mask'].shape, torch.Size([2, 5]))
-        self.assertEqual(batch['positive']['input_ids'].shape, torch.Size([2, 6]))
-        self.assertEqual(batch['positive']['attention_mask'].shape, torch.Size([2, 6]))
+        self.assertEqual(batch['query']['input_ids'].shape, torch.Size([2, 10]))
+        self.assertEqual(batch['query']['attention_mask'].shape, torch.Size([2, 10]))
+        self.assertEqual(batch['document']['input_ids'].shape, torch.Size([2, 11]))
+        self.assertEqual(batch['document']['attention_mask'].shape, torch.Size([2, 11]))
 
     def test_triplet_collator(self):
         features = [
@@ -42,11 +42,11 @@ class CollatorTest(TestCase):
         ]
 
         tokenizer = BertTokenizer(self.vocab_file)
-        data_collator = TripletCollator(tokenizer=tokenizer)
+        data_collator = TripletCollator(tokenizer=tokenizer, query_max_length=10, document_max_length=11)
         batch = data_collator(features)
-        self.assertEqual(batch['query']['input_ids'].shape, torch.Size([2, 5]))
-        self.assertEqual(batch['query']['attention_mask'].shape, torch.Size([2, 5]))
-        self.assertEqual(batch['positive']['input_ids'].shape, torch.Size([2, 6]))
-        self.assertEqual(batch['positive']['attention_mask'].shape, torch.Size([2, 6]))
-        self.assertEqual(batch['negative']['input_ids'].shape, torch.Size([2, 6]))
-        self.assertEqual(batch['negative']['attention_mask'].shape, torch.Size([2, 6]))
+        self.assertEqual(batch['query']['input_ids'].shape, torch.Size([2, 10]))
+        self.assertEqual(batch['query']['attention_mask'].shape, torch.Size([2, 10]))
+        self.assertEqual(batch['positive']['input_ids'].shape, torch.Size([2, 11]))
+        self.assertEqual(batch['positive']['attention_mask'].shape, torch.Size([2, 11]))
+        self.assertEqual(batch['negative']['input_ids'].shape, torch.Size([2, 11]))
+        self.assertEqual(batch['negative']['attention_mask'].shape, torch.Size([2, 11]))

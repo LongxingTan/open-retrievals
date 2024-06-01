@@ -13,12 +13,7 @@ from src.retrievals import (
     RetrievalTrainer,
     TripletCollator,
 )
-from src.retrievals.losses import (
-    ArcFaceAdaptiveMarginLoss,
-    InfoNCE,
-    SimCSE,
-    TripletLoss,
-)
+from src.retrievals.losses import InfoNCE, SimCSE, TripletLoss
 
 model_name_or_path: str = "sentence-transformers/paraphrase-multilingual-mpnet-base-v2"
 batch_size: int = 128
@@ -46,7 +41,7 @@ trainer = RetrievalTrainer(
     model=model,
     args=training_arguments,
     train_dataset=train_dataset,
-    data_collator=PairCollator(tokenizer, max_length=512),
+    data_collator=PairCollator(tokenizer, query_max_length=128, document_max_length=128),
     loss_fn=InfoNCE(nn.CrossEntropyLoss(label_smoothing=0.05)),
 )
 trainer.optimizer = optimizer

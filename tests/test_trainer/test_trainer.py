@@ -93,7 +93,7 @@ class TrainerTest(TestCase):
             model=self.model,
             args=training_args,
             train_dataset=self.train_dataset,
-            data_collator=TripletCollator(tokenizer=self.tokenizer, max_length=22),
+            data_collator=TripletCollator(tokenizer=self.tokenizer, query_max_length=32, document_max_length=128),
             loss_fn=TripletLoss(),
         )
         trainer.train()

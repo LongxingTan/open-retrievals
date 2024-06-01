@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 
 class RetrievalDataset(Dataset):
-    def __init__(self, data_name_or_path: str, cache_dir: Optional[str] = None):
+    def __init__(self, data_name_or_path: Union[str, datasets.Dataset], cache_dir: Optional[str] = None):
         if os.path.isdir(data_name_or_path):
             train_datasets = []
             for file in os.listdir(data_name_or_path):
