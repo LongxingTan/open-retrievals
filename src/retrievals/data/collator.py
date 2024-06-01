@@ -8,32 +8,19 @@ class PairCollator(DataCollatorWithPadding):
     def __init__(
         self,
         tokenizer: PreTrainedTokenizer,
+        query_max_length: int = 32,
+        document_max_length: int = 128,
         query_key: str = 'query',
         document_key: str = 'document',
-        max_length: Optional[int] = None,
-        query_max_length: Optional[int] = None,
-        document_max_length: Optional[int] = None,
     ) -> None:
         self.tokenizer = tokenizer
         if not hasattr(self.tokenizer, "pad_token_id") or self.tokenizer.pad_token is None:
             self.tokenizer.add_special_tokens({"pad_token": "[PAD]"})
 
+        self.query_max_length = query_max_length
+        self.document_max_length = document_max_length
         self.query_key = query_key
         self.document_key = document_key
-
-        self.query_max_length: int
-        self.document_max_length: int
-        if query_max_length:
-            self.query_max_length = query_max_length
-        elif max_length:
-            self.query_max_length = max_length
-            self.document_max_length = max_length
-        else:
-            self.query_max_length = tokenizer.model_max_length
-            self.document_max_length = tokenizer.model_max_length
-
-        if document_max_length:
-            self.document_max_length = document_max_length
 
     def __call__(self, features: List[Dict[str, Any]]) -> Dict[str, Any]:
         assert len(features) > 0
@@ -78,34 +65,21 @@ class TripletCollator(DataCollatorWithPadding):
     def __init__(
         self,
         tokenizer: PreTrainedTokenizer,
+        query_max_length: int = 32,
+        document_max_length: int = 128,
         query_key: str = 'query',
         positive_key: str = 'positive',
         negative_key: Optional[str] = 'negative',
-        max_length: Optional[int] = None,
-        query_max_length: Optional[int] = None,
-        document_max_length: Optional[int] = None,
     ) -> None:
         self.tokenizer = tokenizer
         if not hasattr(self.tokenizer, "pad_token_id") or self.tokenizer.pad_token is None:
             self.tokenizer.add_special_tokens({"pad_token": "[PAD]"})
 
+        self.query_max_length = query_max_length
+        self.document_max_length = document_max_length
         self.query_key = query_key
         self.positive_key = positive_key
         self.negative_key = negative_key
-
-        self.query_max_length: int
-        self.document_max_length: int
-        if query_max_length:
-            self.query_max_length = query_max_length
-        elif max_length:
-            self.query_max_length = max_length
-            self.document_max_length = max_length
-        else:
-            self.query_max_length = tokenizer.model_max_length
-            self.document_max_length = tokenizer.model_max_length
-
-        if document_max_length:
-            self.document_max_length = document_max_length
 
     def __call__(self, features: List[Dict[str, Any]]) -> Dict[str, Any]:
         assert len(features) > 0
@@ -167,31 +141,19 @@ class RerankCollator(DataCollatorWithPadding):
     def __init__(
         self,
         tokenizer: PreTrainedTokenizer,
+        query_max_length: int = 32,
+        document_max_length: int = 128,
         query_key: str = 'query',
         document_key: str = 'document',
-        max_length: Optional[int] = None,
-        query_max_length: Optional[int] = None,
-        document_max_length: Optional[int] = None,
     ):
         self.tokenizer = tokenizer
         if not hasattr(self.tokenizer, "pad_token_id") or self.tokenizer.pad_token is None:
             self.tokenizer.add_special_tokens({"pad_token": "[PAD]"})
 
+        self.query_max_length = query_max_length
+        self.document_max_length = document_max_length
         self.query_key = query_key
         self.document_key = document_key
-
-        self.query_max_length: int
-        self.document_max_length: int
-        if query_max_length:
-            self.query_max_length = query_max_length
-        if document_max_length:
-            self.document_max_length = document_max_length
-        elif max_length:
-            self.query_max_length = max_length
-            self.document_max_length = max_length
-        else:
-            self.query_max_length = tokenizer.model_max_length
-            self.document_max_length = tokenizer.model_max_length
 
     def __call__(self, features: Union[List[Dict[str, Any]], List]) -> BatchEncoding:
         assert len(features) > 0
@@ -225,34 +187,21 @@ class ColBertCollator(DataCollatorWithPadding):
     def __init__(
         self,
         tokenizer: PreTrainedTokenizer,
+        query_max_length: int = 32,
+        document_max_length: int = 128,
         query_key: str = 'query',
         positive_key: str = 'positive',
         negative_key: str = 'negative',
-        max_length: Optional[int] = None,
-        query_max_length: Optional[int] = None,
-        document_max_length: Optional[int] = None,
     ) -> None:
         self.tokenizer = tokenizer
         if not hasattr(self.tokenizer, "pad_token_id") or self.tokenizer.pad_token is None:
             self.tokenizer.add_special_tokens({"pad_token": "[PAD]"})
 
+        self.query_max_length = query_max_length
+        self.document_max_length = document_max_length
         self.query_key = query_key
         self.positive_key = positive_key
         self.negative_key = negative_key
-
-        self.query_max_length: int
-        self.document_max_length: int
-        if query_max_length:
-            self.query_max_length = query_max_length
-        elif max_length:
-            self.query_max_length = max_length
-            self.document_max_length = max_length
-        else:
-            self.query_max_length = tokenizer.model_max_length
-            self.document_max_length = tokenizer.model_max_length
-
-        if document_max_length:
-            self.document_max_length = document_max_length
 
     def __call__(self, features: List[Dict[str, Any]]) -> Dict[str, Any]:
         assert len(features) > 0
