@@ -43,14 +43,19 @@ class PairCollator(DataCollatorWithPadding):
         if isinstance(document_texts[0], list):
             document_texts = sum(document_texts, [])  # flatten nested list
 
-        query_inputs = self.tokenizer(
+        if isinstance(query_texts[0], str):
+            tokenize_fn = self.tokenizer
+        else:
+            tokenize_fn = self.tokenizer.pad
+
+        query_inputs = tokenize_fn(
             query_texts,
             padding=True,
             max_length=self.query_max_length,
             truncation=True,
             return_tensors="pt",
         )
-        document_inputs = self.tokenizer(
+        document_inputs = tokenize_fn(
             document_texts,
             padding=True,
             max_length=self.document_max_length,
@@ -108,21 +113,26 @@ class TripletCollator(DataCollatorWithPadding):
         if isinstance(neg_texts[0], list):
             neg_texts = sum(neg_texts, [])
 
-        query_inputs = self.tokenizer(
+        if isinstance(query_texts[0], str):
+            tokenize_fn = self.tokenizer
+        else:
+            tokenize_fn = self.tokenizer.pad
+
+        query_inputs = tokenize_fn(
             query_texts,
             padding=True,
             max_length=self.query_max_length,
             truncation=True,
             return_tensors="pt",
         )
-        pos_inputs = self.tokenizer(
+        pos_inputs = tokenize_fn(
             pos_texts,
             padding=True,
             max_length=self.document_max_length,
             truncation=True,
             return_tensors="pt",
         )  # ["input_ids"]
-        neg_inputs = self.tokenizer(
+        neg_inputs = tokenize_fn(
             neg_texts,
             padding=True,
             max_length=self.document_max_length,
@@ -168,7 +178,12 @@ class RerankCollator(DataCollatorWithPadding):
             query_texts = [feature[0] for feature in features]
             document_texts = [feature[1] for feature in features]
 
-        batch = self.tokenizer(
+        if isinstance(query_texts[0], str):
+            tokenize_fn = self.tokenizer
+        else:
+            tokenize_fn = self.tokenizer.pad
+
+        batch = tokenize_fn(
             text=query_texts,
             text_pair=document_texts,
             padding=True,
@@ -213,14 +228,19 @@ class ColBertCollator(DataCollatorWithPadding):
         query_texts = [feature[self.query_key] for feature in features]
         pos_texts = [feature[self.positive_key] for feature in features]
 
-        query_inputs = self.tokenizer(
+        if isinstance(query_texts[0], str):
+            tokenize_fn = self.tokenizer
+        else:
+            tokenize_fn = self.tokenizer.pad
+
+        query_inputs = tokenize_fn(
             query_texts,
             padding=True,
             max_length=self.query_max_length,
             truncation=True,
             return_tensors="pt",
         )
-        pos_inputs = self.tokenizer(
+        pos_inputs = tokenize_fn(
             pos_texts,
             padding=True,
             max_length=self.document_max_length,
