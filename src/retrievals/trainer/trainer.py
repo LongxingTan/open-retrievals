@@ -23,7 +23,10 @@ class RetrievalTrainer(Trainer):
     def compute_loss(self, model: nn.Module, inputs: Any, return_outputs: bool = False, **kwargs):
         # TODO: 直接使用model返回的loss
         query = inputs["query"]
-        pos = inputs["positive"]
+        if 'document' in inputs:
+            pos = inputs["document"]
+        else:
+            pos = inputs['positive']
         query_embeddings = model(query)
         pos_embeddings = model(pos)
         if 'negative' in inputs:
