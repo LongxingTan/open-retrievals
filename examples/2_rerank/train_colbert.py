@@ -18,7 +18,7 @@ from retrievals.losses import ArcFaceAdaptiveMarginLoss, InfoNCE, SimCSE, Triple
 
 transformers.logging.set_verbosity_error()
 
-model_name_or_path: str = "microsoft/mdeberta-v3-base"
+model_name_or_path: str = "microsoft/deberta-v3-base"
 max_length: int = 128
 learning_rate: float = 3e-5
 batch_size: int = 4
@@ -51,7 +51,9 @@ trainer = RerankTrainer(
     model=model,
     args=training_args,
     train_dataset=train_dataset,
-    data_collator=ColBertCollator(tokenizer, max_length=max_length, positive_key='document'),
+    data_collator=ColBertCollator(
+        tokenizer, query_max_length=max_length, document_max_length=max_length, positive_key='document'
+    ),
 )
 trainer.optimizer = optimizer
 trainer.scheduler = scheduler

@@ -227,7 +227,9 @@ def main():
         model=model,
         args=training_args,
         train_dataset=train_dataset,
-        data_collator=TripletCollator(tokenizer, max_length=data_args.query_max_len),
+        data_collator=TripletCollator(
+            tokenizer, query_max_length=data_args.query_max_length, document_max_length=data_args.document_max_length
+        ),
         loss_fn=TripletLoss(),
         # optimizers=(optimizer, lr_scheduler),
     )
