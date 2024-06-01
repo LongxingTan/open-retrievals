@@ -7,6 +7,7 @@ Use pretrained rerank
 -------------------------
 
 .. code-block:: python
+
     from retrievals import RerankModel
 
     model_name_or_path: str = "BAAI/bge-reranker-base"

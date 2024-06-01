@@ -133,7 +133,7 @@ class TripletCollator(DataCollatorWithPadding):
             pos_texts, padding="max_length", max_length=self.document_max_length, return_tensors="pt", **tokenize_args
         )  # ["input_ids"]
         neg_inputs = tokenize_fn(
-            neg_texts, padding=True, max_length=self.document_max_length, return_tensors="pt", **tokenize_args
+            neg_texts, padding="max_length", max_length=self.document_max_length, return_tensors="pt", **tokenize_args
         )  # ["input_ids"]
 
         return {
