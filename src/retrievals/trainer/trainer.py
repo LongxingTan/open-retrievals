@@ -2,6 +2,7 @@ import logging
 import os
 from typing import Any, Callable, Dict, List, Optional
 
+import torch.distributed as dist
 import torch.nn as nn
 from transformers import Trainer
 
@@ -11,11 +12,16 @@ logger = logging.getLogger(__name__)
 
 
 class RetrievalTrainer(Trainer):
-    def __init__(self, loss_fn: Callable, **kwargs):
-        super().__init__(**kwargs)
+    def __init__(self, loss_fn: Optional[Callable] = None, negatives_x_device: bool = False, *args, **kwargs):
+        super(RetrievalTrainer, self).__init__(*args, **kwargs)
         self.loss_fn = loss_fn
+        self._dist_loss_scale_factor = dist.get_world_size() if negatives_x_device else 1
+
+    def training_step(self, *args):
+        return super().training_step(*args) / self._dist_loss_scale_factor
 
     def compute_loss(self, model: nn.Module, inputs: Any, return_outputs: bool = False, **kwargs):
+        # TODO: 直接使用model返回的loss
         query = inputs["query"]
         pos = inputs["positive"]
         query_embeddings = model(query)
@@ -38,7 +44,7 @@ class RetrievalTrainer(Trainer):
     def _save(self, output_dir: Optional[str] = None, state_dict=None):
         output_dir = output_dir if output_dir is not None else self.args.output_dir
         os.makedirs(output_dir, exist_ok=True)
-
+        logger.info(f"Saving model checkpoint to {output_dir}")
         self.model.model.save_pretrained(output_dir)
         self.model.tokenizer.save_pretrained(output_dir)
 

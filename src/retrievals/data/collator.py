@@ -9,7 +9,7 @@ class PairCollator(DataCollatorWithPadding):
         self,
         tokenizer: PreTrainedTokenizer,
         query_key: str = 'query',
-        positive_key: str = 'positive',
+        document_key: str = 'document',
         max_length: Optional[int] = None,
         query_max_length: Optional[int] = None,
         document_max_length: Optional[int] = None,
@@ -19,7 +19,7 @@ class PairCollator(DataCollatorWithPadding):
             self.tokenizer.add_special_tokens({"pad_token": "[PAD]"})
 
         self.query_key = query_key
-        self.positive_key = positive_key
+        self.document_key = document_key
 
         self.query_max_length: int
         self.document_max_length: int
@@ -37,13 +37,24 @@ class PairCollator(DataCollatorWithPadding):
 
     def __call__(self, features: List[Dict[str, Any]]) -> Dict[str, Any]:
         assert len(features) > 0
-        assert (
-            self.query_key in features[0] and self.positive_key in features[0]
-        ), f"PairCollator should have {self.query_key} and {self.positive_key} in features, while get {features[0]}"
-        "you can set the custom key of query_key, positive_key during class init"
+        if isinstance(features[0], dict):
+            assert (
+                self.query_key in features[0] and self.document_key in features[0]
+            ), f"PairCollator should have {self.query_key} and {self.document_key} in features, while get {features[0]}"
+            "you can set the custom key of query_key, positive_key during class init"
 
-        query_texts = [feature["query"] for feature in features]
-        pos_texts = [feature["positive"] for feature in features]
+            query_texts = [feature[self.query_key] for feature in features]
+            document_texts = [feature[self.document_key] for feature in features]
+        elif isinstance(features[0], (list, tuple)):
+            query_texts = [f[0] for f in features]
+            document_texts = [f[1] for f in features]
+        else:
+            raise ValueError
+
+        if isinstance(query_texts[0], list):
+            query_texts = sum(query_texts, [])
+        if isinstance(document_texts[0], list):
+            document_texts = sum(document_texts, [])  # flatten nested list
 
         query_inputs = self.tokenizer(
             query_texts,
@@ -52,15 +63,15 @@ class PairCollator(DataCollatorWithPadding):
             truncation=True,
             return_tensors="pt",
         )
-        pos_inputs = self.tokenizer(
-            pos_texts,
+        document_inputs = self.tokenizer(
+            document_texts,
             padding=True,
             max_length=self.document_max_length,
             truncation=True,
             return_tensors="pt",
         )
 
-        return {"query": query_inputs, "positive": pos_inputs}
+        return {"query": query_inputs, "document": document_inputs}
 
 
 class TripletCollator(DataCollatorWithPadding):
@@ -98,19 +109,30 @@ class TripletCollator(DataCollatorWithPadding):
 
     def __call__(self, features: List[Dict[str, Any]]) -> Dict[str, Any]:
         assert len(features) > 0
-        assert (
-            self.positive_key in features[0] and self.positive_key in features[0] and self.negative_key in features[0]
-        ), f"TripletCollator should have {self.query_key}, {self.positive_key} and {self.negative_key} in features dict"
-        "you can set the custom key of query_key, positive_key and negative_key during class init"
+        if isinstance(features[0], dict):
+            assert (
+                self.positive_key in features[0]
+                and self.positive_key in features[0]
+                and self.negative_key in features[0]
+            ), f"TripletCollator should have {self.query_key}, {self.positive_key} and {self.negative_key} in dict key"
+            "you can set the custom key of query_key, positive_key and negative_key during class init"
 
-        query_texts = [feature[self.query_key] for feature in features]
-        pos_texts = [feature[self.positive_key] for feature in features]
-        neg_texts = [feature[self.negative_key] for feature in features]
+            query_texts = [feature[self.query_key] for feature in features]
+            pos_texts = [feature[self.positive_key] for feature in features]
+            neg_texts = [feature[self.negative_key] for feature in features]
+        elif isinstance(features[0], (list, tuple)):
+            query_texts = [feature[0] for feature in features]
+            pos_texts = [feature[1] for feature in features]
+            neg_texts = [feature[2] for feature in features]
+        else:
+            raise ValueError
 
-        # if isinstance(query[0], list):
-        #     query = sum(query, [])
-        # if isinstance(document[0], list):
-        #     document = sum(document, [])
+        if isinstance(query_texts[0], list):
+            query_texts = sum(query_texts, [])
+        if isinstance(pos_texts[0], list):
+            pos_texts = sum(pos_texts, [])
+        if isinstance(neg_texts[0], list):
+            neg_texts = sum(neg_texts, [])
 
         query_inputs = self.tokenizer(
             query_texts,
