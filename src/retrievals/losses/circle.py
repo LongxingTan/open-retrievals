@@ -21,7 +21,7 @@ class MultiLabelCircleLoss(nn.Module):
         pos_loss = torch.logsumexp(logits_pos, dim=-1)
         loss = neg_loss + pos_loss
         if mask is not None:
-            loss /= mask.sum(-1).float() + 1e-12
+            loss = loss / (mask.sum(-1).float() + 1e-12)
         if self.reduction == 'mean':
             loss = loss.mean()
         return loss

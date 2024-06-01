@@ -44,12 +44,12 @@ class InfoNCE(nn.Module):
         if negative_embeddings is None:
             if self.negative_mode == 'unpaired':
                 logits = query_embeddings @ positive_embeddings.transpose(-2, -1)
-                labels = torch.arange(len(logits), dtype=torch.long, device=device) * self.negative_samples
+                labels = torch.arange(logits.size(0), dtype=torch.long, device=device) * self.negative_samples
                 loss = self.criterion(logits / self.temperature, labels)
             else:
                 logits1 = query_embeddings @ positive_embeddings.transpose(-2, -1)
                 logits2 = logits1.T
-                labels = torch.arange(len(logits1), dtype=torch.long, device=device) * self.negative_samples
+                labels = torch.arange(logits1.size(0), dtype=torch.long, device=device) * self.negative_samples
                 loss = (
                     self.criterion(logits1 / self.temperature, labels)
                     + self.criterion(logits2 / self.temperature, labels)

@@ -290,7 +290,7 @@ class AutoModelForEmbedding(nn.Module):
                     for token_emb, attention in zip(out_features[output_value], out_features["attention_mask"]):
                         last_mask_id = len(attention) - 1
                         while last_mask_id > 0 and attention[last_mask_id].item() == 0:
-                            last_mask_id -= 1
+                            last_mask_id = last_mask_id - 1
 
                         embeddings.append(token_emb[0 : last_mask_id + 1])
                 elif output_value is None:  # Return all outputs

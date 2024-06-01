@@ -32,9 +32,10 @@ class RetrievalTrainer(Trainer):
         if 'negative' in inputs:
             neg = inputs["negative"]
             neg_embeddings = model(neg)
-            loss = TripletLoss()(query_embeddings, pos_embeddings, neg_embeddings)
         else:
-            loss = self.loss_fn(query_embeddings, pos_embeddings)
+            neg_embeddings = None
+
+        loss = self.loss_fn(query_embeddings, pos_embeddings, neg_embeddings)
         if not return_outputs:
             return loss
         outputs = dict()
@@ -42,7 +43,7 @@ class RetrievalTrainer(Trainer):
         outputs['positive'] = pos_embeddings
         if 'negative' in inputs:
             outputs['negative'] = neg_embeddings
-        return (loss, outputs)
+        return loss, outputs
 
     def _save(self, output_dir: Optional[str] = None, state_dict=None):
         output_dir = output_dir if output_dir is not None else self.args.output_dir

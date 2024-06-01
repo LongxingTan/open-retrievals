@@ -206,7 +206,7 @@ batch_size: int = 128
 epochs: int = 3
 
 train_dataset = load_dataset('shibing624/nli_zh', 'STS-B')['train']
-train_dataset = train_dataset.rename_columns({'sentence1': 'query', 'sentence2': 'positive'})
+train_dataset = train_dataset.rename_columns({'sentence1': 'query', 'sentence2': 'document'})
 tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, use_fast=False)
 model = AutoModelForEmbedding.from_pretrained(model_name_or_path, pooling_method="cls")
 # model = model.set_train_type('pointwise')  # 'pointwise', 'pairwise', 'listwise'
