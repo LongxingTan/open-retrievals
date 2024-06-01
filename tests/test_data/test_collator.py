@@ -32,8 +32,8 @@ class CollatorTest(TestCase):
         batch = data_collator(features)
         self.assertEqual(batch['query']['input_ids'].shape, torch.Size([2, 10]))
         self.assertEqual(batch['query']['attention_mask'].shape, torch.Size([2, 10]))
-        self.assertEqual(batch['positive']['input_ids'].shape, torch.Size([2, 11]))
-        self.assertEqual(batch['positive']['attention_mask'].shape, torch.Size([2, 11]))
+        self.assertEqual(batch['document']['input_ids'].shape, torch.Size([2, 11]))
+        self.assertEqual(batch['document']['attention_mask'].shape, torch.Size([2, 11]))
 
     def test_triplet_collator(self):
         features = [
