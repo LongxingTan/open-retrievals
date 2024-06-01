@@ -1,5 +1,5 @@
 Text embedding
-=============
+====================
 
 .. _embed:
 
@@ -49,7 +49,7 @@ Fine-tuning text embedding
 
 
 
-Pointwise
+Point-wise
 --------------
 
 arcface
