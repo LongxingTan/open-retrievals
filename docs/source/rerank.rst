@@ -49,7 +49,7 @@ Fine-tuning
         model=model,
         args=training_args,
         train_dataset=train_dataset,
-        data_collator=RerankCollator(tokenizer, max_length=max_length),
+        data_collator=RerankCollator(tokenizer, query_max_length=max_length, document_max_length=max_length),
     )
     trainer.optimizer = optimizer
     trainer.scheduler = scheduler

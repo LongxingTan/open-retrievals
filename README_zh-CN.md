@@ -228,7 +228,7 @@ trainer = RetrievalTrainer(
     model=model,
     args=training_arguments,
     train_dataset=train_dataset,
-    data_collator=PairCollator(tokenizer, max_length=512),
+    data_collator=PairCollator(tokenizer, query_max_length=128, document_max_length=128),
     loss_fn=InfoNCE(nn.CrossEntropyLoss(label_smoothing=0.05)),
 )
 trainer.optimizer = optimizer
@@ -283,7 +283,7 @@ trainer = RerankTrainer(
     model=model,
     args=training_args,
     train_dataset=train_dataset,
-    data_collator=RerankCollator(tokenizer, max_length=max_length),
+    data_collator=RerankCollator(tokenizer, query_max_length=max_length, document_max_length=max_length),
 )
 trainer.optimizer = optimizer
 trainer.scheduler = scheduler
