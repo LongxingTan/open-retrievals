@@ -1,3 +1,4 @@
+import copy
 import logging
 import os
 import time
@@ -535,6 +536,7 @@ class AutoModelForEmbedding(nn.Module):
 class PairwiseModel(AutoModelForEmbedding):
     """Pairwise Model wrapper
     - bi_encoder
+        - shared_weights or not
     - cross_encoder
     - poly_encoder
     support: query + pos pair, or query + pos + neg triplet
@@ -549,6 +551,7 @@ class PairwiseModel(AutoModelForEmbedding):
         loss_fn: Optional[Callable] = None,
         cross_encoder: bool = False,
         poly_encoder: bool = False,
+        shared_weights: bool = True,
         **kwargs,
     ) -> None:
         super().__init__(
@@ -563,6 +566,9 @@ class PairwiseModel(AutoModelForEmbedding):
             logger.warning("loss_fn in Pairwise model will be ignored")
 
         self.cross_encoder = cross_encoder
+        self.shared_weights = shared_weights
+        if not shared_weights:
+            self.document_model = copy.deepcopy(self.model)
 
     def forward(
         self,
@@ -598,12 +604,18 @@ class PairwiseModel(AutoModelForEmbedding):
                 return pooled_output1, pooled_output2
             else:
                 # bi-encoder, pooling in each
-                pooled_output1 = super().forward(input1)
-                pooled_output2 = super().forward(input2)
-                if len(inputs) == 3:
-                    pooled_output3 = super().forward(input3)
-                    return pooled_output1, pooled_output2, pooled_output3
-                return pooled_output1, pooled_output2
+                if self.shared_weights:
+                    pooled_output1 = super().forward(input1)
+                    pooled_output2 = super().forward(input2)
+                    if len(inputs) == 3:
+                        pooled_output3 = super().forward(input3)
+                        return pooled_output1, pooled_output2, pooled_output3
+                    return pooled_output1, pooled_output2
+                else:
+                    pooled_output1 = super().forward(input1)
+                    pooled_output2 = self.document_model(input2)
+                    return pooled_output1, pooled_output2
+
         else:
             pooled_output = super(PairwiseModel, self).forward_from_loader(inputs, without_pooling=False)
             return pooled_output
