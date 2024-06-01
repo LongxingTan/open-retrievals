@@ -38,6 +38,7 @@ class RetrievalTrainer(Trainer):
         loss = self.loss_fn(query_embeddings, pos_embeddings, neg_embeddings)
         if not return_outputs:
             return loss
+
         outputs = dict()
         outputs['query'] = query_embeddings
         outputs['positive'] = pos_embeddings

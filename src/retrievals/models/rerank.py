@@ -358,19 +358,17 @@ class ColBERT(RerankModel):
         **kwargs,
     ):
         query_embedding = self.encode(query_input_ids, query_attention_mask)
-        pos_embedding = self.encode(pos_input_ids, pos_attention_mask)
+        document_embedding = self.encode(pos_input_ids, pos_attention_mask)
 
-        if neg_input_ids and neg_attention_mask:
-            neg_embedding = self.encode(neg_input_ids, neg_attention_mask)
-        else:
-            neg_embedding = None
-
-        loss = self.loss_fn(query_embedding, pos_embedding, neg_embedding)
-        if return_dict:
-            outputs_dict = dict()
-            outputs_dict['loss'] = loss
-            return outputs_dict
-        return loss
+        score = self.score(query_embedding, document_embedding)
+        if self.loss_fn is not None and labels:
+            loss = self.loss_fn(score, labels)
+            if return_dict:
+                outputs_dict = dict()
+                outputs_dict['loss'] = loss
+                return outputs_dict
+            return loss
+        return score
 
     @torch.no_grad()
     def compute_score(
@@ -392,7 +390,9 @@ class ColBERT(RerankModel):
             batch_on_device = self.preprocess(
                 text_pairs[i : i + batch_size], query_max_len=max_length, document_max_len=max_length
             )
-            scores = self.score(**batch_on_device)
+            query_embedding = self.encode(batch_on_device['query_input_ids'], batch_on_device['query_attention_mask'])
+            doc_embedding = self.encode(batch_on_device['doc_input_ids'], batch_on_device['doc_attention_mask'])
+            scores = self.score(query_embedding, doc_embedding)
             if normalize:
                 scores = torch.sigmoid(scores)
             scores_list.extend(scores.cpu().numpy().tolist())
@@ -423,21 +423,16 @@ class ColBERT(RerankModel):
 
     def score(
         self,
-        query_input_ids: torch.Tensor,
-        query_attention_mask: torch.Tensor,
-        doc_input_ids: torch.Tensor,
-        doc_attention_mask: torch.Tensor,
-        similarity_metric: str = 'cosine',
+        query_embedding: torch.Tensor,
+        document_embedding: torch.Tensor,
+        similarity_metric: str = 'l2',
     ):
-        query_embedding = self.encode(query_input_ids, query_attention_mask)
-        doc_embedding = self.encode(doc_input_ids, doc_attention_mask)
-
         if similarity_metric == 'cosine':
-            return (query_embedding @ doc_embedding.permute(0, 2, 1)).max(2).values.sum(1)
+            return (query_embedding @ document_embedding.permute(0, 2, 1)).max(2).values.sum(1)
 
         elif similarity_metric == 'l2':
             return (
-                (-1.0 * ((query_embedding.unsqueeze(2) - doc_embedding.unsqueeze(1)) ** 2).sum(-1))
+                (-1.0 * ((query_embedding.unsqueeze(2) - document_embedding.unsqueeze(1)) ** 2).sum(-1))
                 .max(-1)
                 .values.sum(-1)
             )
