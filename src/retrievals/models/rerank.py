@@ -361,7 +361,7 @@ class ColBERT(RerankModel):
         document_embedding = self.encode(pos_input_ids, pos_attention_mask)
 
         score = self.score(query_embedding, document_embedding)
-        if self.loss_fn is not None and labels:
+        if self.loss_fn is not None and labels is not None:
             loss = self.loss_fn(score, labels)
             if return_dict:
                 outputs_dict = dict()
