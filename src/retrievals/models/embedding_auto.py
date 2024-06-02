@@ -2,6 +2,7 @@ import copy
 import logging
 import os
 import time
+from contextlib import nullcontext
 from typing import Callable, Dict, List, Literal, Optional, Tuple, Union
 
 import numpy as np
@@ -48,6 +49,7 @@ class AutoModelForEmbedding(nn.Module):
         loss_fn: Optional[Callable] = None,
         query_instruction: Optional[str] = None,
         document_instruction: Optional[str] = None,
+        fp16: bool = False,
         generation_args: Dict = None,
         device: Optional[str] = None,
         **kwargs,
@@ -76,6 +78,7 @@ class AutoModelForEmbedding(nn.Module):
 
         self.query_instruction = query_instruction
         self.document_instruction = document_instruction
+        self.fp16 = fp16
         if generation_args is not None:
             generation_config = self.model.generation_config.to_dict()
             generation_config.update(generation_args)
@@ -205,14 +208,16 @@ class AutoModelForEmbedding(nn.Module):
         self.model.to(device)
 
         all_embeddings = []
-        with torch.no_grad():
-            for idx, inputs in enumerate(tqdm(loader, desc="Encoding", disable=not show_progress_bar)):
-                inputs_on_device = {k: v.to(device) for k, v in inputs.items()}
-                embeddings = self.forward_from_loader(inputs_on_device)
-                embeddings = embeddings.detach()
-                if normalize_embeddings:
-                    embeddings = torch.nn.functional.normalize(embeddings, p=2, dim=1)
-                all_embeddings.append(embeddings)
+
+        for idx, inputs in enumerate(tqdm(loader, desc="Encoding", disable=not show_progress_bar)):
+            with torch.cuda.amp.autocast() if self.fp16 else nullcontext:
+                with torch.no_grad():
+                    inputs_on_device = {k: v.to(device) for k, v in inputs.items()}
+                    embeddings = self.forward_from_loader(inputs_on_device)
+                    embeddings = embeddings.detach()
+                    if normalize_embeddings:
+                        embeddings = torch.nn.functional.normalize(embeddings, p=2, dim=1)
+                    all_embeddings.append(embeddings)
         if convert_to_numpy:
             all_embeddings = np.concatenate([emb.cpu().numpy() for emb in all_embeddings], axis=0)
         else:
@@ -428,7 +433,7 @@ class AutoModelForEmbedding(nn.Module):
         trust_remote_code: bool = True,
         causal_lm: bool = False,
         custom_config_dict: Optional[Dict] = None,
-        use_fp16: bool = False,
+        fp16: bool = False,
         use_lora: bool = False,
         lora_config=None,
         device: Optional[str] = None,
@@ -466,7 +471,7 @@ class AutoModelForEmbedding(nn.Module):
             else:
                 model = AutoModel.from_config(config)
 
-        if use_fp16:
+        if fp16:
             model.half()
 
         if use_lora:
@@ -485,6 +490,7 @@ class AutoModelForEmbedding(nn.Module):
             device=device,
             query_instruction=query_instruction,
             document_instruction=document_instruction,
+            fp16=fp16,
             **kwargs,
         )
 

@@ -30,7 +30,7 @@ class RetrievalTrainer(Trainer):
         if self.train_type == 'pairwise':
             return self.compute_loss(model=model, inputs=inputs, return_outputs=return_outputs)
 
-        outputs = model(inputs)
+        outputs = model(inputs, return_dict=True)
         return outputs['loss']
 
     def compute_pair_loss(self, model: nn.Module, inputs: Any, return_outputs: bool = False):
