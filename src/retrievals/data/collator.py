@@ -23,6 +23,7 @@ class PairCollator(DataCollatorWithPadding):
         self.document_key = document_key
 
     def __call__(self, features: List[Dict[str, Any]]) -> Dict[str, Any]:
+        # TODO: tokenizer.apply_chat_template(chat, tokenize=False)
         assert len(features) > 0
         if isinstance(features[0], dict):
             assert (
