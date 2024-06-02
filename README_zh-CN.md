@@ -62,9 +62,8 @@ pip install -e .
 
 **使用预训练权重的文本向量**
 ```python
-from retrievals import AutoModelForEmbedding, AutoModelForRetrieval
+from retrievals import AutoModelForEmbedding
 
-# 文本示例
 sentences = [
     "在1974年，第一次在东南亚打自由搏击就得了冠军",
     "1982年打赢了日本重炮手雷龙，接着连续三年打败所有日本空手道高手，赢得全日本自由搏击冠军",
@@ -72,7 +71,7 @@ sentences = [
     "古人有云，有功夫，无懦夫"
 ]
 
-model_name_or_path = 'intfloat/e5-base-v2'
+model_name_or_path = 'intfloat/multilingual-e5-base'
 model = AutoModelForEmbedding.from_pretrained(model_name_or_path)
 embeddings = model.encode(sentences)  # 384维度的文本向量
 scores = (embeddings[:2] @ embeddings[2:].T) * 100
