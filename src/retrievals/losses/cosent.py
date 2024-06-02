@@ -17,5 +17,4 @@ class CoSentLoss(nn.Module):
         y_pred = y_pred - (1 - y_true) * 1e12
         y_pred = y_pred.view(-1)
         y_pred = torch.cat([torch.tensor([0.0]), y_pred], dim=0)
-
         return torch.logsumexp(y_pred, dim=0)
