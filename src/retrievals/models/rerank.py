@@ -1,4 +1,5 @@
 import logging
+from abc import ABC, abstractmethod
 from copy import deepcopy
 from typing import Callable, Dict, List, Literal, Optional, Tuple, Union
 
@@ -23,6 +24,15 @@ from .pooling import AutoPooling
 from .utils import check_casual_lm, get_device_name
 
 logger = logging.getLogger(__name__)
+
+
+class BaseRanker(ABC):
+    @abstractmethod
+    def __init__(
+        self,
+        model_name_or_path: str,
+    ):
+        pass
 
 
 class RerankModel(nn.Module):

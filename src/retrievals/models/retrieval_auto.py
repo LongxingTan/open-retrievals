@@ -7,6 +7,7 @@ TODO:
 
 import logging
 import time
+from abc import ABC, abstractmethod
 from typing import List, Literal, Optional, Tuple, Union
 
 import numpy as np
@@ -18,6 +19,12 @@ from tqdm import tqdm
 from tqdm.autonotebook import trange
 
 logger = logging.getLogger(__name__)
+
+
+class BaseRetriever(ABC):
+    @abstractmethod
+    def search(self, query: str) -> str:
+        pass
 
 
 class AutoModelForRetrieval(object):
@@ -52,6 +59,8 @@ class AutoModelForRetrieval(object):
         if index_path is not None:
             import faiss
 
+            faiss_retrieval = FaissSearcher()
+
             start_time = time.time()
             faiss_index = faiss.read_index(index_path)
             logger.info(f'Loading faiss index successfully, elapsed time: {time.time()-start_time:.2}s')
@@ -59,7 +68,7 @@ class AutoModelForRetrieval(object):
             if batch_size < 1:
                 dists, indices = faiss_index.search(query_embed.astype(np.float32), k=top_k)
             else:
-                dists, indices = faiss_search(
+                dists, indices = faiss_retrieval.search(
                     query_embed=query_embed,
                     faiss_index=faiss_index,
                     top_k=top_k,
@@ -198,32 +207,34 @@ def cosine_similarity_search(
     return dists, indices
 
 
-def faiss_search(
-    query_embed: torch.Tensor,
-    faiss_index,
-    top_k: int = 100,
-    batch_size: int = 128,
-) -> Tuple[np.ndarray, np.ndarray]:
-    """
-    1. Encode queries into dense embeddings;
-    2. Search through faiss index
-    """
-    # query_embeddings = model.encode_queries(
-    #     queries["query"], batch_size=batch_size, max_length=max_length
-    # )
-    query_size = len(query_embed)
-    assert query_size > 0, 'Please make sure the query_embeddings is not empty'
+class FaissSearcher(BaseRetriever):
+    def search(
+        self,
+        query_embed: torch.Tensor,
+        faiss_index,
+        top_k: int = 100,
+        batch_size: int = 128,
+    ) -> Tuple[np.ndarray, np.ndarray]:
+        """
+        1. Encode queries into dense embeddings;
+        2. Search through faiss index
+        """
+        # query_embeddings = model.encode_queries(
+        #     queries["query"], batch_size=batch_size, max_length=max_length
+        # )
+        query_size = len(query_embed)
+        assert query_size > 0, 'Please make sure the query_embeddings is not empty'
 
-    all_scores = []
-    all_indices = []
+        all_scores = []
+        all_indices = []
 
-    for i in tqdm(range(0, query_size, batch_size), desc="Searching"):
-        j = min(i + batch_size, query_size)
-        query_embedding = query_embed[i:j]
-        score, index = faiss_index.search(query_embedding.astype(np.float32), k=top_k)
-        all_scores.append(score)
-        all_indices.append(index)
+        for i in tqdm(range(0, query_size, batch_size), desc="Searching"):
+            j = min(i + batch_size, query_size)
+            query_embedding = query_embed[i:j]
+            score, index = faiss_index.search(query_embedding.astype(np.float32), k=top_k)
+            all_scores.append(score)
+            all_indices.append(index)
 
-    all_scores = np.concatenate(all_scores, axis=0)
-    all_indices = np.concatenate(all_indices, axis=0)
-    return all_scores, all_indices
+        all_scores = np.concatenate(all_scores, axis=0)
+        all_indices = np.concatenate(all_indices, axis=0)
+        return all_scores, all_indices

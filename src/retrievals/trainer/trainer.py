@@ -6,8 +6,6 @@ import torch.distributed as dist
 import torch.nn as nn
 from transformers import Trainer
 
-from ..losses import InfoNCE, SimCSE, TripletLoss
-
 logger = logging.getLogger(__name__)
 
 
