@@ -102,6 +102,14 @@ class AutoModelForRetrieval(object):
     def get_relevant_documents(self, query: str):
         return
 
+    def write_ranking(self, query_ids, dists, indices, ranking_file):
+        with open(ranking_file, 'w') as f:
+            for qid, score, index in zip(query_ids, dists, indices):
+                score_list = [(s, idx) for s, idx in zip(score, index)]
+                score_list = sorted(score_list, key=lambda x: x[0], reverse=True)
+                for s, idx in score_list:
+                    f.write(f'{qid}\t{idx}\t{s}\n')
+
     def get_pandas_candidate(
         self,
         query_ids: Union[pd.Series, np.ndarray],
