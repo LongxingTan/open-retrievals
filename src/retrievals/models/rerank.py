@@ -48,6 +48,8 @@ class RerankModel(nn.Module):
         **kwargs,
     ):
         super().__init__()
+        if isinstance(model, str):
+            assert ValueError("Please use RerankModel.from_pretrained(model_name_or_path)")
 
         self.model: Optional[nn.Module] = model
         self.tokenizer = tokenizer

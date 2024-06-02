@@ -53,6 +53,8 @@ class AutoModelForEmbedding(nn.Module):
         **kwargs,
     ):
         super().__init__()
+        if isinstance(model, str):
+            assert ValueError("Please use AutoModelForEmbedding.from_pretrained(model_name_or_path)")
         self.model = model
         self.tokenizer = tokenizer
         self.pooling_method = pooling_method

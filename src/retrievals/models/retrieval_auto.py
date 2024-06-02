@@ -29,7 +29,7 @@ class BaseRetriever(ABC):
 
 class AutoModelForRetrieval(object):
     def __init__(
-        self, embedding_model: Optional[nn.Module] = None, method: Literal['cosine', 'knn'] = "cosine"
+        self, embedding_model: Optional[nn.Module] = None, method: Literal['cosine', 'knn', 'llm'] = "cosine"
     ) -> None:
         super().__init__()
         self.embedding_model = embedding_model
