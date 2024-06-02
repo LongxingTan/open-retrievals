@@ -68,15 +68,15 @@ from retrievals import AutoModelForEmbedding, AutoModelForRetrieval
 sentences = [
     "在1974年，第一次在东南亚打自由搏击就得了冠军",
     "1982年打赢了日本重炮手雷龙，接着连续三年打败所有日本空手道高手，赢得全日本自由搏击冠军",
-    "中国古拳法唯一传人鬼王达，被喻为空手道的克星，绰号“魔鬼筋肉人”"
+    "中国古拳法唯一传人鬼王达，被喻为空手道的克星，绰号魔鬼筋肉人"
+    "古人有云，有功夫，无懦夫"
 ]
 
-# 向量模型
-model_name_or_path = "sentence-transformers/all-MiniLM-L6-v2"
+model_name_or_path = 'intfloat/e5-base-v2'
 model = AutoModelForEmbedding.from_pretrained(model_name_or_path)
-
-embeddings = model.encode(sentences)
-print(embeddings) # 384维度的文本向量
+embeddings = model.encode(sentences)  # 384维度的文本向量
+scores = (embeddings[:2] @ embeddings[2:].T) * 100
+print(scores.tolist())
 ```
 
 **使用Faiss向量数据库检索**
