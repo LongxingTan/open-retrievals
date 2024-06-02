@@ -1,3 +1,10 @@
+"""
+TODO:
+- support bm25 retrieval
+- dense retrieval
+- web retrieval
+"""
+
 import logging
 import time
 from typing import List, Literal, Optional, Tuple, Union
