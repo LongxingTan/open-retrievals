@@ -626,8 +626,8 @@ class PairwiseModel(AutoModelForEmbedding):
                 return pooled_output1, pooled_output2
             else:
                 outputs = dict()
-                loss_output = self.loss_fn(pooled_output1, pooled_output2)
-                outputs["loss"] = loss_output["loss"]
+                loss = self.loss_fn(pooled_output1, pooled_output2)
+                outputs["loss"] = loss
                 return outputs
 
         else:
