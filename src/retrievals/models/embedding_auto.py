@@ -583,15 +583,18 @@ class PairwiseModel(AutoModelForEmbedding):
         output_hidden_states: Optional[bool] = None,
         return_dict: Optional[bool] = None,
     ):
-        if isinstance(inputs, (list, tuple)) and 2 <= len(inputs) <= 3 or inputs_pair is not None:
+        if isinstance(inputs, (list, tuple, dict)) and 2 <= len(inputs) <= 3 or inputs_pair is not None:
             if inputs_pair:
                 input1 = inputs
                 input2 = inputs_pair
-            else:
+            elif isinstance(inputs, (list, tuple)):
                 input1 = inputs[0]
                 input2 = inputs[1]
                 if len(inputs) == 3:
                     input3 = inputs[2]
+            else:
+                input1 = inputs['query']
+                input2 = inputs['document']
 
             if self.cross_encoder:
                 ids1, mask1 = input1['input_ids'], input1['attention_mask']
