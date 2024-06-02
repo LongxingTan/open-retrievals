@@ -562,9 +562,8 @@ class PairwiseModel(AutoModelForEmbedding):
             loss_fn=None,
             **kwargs,
         )
-        if loss_fn is not None:
-            logger.warning("loss_fn in Pairwise model will be ignored")
 
+        self.loss_fn = loss_fn
         self.cross_encoder = cross_encoder
         self.shared_weights = shared_weights
         if not shared_weights:
@@ -601,7 +600,7 @@ class PairwiseModel(AutoModelForEmbedding):
                 pooled_output = self.pooling(transformer_out[0], mask)
                 pooled_output1 = pooled_output[: len(ids1), :]
                 pooled_output2 = pooled_output[len(ids1) :, :]
-                return pooled_output1, pooled_output2
+
             else:
                 # bi-encoder, pooling in each
                 if self.shared_weights:
@@ -610,11 +609,18 @@ class PairwiseModel(AutoModelForEmbedding):
                     if len(inputs) == 3:
                         pooled_output3 = super().forward(input3)
                         return pooled_output1, pooled_output2, pooled_output3
-                    return pooled_output1, pooled_output2
+
                 else:
                     pooled_output1 = super().forward(input1)
                     pooled_output2 = self.document_model(input2)
-                    return pooled_output1, pooled_output2
+
+            if self.loss_fn is None:
+                return pooled_output1, pooled_output2
+            else:
+                outputs = dict()
+                loss_output = self.loss_fn(pooled_output1, pooled_output2)
+                outputs["loss"] = loss_output["loss"]
+                return outputs
 
         else:
             pooled_output = super(PairwiseModel, self).forward_from_loader(inputs, without_pooling=False)

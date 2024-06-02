@@ -12,16 +12,30 @@ logger = logging.getLogger(__name__)
 
 
 class RetrievalTrainer(Trainer):
-    def __init__(self, loss_fn: Optional[Callable] = None, negatives_x_device: bool = False, *args, **kwargs):
+    def __init__(
+        self,
+        loss_fn: Optional[Callable] = None,
+        train_type: str = 'normal',
+        negatives_x_device: bool = False,
+        *args,
+        **kwargs,
+    ):
         super(RetrievalTrainer, self).__init__(*args, **kwargs)
         self.loss_fn = loss_fn
+        self.train_type = train_type
         self._dist_loss_scale_factor = dist.get_world_size() if negatives_x_device else 1
 
     def training_step(self, *args):
         return super().training_step(*args) / self._dist_loss_scale_factor
 
-    def compute_loss(self, model: nn.Module, inputs: Any, return_outputs: bool = False, **kwargs):
-        # TODO: 直接使用model返回的loss
+    def compute_loss(self, model, inputs, return_outputs=False):
+        if self.train_type == 'pairwise':
+            return self.compute_loss(model=model, inputs=inputs, return_outputs=return_outputs)
+
+        outputs = model(inputs)
+        return outputs['loss']
+
+    def compute_pair_loss(self, model: nn.Module, inputs: Any, return_outputs: bool = False):
         query = inputs["query"]
         if 'document' in inputs:
             pos = inputs["document"]

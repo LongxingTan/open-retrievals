@@ -17,9 +17,9 @@ class PairKL(nn.Module):
     def forward(
         self, query_embeddings: torch.Tensor, positive_embeddings: torch.Tensor, scores: torch.Tensor, **kwargs
     ):
-        sims = torch.einsum('bn, bn -> b', query_embeddings, positive_embeddings)
+        similarity = torch.einsum('bn, bn -> b', query_embeddings, positive_embeddings)
         scores = scores.to(query_embeddings.device)
-        input = torch.log_softmax(sims / self.temperature, dim=-1)
+        similarity = torch.log_softmax(similarity / self.temperature, dim=-1)
         target = torch.softmax(scores / self.temperature, dim=-1)
 
-        return self.criterion(input, target)
+        return self.criterion(similarity, target)
