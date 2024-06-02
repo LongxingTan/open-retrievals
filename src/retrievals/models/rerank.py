@@ -1,4 +1,5 @@
 import logging
+import os
 from abc import ABC, abstractmethod
 from copy import deepcopy
 from typing import Callable, Dict, List, Literal, Optional, Tuple, Union
@@ -57,11 +58,6 @@ class RerankModel(nn.Module):
         if pooling_method:
             self.pooling = AutoPooling(self.pooling_method)
 
-        if self.model:
-            num_features: int = self.model.config.hidden_size
-            self.classifier = nn.Linear(num_features, 1)
-            # self._init_weights(self.classifier)
-
         self.loss_fn = loss_fn
         self.loss_type = loss_type
 
@@ -80,7 +76,18 @@ class RerankModel(nn.Module):
         else:
             self.device = device
         # both self.model and self.linear to device
+        self._post_init()
         self.to(self.device)
+
+    def _post_init(self):
+        num_features: int = self.model.config.hidden_size
+        self.classifier = nn.Linear(num_features, 1)
+        try:
+            state_dict = torch.load(os.path.join('./', "dense.bin"), map_location=self.device)
+            self.dense_pooler.load_state_dict(state_dict)
+        except ValueError:
+            self._init_weights(self.classifier)
+            logger.warning("Could not find dense weight, initialize it randomly")
 
     def _init_weights(self, module: nn.Module):
         if isinstance(module, nn.Linear):
