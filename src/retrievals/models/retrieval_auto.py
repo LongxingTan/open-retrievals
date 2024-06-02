@@ -238,3 +238,8 @@ class FaissSearcher(BaseRetriever):
         all_scores = np.concatenate(all_scores, axis=0)
         all_indices = np.concatenate(all_indices, axis=0)
         return all_scores, all_indices
+
+
+class BM25Searcher(BaseRetriever):
+    def search(self, query: str) -> str:
+        return

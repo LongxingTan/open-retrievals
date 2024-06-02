@@ -506,6 +506,11 @@ class ColBERT(RerankModel):
         return reranker
 
 
+class LLMRank(BaseRanker):
+    def __init__(self):
+        pass
+
+
 class DocumentSplitter(object):
     """
     Rerank the long document
