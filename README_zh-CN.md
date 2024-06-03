@@ -235,6 +235,31 @@ trainer.scheduler = scheduler
 trainer.train()
 ```
 
+- 一键训练
+
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1w2dRoRThG6DnUW46swqEUuWySKS1AXCp?usp=sharing)
+
+```shell
+MODEL_NAME='BAAI/bge-small-zh-v1.5'
+
+torchrun --nproc_per_node 1 \
+  -m retrievals.pipelines.embed \
+  --output_dir train \
+  --overwrite_output_dir \
+  --model_name_or_path $MODEL_NAME \
+  --do_train \
+  --train_data train.jsonl \
+  --learning_rate 3e-5 \
+  --fp16 \
+  --num_train_epochs 5 \
+  --per_device_train_batch_size 32 \
+  --dataloader_drop_last True \
+  --query_max_length 64 \
+  --document_max_length 512 \
+  --train_group_size 2 \
+  --logging_steps 100
+```
+
 **基于余弦相似度和近邻搜索**
 ```python
 from retrievals import AutoModelForEmbedding, AutoModelForRetrieval
