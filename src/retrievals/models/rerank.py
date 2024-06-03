@@ -85,7 +85,7 @@ class RerankModel(nn.Module):
         try:
             state_dict = torch.load(os.path.join('./', "dense.bin"), map_location=self.device)
             self.dense_pooler.load_state_dict(state_dict)
-        except ValueError:
+        except FileNotFoundError:
             self._init_weights(self.classifier)
             logger.warning("Could not find dense weight, initialize it randomly")
 
