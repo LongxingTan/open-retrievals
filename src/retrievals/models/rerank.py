@@ -469,6 +469,9 @@ class ColBERT(RerankModel):
         colbert_dim: int = 128,
         **kwargs,
     ):
+        if not model_name_or_path or not isinstance(model_name_or_path, str):
+            assert ValueError('Please input valid model_name_or_path')
+
         tokenizer = AutoTokenizer.from_pretrained(
             model_name_or_path, return_tensors=False, trust_remote_code=trust_remote_code
         )
