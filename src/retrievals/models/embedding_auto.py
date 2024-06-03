@@ -441,9 +441,7 @@ class AutoModelForEmbedding(nn.Module):
         document_instruction: Optional[str] = None,
         **kwargs,
     ):
-        tokenizer = AutoTokenizer.from_pretrained(
-            model_name_or_path, return_tensors=False, trust_remote_code=trust_remote_code
-        )
+        tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, trust_remote_code=trust_remote_code)
 
         if config_path:
             config = AutoConfig.from_pretrained(
