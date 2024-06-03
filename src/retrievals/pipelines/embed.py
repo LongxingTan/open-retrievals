@@ -158,7 +158,7 @@ def main():
             tokenizer,
             query_max_length=data_args.query_max_length,
             document_max_length=data_args.document_max_length,
-            positive_key='pos',
+            document_key='pos',
         ),
         tokenizer=tokenizer,
     )
