@@ -148,7 +148,7 @@ def main():
                 logging.info(f"Freeze the parameters for {k}")
                 v.requires_grad = False
 
-    train_dataset = RetrievalDataset(args=data_args, tokenizer=tokenizer)
+    train_dataset = RetrievalDataset(args=data_args, tokenizer=tokenizer, positive_key='pos')
 
     trainer = RetrievalTrainer(
         model=model,
