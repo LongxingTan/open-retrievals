@@ -138,7 +138,7 @@ def main():
     logger.info('Config: %s', config)
 
     model = AutoModelForEmbedding.from_pretrained(
-        model_name=model_args.model_name_or_path,
+        model_name_or_path=model_args.model_name_or_path,
         pooling_method=training_args.pooling_method,
     )
 

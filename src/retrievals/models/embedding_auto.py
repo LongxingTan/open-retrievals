@@ -441,6 +441,9 @@ class AutoModelForEmbedding(nn.Module):
         document_instruction: Optional[str] = None,
         **kwargs,
     ):
+        if not model_name_or_path or not isinstance(model_name_or_path, 'str'):
+            assert ValueError('Please input valid model_name_or_path')
+
         tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, trust_remote_code=trust_remote_code)
 
         if config_path:
