@@ -544,16 +544,17 @@ class AutoModelForEmbedding(nn.Module):
 
         return all_tensors
 
-    def __getattr__(self, name):
+    def __getattribute__(self, name):
         try:
-            model = self.__dict__['model']
+            model = self.__getattribute__('model')
             attr = getattr(model, name)
             return attr
         except KeyError:
             raise AttributeError(f"'{self.__class__.__name__}' object has no attribute '{name}'")
         except AttributeError:
             raise AttributeError(
-                f"'{self.__class__.__name__}' object and its 'model' attribute have no attribute '{name}'")
+                f"'{self.__class__.__name__}' object and its 'model' attribute have no attribute '{name}'"
+            )
 
 
 class PairwiseModel(AutoModelForEmbedding):
