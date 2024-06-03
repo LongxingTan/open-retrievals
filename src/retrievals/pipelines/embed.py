@@ -64,8 +64,8 @@ class DataArguments:
         default=100000000, metadata={"help": "the max number of examples for each dataset"}
     )
 
-    query_instruction_for_retrieval: str = field(default=None, metadata={"help": "instruction for query"})
-    passage_instruction_for_retrieval: str = field(default=None, metadata={"help": "instruction for passage"})
+    query_instruction: str = field(default=None, metadata={"help": "instruction for query"})
+    passage_instruction: str = field(default=None, metadata={"help": "instruction for passage"})
 
     def __post_init__(self):
         if not os.path.exists(self.train_data):
