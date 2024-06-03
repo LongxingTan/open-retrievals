@@ -180,6 +180,10 @@ class AutoModelForRetrieval(object):
 
 
 class EnsembleRetriever(object):
+    """
+    RRF_fusion
+    """
+
     def __init__(self, retrievers, weights=None):
         pass
 
@@ -228,7 +232,7 @@ def cosine_similarity_search(
 
 
 class FaissSearcher(BaseRetriever):
-    def __init__(self, corpus_index: Union[faiss.Index, np.ndarray]):
+    def __init__(self, corpus_index: Union['faiss.Index', np.ndarray]):
         if isinstance(corpus_index, np.ndarray):
             index = faiss.IndexFlatIP(corpus_index.shape[1])
             self.index = index

@@ -44,7 +44,7 @@ class DataArguments:
     train_data: str = field(default=None, metadata={"help": "Path to train data"})
     train_group_size: int = field(default=8)
 
-    query_max_len: int = field(
+    query_max_length: int = field(
         default=32,
         metadata={
             "help": "The maximum total input sequence length after tokenization for passage. Sequences longer "
@@ -52,7 +52,7 @@ class DataArguments:
         },
     )
 
-    passage_max_len: int = field(
+    document_max_length: int = field(
         default=128,
         metadata={
             "help": "The maximum total input sequence length after tokenization for passage. Sequences longer "
@@ -79,7 +79,7 @@ class RetrieverTrainingArguments(TrainingArguments):
     fix_position_embedding: bool = field(
         default=False, metadata={"help": "Freeze the parameters of position embeddings"}
     )
-    sentence_pooling_method: str = field(default='cls', metadata={"help": "the pooling method, should be cls or mean"})
+    pooling_method: str = field(default='cls', metadata={"help": "the pooling method, should be cls or mean"})
     normalized: bool = field(default=True)
     use_inbatch_neg: bool = field(default=True, metadata={"help": "use passages in the same batch as negatives"})
     train_type: str = field(default='pairwise', metadata={'help': "train type of point, pair, or list"})
@@ -137,13 +137,9 @@ def main():
     )
     logger.info('Config: %s', config)
 
-    model = AutoModelForEmbedding(
+    model = AutoModelForEmbedding.from_pretrained(
         model_name=model_args.model_name_or_path,
-        normlized=training_args.normlized,
-        sentence_pooling_method=training_args.sentence_pooling_method,
-        negatives_cross_device=training_args.negatives_cross_device,
-        temperature=training_args.temperature,
-        use_inbatch_neg=training_args.use_inbatch_neg,
+        pooling_method=training_args.pooling_method,
     )
 
     if training_args.fix_position_embedding:
@@ -159,7 +155,7 @@ def main():
         args=training_args,
         train_dataset=train_dataset,
         data_collator=PairCollator(
-            tokenizer, query_max_len=data_args.query_max_len, passage_max_len=data_args.passage_max_len
+            tokenizer, query_max_length=data_args.query_max_length, document_max_length=data_args.document_max_length
         ),
         tokenizer=tokenizer,
     )
