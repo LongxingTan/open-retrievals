@@ -1,5 +1,6 @@
 import copy
 import logging
+import math
 import os
 import random
 from typing import Dict, Iterable, List, Optional, Tuple, Union
@@ -70,10 +71,15 @@ class RetrievalDataset(Dataset):
         sample = {self.query_key: query, self.positive_key: pos}
         if self.negative_key in self.dataset[item]:
             if isinstance(self.dataset[item][self.negative_key], Iterable):
-                neg = random.choice(self.dataset[item][self.negative_key])
+                if len(self.dataset[item][self.negative_key]) < self.train_group_size - 1:
+                    num = math.ceil((self.train_group_size - 1) / len(self.dataset[item][self.negative_key]))
+                    negs = random.sample(self.dataset[item][self.negative_key] * num, self.train_group_size - 1)
+                else:
+                    negs = random.sample(self.dataset[item][self.negative_key], self.train_group_size - 1)
+
             else:
-                neg = self.dataset[item][self.negative_key][0]
-            sample.update({self.negative_key: neg})
+                negs = self.dataset[item][self.negative_key][0]
+            sample.update({self.negative_key: negs})
         return sample
 
     def dynamic_sample(self, batch_size: int, missing_list=None, wrong_dict=None, max_wrong: int = 16):
