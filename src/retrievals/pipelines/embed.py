@@ -155,7 +155,10 @@ def main():
         args=training_args,
         train_dataset=train_dataset,
         data_collator=PairCollator(
-            tokenizer, query_max_length=data_args.query_max_length, document_max_length=data_args.document_max_length
+            tokenizer,
+            query_max_length=data_args.query_max_length,
+            document_max_length=data_args.document_max_length,
+            positive_key='pos',
         ),
         tokenizer=tokenizer,
     )
