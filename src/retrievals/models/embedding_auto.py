@@ -637,7 +637,12 @@ class PairwiseModel(AutoModelForEmbedding):
                     pooled_output2 = super().forward(input2)
                     if len(inputs) == 3:
                         pooled_output3 = super().forward(input3)
-                        return pooled_output1, pooled_output2, pooled_output3
+                        if self.loss_fn is None:
+                            return pooled_output1, pooled_output2, pooled_output3
+                        outputs = dict()
+                        loss = self.loss_fn(pooled_output1, pooled_output2, pooled_output3)
+                        outputs["loss"] = loss
+                        return outputs
 
                 else:
                     pooled_output1 = super().forward(input1)
