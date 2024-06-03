@@ -64,11 +64,17 @@ pip install open-retrievals
 ```python
 from retrievals import AutoModelForEmbedding
 
-sentences = ["Hello NLP", "Open-retrievals is designed for retrieval, rerank and RAG"]
-model_name_or_path = "sentence-transformers/all-MiniLM-L6-v2"
+sentences = [
+    'query: how much protein should a female eat',
+    'query: summit define',
+    "passage: As a general guideline, the CDC's average requirement of protein for women ages 19 to 70 is 46 grams per day. But, as you can see from this chart, you'll need to increase that if you're expecting or training for a marathon. Check out the chart below to see how much protein you should be eating each day.",
+    "passage: Definition of summit for English Language Learners. : 1  the highest point of a mountain : the top of a mountain. : 2  the highest level. : 3  a meeting or series of meetings between the leaders of two or more governments."
+]
+model_name_or_path = 'intfloat/e5-base-v2'
 model = AutoModelForEmbedding.from_pretrained(model_name_or_path, pooling_method="mean")
-sentence_embeddings = model.encode(sentences, normalize_embeddings=True, convert_to_tensor=True)
-print(sentence_embeddings)
+embeddings = model.encode(sentences, normalize_embeddings=True, convert_to_tensor=True)
+scores = (embeddings[:2] @ embeddings[2:].T) * 100
+print(scores.tolist())
 ```
 
 **インデックスの構築と検索**

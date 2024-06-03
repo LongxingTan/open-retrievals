@@ -69,10 +69,10 @@ class TrainerTest(TestCase):
         @dataclass
         class TrainingArguments(transformers.TrainingArguments):
             output_dir: str = self.output_dir
-            do_train: bool = True
-            num_train_epochs: int = 1
-            per_device_train_batch_size: int = 1
-            remove_unused_columns: bool = False
+            do_train: bool = field(default=True)
+            num_train_epochs: int = field(default=1)
+            per_device_train_batch_size: int = field(default=1)
+            remove_unused_columns: bool = field(default=False)
             negatives_cross_device: bool = field(default=False, metadata={"help": "share negatives across devices"})
             temperature: Optional[float] = field(default=0.02)
             fix_position_embedding: bool = field(
@@ -90,11 +90,11 @@ class TrainerTest(TestCase):
         training_args, _ = parser.parse_args_into_dataclasses(return_remaining_strings=True)
 
         trainer = RetrievalTrainer(
-            model=self.model,
+            model=self.model.set_train_type('pairwise', loss_fn=TripletLoss()),
             args=training_args,
+            # train_type='pairwise',
             train_dataset=self.train_dataset,
             data_collator=TripletCollator(tokenizer=self.tokenizer, query_max_length=32, document_max_length=128),
-            loss_fn=TripletLoss(),
         )
         trainer.train()
 

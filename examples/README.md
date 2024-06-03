@@ -6,11 +6,28 @@
 [Text embeddings finetune with contrastive learning](./0_embeddings/pairwise_finetune2.py)
 
 **Data Format**
-Training: Each line of the Train file is a training instance
+
+Training stype: Each line of the Train file is a training instance
+
+- stype1
 ```
-{'query': TEXT_TYPE, 'positives': List[TEXT_TYPE], 'negatives': List[TEXT_TYPE]}
+{'query': TEXT_TYPE, 'document': List[TEXT_TYPE]}
 ...
 ```
+
+- stype2
+```
+{'query': TEXT_TYPE, 'positive': List[TEXT_TYPE], 'negative': List[TEXT_TYPE]}
+...
+```
+
+- stype3
+Training stype3: Each line of the Train file is a training instance
+```
+{'query': TEXT_TYPE, 'positives': List[TEXT_TYPE], "scores":List[float]}
+...
+```
+
 Inference/Encoding: Each line of the encoding file is a piece of text to be encoded
 ```
 {text_id: "xxx", 'text': TEXT_TYPE}

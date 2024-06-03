@@ -2,6 +2,7 @@ import copy
 import logging
 import os
 import time
+from contextlib import nullcontext
 from typing import Callable, Dict, List, Literal, Optional, Tuple, Union
 
 import numpy as np
@@ -48,11 +49,14 @@ class AutoModelForEmbedding(nn.Module):
         loss_fn: Optional[Callable] = None,
         query_instruction: Optional[str] = None,
         document_instruction: Optional[str] = None,
+        fp16: bool = False,
         generation_args: Dict = None,
         device: Optional[str] = None,
         **kwargs,
     ):
         super().__init__()
+        if isinstance(model, str):
+            assert ValueError("Please use AutoModelForEmbedding.from_pretrained(model_name_or_path)")
         self.model = model
         self.tokenizer = tokenizer
         self.pooling_method = pooling_method
@@ -74,6 +78,7 @@ class AutoModelForEmbedding(nn.Module):
 
         self.query_instruction = query_instruction
         self.document_instruction = document_instruction
+        self.fp16 = fp16
         if generation_args is not None:
             generation_config = self.model.generation_config.to_dict()
             generation_config.update(generation_args)
@@ -203,14 +208,16 @@ class AutoModelForEmbedding(nn.Module):
         self.model.to(device)
 
         all_embeddings = []
-        with torch.no_grad():
-            for idx, inputs in enumerate(tqdm(loader, desc="Encoding", disable=not show_progress_bar)):
-                inputs_on_device = {k: v.to(device) for k, v in inputs.items()}
-                embeddings = self.forward_from_loader(inputs_on_device)
-                embeddings = embeddings.detach()
-                if normalize_embeddings:
-                    embeddings = torch.nn.functional.normalize(embeddings, p=2, dim=1)
-                all_embeddings.append(embeddings)
+
+        for idx, inputs in enumerate(tqdm(loader, desc="Encoding", disable=not show_progress_bar)):
+            with torch.autocast(device_type=device) if self.fp16 else nullcontext():
+                with torch.no_grad():
+                    inputs_on_device = {k: v.to(device) for k, v in inputs.items()}
+                    embeddings = self.forward_from_loader(inputs_on_device)
+                    embeddings = embeddings.detach()
+                    if normalize_embeddings:
+                        embeddings = torch.nn.functional.normalize(embeddings, p=2, dim=1)
+                    all_embeddings.append(embeddings)
         if convert_to_numpy:
             all_embeddings = np.concatenate([emb.cpu().numpy() for emb in all_embeddings], axis=0)
         else:
@@ -396,6 +403,9 @@ class AutoModelForEmbedding(nn.Module):
     def set_train_type(self, train_type: Literal['pointwise', 'pairwise', 'listwise'], **kwargs):
         model_class = {'pointwise': self, 'pairwise': PairwiseModel, 'listwise': ListwiseModel}
         model_class = model_class.get(train_type.lower())
+        if 'loss_fn' in kwargs:
+            self.loss_fn = kwargs.pop('loss_fn')
+
         return model_class(
             model=self.model,
             tokenizer=self.tokenizer,
@@ -423,7 +433,7 @@ class AutoModelForEmbedding(nn.Module):
         trust_remote_code: bool = True,
         causal_lm: bool = False,
         custom_config_dict: Optional[Dict] = None,
-        use_fp16: bool = False,
+        fp16: bool = False,
         use_lora: bool = False,
         lora_config=None,
         device: Optional[str] = None,
@@ -431,9 +441,10 @@ class AutoModelForEmbedding(nn.Module):
         document_instruction: Optional[str] = None,
         **kwargs,
     ):
-        tokenizer = AutoTokenizer.from_pretrained(
-            model_name_or_path, return_tensors=False, trust_remote_code=trust_remote_code
-        )
+        if not model_name_or_path or not isinstance(model_name_or_path, str):
+            assert ValueError('Please input valid model_name_or_path')
+
+        tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, trust_remote_code=trust_remote_code)
 
         if config_path:
             config = AutoConfig.from_pretrained(
@@ -461,7 +472,7 @@ class AutoModelForEmbedding(nn.Module):
             else:
                 model = AutoModel.from_config(config)
 
-        if use_fp16:
+        if fp16:
             model.half()
 
         if use_lora:
@@ -480,6 +491,7 @@ class AutoModelForEmbedding(nn.Module):
             device=device,
             query_instruction=query_instruction,
             document_instruction=document_instruction,
+            fp16=fp16,
             **kwargs,
         )
 
@@ -532,6 +544,18 @@ class AutoModelForEmbedding(nn.Module):
 
         return all_tensors
 
+    # def __getattribute__(self, name):
+    #     try:
+    #         model = self.__getattribute__('model')
+    #         attr = getattr(model, name)
+    #         return attr
+    #     except KeyError:
+    #         raise AttributeError(f"'{self.__class__.__name__}' object has no attribute '{name}'")
+    #     except AttributeError:
+    #         raise AttributeError(
+    #             f"'{self.__class__.__name__}' object and its 'model' attribute have no attribute '{name}'"
+    #         )
+
 
 class PairwiseModel(AutoModelForEmbedding):
     """Pairwise Model wrapper
@@ -562,9 +586,8 @@ class PairwiseModel(AutoModelForEmbedding):
             loss_fn=None,
             **kwargs,
         )
-        if loss_fn is not None:
-            logger.warning("loss_fn in Pairwise model will be ignored")
 
+        self.loss_fn = loss_fn
         self.cross_encoder = cross_encoder
         self.shared_weights = shared_weights
         if not shared_weights:
@@ -579,15 +602,20 @@ class PairwiseModel(AutoModelForEmbedding):
         output_hidden_states: Optional[bool] = None,
         return_dict: Optional[bool] = None,
     ):
-        if isinstance(inputs, (list, tuple)) and 2 <= len(inputs) <= 3 or inputs_pair is not None:
+        if isinstance(inputs, (list, tuple, dict)) and 2 <= len(inputs) <= 3 or inputs_pair is not None:
             if inputs_pair:
                 input1 = inputs
                 input2 = inputs_pair
-            else:
+            elif isinstance(inputs, (list, tuple)):
                 input1 = inputs[0]
                 input2 = inputs[1]
                 if len(inputs) == 3:
                     input3 = inputs[2]
+            else:
+                input1 = inputs['query']
+                input2 = inputs['positive']
+                if 'negative' in inputs:
+                    input3 = inputs['negative']
 
             if self.cross_encoder:
                 ids1, mask1 = input1['input_ids'], input1['attention_mask']
@@ -601,7 +629,7 @@ class PairwiseModel(AutoModelForEmbedding):
                 pooled_output = self.pooling(transformer_out[0], mask)
                 pooled_output1 = pooled_output[: len(ids1), :]
                 pooled_output2 = pooled_output[len(ids1) :, :]
-                return pooled_output1, pooled_output2
+
             else:
                 # bi-encoder, pooling in each
                 if self.shared_weights:
@@ -609,12 +637,24 @@ class PairwiseModel(AutoModelForEmbedding):
                     pooled_output2 = super().forward(input2)
                     if len(inputs) == 3:
                         pooled_output3 = super().forward(input3)
-                        return pooled_output1, pooled_output2, pooled_output3
-                    return pooled_output1, pooled_output2
+                        if self.loss_fn is None:
+                            return pooled_output1, pooled_output2, pooled_output3
+                        outputs = dict()
+                        loss = self.loss_fn(pooled_output1, pooled_output2, pooled_output3)
+                        outputs["loss"] = loss
+                        return outputs
+
                 else:
                     pooled_output1 = super().forward(input1)
                     pooled_output2 = self.document_model(input2)
-                    return pooled_output1, pooled_output2
+
+            if self.loss_fn is None:
+                return pooled_output1, pooled_output2
+            else:
+                outputs = dict()
+                loss = self.loss_fn(pooled_output1, pooled_output2)
+                outputs["loss"] = loss
+                return outputs
 
         else:
             pooled_output = super(PairwiseModel, self).forward_from_loader(inputs, without_pooling=False)

@@ -1,4 +1,6 @@
 import logging
+import os
+from abc import ABC, abstractmethod
 from copy import deepcopy
 from typing import Callable, Dict, List, Literal, Optional, Tuple, Union
 
@@ -25,6 +27,15 @@ from .utils import check_casual_lm, get_device_name
 logger = logging.getLogger(__name__)
 
 
+class BaseRanker(ABC):
+    @abstractmethod
+    def __init__(
+        self,
+        model_name_or_path: str,
+    ):
+        pass
+
+
 class RerankModel(nn.Module):
     def __init__(
         self,
@@ -38,17 +49,14 @@ class RerankModel(nn.Module):
         **kwargs,
     ):
         super().__init__()
+        if isinstance(model, str):
+            assert ValueError("Please use RerankModel.from_pretrained(model_name_or_path)")
 
         self.model: Optional[nn.Module] = model
         self.tokenizer = tokenizer
         self.pooling_method = pooling_method
         if pooling_method:
             self.pooling = AutoPooling(self.pooling_method)
-
-        if self.model:
-            num_features: int = self.model.config.hidden_size
-            self.classifier = nn.Linear(num_features, 1)
-            # self._init_weights(self.classifier)
 
         self.loss_fn = loss_fn
         self.loss_type = loss_type
@@ -68,7 +76,18 @@ class RerankModel(nn.Module):
         else:
             self.device = device
         # both self.model and self.linear to device
+        self._post_init()
         self.to(self.device)
+
+    def _post_init(self):
+        num_features: int = self.model.config.hidden_size
+        self.classifier = nn.Linear(num_features, 1)
+        try:
+            state_dict = torch.load(os.path.join('./', "dense.bin"), map_location=self.device)
+            self.dense_pooler.load_state_dict(state_dict)
+        except FileNotFoundError:
+            self._init_weights(self.classifier)
+            logger.warning("Could not find dense weight, initialize it randomly")
 
     def _init_weights(self, module: nn.Module):
         if isinstance(module, nn.Linear):
@@ -212,13 +231,6 @@ class RerankModel(nn.Module):
         return_dict: bool = True,
         **kwargs,
     ):
-        # if isinstance(query, str):
-        #     text_pairs = [(query, doc) for doc in document]
-        # elif isinstance(query, (list, tuple)):
-        #     text_pairs = [(q, doc) for q, doc in zip(query, document)]
-        # else:
-        #     pass
-
         if query is None or len(query) == 0 or len(documents) == 0:
             return {'rerank_documents': [], 'rerank_scores': []}
 
@@ -457,6 +469,9 @@ class ColBERT(RerankModel):
         colbert_dim: int = 128,
         **kwargs,
     ):
+        if not model_name_or_path or not isinstance(model_name_or_path, str):
+            assert ValueError('Please input valid model_name_or_path')
+
         tokenizer = AutoTokenizer.from_pretrained(
             model_name_or_path, return_tensors=False, trust_remote_code=trust_remote_code
         )
@@ -494,6 +509,11 @@ class ColBERT(RerankModel):
             colbert_dim=colbert_dim,
         )
         return reranker
+
+
+class LLMRank(BaseRanker):
+    def __init__(self):
+        pass
 
 
 class DocumentSplitter(object):

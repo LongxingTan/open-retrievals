@@ -28,12 +28,14 @@ class CollatorTest(TestCase):
         ]
 
         tokenizer = BertTokenizer(self.vocab_file)
-        data_collator = PairCollator(tokenizer=tokenizer, query_max_length=10, document_max_length=11)
+        data_collator = PairCollator(
+            tokenizer=tokenizer, query_max_length=10, document_max_length=11, document_key='document'
+        )
         batch = data_collator(features)
         self.assertEqual(batch['query']['input_ids'].shape, torch.Size([2, 10]))
         self.assertEqual(batch['query']['attention_mask'].shape, torch.Size([2, 10]))
-        self.assertEqual(batch['document']['input_ids'].shape, torch.Size([2, 11]))
-        self.assertEqual(batch['document']['attention_mask'].shape, torch.Size([2, 11]))
+        self.assertEqual(batch['positive']['input_ids'].shape, torch.Size([2, 11]))
+        self.assertEqual(batch['positive']['attention_mask'].shape, torch.Size([2, 11]))
 
     def test_triplet_collator(self):
         features = [

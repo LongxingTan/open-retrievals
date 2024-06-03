@@ -28,8 +28,8 @@
 **[中文wiki](https://github.com/LongxingTan/open-retrievals/wiki)** | **[英文文档](https://open-retrievals.readthedocs.io)** | **[Release Notes](https://open-retrievals.readthedocs.io/en/latest/CHANGELOG.html)**
 
 **Open-Retrievals** 帮助开发者在信息检索、大语言模型等领域便捷地应用文本向量，快速搭建检索、排序、RAG等应用。
-- 支持point-wise、pairwise、listwise训练
 - 多种对比学习进行文本向量微调、rerank微调
+- 支持point-wise、pairwise、listwise训练
 - 支持大语言模型LLM文本向量微调
 - 结合Langchain、LLamaIndex快速产出RAG demo
 
@@ -62,21 +62,20 @@ pip install -e .
 
 **使用预训练权重的文本向量**
 ```python
-from retrievals import AutoModelForEmbedding, AutoModelForRetrieval
+from retrievals import AutoModelForEmbedding
 
-# 文本示例
 sentences = [
     "在1974年，第一次在东南亚打自由搏击就得了冠军",
     "1982年打赢了日本重炮手雷龙，接着连续三年打败所有日本空手道高手，赢得全日本自由搏击冠军",
-    "中国古拳法唯一传人鬼王达，被喻为空手道的克星，绰号“魔鬼筋肉人”"
+    "中国古拳法唯一传人鬼王达，被喻为空手道的克星，绰号魔鬼筋肉人",
+    "古人有云，有功夫，无懦夫"
 ]
 
-# 向量模型
-model_name_or_path = "sentence-transformers/all-MiniLM-L6-v2"
+model_name_or_path = 'intfloat/multilingual-e5-base'
 model = AutoModelForEmbedding.from_pretrained(model_name_or_path)
-
-embeddings = model.encode(sentences)
-print(embeddings) # 384维度的文本向量
+embeddings = model.encode(sentences)  # 384维度的文本向量
+scores = (embeddings[:2] @ embeddings[2:].T) * 100
+print(scores.tolist())
 ```
 
 **使用Faiss向量数据库检索**
@@ -234,6 +233,31 @@ trainer = RetrievalTrainer(
 trainer.optimizer = optimizer
 trainer.scheduler = scheduler
 trainer.train()
+```
+
+- 一键训练
+
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1w2dRoRThG6DnUW46swqEUuWySKS1AXCp?usp=sharing)
+
+```shell
+MODEL_NAME='BAAI/bge-small-zh-v1.5'
+
+torchrun --nproc_per_node 1 \
+  -m retrievals.pipelines.embed \
+  --output_dir train \
+  --overwrite_output_dir \
+  --model_name_or_path $MODEL_NAME \
+  --do_train \
+  --train_data train.jsonl \
+  --learning_rate 3e-5 \
+  --fp16 \
+  --num_train_epochs 5 \
+  --per_device_train_batch_size 32 \
+  --dataloader_drop_last True \
+  --query_max_length 64 \
+  --document_max_length 512 \
+  --train_group_size 2 \
+  --logging_steps 100
 ```
 
 **基于余弦相似度和近邻搜索**

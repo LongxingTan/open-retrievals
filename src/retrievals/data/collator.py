@@ -11,7 +11,7 @@ class PairCollator(DataCollatorWithPadding):
         query_max_length: int = 32,
         document_max_length: int = 128,
         query_key: str = 'query',
-        document_key: str = 'document',
+        document_key: str = 'positive',
     ) -> None:
         self.tokenizer = tokenizer
         if not hasattr(self.tokenizer, "pad_token_id") or self.tokenizer.pad_token is None:
@@ -23,6 +23,7 @@ class PairCollator(DataCollatorWithPadding):
         self.document_key = document_key
 
     def __call__(self, features: List[Dict[str, Any]]) -> Dict[str, Any]:
+        # TODO: tokenizer.apply_chat_template(chat, tokenize=False)
         assert len(features) > 0
         if isinstance(features[0], dict):
             assert (
@@ -65,7 +66,7 @@ class PairCollator(DataCollatorWithPadding):
             **tokenize_args,
         )
 
-        return {"query": query_inputs, "document": document_inputs}
+        return {"query": query_inputs, "positive": document_inputs}
 
 
 class TripletCollator(DataCollatorWithPadding):

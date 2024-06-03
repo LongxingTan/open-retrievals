@@ -1,7 +1,9 @@
 import re
-from typing import Dict, List, Literal
+from typing import Dict, List, Literal, Optional
 
 import torch
+from torch import nn
+from transformers import PreTrainedModel
 
 DEFAULT_LLM_PATTERNS = [r'.*llama.*', r'.*qwen.*', r'.*baichuan.*', r'.*mistral.*', r'.*intern.*']
 
@@ -45,3 +47,25 @@ def check_casual_lm(model_name_or_path: str, llm_regex_patterns: List[str] = Non
         if re.match(pattern, model_name_or_path):
             return True
     return False
+
+
+def find_all_linear_names(model: PreTrainedModel, linear_type: Optional[object] = None) -> List[str]:
+    """
+    Find all linear layer names
+
+    :param model: PreTrainedModel
+    :param linear_type: Optional[object] = None, linear type, such as nn.Linear and bnb.nn.Linear4bit.
+
+    :return: List[str], linear layer names
+    """
+    if linear_type is None:
+        linear_type = nn.Linear
+    lora_module_names = set()
+    for name, module in model.named_modules():
+        if isinstance(module, linear_type):
+            names = name.split('.')
+            lora_module_names.add(names[0] if len(names) == 1 else names[-1])
+
+    if 'lm_head' in lora_module_names:
+        lora_module_names.remove('lm_head')
+    return list(lora_module_names)

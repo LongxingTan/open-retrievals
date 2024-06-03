@@ -1,7 +1,17 @@
-import logging
-import time
-from typing import List, Literal, Optional, Tuple, Union
+"""
+TODO:
+- support bm25 retrieval
+- dense retrieval
+- web retrieval
+"""
 
+import logging
+import os.path
+import time
+from abc import ABC, abstractmethod
+from typing import Iterable, List, Literal, Optional, Tuple, Union
+
+import faiss
 import numpy as np
 import pandas as pd
 import torch
@@ -13,9 +23,15 @@ from tqdm.autonotebook import trange
 logger = logging.getLogger(__name__)
 
 
+class BaseRetriever(ABC):
+    @abstractmethod
+    def search(self, query: str) -> str:
+        pass
+
+
 class AutoModelForRetrieval(object):
     def __init__(
-        self, embedding_model: Optional[nn.Module] = None, method: Literal['cosine', 'knn'] = "cosine"
+        self, embedding_model: Optional[nn.Module] = None, method: Literal['cosine', 'knn', 'llm'] = "cosine"
     ) -> None:
         super().__init__()
         self.embedding_model = embedding_model
@@ -46,15 +62,27 @@ class AutoModelForRetrieval(object):
             import faiss
 
             start_time = time.time()
-            faiss_index = faiss.read_index(index_path)
-            logger.info(f'Loading faiss index successfully, elapsed time: {time.time()-start_time:.2}s')
+            if os.path.isfile(index_path):
+                faiss_index = faiss.read_index(index_path)
+                logger.info(f'Loading faiss index successfully, elapsed time: {time.time()-start_time:.2}s')
+                faiss_retrieval = FaissSearcher(faiss_index)
+            else:
+                index_file = []
+                for f in os.listdir(index_path):
+                    file = os.path.join(index_path, f)
+                    if os.path.isfile(file):
+                        index_file.append(file)
+                if not index_file:
+                    return
+                faiss_retrieval = FaissSearcher(index_file[0])
+                for i in range(1, len(index_file)):
+                    faiss_retrieval.add(index_file[i])
 
             if batch_size < 1:
                 dists, indices = faiss_index.search(query_embed.astype(np.float32), k=top_k)
             else:
-                dists, indices = faiss_search(
+                dists, indices = faiss_retrieval.search(
                     query_embed=query_embed,
-                    faiss_index=faiss_index,
                     top_k=top_k,
                     batch_size=batch_size,
                 )
@@ -85,6 +113,14 @@ class AutoModelForRetrieval(object):
 
     def get_relevant_documents(self, query: str):
         return
+
+    def write_ranking(self, query_ids, dists, indices, ranking_file):
+        with open(ranking_file, 'w') as f:
+            for qid, score, index in zip(query_ids, dists, indices):
+                score_list = [(s, idx) for s, idx in zip(score, index)]
+                score_list = sorted(score_list, key=lambda x: x[0], reverse=True)
+                for s, idx in score_list:
+                    f.write(f'{qid}\t{idx}\t{s}\n')
 
     def get_pandas_candidate(
         self,
@@ -144,6 +180,10 @@ class AutoModelForRetrieval(object):
 
 
 class EnsembleRetriever(object):
+    """
+    RRF_fusion
+    """
+
     def __init__(self, retrievers, weights=None):
         pass
 
@@ -191,32 +231,60 @@ def cosine_similarity_search(
     return dists, indices
 
 
-def faiss_search(
-    query_embed: torch.Tensor,
-    faiss_index,
-    top_k: int = 100,
-    batch_size: int = 128,
-) -> Tuple[np.ndarray, np.ndarray]:
-    """
-    1. Encode queries into dense embeddings;
-    2. Search through faiss index
-    """
-    # query_embeddings = model.encode_queries(
-    #     queries["query"], batch_size=batch_size, max_length=max_length
-    # )
-    query_size = len(query_embed)
-    assert query_size > 0, 'Please make sure the query_embeddings is not empty'
+class FaissSearcher(BaseRetriever):
+    def __init__(self, corpus_index: Union['faiss.Index', np.ndarray]):
+        if isinstance(corpus_index, np.ndarray):
+            index = faiss.IndexFlatIP(corpus_index.shape[1])
+            self.index = index
+        else:
+            self.index = corpus_index
 
-    all_scores = []
-    all_indices = []
+    def add(self, corpus_index: np.ndarray):
+        self.index.add(corpus_index)
 
-    for i in tqdm(range(0, query_size, batch_size), desc="Searching"):
-        j = min(i + batch_size, query_size)
-        query_embedding = query_embed[i:j]
-        score, index = faiss_index.search(query_embedding.astype(np.float32), k=top_k)
-        all_scores.append(score)
-        all_indices.append(index)
+    def search(
+        self,
+        query_embed: Union[torch.Tensor, np.ndarray],
+        top_k: int = 100,
+        batch_size: int = 128,
+    ) -> Tuple[np.ndarray, np.ndarray]:
+        """
+        1. Encode queries into dense embeddings;
+        2. Search through faiss index
+        """
+        # query_embeddings = model.encode_queries(
+        #     queries["query"], batch_size=batch_size, max_length=max_length
+        # )
+        query_size = len(query_embed)
+        assert query_size > 0, 'Please make sure the query_embeddings is not empty'
 
-    all_scores = np.concatenate(all_scores, axis=0)
-    all_indices = np.concatenate(all_indices, axis=0)
-    return all_scores, all_indices
+        all_scores = []
+        all_indices = []
+
+        for i in tqdm(range(0, query_size, batch_size), desc="Searching"):
+            j = min(i + batch_size, query_size)
+            query_embedding = query_embed[i:j]
+            score, index = self.index.search(query_embedding.astype(np.float32), k=top_k)
+            all_scores.append(score)
+            all_indices.append(index)
+
+        all_scores = np.concatenate(all_scores, axis=0)
+        all_indices = np.concatenate(all_indices, axis=0)
+        return all_scores, all_indices
+
+    def combine(self, results: Iterable[Tuple[np.ndarray, np.ndarray]]):
+        rh = None
+        for scores, indices in results:
+            if rh is None:
+                print(f'Initializing Heap. Assuming {scores.shape[0]} queries.')
+                rh = faiss.ResultHeap(scores.shape[0], scores.shape[1])
+            rh.add_result(-scores, indices)
+        rh.finalize()
+        corpus_scores, corpus_indices = -rh.D, rh.I
+
+        return corpus_scores, corpus_indices
+
+
+class BM25Searcher(BaseRetriever):
+    def search(self, query: str) -> str:
+        return
