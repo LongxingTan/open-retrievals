@@ -8,8 +8,9 @@ TODO:
 import logging
 import time
 from abc import ABC, abstractmethod
-from typing import List, Literal, Optional, Tuple, Union
+from typing import Iterable, List, Literal, Optional, Tuple, Union
 
+import faiss
 import numpy as np
 import pandas as pd
 import torch
@@ -59,18 +60,16 @@ class AutoModelForRetrieval(object):
         if index_path is not None:
             import faiss
 
-            faiss_retrieval = FaissSearcher()
-
             start_time = time.time()
             faiss_index = faiss.read_index(index_path)
             logger.info(f'Loading faiss index successfully, elapsed time: {time.time()-start_time:.2}s')
+            faiss_retrieval = FaissSearcher(faiss_index)
 
             if batch_size < 1:
                 dists, indices = faiss_index.search(query_embed.astype(np.float32), k=top_k)
             else:
                 dists, indices = faiss_retrieval.search(
                     query_embed=query_embed,
-                    faiss_index=faiss_index,
                     top_k=top_k,
                     batch_size=batch_size,
                 )
@@ -216,10 +215,19 @@ def cosine_similarity_search(
 
 
 class FaissSearcher(BaseRetriever):
+    def __init__(self, corpus_index: Union[faiss.Index, np.ndarray]):
+        if isinstance(corpus_index, np.ndarray):
+            index = faiss.IndexFlatIP(corpus_index.shape[1])
+            self.index = index
+        else:
+            self.index = corpus_index
+
+    def add(self, corpus_index: np.ndarray):
+        self.index.add(corpus_index)
+
     def search(
         self,
-        query_embed: torch.Tensor,
-        faiss_index,
+        query_embed: Union[torch.Tensor, np.ndarray],
         top_k: int = 100,
         batch_size: int = 128,
     ) -> Tuple[np.ndarray, np.ndarray]:
@@ -239,13 +247,25 @@ class FaissSearcher(BaseRetriever):
         for i in tqdm(range(0, query_size, batch_size), desc="Searching"):
             j = min(i + batch_size, query_size)
             query_embedding = query_embed[i:j]
-            score, index = faiss_index.search(query_embedding.astype(np.float32), k=top_k)
+            score, index = self.index.search(query_embedding.astype(np.float32), k=top_k)
             all_scores.append(score)
             all_indices.append(index)
 
         all_scores = np.concatenate(all_scores, axis=0)
         all_indices = np.concatenate(all_indices, axis=0)
         return all_scores, all_indices
+
+    def combine(self, results: Iterable[Tuple[np.ndarray, np.ndarray]]):
+        rh = None
+        for scores, indices in results:
+            if rh is None:
+                print(f'Initializing Heap. Assuming {scores.shape[0]} queries.')
+                rh = faiss.ResultHeap(scores.shape[0], scores.shape[1])
+            rh.add_result(-scores, indices)
+        rh.finalize()
+        corpus_scores, corpus_indices = -rh.D, rh.I
+
+        return corpus_scores, corpus_indices
 
 
 class BM25Searcher(BaseRetriever):
