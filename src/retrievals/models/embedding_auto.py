@@ -614,6 +614,8 @@ class PairwiseModel(AutoModelForEmbedding):
             else:
                 input1 = inputs['query']
                 input2 = inputs['positive']
+                if 'negative' in inputs:
+                    input3 = inputs['negetive']
 
             if self.cross_encoder:
                 ids1, mask1 = input1['input_ids'], input1['attention_mask']
