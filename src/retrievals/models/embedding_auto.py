@@ -545,13 +545,15 @@ class AutoModelForEmbedding(nn.Module):
         return all_tensors
 
     def __getattr__(self, name):
-        if hasattr(self.model, name):
-            attr = getattr(self.model, name)
-            if callable(attr):
-                return attr
-            else:
-                return attr
-        raise AttributeError(f"'{self.__class__.__name__}' object has no attribute '{name}'")
+        try:
+            model = self.__dict__['model']
+            attr = getattr(model, name)
+            return attr
+        except KeyError:
+            raise AttributeError(f"'{self.__class__.__name__}' object has no attribute '{name}'")
+        except AttributeError:
+            raise AttributeError(
+                f"'{self.__class__.__name__}' object and its 'model' attribute have no attribute '{name}'")
 
 
 class PairwiseModel(AutoModelForEmbedding):
