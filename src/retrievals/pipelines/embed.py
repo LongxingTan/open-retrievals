@@ -4,6 +4,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
 
+from torch import nn
 from transformers import (
     AutoConfig,
     AutoTokenizer,
@@ -13,6 +14,7 @@ from transformers import (
 )
 
 from ..data import PairCollator, RetrievalDataset, TripletCollator
+from ..losses import InfoNCE
 from ..models.embedding_auto import AutoModelForEmbedding
 from ..trainer import RetrievalTrainer
 
@@ -83,6 +85,7 @@ class RetrieverTrainingArguments(TrainingArguments):
     normalized: bool = field(default=True)
     use_inbatch_neg: bool = field(default=True, metadata={"help": "use passages in the same batch as negatives"})
     train_type: str = field(default='pairwise', metadata={'help': "train type of point, pair, or list"})
+    remove_unused_columns: bool = field(default=False)
 
 
 def main():
@@ -141,12 +144,16 @@ def main():
         model_name_or_path=model_args.model_name_or_path,
         pooling_method=training_args.pooling_method,
     )
+    model = model.set_train_type(
+        "pairwise",
+        loss_fn=InfoNCE(nn.CrossEntropyLoss(label_smoothing=0.05), negative_samples=2),
+    )
 
-    if training_args.fix_position_embedding:
-        for k, v in model.named_parameters():
-            if "position_embeddings" in k:
-                logging.info(f"Freeze the parameters for {k}")
-                v.requires_grad = False
+    # if training_args.fix_position_embedding:
+    #     for k, v in model.named_parameters():
+    #         if "position_embeddings" in k:
+    #             logging.info(f"Freeze the parameters for {k}")
+    #             v.requires_grad = False
 
     train_dataset = RetrievalDataset(args=data_args, tokenizer=tokenizer, positive_key='pos')
 
@@ -160,7 +167,6 @@ def main():
             document_max_length=data_args.document_max_length,
             document_key='pos',
         ),
-        tokenizer=tokenizer,
     )
 
     Path(training_args.output_dir).mkdir(parents=True, exist_ok=True)
