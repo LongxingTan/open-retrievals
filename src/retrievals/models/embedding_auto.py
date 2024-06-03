@@ -210,7 +210,7 @@ class AutoModelForEmbedding(nn.Module):
         all_embeddings = []
 
         for idx, inputs in enumerate(tqdm(loader, desc="Encoding", disable=not show_progress_bar)):
-            with torch.cuda.amp.autocast() if self.fp16 else nullcontext():
+            with torch.autocast(device_type=device) if self.fp16 else nullcontext():
                 with torch.no_grad():
                     inputs_on_device = {k: v.to(device) for k, v in inputs.items()}
                     embeddings = self.forward_from_loader(inputs_on_device)

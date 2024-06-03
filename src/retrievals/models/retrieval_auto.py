@@ -6,6 +6,7 @@ TODO:
 """
 
 import logging
+import os.path
 import time
 from abc import ABC, abstractmethod
 from typing import Iterable, List, Literal, Optional, Tuple, Union
@@ -61,9 +62,21 @@ class AutoModelForRetrieval(object):
             import faiss
 
             start_time = time.time()
-            faiss_index = faiss.read_index(index_path)
-            logger.info(f'Loading faiss index successfully, elapsed time: {time.time()-start_time:.2}s')
-            faiss_retrieval = FaissSearcher(faiss_index)
+            if os.path.isfile(index_path):
+                faiss_index = faiss.read_index(index_path)
+                logger.info(f'Loading faiss index successfully, elapsed time: {time.time()-start_time:.2}s')
+                faiss_retrieval = FaissSearcher(faiss_index)
+            else:
+                index_file = []
+                for f in os.listdir(index_path):
+                    file = os.path.join(index_path, f)
+                    if os.path.isfile(file):
+                        index_file.append(file)
+                if not index_file:
+                    return
+                faiss_retrieval = FaissSearcher(index_file[0])
+                for i in range(1, len(index_file)):
+                    faiss_retrieval.add(index_file[i])
 
             if batch_size < 1:
                 dists, indices = faiss_index.search(query_embed.astype(np.float32), k=top_k)

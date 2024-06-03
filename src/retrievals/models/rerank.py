@@ -231,13 +231,6 @@ class RerankModel(nn.Module):
         return_dict: bool = True,
         **kwargs,
     ):
-        # if isinstance(query, str):
-        #     text_pairs = [(query, doc) for doc in document]
-        # elif isinstance(query, (list, tuple)):
-        #     text_pairs = [(q, doc) for q, doc in zip(query, document)]
-        # else:
-        #     pass
-
         if query is None or len(query) == 0 or len(documents) == 0:
             return {'rerank_documents': [], 'rerank_scores': []}
 
