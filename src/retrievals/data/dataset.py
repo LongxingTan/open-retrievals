@@ -25,7 +25,7 @@ class RetrievalDataset(Dataset):
     ):
         if not data_name_or_path and args:
             data_name_or_path = args.train_data
-        if args and 'train_group_size' in args:
+        if args and 'train_group_size' in args.__dataclass_fields__:
             self.train_group_size = args.train_group_size
         else:
             self.train_group_size = train_group_size
