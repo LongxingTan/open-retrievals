@@ -146,7 +146,7 @@ def main():
     )
     model = model.set_train_type(
         "pairwise",
-        loss_fn=InfoNCE(nn.CrossEntropyLoss(label_smoothing=0.05), negative_samples=2),
+        loss_fn=InfoNCE(nn.CrossEntropyLoss(label_smoothing=0.05), negative_samples=1),
     )
 
     # if training_args.fix_position_embedding:
