@@ -515,6 +515,9 @@ class AutoModelForEmbedding(nn.Module):
         self.tokenizer.push_to_hub(hub_model_id, private=private, **kwargs)
         self.backbone.push_to_hub(hub_model_id, private=private, **kwargs)
 
+    def gradient_checkpointing_enable(self, gradient_checkpointing_kwargs=None):
+        self.model.gradient_checkpointing_enable(gradient_checkpointing_kwargs=gradient_checkpointing_kwargs)
+
     def _text_length(self, text: Union[List[int], List[List[int]]]):
         """
         Help function to get the length for the input text. Text can be either
@@ -543,18 +546,6 @@ class AutoModelForEmbedding(nn.Module):
         all_tensors = torch.cat(all_tensors, dim=0)
 
         return all_tensors
-
-    # def __getattribute__(self, name):
-    #     try:
-    #         model = self.__getattribute__('model')
-    #         attr = getattr(model, name)
-    #         return attr
-    #     except KeyError:
-    #         raise AttributeError(f"'{self.__class__.__name__}' object has no attribute '{name}'")
-    #     except AttributeError:
-    #         raise AttributeError(
-    #             f"'{self.__class__.__name__}' object and its 'model' attribute have no attribute '{name}'"
-    #         )
 
 
 class PairwiseModel(AutoModelForEmbedding):

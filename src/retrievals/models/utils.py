@@ -69,3 +69,11 @@ def find_all_linear_names(model: PreTrainedModel, linear_type: Optional[object] 
     if 'lm_head' in lora_module_names:
         lora_module_names.remove('lm_head')
     return list(lora_module_names)
+
+
+def resize_token_embeddings(
+    model,
+    new_num_tokens: Optional[int] = None,
+    pad_to_multiple_of: Optional[int] = None,
+) -> nn.Embedding:
+    return model.resize_token_embeddings(new_num_tokens=new_num_tokens, pad_to_multiple_of=pad_to_multiple_of)
