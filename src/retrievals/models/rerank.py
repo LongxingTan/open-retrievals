@@ -41,7 +41,8 @@ class RerankModel(nn.Module):
         self,
         model: Optional[nn.Module] = None,
         tokenizer: Optional[PreTrainedTokenizer] = None,
-        pooling_method: Optional[str] = 'mean',
+        train_group_size: int = 1,
+        pooling_method: Optional[str] = None,
         loss_fn: Union[nn.Module, Callable] = None,
         loss_type: Literal['classification', 'regression'] = 'classification',
         max_length: Optional[int] = None,
@@ -54,6 +55,7 @@ class RerankModel(nn.Module):
 
         self.model: Optional[nn.Module] = model
         self.tokenizer = tokenizer
+        self.train_group_size = train_group_size
         self.pooling_method = pooling_method
         if pooling_method:
             self.pooling = AutoPooling(self.pooling_method)
@@ -76,7 +78,7 @@ class RerankModel(nn.Module):
         else:
             self.device = device
         # both self.model and self.linear to device
-        self._post_init()
+        # self._post_init()
         self.to(self.device)
 
     def _post_init(self):
@@ -104,14 +106,12 @@ class RerankModel(nn.Module):
 
     def encode(self, input_ids: torch.Tensor, attention_mask: torch.Tensor) -> torch.Tensor:
         outputs: SequenceClassifierOutput = self.model(input_ids, attention_mask, output_hidden_states=True)
-        if hasattr(outputs, 'last_hidden_state'):
-            # 3D tensor: [batch, seq_len, attention_dim]
-            hidden_state = outputs.last_hidden_state
-        else:
-            hidden_state = outputs.hidden_states[1]
 
-        if self.pooling_method:
-            # 2D tensor
+        if not self.pooling_method:
+            return outputs
+
+        hidden_state = outputs['last_hidden_state']
+        if self.pooling is not None:
             embeddings = self.pooling(hidden_state, attention_mask)
         else:
             embeddings = self.classifier(hidden_state[:, 1:])
@@ -132,7 +132,12 @@ class RerankModel(nn.Module):
             features = self.encode(**inputs)
         else:
             raise ValueError("input_ids(tensor) and inputs(dict) can't be empty as the same time")
-        logits = self.classifier(features).reshape(-1)
+
+        if not self.training:
+            return features
+
+        logits = features.logits
+        scores = logits.view(-1, self.train_group_size)
 
         if return_dict:
             outputs_dict = dict()
@@ -147,7 +152,7 @@ class RerankModel(nn.Module):
                 elif self.loss_type == 'classification':
                     self.loss_fn = nn.BCEWithLogitsLoss(reduction='mean')
 
-            loss = self.loss_fn(logits, labels.float())
+            loss = self.loss_fn(scores, labels.float())
             if return_dict:
                 outputs_dict['loss'] = loss
                 return outputs_dict
@@ -275,12 +280,11 @@ class RerankModel(nn.Module):
     def from_pretrained(
         cls,
         model_name_or_path: str,
-        pooling_method: str = 'mean',
+        pooling_method: Optional[str] = None,
         loss_fn: Union[nn.Module, Callable] = None,
         loss_type: Literal['classification', 'regression'] = 'classification',
         num_labels: int = 1,
         causal_lm: bool = False,
-        gradient_checkpointing: bool = False,
         trust_remote_code: bool = True,
         use_fp16: bool = False,
         use_lora: bool = False,
@@ -296,11 +300,10 @@ class RerankModel(nn.Module):
         model = AutoModelForSequenceClassification.from_pretrained(
             model_name_or_path, num_labels=num_labels, trust_remote_code=trust_remote_code, **kwargs
         )
-        if gradient_checkpointing:
-            model.graident_checkpointing_enable()
 
         if use_fp16:
             model.half()
+
         if use_lora:
             from peft import LoraConfig, TaskType, get_peft_model
 
@@ -329,6 +332,9 @@ class RerankModel(nn.Module):
         state_dict = type(state_dict)({k: v.clone().cpu() for k, v in state_dict.items()})
         self.model.save_pretrained(path, state_dict=state_dict, safe_serialization=safe_serialization)
         self.tokenizer.save_pretrained(path)
+
+    def gradient_checkpointing_enable(self, gradient_checkpointing_kwargs=None):
+        self.model.gradient_checkpointing_enable(gradient_checkpointing_kwargs=gradient_checkpointing_kwargs)
 
 
 class ColBERT(RerankModel):
