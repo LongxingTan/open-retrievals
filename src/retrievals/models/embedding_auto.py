@@ -544,6 +544,15 @@ class AutoModelForEmbedding(nn.Module):
 
         return all_tensors
 
+    def __getattr__(self, name):
+        if hasattr(self.model, name):
+            attr = getattr(self.model, name)
+            if callable(attr):
+                return attr
+            else:
+                return attr
+        raise AttributeError(f"'{self.__class__.__name__}' object has no attribute '{name}'")
+
 
 class PairwiseModel(AutoModelForEmbedding):
     """Pairwise Model wrapper
