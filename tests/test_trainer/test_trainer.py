@@ -90,11 +90,11 @@ class TrainerTest(TestCase):
         training_args, _ = parser.parse_args_into_dataclasses(return_remaining_strings=True)
 
         trainer = RetrievalTrainer(
-            model=self.model.set_train_type('pairwise'),
+            model=self.model.set_train_type('pairwise', loss_fn=TripletLoss()),
             args=training_args,
+            # train_type='pairwise',
             train_dataset=self.train_dataset,
             data_collator=TripletCollator(tokenizer=self.tokenizer, query_max_length=32, document_max_length=128),
-            loss_fn=TripletLoss(),
         )
         trainer.train()
 
