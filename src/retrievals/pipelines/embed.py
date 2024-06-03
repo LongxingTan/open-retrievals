@@ -86,7 +86,7 @@ class RetrieverTrainingArguments(TrainingArguments):
 
 
 def main():
-    parser = HfArgumentParser((ModelArguments, DataArguments, TrainingArguments))
+    parser = HfArgumentParser((ModelArguments, DataArguments, RetrieverTrainingArguments))
     model_args, data_args, training_args = parser.parse_args_into_dataclasses()
     model_args: ModelArguments
     data_args: DataArguments
