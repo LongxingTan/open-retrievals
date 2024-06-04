@@ -63,7 +63,7 @@ class AutoModelForRetrieval(object):
             import faiss
 
             start_time = time.time()
-            if not isinstance(index_path, Iterable) and os.path.isfile(index_path):
+            if not isinstance(index_path, (list, tuple)) and os.path.isfile(index_path):
                 faiss_index = faiss.read_index(index_path)
                 logger.info(f'Loading faiss index successfully, elapsed time: {time.time()-start_time:.2}s')
                 faiss_retrieval = FaissSearcher(faiss_index)
