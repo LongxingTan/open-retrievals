@@ -235,7 +235,7 @@ def cosine_similarity_search(
 
 class FaissSearcher(BaseRetriever):
     def __init__(self, corpus_index: Union['faiss.Index', np.ndarray]):
-        if isinstance(corpus_index, np.ndarray):
+        if isinstance(corpus_index, (np.ndarray, torch.Tensor)):
             index = faiss.IndexFlatIP(corpus_index.shape[1])
             self.index = index
         else:
