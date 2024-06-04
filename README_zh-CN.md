@@ -14,8 +14,8 @@
 [coverage-url]: https://codecov.io/github/longxingtan/open-retrievals?branch=master
 
 <h1 align="center">
-<img src="./docs/source/_static/logo.svg" width="490" align=center/>
-</h1><br>
+<img src="./docs/source/_static/logo.svg" width="420" align=center/>
+</h1>
 
 [![LICENSE][license-image]][license-url]
 [![PyPI Version][pypi-image]][pypi-url]
