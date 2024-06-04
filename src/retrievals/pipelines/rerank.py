@@ -13,8 +13,7 @@ from transformers import (
 )
 
 from ..data import ColBertCollator, RerankCollator, RerankDataset
-from ..losses import InfoNCE
-from ..models.rerank import RerankModel
+from ..models.rerank import AutoModelForRanking
 from ..trainer import RerankTrainer
 
 logger = logging.getLogger(__name__)
@@ -107,7 +106,7 @@ def main():
         cache_dir=model_args.cache_dir,
     )
 
-    model = RerankModel.from_pretrained(
+    model = AutoModelForRanking.from_pretrained(
         model_args,
         data_args,
         training_args,

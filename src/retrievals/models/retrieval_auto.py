@@ -117,7 +117,10 @@ class AutoModelForRetrieval(object):
     def get_relevant_documents(self, query: str):
         return
 
-    def write_ranking(self, query_ids, dists, indices, ranking_file):
+    def save_ranking(self, query_ids, dists, indices, ranking_file):
+        """
+        save format: qid, docid, score
+        """
         with open(ranking_file, 'w') as f:
             for qid, score, index in zip(query_ids, dists, indices):
                 score_list = [(s, idx) for s, idx in zip(score, index)]
@@ -253,14 +256,12 @@ class FaissSearcher(BaseRetriever):
         query_embed: Union[torch.Tensor, np.ndarray],
         top_k: int = 100,
         batch_size: int = 128,
+        document_lookup: Optional[np.ndarray] = None,
     ) -> Tuple[np.ndarray, np.ndarray]:
         """
-        1. Encode queries into dense embeddings;
+        1. Encode queries into dense embeddings
         2. Search through faiss index
         """
-        # query_embeddings = model.encode_queries(
-        #     queries["query"], batch_size=batch_size, max_length=max_length
-        # )
         query_size = len(query_embed)
         assert query_size > 0, 'Please make sure the query_embeddings is not empty'
 
@@ -276,7 +277,11 @@ class FaissSearcher(BaseRetriever):
 
         all_scores = np.concatenate(all_scores, axis=0)
         all_indices = np.concatenate(all_indices, axis=0)
-        return all_scores, all_indices
+        if not document_lookup:
+            return all_scores, all_indices
+        else:
+            document_ids = np.array([[int(document_lookup[idx]) for idx in indices] for indices in all_indices])
+            return all_scores, document_ids
 
     def combine(self, results: Iterable[Tuple[np.ndarray, np.ndarray]]):
         rh = None
