@@ -5,6 +5,7 @@ TODO:
 - web retrieval
 """
 
+import glob
 import logging
 import os.path
 import time
@@ -62,25 +63,22 @@ class AutoModelForRetrieval(object):
             import faiss
 
             start_time = time.time()
-            if os.path.isfile(index_path):
+            if not isinstance(index_path, Iterable) and os.path.isfile(index_path):
                 faiss_index = faiss.read_index(index_path)
                 logger.info(f'Loading faiss index successfully, elapsed time: {time.time()-start_time:.2}s')
                 faiss_retrieval = FaissSearcher(faiss_index)
             else:
                 if isinstance(index_path, (list, tuple)) and os.path.isfile(index_path[0]):
-                    index_file = index_path
+                    index_files = index_path
                 else:
-                    index_file = []
-                    for f in os.listdir(index_path):
-                        file = os.path.join(index_path, f)
-                        if os.path.isfile(file):
-                            index_file.append(file)
-                    if not index_file:
-                        return
+                    index_files = glob.glob(index_path)
 
-                faiss_retrieval = FaissSearcher(index_file[0])
-                for i in range(1, len(index_file)):
-                    faiss_retrieval.add(index_file[i])
+                logger.info(
+                    f'Loading index successfully, files: {len(index_files)}, elapsed: {time.time() - start_time:.2}s'
+                )
+                faiss_retrieval = FaissSearcher(index_files[0])
+                for i in range(1, len(index_files)):
+                    faiss_retrieval.add(index_files[i])
 
             if batch_size < 1:
                 dists, indices = faiss_index.search(query_embed.astype(np.float32), k=top_k)
