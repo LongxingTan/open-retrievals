@@ -63,9 +63,9 @@ class InfoNCE(nn.Module):
                 logits = torch.cat([positive_embeddings, negative_embeddings], dim=0)
                 similarity = query_embeddings @ logits.transpose(-2, -1)
                 similarity = similarity / self.temperature
-                similarity = similarity.view(similarity.size(0), -1)
+                similarity = similarity.view(positive_embeddings.size(0), -1)
 
-                labels = torch.arange(similarity.size(0), dtype=torch.long, device=query_embeddings.device)
+                labels = torch.arange(positive_embeddings.size(0), dtype=torch.long, device=device)
                 labels = labels * self.train_group_size
             else:
                 logits = torch.cat([positive_embeddings, negative_embeddings], dim=0)
@@ -73,6 +73,6 @@ class InfoNCE(nn.Module):
                 similarity = query_embeddings[:, None, :] @ logits.transpose(-2, -1)
                 similarity = similarity.squeeze(1) / self.temperature
                 similarity = similarity.view(query_embeddings.size(0), -1)
-                labels = torch.zeros(logits.size(0), dtype=torch.long, device=query_embeddings.device)
+                labels = torch.zeros(logits.size(0), dtype=torch.long, device=device)
 
             return self.criterion(similarity, labels)
