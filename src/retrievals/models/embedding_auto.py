@@ -601,9 +601,9 @@ class PairwiseModel(AutoModelForEmbedding):
                 if len(inputs) == 3:
                     input3 = inputs[2]
 
+            ids1, mask1 = input1['input_ids'], input1['attention_mask']
+            ids2, mask2 = input2['input_ids'], input2['attention_mask']
             if self.cross_encoder:
-                ids1, mask1 = input1['input_ids'], input1['attention_mask']
-                ids2, mask2 = input2['input_ids'], input2['attention_mask']
                 ids = torch.cat([ids1, ids2], dim=0)
                 mask = torch.cat([mask1, mask2], dim=0)
 
@@ -617,10 +617,10 @@ class PairwiseModel(AutoModelForEmbedding):
             else:
                 # bi-encoder, pooling in each
                 if self.shared_weights:
-                    pooled_output1 = super().forward_from_loader(**input1)
-                    pooled_output2 = super().forward_from_loader(**input2)
+                    pooled_output1 = super().forward_from_loader(ids1, mask1)
+                    pooled_output2 = super().forward_from_loader(ids2, mask2)
                     if len(inputs) == 3:
-                        pooled_output3 = super().forward_from_loader(**input3)
+                        pooled_output3 = super().forward_from_loader(input3['input_ids'], input3['attention_mask'])
                         if self.loss_fn is None:
                             return pooled_output1, pooled_output2, pooled_output3
                         outputs = dict()
@@ -629,8 +629,8 @@ class PairwiseModel(AutoModelForEmbedding):
                         return outputs
 
                 else:
-                    pooled_output1 = super().forward_from_loader(**input1)
-                    pooled_output2 = self.document_model(**input2)
+                    pooled_output1 = super().forward_from_loader(ids1, mask1)
+                    pooled_output2 = self.document_model(ids2, mask2)
 
             if self.loss_fn is None:
                 return pooled_output1, pooled_output2
