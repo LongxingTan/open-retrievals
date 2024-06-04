@@ -29,7 +29,6 @@ class PairCollator(DataCollatorWithPadding):
             assert (
                 self.query_key in features[0] and self.document_key in features[0]
             ), f"PairCollator should have {self.query_key} and {self.document_key} in features, while get {features[0]}"
-            "you can set the custom key of query_key, positive_key during class init"
 
             query_texts = [feature[self.query_key] for feature in features]
             document_texts = [feature[self.document_key] for feature in features]
@@ -97,7 +96,6 @@ class TripletCollator(DataCollatorWithPadding):
                 and self.positive_key in features[0]
                 and self.negative_key in features[0]
             ), f"TripletCollator should have {self.query_key}, {self.positive_key} and {self.negative_key} in dict key"
-            "you can set the custom key of query_key, positive_key and negative_key during class init"
 
             query_texts = [feature[self.query_key] for feature in features]
             pos_texts = [feature[self.positive_key] for feature in features]
@@ -132,10 +130,10 @@ class TripletCollator(DataCollatorWithPadding):
         )
         pos_inputs = tokenize_fn(
             pos_texts, padding="max_length", max_length=self.document_max_length, return_tensors="pt", **tokenize_args
-        )  # ["input_ids"]
+        )
         neg_inputs = tokenize_fn(
             neg_texts, padding="max_length", max_length=self.document_max_length, return_tensors="pt", **tokenize_args
-        )  # ["input_ids"]
+        )
 
         return {
             self.query_key: query_inputs,
@@ -167,8 +165,7 @@ class RerankCollator(DataCollatorWithPadding):
         if isinstance(features[0], dict):
             assert (
                 self.query_key in features[0] and self.document_key in features[0]
-            ), f"RerankCollator should have {self.query_key} and {self.document_key} keys in features, "
-            "and 'labels' during training"
+            ), f"RerankCollator should have {self.query_key} and {self.document_key} keys in features, maybe labels"
             query_texts = [feature[self.query_key] for feature in features]
             document_texts = [feature[self.document_key] for feature in features]
         else:
@@ -226,7 +223,6 @@ class ColBertCollator(DataCollatorWithPadding):
         assert (
             self.query_key in features[0] and self.positive_key in features[0]
         ), f"PairCollator should have {self.query_key} and {self.positive_key} in features, while get {features[0]}"
-        "you can set the custom key of query_key, positive_key during class init"
 
         query_texts = [feature[self.query_key] for feature in features]
         pos_texts = [feature[self.positive_key] for feature in features]

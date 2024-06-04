@@ -36,16 +36,16 @@ class TripletLoss(nn.Module):
             pos_embeddings = self._dist_gather_tensor(pos_embeddings)
             neg_embeddings = self._dist_gather_tensor(neg_embeddings)
 
-        sim_pos_vector = torch.cosine_similarity(query_embeddings, pos_embeddings, dim=-1)
-        sim_pos_vector = sim_pos_vector / self.temperature
-        sim_neg_matrix = torch.cosine_similarity(
+        pos_similarity = torch.cosine_similarity(query_embeddings, pos_embeddings, dim=-1)
+        pos_similarity = pos_similarity / self.temperature
+        neg_similarity = torch.cosine_similarity(
             query_embeddings.unsqueeze(1),
             neg_embeddings.unsqueeze(0),
             dim=-1,
         )
-        sim_neg_matrix = sim_neg_matrix / self.temperature
-        sim_diff_matrix = sim_pos_vector.unsqueeze(1) - sim_neg_matrix
-        loss = -torch.log(torch.sigmoid(sim_diff_matrix)).mean()
+        neg_similarity = neg_similarity / self.temperature
+        similarity_diff = pos_similarity.unsqueeze(1) - neg_similarity
+        loss = -torch.log(torch.sigmoid(similarity_diff)).mean()
         return loss
 
     def _dist_gather_tensor(self, t: Optional[torch.Tensor]):

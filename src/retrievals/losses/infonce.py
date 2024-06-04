@@ -27,6 +27,10 @@ class InfoNCE(nn.Module):
         negative_mode: Literal['paired', 'unpaired'] = "unpaired",
         train_group_size: int = 1,
     ):
+        """
+        if not normalized: temperature = 1.0, reset temperature = 1.0 due to using inner product to compute similarity
+        if normalized: temperature should be smaller than 1.0 when use cosine similarity. Recommend to set it 0.01-0.1
+        """
         super().__init__()
         self.criterion = criterion
         self.temperature = temperature
@@ -64,13 +68,12 @@ class InfoNCE(nn.Module):
                 similarity = query_embeddings @ logits.transpose(-2, -1)
                 similarity = similarity / self.temperature
                 similarity = similarity.view(positive_embeddings.size(0), -1)
-
                 labels = torch.arange(positive_embeddings.size(0), dtype=torch.long, device=device)
                 labels = labels * self.train_group_size
             else:
                 logits = torch.cat([positive_embeddings, negative_embeddings], dim=0)
                 logits = logits.view(query_embeddings.size(0), self.train_group_size, -1)
-                similarity = query_embeddings[:, None, :] @ logits.transpose(-2, -1)
+                similarity = query_embeddings.unsqueeze(1) @ logits.transpose(-2, -1)
                 similarity = similarity.squeeze(1) / self.temperature
                 similarity = similarity.view(query_embeddings.size(0), -1)
                 labels = torch.zeros(logits.size(0), dtype=torch.long, device=device)
