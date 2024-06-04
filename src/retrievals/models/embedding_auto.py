@@ -398,13 +398,15 @@ class AutoModelForEmbedding(nn.Module):
     def set_train_type(self, train_type: Literal['pointwise', 'pairwise', 'listwise'], **kwargs):
         model_class = {'pointwise': self, 'pairwise': PairwiseModel, 'listwise': ListwiseModel}
         model_class = model_class.get(train_type.lower())
+        # if 'loss_fn' in kwargs:
+        #     self.loss_fn = kwargs.pop('loss_fn')
 
         return model_class(
             model=self.model,
             tokenizer=self.tokenizer,
             pooling_method=self.pooling_method,
             normalize_embeddings=self.normalize_embeddings,
-            loss_fn=self.loss_fn,
+            # loss_fn=self.loss_fn,
             query_instruction=self.query_instruction,
             document_instruction=self.document_instruction,
             device=self.device,
@@ -615,10 +617,10 @@ class PairwiseModel(AutoModelForEmbedding):
             else:
                 # bi-encoder, pooling in each
                 if self.shared_weights:
-                    pooled_output1 = super().forward(input1)
-                    pooled_output2 = super().forward(input2)
+                    pooled_output1 = super().forward_from_loader(**input1)
+                    pooled_output2 = super().forward_from_loader(**input2)
                     if len(inputs) == 3:
-                        pooled_output3 = super().forward(input3)
+                        pooled_output3 = super().forward_from_loader(**input3)
                         if self.loss_fn is None:
                             return pooled_output1, pooled_output2, pooled_output3
                         outputs = dict()
@@ -627,8 +629,8 @@ class PairwiseModel(AutoModelForEmbedding):
                         return outputs
 
                 else:
-                    pooled_output1 = super().forward(input1)
-                    pooled_output2 = self.document_model(input2)
+                    pooled_output1 = super().forward_from_loader(**input1)
+                    pooled_output2 = self.document_model(**input2)
 
             if self.loss_fn is None:
                 return pooled_output1, pooled_output2
@@ -639,7 +641,7 @@ class PairwiseModel(AutoModelForEmbedding):
                 return outputs
 
         else:
-            pooled_output = super(PairwiseModel, self).forward_from_loader(inputs, without_pooling=False)
+            pooled_output = super(PairwiseModel, self).forward_from_loader(**inputs, without_pooling=False)
             return pooled_output
 
 
