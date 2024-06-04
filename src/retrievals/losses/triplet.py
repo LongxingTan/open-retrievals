@@ -33,8 +33,6 @@ class TripletLoss(nn.Module):
         neg_embeddings: torch.Tensor,
     ):
         if self.negatives_cross_device:
-            # This gathers both negatives and positives.
-            # It could likely be optimized by only gathering negatives.
             pos_embeddings = self._dist_gather_tensor(pos_embeddings)
             neg_embeddings = self._dist_gather_tensor(neg_embeddings)
 

@@ -21,7 +21,7 @@ class InfoNCE(nn.Module):
 
     def __init__(
         self,
-        criterion: Union[nn.Module, Callable, None] = nn.CrossEntropyLoss(label_smoothing=0.05),
+        criterion: Union[nn.Module, Callable, None] = nn.CrossEntropyLoss(label_smoothing=0.0, reduction='mean'),
         temperature: float = 0.05,
         use_inbatch_negative: bool = True,
         negative_mode: Literal['paired', 'unpaired'] = "unpaired",
@@ -65,7 +65,7 @@ class InfoNCE(nn.Module):
                 similarity = similarity / self.temperature
                 similarity = similarity.view(similarity.size(0), -1)
 
-                labels = torch.arange(similarity.size(0), device=query_embeddings.device, dtype=torch.long)
+                labels = torch.arange(similarity.size(0), dtype=torch.long, device=query_embeddings.device)
                 labels = labels * self.train_group_size
             else:
                 logits = torch.cat([positive_embeddings, negative_embeddings], dim=0)

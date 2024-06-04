@@ -109,7 +109,7 @@ class AutoModelForEmbedding(nn.Module):
         return_dict: Optional[bool] = False,
     ):
         if isinstance(inputs, (dict, BatchEncoding)):
-            embeddings = self.forward_from_loader(inputs)
+            embeddings = self.forward_from_loader(inputs['input_ids'], inputs['attention_mask'])
         elif isinstance(inputs, str) or (isinstance(inputs, list) and isinstance(inputs[0], str)):
             embeddings = self.forward_from_text(inputs)
         else:
@@ -126,8 +126,8 @@ class AutoModelForEmbedding(nn.Module):
             outputs["sentence_embedding"] = loss_output["sentence_embedding"]
             return outputs
 
-    def forward_from_loader(self, inputs, without_pooling: bool = False):
-        model_output = self.model(inputs['input_ids'], inputs['attention_mask'])
+    def forward_from_loader(self, input_ids: torch.Tensor, attention_mask: torch.Tensor, without_pooling: bool = False):
+        model_output = self.model(input_ids, attention_mask)
         if self.pooling is not None and not without_pooling:
             if 'last_hidden_state' in model_output:
                 last_hidden_state = model_output['last_hidden_state']
@@ -135,9 +135,8 @@ class AutoModelForEmbedding(nn.Module):
                 last_hidden_state = model_output[0]
             else:
                 hidden_states = model_output['hidden_states']
-                # last_hidden_state = torch.cat([hidden_states[0], hidden_states[-1]])
                 last_hidden_state = (hidden_states[0] + hidden_states[-1]) / 2.0
-            embeddings = self.pooling(last_hidden_state, inputs["attention_mask"])
+            embeddings = self.pooling(last_hidden_state, attention_mask)
 
             if self.normalize_embeddings:
                 embeddings = torch.nn.functional.normalize(embeddings, p=2, dim=1)
@@ -156,7 +155,7 @@ class AutoModelForEmbedding(nn.Module):
         batch_dict["input_ids"] = [input_ids + [self.tokenizer.eos_token_id] for input_ids in batch_dict["input_ids"]]
         batch_dict = self.tokenizer.pad(batch_dict, padding=True, return_attention_mask=True, return_tensors="pt")
         batch_dict.pop("token_type_ids")
-        return self.forward_from_loader(batch_dict)
+        return self.forward_from_loader(**batch_dict)
 
     def encode(
         self,
@@ -572,11 +571,10 @@ class PairwiseModel(AutoModelForEmbedding):
             tokenizer=tokenizer,
             pooling_method=pooling_method,
             normalize_embeddings=normalize_embeddings,
-            loss_fn=None,
+            loss_fn=loss_fn,
             **kwargs,
         )
 
-        self.loss_fn = loss_fn
         self.cross_encoder = cross_encoder
         self.shared_weights = shared_weights
         if not shared_weights:

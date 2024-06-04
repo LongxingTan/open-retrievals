@@ -14,7 +14,7 @@ from transformers import (
 )
 
 from ..data import PairCollator, RetrievalDataset, TripletCollator
-from ..losses import InfoNCE
+from ..losses import InfoNCE, TripletLoss
 from ..models.embedding_auto import AutoModelForEmbedding
 from ..trainer import RetrievalTrainer
 
@@ -23,10 +23,6 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class ModelArguments:
-    """
-    Arguments pertaining to which model/config/tokenizer we are going to fine-tune from.
-    """
-
     model_name_or_path: str = field(
         metadata={"help": "Path to pretrained model or model identifier from huggingface.co/models"}
     )
@@ -136,12 +132,13 @@ def main():
     )
     model = model.set_train_type(
         "pairwise",
-        loss_fn=InfoNCE(
-            nn.CrossEntropyLoss(label_smoothing=0.0),
-            use_inbatch_negative=training_args.use_inbatch_neg,
-            temperature=training_args.temperature,
-            train_group_size=data_args.train_group_size,
-        ),
+        loss_fn=TripletLoss(),
+        # loss_fn=InfoNCE(
+        #     nn.CrossEntropyLoss(label_smoothing=0.0),
+        #     use_inbatch_negative=training_args.use_inbatch_neg,
+        #     temperature=training_args.temperature,
+        #     train_group_size=data_args.train_group_size,
+        # ),
     )
 
     train_dataset = RetrievalDataset(
