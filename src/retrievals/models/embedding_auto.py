@@ -398,8 +398,6 @@ class AutoModelForEmbedding(nn.Module):
     def set_train_type(self, train_type: Literal['pointwise', 'pairwise', 'listwise'], **kwargs):
         model_class = {'pointwise': self, 'pairwise': PairwiseModel, 'listwise': ListwiseModel}
         model_class = model_class.get(train_type.lower())
-        if 'loss_fn' in kwargs:
-            self.loss_fn = kwargs.pop('loss_fn')
 
         return model_class(
             model=self.model,
