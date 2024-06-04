@@ -24,7 +24,6 @@ from transformers import (
 )
 
 from .pooling import AutoPooling
-from .retrieval_auto import AutoModelForRetrieval
 from .utils import batch_to_device, check_casual_lm, get_device_name
 
 logger = logging.getLogger(__name__)
@@ -397,9 +396,6 @@ class AutoModelForEmbedding(nn.Module):
         logger.info(f'Build index successfully, saved in {index_path}, elapsed: {time.time() - start_time:.2}s')
         return index
 
-    def add_to_index(self):
-        return
-
     def set_train_type(self, train_type: Literal['pointwise', 'pairwise', 'listwise'], **kwargs):
         model_class = {'pointwise': self, 'pairwise': PairwiseModel, 'listwise': ListwiseModel}
         model_class = model_class.get(train_type.lower())
@@ -420,6 +416,8 @@ class AutoModelForEmbedding(nn.Module):
 
     @classmethod
     def as_retriever(cls, retrieval_args, **kwargs):
+        from .retrieval_auto import AutoModelForRetrieval
+
         embedding_model = cls(**kwargs)
         return AutoModelForRetrieval(embedding_model, **retrieval_args)
 
