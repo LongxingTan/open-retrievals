@@ -152,11 +152,12 @@ def main():
         model=model,
         args=training_args,
         train_dataset=train_dataset,
-        data_collator=PairCollator(
+        data_collator=TripletCollator(
             tokenizer,
             query_max_length=data_args.query_max_length,
             document_max_length=data_args.document_max_length,
-            document_key=data_args.positive_key,
+            positive_key=data_args.positive_key,
+            negative_key=data_args.negative_key,
         ),
     )
 

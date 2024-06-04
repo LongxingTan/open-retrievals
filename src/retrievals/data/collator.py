@@ -66,7 +66,7 @@ class PairCollator(DataCollatorWithPadding):
             **tokenize_args,
         )
 
-        return {"query": query_inputs, "positive": document_inputs}
+        return {self.query_key: query_inputs, self.document_key: document_inputs}
 
 
 class TripletCollator(DataCollatorWithPadding):
@@ -138,9 +138,9 @@ class TripletCollator(DataCollatorWithPadding):
         )  # ["input_ids"]
 
         return {
-            "query": query_inputs,
-            "positive": pos_inputs,
-            "negative": neg_inputs,
+            self.query_key: query_inputs,
+            self.positive_key: pos_inputs,
+            self.negative_key: neg_inputs,
         }
 
 
