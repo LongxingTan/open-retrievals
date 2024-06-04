@@ -76,7 +76,8 @@ class AutoModelForRetrieval(object):
                 logger.info(
                     f'Loading index successfully, files: {len(index_files)}, elapsed: {time.time() - start_time:.2}s'
                 )
-                faiss_retrieval = FaissSearcher(index_files[0])
+                first_file = torch.load(index_files[0])
+                faiss_retrieval = FaissSearcher(first_file)
                 for i in range(1, len(index_files)):
                     faiss_retrieval.add(index_files[i])
 
@@ -234,18 +235,17 @@ def cosine_similarity_search(
 
 
 class FaissSearcher(BaseRetriever):
-    def __init__(self, corpus_index: Union['faiss.Index', np.ndarray]):
+    def __init__(self, corpus_index: Union[faiss.Index, np.ndarray, torch.Tensor]):
         if isinstance(corpus_index, (np.ndarray, torch.Tensor)):
             index = faiss.IndexFlatIP(corpus_index.shape[1])
             self.index = index
-        elif isinstance(corpus_index, str):
-            self.index = faiss.read_index(corpus_index)
         else:
             self.index = corpus_index
 
     def add(self, corpus_index: Union[np.ndarray, str]):
         if isinstance(corpus_index, str):
-            corpus_index = faiss.read_index(corpus_index)
+            logging.info(f'load vector from local: {corpus_index}')
+            corpus_index = torch.load(corpus_index)
         self.index.add(corpus_index)
 
     def search(
