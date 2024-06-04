@@ -238,6 +238,8 @@ class FaissSearcher(BaseRetriever):
         if isinstance(corpus_index, (np.ndarray, torch.Tensor)):
             index = faiss.IndexFlatIP(corpus_index.shape[1])
             self.index = index
+        elif isinstance(corpus_index, str):
+            self.index = faiss.read_index(corpus_index)
         else:
             self.index = corpus_index
 
