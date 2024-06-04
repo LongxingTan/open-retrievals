@@ -243,7 +243,9 @@ class FaissSearcher(BaseRetriever):
         else:
             self.index = corpus_index
 
-    def add(self, corpus_index: np.ndarray):
+    def add(self, corpus_index: Union[np.ndarray, str]):
+        if isinstance(corpus_index, str):
+            corpus_index = faiss.read_index(corpus_index)
         self.index.add(corpus_index)
 
     def search(
