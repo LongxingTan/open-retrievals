@@ -595,16 +595,13 @@ class PairwiseModel(AutoModelForEmbedding):
             if inputs_pair:
                 input1 = inputs
                 input2 = inputs_pair
-            elif isinstance(inputs, (list, tuple)):
+            elif isinstance(inputs, dict):
+                inputs = list(inputs.values())
+            if isinstance(inputs, (list, tuple)):
                 input1 = inputs[0]
                 input2 = inputs[1]
                 if len(inputs) == 3:
                     input3 = inputs[2]
-            else:
-                input1 = inputs['query']
-                input2 = inputs['positive']
-                if 'negative' in inputs:
-                    input3 = inputs['negative']
 
             if self.cross_encoder:
                 ids1, mask1 = input1['input_ids'], input1['attention_mask']

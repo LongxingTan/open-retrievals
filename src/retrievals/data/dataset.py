@@ -63,14 +63,14 @@ class RetrievalDataset(Dataset):
         if self.args and self.args.query_instruction is not None:
             query = self.args.query_instruction + query
 
-        if isinstance(self.dataset[item][self.positive_key], Iterable):
+        if isinstance(self.dataset[item][self.positive_key], (list, tuple)):
             pos = random.choice(self.dataset[item][self.positive_key])
         else:
             pos = self.dataset[item][self.positive_key]
 
         sample = {self.query_key: query, self.positive_key: pos}
         if self.negative_key in self.dataset[item]:
-            if isinstance(self.dataset[item][self.negative_key], Iterable):
+            if isinstance(self.dataset[item][self.negative_key], (list, tuple)):
                 if len(self.dataset[item][self.negative_key]) < self.train_group_size - 1:
                     num = math.ceil((self.train_group_size - 1) / len(self.dataset[item][self.negative_key]))
                     negs = random.sample(self.dataset[item][self.negative_key] * num, self.train_group_size - 1)

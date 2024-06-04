@@ -44,7 +44,7 @@ class ModelArguments:
 @dataclass
 class DataArguments:
     train_data: str = field(default=None, metadata={"help": "Path to train data"})
-    train_group_size: int = field(default=8)
+    train_group_size: int = field(default=2)
 
     query_max_length: int = field(
         default=32,
@@ -62,12 +62,10 @@ class DataArguments:
         },
     )
 
-    max_example_num_per_dataset: int = field(
-        default=100000000, metadata={"help": "the max number of examples for each dataset"}
-    )
-
     query_instruction: str = field(default=None, metadata={"help": "instruction for query"})
     passage_instruction: str = field(default=None, metadata={"help": "instruction for passage"})
+    positive_key: str = field(default='positive')
+    negative_key: str = field(default='negative')
 
     def __post_init__(self):
         if not os.path.exists(self.train_data):
@@ -127,35 +125,23 @@ def main():
     # Set seed
     set_seed(training_args.seed)
 
-    num_labels = 1
     tokenizer = AutoTokenizer.from_pretrained(
         model_args.tokenizer_name if model_args.tokenizer_name else model_args.model_name_or_path,
         cache_dir=model_args.cache_dir,
         use_fast=False,
     )
-    config = AutoConfig.from_pretrained(
-        model_args.config_name if model_args.config_name else model_args.model_name_or_path,
-        num_labels=num_labels,
-        cache_dir=model_args.cache_dir,
-    )
-    logger.info('Config: %s', config)
-
     model = AutoModelForEmbedding.from_pretrained(
         model_name_or_path=model_args.model_name_or_path,
         pooling_method=training_args.pooling_method,
     )
     model = model.set_train_type(
         "pairwise",
-        loss_fn=InfoNCE(nn.CrossEntropyLoss(label_smoothing=0.05), negative_samples=1),
+        loss_fn=InfoNCE(nn.CrossEntropyLoss(label_smoothing=0.05), negative_samples=data_args.train_group_size - 1),
     )
 
-    # if training_args.fix_position_embedding:
-    #     for k, v in model.named_parameters():
-    #         if "position_embeddings" in k:
-    #             logging.info(f"Freeze the parameters for {k}")
-    #             v.requires_grad = False
-
-    train_dataset = RetrievalDataset(args=data_args, tokenizer=tokenizer, positive_key='pos')
+    train_dataset = RetrievalDataset(
+        args=data_args, tokenizer=tokenizer, positive_key=data_args.positive_key, negative_key=data_args.negative_key
+    )
 
     trainer = RetrievalTrainer(
         model=model,
@@ -165,7 +151,7 @@ def main():
             tokenizer,
             query_max_length=data_args.query_max_length,
             document_max_length=data_args.document_max_length,
-            document_key='pos',
+            document_key=data_args.positive_key,
         ),
     )
 
