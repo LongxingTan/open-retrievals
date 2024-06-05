@@ -181,20 +181,6 @@ response = qa_chain({"query": user_query})
 print(response)
 ```
 
-[//]: # (**RAG with LLamaIndex**)
-
-[//]: # ()
-[//]: # (```shell)
-
-[//]: # (pip install llamaindex)
-
-[//]: # (```)
-
-[//]: # ()
-[//]: # (```python)
-
-[//]: # ()
-[//]: # (```)
 
 **Text embedding model fine-tuned by contrastive learning**
 

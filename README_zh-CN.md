@@ -178,22 +178,15 @@ response = qa_chain({"query": user_query})
 print(response)
 ```
 
-[//]: # (**搭配LLamaIndex构建RAG应用**)
-
-[//]: # ()
-[//]: # (```shell)
-
-[//]: # (pip install llamaindex)
-
-[//]: # (```)
-
-[//]: # ()
-[//]: # (```python)
-
-[//]: # ()
-[//]: # (```)
 
 **微调文本向量模型**
+
+- Model performance fine-tuned in [T2Ranking](https://huggingface.co/datasets/THUIR/T2Ranking)
+
+| cfg | Size | AP<sup>val</sup> | AP<sub>50</sub><sup>val</sup> | AP<sub>75</sub><sup>val</sup> |
+| :-- | :-: | :-: | :-: | :-: |
+| TripletLoss | 672 | 47.7% |52.6% | 61.4% |
+
 
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/17KXe2lnNRID-HiVvMtzQnONiO74oGs91?usp=sharing)
 
