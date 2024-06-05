@@ -57,6 +57,26 @@ pip install -e .
 
 ## 快速入门
 
+- Embeddings
+`model = AutoModelForEmbedding.from_pretrained(model_name_or_path, pooling_method='cls')`
+- Retrieval
+`retrieval = model.as_retrieval()`
+- Rerank
+`reranker = model.as_ranker()`
+- Point-wise
+`model = model.set_train_type('pointwise', loss_fn=ArcFace())`
+- Pairwise
+`model = model.set_train_type('pairwise', loss_fn=InfoNCE())`
+- Listwise
+`model = model.ser_train_type('listwise', loss_fn=nn.CrossEntropyLoss()'`
+- Colbert
+`model = model.set_model_type('colbert')`
+- LLM
+`model = AutoModelForEmbedding.from_pretrained(model_name_or_path, causal_lm=True)`
+- Langchain
+`embedding_model = model.as_langchain_retrieval()`
+
+
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1-WBMisdWLeHUKlzJ2DrREXY_kSV8vjP3?usp=sharing)
 
 **使用预训练权重的文本向量**

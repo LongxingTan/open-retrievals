@@ -27,7 +27,7 @@
 
 **[Documentation](https://open-retrievals.readthedocs.io)** | **[中文](https://github.com/LongxingTan/open-retrievals/blob/master/README_zh-CN.md)** | **[日本語](https://github.com/LongxingTan/open-retrievals/blob/master/README_ja-JP.md)**
 
-**Open-retrievals** simplifies text embeddings, retrievals, ranking, and RAG applications using PyTorch and Transformers. This user-friendly framework is designed for information retrieval and LLM-enhanced generation.
+**Open-retrievals** simplifies text embeddings, retrievals, ranking, and RAG using PyTorch and Transformers. This user-friendly framework is designed for information retrieval and LLM generation.
 - Embeddings, retrieval and rerank all-in-one: `AutoModelForEmbedding`
 - Contrastive learning/LLM enhanced embeddings, with point-wise, pairwise and listwise training
 - Cross-encoder, ColBERT and LLM enhanced Reranking
@@ -68,7 +68,7 @@ pip install -e .
 
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1-WBMisdWLeHUKlzJ2DrREXY_kSV8vjP3?usp=sharing)
 
-**Text embedding from Pretrained weights**
+**Text embeddings from Pretrained weights**
 ```python
 from retrievals import AutoModelForEmbedding
 
