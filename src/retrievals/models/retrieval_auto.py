@@ -30,7 +30,7 @@ class BaseRetriever(ABC):
         pass
 
 
-class AutoRetrieval(object):
+class AutoModelForRetrieval(object):
     def __init__(
         self, embedding_model: Optional[nn.Module] = None, method: Literal['cosine', 'knn', 'llm'] = "cosine"
     ) -> None:

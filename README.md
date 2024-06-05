@@ -87,7 +87,7 @@ print(scores.tolist())
 
 **Index building for dense retrieval search**
 ```python
-from retrievals import AutoModelForEmbedding, AutoRetrieval
+from retrievals import AutoModelForEmbedding, AutoModelForRetrieval
 
 sentences = ['A dog is chasing car.', 'A man is playing a guitar.']
 model_name_or_path = "sentence-transformers/all-MiniLM-L6-v2"
@@ -96,7 +96,7 @@ model = AutoModelForEmbedding.from_pretrained(model_name_or_path)
 model.build_index(sentences, index_path=index_path)
 
 query_embed = model.encode("He plays guitar.")
-matcher = AutoRetrieval()
+matcher = AutoModelForRetrieval()
 dists, indices = matcher.similarity_search(query_embed, index_path=index_path)
 print(indices)
 ```

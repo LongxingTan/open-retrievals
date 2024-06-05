@@ -99,7 +99,7 @@ print(scores.tolist())
 
 **使用Faiss向量数据库检索**
 ```python
-from retrievals import AutoModelForEmbedding, AutoRetrieval
+from retrievals import AutoModelForEmbedding, AutoModelForRetrieval
 
 index_path = './database/faiss/faiss.index'
 sentences = ['A dog is chasing car.', 'A man is playing a guitar.']
@@ -108,7 +108,7 @@ model = AutoModelForEmbedding.from_pretrained(model_name_or_path)
 model.build_index(sentences, index_path=index_path)
 
 query_embed = model.encode("He plays guitar.")
-matcher = AutoRetrieval()
+matcher = AutoModelForRetrieval()
 dists, indices = matcher.similarity_search(query_embed, index_path=index_path)
 print(indices)
 ```

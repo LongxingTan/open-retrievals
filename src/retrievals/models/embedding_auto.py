@@ -415,10 +415,10 @@ class AutoModelForEmbedding(nn.Module):
 
     @classmethod
     def as_retriever(cls, retrieval_args, **kwargs):
-        from .retrieval_auto import AutoRetrieval
+        from .retrieval_auto import AutoModelForRetrieval
 
         embedding_model = cls(**kwargs)
-        return AutoRetrieval(embedding_model, **retrieval_args)
+        return AutoModelForRetrieval(embedding_model, **retrieval_args)
 
     @classmethod
     def as_reranker(cls, rerank_args, **kwargs):

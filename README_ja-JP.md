@@ -79,7 +79,7 @@ print(scores.tolist())
 
 **インデックスの構築と検索**
 ```python
-from retrievals import AutoModelForEmbedding, AutoRetrieval
+from retrievals import AutoModelForEmbedding, AutoModelForRetrieval
 
 sentences = ['A dog is chasing car.', 'A man is playing a guitar.']
 model_name_or_path = "sentence-transformers/all-MiniLM-L6-v2"
@@ -88,7 +88,7 @@ model = AutoModelForEmbedding.from_pretrained(model_name_or_path)
 model.build_index(sentences, index_path=index_path)
 
 query_embed = model.encode("He plays guitar.")
-matcher = AutoRetrieval()
+matcher = AutoModelForRetrieval()
 dists, indices = matcher.similarity_search(query_embed, index_path=index_path)
 print(indices)
 ```
@@ -270,7 +270,7 @@ trainer.train()
 
 **コサイン類似度/KNN による検索**
 ```python
-from retrievals import AutoModelForEmbedding, AutoRetrieval
+from retrievals import AutoModelForEmbedding, AutoModelForRetrieval
 
 query_texts = ['A dog is chasing car.']
 document_texts = ['A man is playing a guitar.', 'A bee is flying low']
@@ -279,7 +279,7 @@ model = AutoModelForEmbedding.from_pretrained(model_name_or_path)
 query_embeddings = model.encode(query_texts, convert_to_tensor=True)
 document_embeddings = model.encode(document_texts, convert_to_tensor=True)
 
-matcher = AutoRetrieval(method='cosine')
+matcher = AutoModelForRetrieval(method='cosine')
 dists, indices = matcher.similarity_search(query_embeddings, document_embeddings, top_k=1)
 ```
 

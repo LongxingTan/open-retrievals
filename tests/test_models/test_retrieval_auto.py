@@ -4,10 +4,10 @@ import faiss
 import numpy as np
 import torch
 
-from src.retrievals.models.retrieval_auto import AutoRetrieval
+from src.retrievals.models.retrieval_auto import AutoModelForRetrieval
 
 
-class AutoRetrievalTest(TestCase):
+class AutoModelForRetrievalTest(TestCase):
     def test_match(self):
         pass
 
@@ -17,7 +17,7 @@ class AutoRetrievalTest(TestCase):
 
         doc_emb = torch.tensor(np.random.randn(1000, 100))
         q_emb = torch.tensor(np.random.randn(num_queries, 100))
-        matcher = AutoRetrieval(method="cosine")
+        matcher = AutoModelForRetrieval(method="cosine")
         dists, indices = matcher.similarity_search(
             q_emb, doc_emb, top_k=num_k, query_chunk_size=5, corpus_chunk_size=17
         )
