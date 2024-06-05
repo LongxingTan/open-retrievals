@@ -43,10 +43,7 @@ class RetrievalDataset(Dataset):
                 train_datasets.append(temp_dataset)
             self.dataset = datasets.concatenate_datasets(train_datasets)
         else:
-            try:
-                self.dataset = datasets.load_dataset("json", data_files=data_name_or_path)
-            except FileNotFoundError:
-                self.dataset = datasets.load_dataset(data_name_or_path)
+            self.dataset = datasets.load_dataset("json", data_files=data_name_or_path)
 
         if 'train' in self.dataset:
             self.dataset = self.dataset['train']
@@ -117,7 +114,9 @@ class RerankDataset(Dataset):
         self.positive_key = args.positive_key or positive_key
         self.negative_key = args.negative_key or negative_key
 
-        if os.path.isdir(data_name_or_path):
+        if isinstance(data_name_or_path, datasets.Dataset):
+            dataset = data_name_or_path
+        elif os.path.isdir(data_name_or_path):
             train_datasets = []
             for file in os.listdir(data_name_or_path):
                 temp_dataset = datasets.load_dataset(
@@ -129,10 +128,7 @@ class RerankDataset(Dataset):
             dataset = datasets.concatenate_datasets(train_datasets)
 
         else:
-            try:
-                dataset = datasets.load_dataset("json", data_files=data_name_or_path)
-            except FileNotFoundError:
-                dataset = datasets.load_dataset(data_name_or_path)
+            dataset = datasets.load_dataset("json", data_files=data_name_or_path)
 
         if 'train' in dataset:
             dataset = dataset['train']
