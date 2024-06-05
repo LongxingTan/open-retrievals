@@ -121,17 +121,11 @@ class AutoModelForRanking(nn.Module):
         self,
         input_ids: Optional[torch.Tensor] = None,
         attention_mask: Optional[torch.Tensor] = None,
-        inputs: Optional[Dict[str, torch.Tensor]] = None,
         labels: Optional[torch.Tensor] = None,
         return_dict: Optional[bool] = True,
         **kwargs,
     ) -> Union[Dict[str, torch.Tensor], Tuple[torch.Tensor, torch.Tensor], torch.Tensor]:
-        if input_ids is not None:
-            features = self.encode(input_ids=input_ids, attention_mask=attention_mask)
-        elif inputs is not None:
-            features = self.encode(**inputs)
-        else:
-            raise ValueError("input_ids(tensor) and inputs(dict) can't be empty as the same time")
+        features = self.encode(input_ids=input_ids, attention_mask=attention_mask)
 
         if not self.training:
             return features
@@ -164,8 +158,8 @@ class AutoModelForRanking(nn.Module):
             return logits
 
     def set_model_type(self, model_type: Literal['cross-encoder', 'colbert'], **kwargs):
-        model_class = {'cross-encoder': self, 'colbert': ColBERT}
-        model_class = model_class.get(model_type.lower())
+        model_class = {'crossencoder': self, 'colbert': ColBERT}
+        model_class = model_class.get(model_type.lower().replace('-', ''))
         return model_class(
             model=self.model,
             tokenizer=self.tokenizer,

@@ -37,6 +37,8 @@ class InfoNCE(nn.Module):
         self.use_inbatch_negative = use_inbatch_negative
         self.negative_mode = negative_mode
         self.train_group_size = train_group_size
+        if self.temperature > 0.5:
+            logger.error('InfoNCE loss use normalized and inner product by default, temperature should be 0.01 ~ 0.1')
 
     def forward(
         self,
