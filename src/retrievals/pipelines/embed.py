@@ -64,9 +64,9 @@ class DataArguments:
     positive_key: str = field(default='positive')
     negative_key: str = field(default='negative')
 
-    def __post_init__(self):
-        if not os.path.exists(self.train_data):
-            raise FileNotFoundError(f"cannot find file: {self.train_data}, please set a true path")
+    # def __post_init__(self):
+    #     if not os.path.exists(self.train_data):
+    #         raise FileNotFoundError(f"cannot find file: {self.train_data}, please set a true path")
 
 
 @dataclass
