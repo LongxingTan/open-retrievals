@@ -14,7 +14,7 @@ from langchain_core.retrievers import BaseRetriever
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 from ..models.embedding_auto import AutoModelForEmbedding
-from ..models.rerank import AutoModelForRanking
+from ..models.rerank import AutoRanking
 
 logger = logging.getLogger(__name__)
 

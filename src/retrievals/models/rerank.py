@@ -51,7 +51,7 @@ class AutoRanking(nn.Module):
     ):
         super().__init__()
         if isinstance(model, str):
-            assert ValueError("Please use AutoModelForRanking.from_pretrained(model_name_or_path)")
+            assert ValueError("Please use AutoRanking.from_pretrained(model_name_or_path)")
 
         self.model: Optional[nn.Module] = model
         self.tokenizer = tokenizer

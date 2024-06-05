@@ -9,7 +9,7 @@ from llama_index.schema import MetadataMode, NodeWithScore, QueryBundle
 from llama_index.utils import infer_torch_device
 
 from ..models.embedding_auto import AutoModelForEmbedding
-from ..models.rerank import AutoModelForRanking
+from ..models.rerank import AutoRanking
 
 
 class LlamaIndexEmbedding(AutoModelForEmbedding, BaseEmbedding):
@@ -42,7 +42,7 @@ class LlamaIndexReranker(BaseNodePostprocessor):
     _model: Any = PrivateAttr()
 
     def __init__(self, model: str, top_n: int = 5, device: Optional[str] = None, **kwargs):
-        self.model = AutoModelForRanking.from_pretrained(model)
+        self.model = AutoRanking.from_pretrained(model)
         device = infer_torch_device() if device is None else device
         super().__init__(model=model, top_n=top_n, device=device)
 

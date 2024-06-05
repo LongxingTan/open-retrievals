@@ -21,7 +21,7 @@ from transformers import (
 
 from retrievals import (
     AutoModelForEmbedding,
-    AutoModelForRetrieval,
+    AutoRetrieval,
     PairwiseModel,
     RetrievalTrainer,
     TripletCollator,

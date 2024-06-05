@@ -14,7 +14,7 @@ RAG could help solve the false information, out-of-date information, and data se
 .. code-block:: python
 
     from retrievals.tools.langchain import LangchainEmbedding, LangchainReranker, LangchainLLM
-    from retrievals import AutoModelForRanking
+    from retrievals import AutoRanking
     from langchain.retrievers import ContextualCompressionRetriever
     from langchain_community.vectorstores import Chroma as Vectorstore
     from langchain.prompts.prompt import PromptTemplate
@@ -33,7 +33,7 @@ RAG could help solve the false information, out-of-date information, and data se
     retrieval_args = {"search_type" :"similarity", "score_threshold": 0.15, "k": 10}
     retriever = vectordb.as_retriever(**retrieval_args)
 
-    ranker = AutoModelForRanking.from_pretrained(rerank_model_name_or_path)
+    ranker = AutoRanking.from_pretrained(rerank_model_name_or_path)
     reranker = LangchainReranker(model=ranker, top_n=3)
     compression_retriever = ContextualCompressionRetriever(
         base_compressor=reranker, base_retriever=retriever

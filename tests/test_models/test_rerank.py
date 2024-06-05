@@ -5,7 +5,7 @@ from unittest import TestCase
 from transformers import AutoConfig, AutoTokenizer
 
 from src.retrievals.data.collator import RerankCollator
-from src.retrievals.models.rerank import AutoModelForRanking
+from src.retrievals.models.rerank import AutoRanking
 
 from .test_modeling_common import (
     ModelTesterMixin,
@@ -16,13 +16,13 @@ from .test_modeling_common import (
 )
 
 
-class AutoModelForRankingTest(TestCase, ModelTesterMixin):
+class AutoRankingTest(TestCase, ModelTesterMixin):
     def setUp(self) -> None:
         self.output_dir = tempfile.mkdtemp()
         # self.config_tester = ConfigTester()
         model_name_or_path = 'BAAI/bge-reranker-base'
         self.data_collator = RerankCollator(AutoTokenizer.from_pretrained(model_name_or_path))
-        self.model = AutoModelForRanking.from_pretrained(model_name_or_path, pooling_method="mean")
+        self.model = AutoRanking.from_pretrained(model_name_or_path, pooling_method="mean")
 
     def tearDown(self):
         shutil.rmtree(self.output_dir)

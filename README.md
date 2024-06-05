@@ -86,7 +86,7 @@ print(scores.tolist())
 
 **Index building for dense retrieval search**
 ```python
-from retrievals import AutoModelForEmbedding, AutoModelForRetrieval
+from retrievals import AutoModelForEmbedding, AutoRetrieval
 
 sentences = ['A dog is chasing car.', 'A man is playing a guitar.']
 model_name_or_path = "sentence-transformers/all-MiniLM-L6-v2"
@@ -95,17 +95,17 @@ model = AutoModelForEmbedding.from_pretrained(model_name_or_path)
 model.build_index(sentences, index_path=index_path)
 
 query_embed = model.encode("He plays guitar.")
-matcher = AutoModelForRetrieval()
+matcher = AutoRetrieval()
 dists, indices = matcher.similarity_search(query_embed, index_path=index_path)
 print(indices)
 ```
 
 **Rerank using pretrained weights**
 ```python
-from retrievals import AutoModelForRanking
+from retrievals import AutoRanking
 
 model_name_or_path: str = "BAAI/bge-reranker-base"
-rerank_model = AutoModelForRanking.from_pretrained(model_name_or_path)
+rerank_model = AutoRanking.from_pretrained(model_name_or_path)
 scores_list = rerank_model.compute_score(["In 1974, I won the championship in Southeast Asia in my first kickboxing match", "In 1982, I defeated the heavy hitter Ryu Long."])
 print(scores_list)
 ```
@@ -122,7 +122,7 @@ pip install chromadb
 
 ```python
 from retrievals.tools.langchain import LangchainEmbedding, LangchainReranker, LangchainLLM
-from retrievals import AutoModelForRanking
+from retrievals import AutoRanking
 from langchain.retrievers import ContextualCompressionRetriever
 from langchain_community.vectorstores import Chroma as Vectorstore
 from langchain.prompts.prompt import PromptTemplate
@@ -141,7 +141,7 @@ vectordb = Vectorstore(
 retrieval_args = {"search_type" :"similarity", "score_threshold": 0.15, "k": 10}
 retriever = vectordb.as_retriever(**retrieval_args)
 
-ranker = AutoModelForRanking.from_pretrained(rerank_model_name_or_path)
+ranker = AutoRanking.from_pretrained(rerank_model_name_or_path)
 reranker = LangchainReranker(model=ranker, top_n=3)
 compression_retriever = ContextualCompressionRetriever(
     base_compressor=reranker, base_retriever=retriever
@@ -244,7 +244,7 @@ trainer.train()
 
 ```python
 from transformers import AutoTokenizer, TrainingArguments, get_cosine_schedule_with_warmup, AdamW
-from retrievals import RerankCollator, AutoModelForRanking, RerankTrainer, RerankDataset
+from retrievals import RerankCollator, AutoRanking, RerankTrainer, RerankDataset
 
 model_name_or_path: str = "microsoft/deberta-v3-base"
 max_length: int = 128
@@ -254,7 +254,7 @@ epochs: int = 3
 
 train_dataset = RerankDataset('./t2rank.json', positive_key='pos', negative_key='neg')
 tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, use_fast=False)
-model = AutoModelForRanking.from_pretrained(model_name_or_path, pooling_method="mean")
+model = AutoRanking.from_pretrained(model_name_or_path, pooling_method="mean")
 optimizer = AdamW(model.parameters(), lr=learning_rate)
 num_train_steps = int(len(train_dataset) / batch_size * epochs)
 scheduler = get_cosine_schedule_with_warmup(optimizer, num_warmup_steps=0.05 * num_train_steps, num_training_steps=num_train_steps)
