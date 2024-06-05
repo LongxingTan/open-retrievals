@@ -62,7 +62,7 @@ class RetrievalTrainer(Trainer):
         output_dir = output_dir if output_dir is not None else self.args.output_dir
         os.makedirs(output_dir, exist_ok=True)
         logger.info(f"Saving model checkpoint to {output_dir}")
-        self.model.model.save_pretrained(output_dir)
+        self.model.save_pretrained(output_dir)
         self.model.tokenizer.save_pretrained(output_dir)
 
 
@@ -82,5 +82,5 @@ class RerankTrainer(Trainer):
         output_dir = output_dir if output_dir is not None else self.args.output_dir
         os.makedirs(output_dir, exist_ok=True)
 
-        self.model.model.save_pretrained(output_dir)
+        self.model.save_pretrained(output_dir)
         self.model.tokenizer.save_pretrained(output_dir)

@@ -14,8 +14,8 @@
 [coverage-url]: https://codecov.io/github/longxingtan/open-retrievals?branch=master
 
 <h1 align="center">
-<img src="./docs/source/_static/logo.svg" width="520" align=center/>
-</h1><br>
+<img src="./docs/source/_static/logo.svg" width="420" align=center/>
+</h1>
 
 [![LICENSE][license-image]][license-url]
 [![PyPI Version][pypi-image]][pypi-url]
@@ -28,8 +28,8 @@
 **[ドキュメント](https://open-retrievals.readthedocs.io)** | **[英語](https://github.com/LongxingTan/open-retrievals/blob/master/README.md)** | **[中文](https://github.com/LongxingTan/open-retrievals/blob/master/README_zh-CN.md)**
 
 **Open-Retrievals** は、PyTorch と Transformers をベースとした、情報検索と LLM 検索拡張生成を指向した、SOTA テキスト埋め込みを取得する使いやすい Python フレームワークです。
-- 対照学習エンベッディング
-- LLM エンベッディング
+- `AutoModelForEmbedding` はベクトル化、検索、リランクの分野を統一します
+- 対照学習エンベッディング, LLM エンベッディング
 - 高速 RAG デモ
 
 
@@ -95,10 +95,10 @@ print(indices)
 
 **リランク**
 ```python
-from retrievals import RerankModel
+from retrievals import AutoModelForRanking
 
 model_name_or_path: str = "BAAI/bge-reranker-base"
-rerank_model = RerankModel.from_pretrained(model_name_or_path)
+rerank_model = AutoModelForRanking.from_pretrained(model_name_or_path)
 scores_list = rerank_model.compute_score(["In 1974, I won the championship in Southeast Asia in my first kickboxing match", "In 1982, I defeated the heavy hitter Ryu Long."])
 print(scores_list)
 ```
@@ -116,7 +116,7 @@ pip install chromadb
 - サーバー
 ```python
 from retrievals.tools.langchain import LangchainEmbedding, LangchainReranker, LangchainLLM
-from retrievals import RerankModel
+from retrievals import AutoModelForRanking
 from langchain.retrievers import ContextualCompressionRetriever
 from langchain_community.vectorstores import Chroma as Vectorstore
 from langchain.prompts.prompt import PromptTemplate
@@ -135,7 +135,7 @@ vectordb = Vectorstore(
 retrieval_args = {"search_type" :"similarity", "score_threshold": 0.15, "k": 10}
 retriever = vectordb.as_retriever(**retrieval_args)
 
-ranker = RerankModel.from_pretrained(rerank_model_name_or_path)
+ranker = AutoModelForRanking.from_pretrained(rerank_model_name_or_path)
 reranker = LangchainReranker(model=ranker, top_n=3)
 compression_retriever = ContextualCompressionRetriever(
     base_compressor=reranker, base_retriever=retriever
@@ -175,20 +175,6 @@ response = qa_chain({"query": user_query})
 print(response)
 ```
 
-[//]: # (**RAG with LLamaIndex**)
-
-[//]: # ()
-[//]: # (```shell)
-
-[//]: # (pip install llamaindex)
-
-[//]: # (```)
-
-[//]: # ()
-[//]: # (```python)
-
-[//]: # ()
-[//]: # (```)
 
 **コントラスト学習による transformers のウェイトのファインチューニング**
 
@@ -249,7 +235,7 @@ model = AutoModelForEmbedding.from_pretrained(
 
 ```python
 from transformers import AutoTokenizer, TrainingArguments, get_cosine_schedule_with_warmup, AdamW
-from retrievals import RerankCollator, RerankModel, RerankTrainer, RerankDataset
+from retrievals import RerankCollator, AutoModelForRanking, RerankTrainer, RerankDataset
 
 model_name_or_path: str = "microsoft/deberta-v3-base"
 max_length: int = 128
@@ -259,7 +245,7 @@ epochs: int = 3
 
 train_dataset = RerankDataset('./t2rank.json', positive_key='pos', negative_key='neg')
 tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, use_fast=False)
-model = RerankModel.from_pretrained(model_name_or_path, pooling_method="mean")
+model = AutoModelForRanking.from_pretrained(model_name_or_path, pooling_method="mean")
 optimizer = AdamW(model.parameters(), lr=learning_rate)
 num_train_steps = int(len(train_dataset) / batch_size * epochs)
 scheduler = get_cosine_schedule_with_warmup(optimizer, num_warmup_steps=0.05 * num_train_steps, num_training_steps=num_train_steps)

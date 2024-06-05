@@ -21,16 +21,24 @@ class InfoNCE(nn.Module):
 
     def __init__(
         self,
-        criterion: Union[nn.Module, Callable, None] = nn.CrossEntropyLoss(label_smoothing=0.05),
+        criterion: Union[nn.Module, Callable, None] = nn.CrossEntropyLoss(label_smoothing=0.0, reduction='mean'),
         temperature: float = 0.05,
+        use_inbatch_negative: bool = True,
         negative_mode: Literal['paired', 'unpaired'] = "unpaired",
-        negative_samples: int = 1,
+        train_group_size: int = 1,
     ):
+        """
+        if not normalized: temperature = 1.0, reset temperature = 1.0 due to using inner product to compute similarity
+        if normalized: temperature should be smaller than 1.0 when use cosine similarity. Recommend to set it 0.01-0.1
+        """
         super().__init__()
         self.criterion = criterion
         self.temperature = temperature
+        self.use_inbatch_negative = use_inbatch_negative
         self.negative_mode = negative_mode
-        self.negative_samples = negative_samples
+        self.train_group_size = train_group_size
+        if self.temperature > 0.5:
+            logger.error('InfoNCE loss use normalized and inner product by default, temperature should be 0.01 ~ 0.1')
 
     def forward(
         self,
@@ -44,12 +52,12 @@ class InfoNCE(nn.Module):
         if negative_embeddings is None:
             if self.negative_mode == 'unpaired':
                 logits = query_embeddings @ positive_embeddings.transpose(-2, -1)
-                labels = torch.arange(logits.size(0), dtype=torch.long, device=device) * self.negative_samples
+                labels = torch.arange(logits.size(0), dtype=torch.long, device=device)
                 loss = self.criterion(logits / self.temperature, labels)
             else:
                 logits1 = query_embeddings @ positive_embeddings.transpose(-2, -1)
                 logits2 = logits1.T
-                labels = torch.arange(logits1.size(0), dtype=torch.long, device=device) * self.negative_samples
+                labels = torch.arange(logits1.size(0), dtype=torch.long, device=device)
                 loss = (
                     self.criterion(logits1 / self.temperature, labels)
                     + self.criterion(logits2 / self.temperature, labels)
@@ -57,21 +65,18 @@ class InfoNCE(nn.Module):
             return loss
         else:
             negative_embeddings = F.normalize(negative_embeddings, dim=-1)
-            positive_logit = torch.sum(query_embeddings * positive_embeddings, dim=1, keepdim=True)
-
-            if self.negative_mode == 'unpaired':
-                # Cosine between all query-negative combinations
-                negative_logits = query_embeddings @ negative_embeddings.transpose(-2, -1)
-
-            elif self.negative_mode == 'paired':
-                query = query_embeddings.unsqueeze(1)
-                negative_logits = query @ negative_embeddings.transpose(-2, -1)
-                negative_logits = negative_logits.squeeze(1)
-
+            if self.use_inbatch_negative:
+                logits = torch.cat([positive_embeddings, negative_embeddings], dim=0)
+                similarity = query_embeddings @ logits.transpose(-2, -1)
+                similarity = similarity / self.temperature
+                similarity = similarity.view(query_embeddings.size(0), -1)
+                labels = torch.arange(query_embeddings.size(0), dtype=torch.long, device=device)
             else:
-                raise ValueError(f"negative mode could chose 'unpaired' or 'paired', while got {self.negative_mode}")
+                logits = torch.cat([positive_embeddings, negative_embeddings], dim=0)
+                logits = logits.view(query_embeddings.size(0), -1, self.train_group_size)
+                similarity = query_embeddings.unsqueeze(1) @ logits
+                similarity = similarity.squeeze(1) / self.temperature
+                similarity = similarity.view(query_embeddings.size(0), -1)
+                labels = torch.zeros(logits.size(0), dtype=torch.long, device=device)
 
-            # First index in last dimension are the positive samples
-            logits = torch.cat([positive_logit, negative_logits], dim=1)
-            labels = torch.zeros(len(logits), dtype=torch.long, device=query_embeddings.device)
-            return self.criterion(logits / self.temperature, labels)
+            return self.criterion(similarity, labels)

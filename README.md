@@ -14,8 +14,8 @@
 [coverage-url]: https://codecov.io/github/longxingtan/open-retrievals?branch=master
 
 <h1 align="center">
-<img src="./docs/source/_static/logo.svg" width="520" align=center/>
-</h1><br>
+<img src="./docs/source/_static/logo.svg" width="420" align=center/>
+</h1>
 
 [![LICENSE][license-image]][license-url]
 [![PyPI Version][pypi-image]][pypi-url]
@@ -27,9 +27,10 @@
 
 **[Documentation](https://open-retrievals.readthedocs.io)** | **[中文](https://github.com/LongxingTan/open-retrievals/blob/master/README_zh-CN.md)** | **[日本語](https://github.com/LongxingTan/open-retrievals/blob/master/README_ja-JP.md)**
 
-**Open-retrievals** simplifies text embeddings, retrievals, ranking, and RAG applications using PyTorch and Transformers. This user-friendly framework is designed for information retrieval and LLM-enhanced generation.
-- Contrastive learning enhanced embeddings/ LLM embeddings
-- Cross-encoder and ColBERT Rerank
+**Open-retrievals** simplifies text embeddings, retrievals, ranking, and RAG using PyTorch and Transformers. This user-friendly framework is designed for information retrieval and LLM generation.
+- Embeddings, retrieval and rerank all-in-one: `AutoModelForEmbedding`
+- Contrastive learning/LLM enhanced embeddings, with point-wise, pairwise and listwise training
+- Cross-encoder, ColBERT and LLM enhanced Reranking
 - Fast RAG demo integrated with Langchain and LlamaIndex
 
 
@@ -67,7 +68,7 @@ pip install -e .
 
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1-WBMisdWLeHUKlzJ2DrREXY_kSV8vjP3?usp=sharing)
 
-**Text embedding from Pretrained weights**
+**Text embeddings from Pretrained weights**
 ```python
 from retrievals import AutoModelForEmbedding
 
@@ -102,10 +103,10 @@ print(indices)
 
 **Rerank using pretrained weights**
 ```python
-from retrievals import RerankModel
+from retrievals import AutoModelForRanking
 
 model_name_or_path: str = "BAAI/bge-reranker-base"
-rerank_model = RerankModel.from_pretrained(model_name_or_path)
+rerank_model = AutoModelForRanking.from_pretrained(model_name_or_path)
 scores_list = rerank_model.compute_score(["In 1974, I won the championship in Southeast Asia in my first kickboxing match", "In 1982, I defeated the heavy hitter Ryu Long."])
 print(scores_list)
 ```
@@ -122,7 +123,7 @@ pip install chromadb
 
 ```python
 from retrievals.tools.langchain import LangchainEmbedding, LangchainReranker, LangchainLLM
-from retrievals import RerankModel
+from retrievals import AutoModelForRanking
 from langchain.retrievers import ContextualCompressionRetriever
 from langchain_community.vectorstores import Chroma as Vectorstore
 from langchain.prompts.prompt import PromptTemplate
@@ -141,7 +142,7 @@ vectordb = Vectorstore(
 retrieval_args = {"search_type" :"similarity", "score_threshold": 0.15, "k": 10}
 retriever = vectordb.as_retriever(**retrieval_args)
 
-ranker = RerankModel.from_pretrained(rerank_model_name_or_path)
+ranker = AutoModelForRanking.from_pretrained(rerank_model_name_or_path)
 reranker = LangchainReranker(model=ranker, top_n=3)
 compression_retriever = ContextualCompressionRetriever(
     base_compressor=reranker, base_retriever=retriever
@@ -181,20 +182,6 @@ response = qa_chain({"query": user_query})
 print(response)
 ```
 
-[//]: # (**RAG with LLamaIndex**)
-
-[//]: # ()
-[//]: # (```shell)
-
-[//]: # (pip install llamaindex)
-
-[//]: # (```)
-
-[//]: # ()
-[//]: # (```python)
-
-[//]: # ()
-[//]: # (```)
 
 **Text embedding model fine-tuned by contrastive learning**
 
@@ -244,7 +231,7 @@ trainer.train()
 
 ```python
 from transformers import AutoTokenizer, TrainingArguments, get_cosine_schedule_with_warmup, AdamW
-from retrievals import RerankCollator, RerankModel, RerankTrainer, RerankDataset
+from retrievals import RerankCollator, AutoModelForRanking, RerankTrainer, RerankDataset
 
 model_name_or_path: str = "microsoft/deberta-v3-base"
 max_length: int = 128
@@ -254,7 +241,7 @@ epochs: int = 3
 
 train_dataset = RerankDataset('./t2rank.json', positive_key='pos', negative_key='neg')
 tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, use_fast=False)
-model = RerankModel.from_pretrained(model_name_or_path, pooling_method="mean")
+model = AutoModelForRanking.from_pretrained(model_name_or_path, pooling_method="mean")
 optimizer = AdamW(model.parameters(), lr=learning_rate)
 num_train_steps = int(len(train_dataset) / batch_size * epochs)
 scheduler = get_cosine_schedule_with_warmup(optimizer, num_warmup_steps=0.05 * num_train_steps, num_training_steps=num_train_steps)
@@ -275,21 +262,6 @@ trainer = RerankTrainer(
 trainer.optimizer = optimizer
 trainer.scheduler = scheduler
 trainer.train()
-```
-
-**Semantic search by cosine similarity/KNN**
-```python
-from retrievals import AutoModelForEmbedding, AutoModelForRetrieval
-
-query_texts = ['A dog is chasing car.']
-document_texts = ['A man is playing a guitar.', 'A bee is flying low']
-model_name_or_path = "sentence-transformers/all-MiniLM-L6-v2"
-model = AutoModelForEmbedding.from_pretrained(model_name_or_path)
-query_embeddings = model.encode(query_texts, convert_to_tensor=True)
-document_embeddings = model.encode(document_texts, convert_to_tensor=True)
-
-matcher = AutoModelForRetrieval(method='cosine')
-dists, indices = matcher.similarity_search(query_embeddings, document_embeddings, top_k=1)
 ```
 
 

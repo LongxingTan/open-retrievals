@@ -36,24 +36,27 @@ class BaseRanker(ABC):
         pass
 
 
-class RerankModel(nn.Module):
+class AutoModelForRanking(nn.Module):
     def __init__(
         self,
         model: Optional[nn.Module] = None,
         tokenizer: Optional[PreTrainedTokenizer] = None,
-        pooling_method: Optional[str] = 'mean',
+        train_group_size: int = 1,
+        pooling_method: Optional[str] = None,
         loss_fn: Union[nn.Module, Callable] = None,
         loss_type: Literal['classification', 'regression'] = 'classification',
         max_length: Optional[int] = None,
+        temperature: Optional[float] = None,
         device: Optional[str] = None,
         **kwargs,
     ):
         super().__init__()
         if isinstance(model, str):
-            assert ValueError("Please use RerankModel.from_pretrained(model_name_or_path)")
+            assert ValueError("Please use AutoModelForRanking.from_pretrained(model_name_or_path)")
 
         self.model: Optional[nn.Module] = model
         self.tokenizer = tokenizer
+        self.train_group_size = train_group_size
         self.pooling_method = pooling_method
         if pooling_method:
             self.pooling = AutoPooling(self.pooling_method)
@@ -70,13 +73,14 @@ class RerankModel(nn.Module):
                 max_length = min(self.model.config.max_position_embeddings, self.tokenizer.model_max_length)
 
         self.max_length = max_length
+        self.temperature = temperature
 
         if device is None:
             self.device = get_device_name()
         else:
             self.device = device
         # both self.model and self.linear to device
-        self._post_init()
+        # self._post_init()
         self.to(self.device)
 
     def _post_init(self):
@@ -104,14 +108,12 @@ class RerankModel(nn.Module):
 
     def encode(self, input_ids: torch.Tensor, attention_mask: torch.Tensor) -> torch.Tensor:
         outputs: SequenceClassifierOutput = self.model(input_ids, attention_mask, output_hidden_states=True)
-        if hasattr(outputs, 'last_hidden_state'):
-            # 3D tensor: [batch, seq_len, attention_dim]
-            hidden_state = outputs.last_hidden_state
-        else:
-            hidden_state = outputs.hidden_states[1]
 
-        if self.pooling_method:
-            # 2D tensor
+        if not self.pooling_method:
+            return outputs
+
+        hidden_state = outputs['last_hidden_state']
+        if self.pooling is not None:
             embeddings = self.pooling(hidden_state, attention_mask)
         else:
             embeddings = self.classifier(hidden_state[:, 1:])
@@ -119,20 +121,22 @@ class RerankModel(nn.Module):
 
     def forward(
         self,
-        input_ids: Optional[torch.Tensor] = None,
-        attention_mask: Optional[torch.Tensor] = None,
-        inputs: Optional[Dict[str, torch.Tensor]] = None,
+        input_ids: torch.Tensor,
+        attention_mask: torch.Tensor,
         labels: Optional[torch.Tensor] = None,
         return_dict: Optional[bool] = True,
         **kwargs,
     ) -> Union[Dict[str, torch.Tensor], Tuple[torch.Tensor, torch.Tensor], torch.Tensor]:
-        if input_ids is not None:
-            features = self.encode(input_ids=input_ids, attention_mask=attention_mask)
-        elif inputs is not None:
-            features = self.encode(**inputs)
-        else:
-            raise ValueError("input_ids(tensor) and inputs(dict) can't be empty as the same time")
-        logits = self.classifier(features).reshape(-1)
+        features = self.encode(input_ids=input_ids, attention_mask=attention_mask)
+
+        if self.temperature is not None:
+            features = features / self.temperature
+
+        if not self.training:
+            return features
+
+        logits = features.logits
+        scores = logits.view(-1, self.train_group_size)
 
         if return_dict:
             outputs_dict = dict()
@@ -147,7 +151,7 @@ class RerankModel(nn.Module):
                 elif self.loss_type == 'classification':
                     self.loss_fn = nn.BCEWithLogitsLoss(reduction='mean')
 
-            loss = self.loss_fn(logits, labels.float())
+            loss = self.loss_fn(scores.squeeze(), labels.squeeze().float())
             if return_dict:
                 outputs_dict['loss'] = loss
                 return outputs_dict
@@ -159,8 +163,8 @@ class RerankModel(nn.Module):
             return logits
 
     def set_model_type(self, model_type: Literal['cross-encoder', 'colbert'], **kwargs):
-        model_class = {'cross-encoder': self, 'colbert': ColBERT}
-        model_class = model_class.get(model_type.lower())
+        model_class = {'crossencoder': self, 'colbert': ColBERT}
+        model_class = model_class.get(model_type.lower().replace('-', ''))
         return model_class(
             model=self.model,
             tokenizer=self.tokenizer,
@@ -275,12 +279,11 @@ class RerankModel(nn.Module):
     def from_pretrained(
         cls,
         model_name_or_path: str,
-        pooling_method: str = 'mean',
+        pooling_method: Optional[str] = None,
+        num_labels: int = 1,
         loss_fn: Union[nn.Module, Callable] = None,
         loss_type: Literal['classification', 'regression'] = 'classification',
-        num_labels: int = 1,
         causal_lm: bool = False,
-        gradient_checkpointing: bool = False,
         trust_remote_code: bool = True,
         use_fp16: bool = False,
         use_lora: bool = False,
@@ -296,11 +299,10 @@ class RerankModel(nn.Module):
         model = AutoModelForSequenceClassification.from_pretrained(
             model_name_or_path, num_labels=num_labels, trust_remote_code=trust_remote_code, **kwargs
         )
-        if gradient_checkpointing:
-            model.graident_checkpointing_enable()
 
         if use_fp16:
             model.half()
+
         if use_lora:
             from peft import LoraConfig, TaskType, get_peft_model
 
@@ -330,8 +332,11 @@ class RerankModel(nn.Module):
         self.model.save_pretrained(path, state_dict=state_dict, safe_serialization=safe_serialization)
         self.tokenizer.save_pretrained(path)
 
+    def gradient_checkpointing_enable(self, gradient_checkpointing_kwargs=None):
+        self.model.gradient_checkpointing_enable(gradient_checkpointing_kwargs=gradient_checkpointing_kwargs)
 
-class ColBERT(RerankModel):
+
+class ColBERT(AutoModelForRanking):
     def __init__(
         self,
         colbert_dim: int = 128,
@@ -485,9 +490,6 @@ class ColBERT(RerankModel):
             model = cls(model=model, tokenizer=tokenizer, pooling_method=pooling_method)
             model.load_state_dict(torch.load(save_path))
             return model
-
-        if gradient_checkpointing:
-            model.graident_checkpointing_enable()
 
         if use_fp16:
             model.half()

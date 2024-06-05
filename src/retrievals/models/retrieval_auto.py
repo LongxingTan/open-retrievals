@@ -5,6 +5,7 @@ TODO:
 - web retrieval
 """
 
+import glob
 import logging
 import os.path
 import time
@@ -62,21 +63,23 @@ class AutoModelForRetrieval(object):
             import faiss
 
             start_time = time.time()
-            if os.path.isfile(index_path):
+            if not isinstance(index_path, (list, tuple)) and os.path.isfile(index_path):
                 faiss_index = faiss.read_index(index_path)
                 logger.info(f'Loading faiss index successfully, elapsed time: {time.time()-start_time:.2}s')
                 faiss_retrieval = FaissSearcher(faiss_index)
             else:
-                index_file = []
-                for f in os.listdir(index_path):
-                    file = os.path.join(index_path, f)
-                    if os.path.isfile(file):
-                        index_file.append(file)
-                if not index_file:
-                    return
-                faiss_retrieval = FaissSearcher(index_file[0])
-                for i in range(1, len(index_file)):
-                    faiss_retrieval.add(index_file[i])
+                if isinstance(index_path, (list, tuple)) and os.path.isfile(index_path[0]):
+                    index_files = index_path
+                else:
+                    index_files = glob.glob(index_path)
+
+                logger.info(
+                    f'Loading index successfully, files: {len(index_files)}, elapsed: {time.time() - start_time:.2}s'
+                )
+                first_file = torch.load(index_files[0])
+                faiss_retrieval = FaissSearcher(first_file)
+                for i in range(1, len(index_files)):
+                    faiss_retrieval.add(index_files[i])
 
             if batch_size < 1:
                 dists, indices = faiss_index.search(query_embed.astype(np.float32), k=top_k)
@@ -114,7 +117,10 @@ class AutoModelForRetrieval(object):
     def get_relevant_documents(self, query: str):
         return
 
-    def write_ranking(self, query_ids, dists, indices, ranking_file):
+    def save_ranking(self, query_ids, dists, indices, ranking_file):
+        """
+        save format: qid, docid, score
+        """
         with open(ranking_file, 'w') as f:
             for qid, score, index in zip(query_ids, dists, indices):
                 score_list = [(s, idx) for s, idx in zip(score, index)]
@@ -232,14 +238,17 @@ def cosine_similarity_search(
 
 
 class FaissSearcher(BaseRetriever):
-    def __init__(self, corpus_index: Union['faiss.Index', np.ndarray]):
-        if isinstance(corpus_index, np.ndarray):
+    def __init__(self, corpus_index: Union[faiss.Index, np.ndarray, torch.Tensor]):
+        if isinstance(corpus_index, (np.ndarray, torch.Tensor)):
             index = faiss.IndexFlatIP(corpus_index.shape[1])
             self.index = index
         else:
             self.index = corpus_index
 
-    def add(self, corpus_index: np.ndarray):
+    def add(self, corpus_index: Union[np.ndarray, str]):
+        if isinstance(corpus_index, str):
+            logging.info(f'load vector from local: {corpus_index}')
+            corpus_index = torch.load(corpus_index)
         self.index.add(corpus_index)
 
     def search(
@@ -247,14 +256,12 @@ class FaissSearcher(BaseRetriever):
         query_embed: Union[torch.Tensor, np.ndarray],
         top_k: int = 100,
         batch_size: int = 128,
+        document_lookup: Optional[np.ndarray] = None,
     ) -> Tuple[np.ndarray, np.ndarray]:
         """
-        1. Encode queries into dense embeddings;
+        1. Encode queries into dense embeddings
         2. Search through faiss index
         """
-        # query_embeddings = model.encode_queries(
-        #     queries["query"], batch_size=batch_size, max_length=max_length
-        # )
         query_size = len(query_embed)
         assert query_size > 0, 'Please make sure the query_embeddings is not empty'
 
@@ -270,7 +277,11 @@ class FaissSearcher(BaseRetriever):
 
         all_scores = np.concatenate(all_scores, axis=0)
         all_indices = np.concatenate(all_indices, axis=0)
-        return all_scores, all_indices
+        if not document_lookup:
+            return all_scores, all_indices
+        else:
+            document_ids = np.array([[int(document_lookup[idx]) for idx in indices] for indices in all_indices])
+            return all_scores, document_ids
 
     def combine(self, results: Iterable[Tuple[np.ndarray, np.ndarray]]):
         rh = None

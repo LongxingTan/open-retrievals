@@ -14,8 +14,8 @@
 [coverage-url]: https://codecov.io/github/longxingtan/open-retrievals?branch=master
 
 <h1 align="center">
-<img src="./docs/source/_static/logo.svg" width="490" align=center/>
-</h1><br>
+<img src="./docs/source/_static/logo.svg" width="420" align=center/>
+</h1>
 
 [![LICENSE][license-image]][license-url]
 [![PyPI Version][pypi-image]][pypi-url]
@@ -28,10 +28,9 @@
 **[中文wiki](https://github.com/LongxingTan/open-retrievals/wiki)** | **[英文文档](https://open-retrievals.readthedocs.io)** | **[Release Notes](https://open-retrievals.readthedocs.io/en/latest/CHANGELOG.html)**
 
 **Open-Retrievals** 帮助开发者在信息检索、大语言模型等领域便捷地应用文本向量，快速搭建检索、排序、RAG等应用。
-- 多种对比学习进行文本向量微调、rerank微调
-- 支持point-wise、pairwise、listwise训练
-- 支持大语言模型LLM文本向量微调
-- 结合Langchain、LLamaIndex快速产出RAG demo
+- `AutoModelForEmbedding`一统向量、检索、重排领域
+- 多种对比学习、大语言模型进行向量微调、rerank微调，point-wise、pairwise、listwise训练
+- 结合Langchain、LlamaIndex快速产出RAG demo
 
 
 ## 安装
@@ -57,6 +56,26 @@ pip install -e .
 
 
 ## 快速入门
+
+- Embeddings
+`model = AutoModelForEmbedding.from_pretrained(model_name_or_path, pooling_method='cls')`
+- Retrieval
+`retrieval = model.as_retrieval()`
+- Rerank
+`reranker = model.as_ranker()`
+- Point-wise
+`model = model.set_train_type('pointwise', loss_fn=ArcFace())`
+- Pairwise
+`model = model.set_train_type('pairwise', loss_fn=InfoNCE())`
+- Listwise
+`model = model.ser_train_type('listwise', loss_fn=nn.CrossEntropyLoss()`
+- Colbert
+`model = model.set_model_type('colbert')`
+- LLM
+`model = AutoModelForEmbedding.from_pretrained(model_name_or_path, causal_lm=True)`
+- Langchain
+`embedding_model = model.as_langchain_retrieval()`
+
 
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1-WBMisdWLeHUKlzJ2DrREXY_kSV8vjP3?usp=sharing)
 
@@ -96,10 +115,10 @@ print(indices)
 
 **重排**
 ```python
-from retrievals import RerankModel
+from retrievals import AutoModelForRanking
 
 model_name_or_path: str = "BAAI/bge-reranker-base"
-rerank_model = RerankModel.from_pretrained(model_name_or_path)
+rerank_model = AutoModelForRanking.from_pretrained(model_name_or_path)
 scores_list = rerank_model.compute_score(
     [["在1974年，第一次在东南亚打自由搏击就得了冠军", "1982年打赢了日本重炮手雷龙"],
      ["铁砂掌，源于泗水铁掌帮，三日练成，收费六百", "铁布衫，源于福建省以北70公里，五日练成，收费八百"]]
@@ -119,7 +138,7 @@ pip install chromadb
 
 ```python
 from retrievals.tools.langchain import LangchainEmbedding, LangchainReranker, LangchainLLM
-from retrievals import RerankModel
+from retrievals import AutoModelForRanking
 from langchain.retrievers import ContextualCompressionRetriever
 from langchain_community.vectorstores import Chroma as Vectorstore
 from langchain.prompts.prompt import PromptTemplate
@@ -138,7 +157,7 @@ vectordb = Vectorstore(
 retrieval_args = {"search_type" :"similarity", "score_threshold": 0.15, "k": 10}
 retriever = vectordb.as_retriever(**retrieval_args)
 
-ranker = RerankModel.from_pretrained(rerank_model_name_or_path)
+ranker = AutoModelForRanking.from_pretrained(rerank_model_name_or_path)
 reranker = LangchainReranker(model=ranker, top_n=3)
 compression_retriever = ContextualCompressionRetriever(
     base_compressor=reranker, base_retriever=retriever
@@ -178,22 +197,15 @@ response = qa_chain({"query": user_query})
 print(response)
 ```
 
-[//]: # (**搭配LLamaIndex构建RAG应用**)
-
-[//]: # ()
-[//]: # (```shell)
-
-[//]: # (pip install llamaindex)
-
-[//]: # (```)
-
-[//]: # ()
-[//]: # (```python)
-
-[//]: # ()
-[//]: # (```)
 
 **微调文本向量模型**
+
+- Model performance fine-tuned in [T2Ranking](https://huggingface.co/datasets/THUIR/T2Ranking)
+
+| Model | Size | AP<sup>val</sup> | AP<sub>50</sub><sup>val</sup> | AP<sub>75</sub><sup>val</sup> |
+| :-- | :-: | :-: | :-: | :-: |
+| TripletLoss | 672 | 47.7% |52.6% | 61.4% |
+
 
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/17KXe2lnNRID-HiVvMtzQnONiO74oGs91?usp=sharing)
 
@@ -260,20 +272,6 @@ torchrun --nproc_per_node 1 \
   --logging_steps 100
 ```
 
-**基于余弦相似度和近邻搜索**
-```python
-from retrievals import AutoModelForEmbedding, AutoModelForRetrieval
-
-query_texts = ['A dog is chasing car.']
-document_texts = ['A man is playing a guitar.', 'A bee is flying low']
-model_name_or_path = "sentence-transformers/all-MiniLM-L6-v2"
-model = AutoModelForEmbedding.from_pretrained(model_name_or_path)
-query_embeddings = model.encode(query_texts, convert_to_tensor=True)
-document_embeddings = model.encode(document_texts, convert_to_tensor=True)
-
-matcher = AutoModelForRetrieval(method='cosine')
-dists, indices = matcher.similarity_search(query_embeddings, document_embeddings, top_k=1)
-```
 
 **微调重排模型**
 
@@ -281,7 +279,7 @@ dists, indices = matcher.similarity_search(query_embeddings, document_embeddings
 
 ```python
 from transformers import AutoTokenizer, TrainingArguments, get_cosine_schedule_with_warmup, AdamW
-from retrievals import RerankCollator, RerankModel, RerankTrainer, RerankDataset
+from retrievals import RerankCollator, AutoModelForRanking, RerankTrainer, RerankDataset
 
 model_name_or_path: str = "microsoft/deberta-v3-base"
 max_length: int = 128
@@ -291,7 +289,7 @@ epochs: int = 3
 
 train_dataset = RerankDataset('./t2rank.json', positive_key='pos', negative_key='neg')
 tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, use_fast=False)
-model = RerankModel.from_pretrained(model_name_or_path, pooling_method="mean")
+model = AutoModelForRanking.from_pretrained(model_name_or_path, pooling_method="mean")
 optimizer = AdamW(model.parameters(), lr=learning_rate)
 num_train_steps = int(len(train_dataset) / batch_size * epochs)
 scheduler = get_cosine_schedule_with_warmup(optimizer, num_warmup_steps=0.05 * num_train_steps, num_training_steps=num_train_steps)

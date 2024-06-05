@@ -63,14 +63,14 @@ class RetrievalDataset(Dataset):
         if self.args and self.args.query_instruction is not None:
             query = self.args.query_instruction + query
 
-        if isinstance(self.dataset[item][self.positive_key], Iterable):
+        if isinstance(self.dataset[item][self.positive_key], (list, tuple)):
             pos = random.choice(self.dataset[item][self.positive_key])
         else:
             pos = self.dataset[item][self.positive_key]
 
         sample = {self.query_key: query, self.positive_key: pos}
         if self.negative_key in self.dataset[item]:
-            if isinstance(self.dataset[item][self.negative_key], Iterable):
+            if isinstance(self.dataset[item][self.negative_key], (list, tuple)):
                 if len(self.dataset[item][self.negative_key]) < self.train_group_size - 1:
                     num = math.ceil((self.train_group_size - 1) / len(self.dataset[item][self.negative_key]))
                     negs = random.sample(self.dataset[item][self.negative_key] * num, self.train_group_size - 1)
@@ -95,25 +95,33 @@ class RetrievalDataset(Dataset):
 class RerankDataset(Dataset):
     def __init__(
         self,
-        data_name_or_path: str,
-        cache_dir: Optional[str] = None,
-        query_key='query',
-        positive_key: Optional[str] = None,
-        negative_key: Optional[str] = None,
-        negative_numbers: Optional[int] = None,
+        data_name_or_path: Optional[str] = None,
+        query_key: str = 'query',
+        positive_key: Optional[str] = 'document',
+        negative_key: Optional[str] = 'negative',
+        max_negative_samples: Optional[int] = None,
+        args: Optional = None,
+        tokenizer: PreTrainedTokenizer = None,
     ):
-        self.query_key = query_key
-        self.positive_key = positive_key
-        self.negative_key = negative_key
-        self.negative_numbers = negative_numbers
+        if not data_name_or_path and args:
+            data_name_or_path = args.train_data
+        if args and 'max_negative_samples' in args.__dataclass_fields__:
+            self.max_negative_samples = args.max_negative_samples
+        else:
+            self.max_negative_samples = max_negative_samples
 
-        if os.path.isdir(data_name_or_path):
+        self.query_key = args.query_key or query_key
+        self.positive_key = args.positive_key or positive_key
+        self.negative_key = args.negative_key or negative_key
+
+        if isinstance(data_name_or_path, datasets.Dataset):
+            dataset = data_name_or_path
+        elif os.path.isdir(data_name_or_path):
             train_datasets = []
             for file in os.listdir(data_name_or_path):
                 temp_dataset = datasets.load_dataset(
                     "json",
                     data_files=os.path.join(data_name_or_path, file),
-                    cache_dir=cache_dir,
                 )
 
                 train_datasets.append(temp_dataset)
@@ -137,7 +145,7 @@ class RerankDataset(Dataset):
     def __getitem__(self, item: int):
         if isinstance(self.dataset[item], dict):
             query = self.dataset[item][self.query_key]
-            document = self.dataset[item]['document']
+            document = self.dataset[item][self.positive_key]
             labels = self.dataset[item]['labels']
         else:
             query, document, labels = self.dataset[item]
@@ -147,15 +155,15 @@ class RerankDataset(Dataset):
     def generate_samples(self, dataset):
         samples: List = []
         for data in dataset:
-            for text_pos in data[self.positive_key]:
-                samples.append([data[self.query_key], text_pos, 1])
+            for pos_text in data[self.positive_key]:
+                samples.append([data[self.query_key], pos_text, 1])
 
             negative_samples = data[self.negative_key]
-            if self.negative_numbers:
+            if self.max_negative_samples:
                 # TODO: random strategy
-                negative_samples = negative_samples[: self.negative_numbers]
-            for text_neg in negative_samples:
-                samples.append([data[self.query_key], text_neg, 0])
+                negative_samples = negative_samples[: self.max_negative_samples]
+            for neg_text in negative_samples:
+                samples.append([data[self.query_key], neg_text, 0])
         return samples
 
     @classmethod

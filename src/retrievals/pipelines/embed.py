@@ -14,7 +14,7 @@ from transformers import (
 )
 
 from ..data import PairCollator, RetrievalDataset, TripletCollator
-from ..losses import InfoNCE
+from ..losses import InfoNCE, TripletLoss
 from ..models.embedding_auto import AutoModelForEmbedding
 from ..trainer import RetrievalTrainer
 
@@ -23,10 +23,6 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class ModelArguments:
-    """
-    Arguments pertaining to which model/config/tokenizer we are going to fine-tune from.
-    """
-
     model_name_or_path: str = field(
         metadata={"help": "Path to pretrained model or model identifier from huggingface.co/models"}
     )
@@ -44,7 +40,7 @@ class ModelArguments:
 @dataclass
 class DataArguments:
     train_data: str = field(default=None, metadata={"help": "Path to train data"})
-    train_group_size: int = field(default=8)
+    train_group_size: int = field(default=2)
 
     query_max_length: int = field(
         default=32,
@@ -62,20 +58,20 @@ class DataArguments:
         },
     )
 
-    max_example_num_per_dataset: int = field(
-        default=100000000, metadata={"help": "the max number of examples for each dataset"}
-    )
-
     query_instruction: str = field(default=None, metadata={"help": "instruction for query"})
     passage_instruction: str = field(default=None, metadata={"help": "instruction for passage"})
+    query_key: str = field(default=None)
+    positive_key: str = field(default='positive')
+    negative_key: str = field(default='negative')
 
-    def __post_init__(self):
-        if not os.path.exists(self.train_data):
-            raise FileNotFoundError(f"cannot find file: {self.train_data}, please set a true path")
+    # def __post_init__(self):
+    #     if not os.path.exists(self.train_data):
+    #         raise FileNotFoundError(f"cannot find file: {self.train_data}, please set a true path")
 
 
 @dataclass
 class RetrieverTrainingArguments(TrainingArguments):
+    train_type: str = field(default='pairwise', metadata={'help': "train type of point, pair, or list"})
     negatives_cross_device: bool = field(default=False, metadata={"help": "share negatives across devices"})
     temperature: Optional[float] = field(default=0.02)
     fix_position_embedding: bool = field(
@@ -84,7 +80,6 @@ class RetrieverTrainingArguments(TrainingArguments):
     pooling_method: str = field(default='cls', metadata={"help": "the pooling method, should be cls or mean"})
     normalized: bool = field(default=True)
     use_inbatch_neg: bool = field(default=True, metadata={"help": "use passages in the same batch as negatives"})
-    train_type: str = field(default='pairwise', metadata={'help': "train type of point, pair, or list"})
     remove_unused_columns: bool = field(default=False)
 
 
@@ -127,52 +122,47 @@ def main():
     # Set seed
     set_seed(training_args.seed)
 
-    num_labels = 1
     tokenizer = AutoTokenizer.from_pretrained(
         model_args.tokenizer_name if model_args.tokenizer_name else model_args.model_name_or_path,
         cache_dir=model_args.cache_dir,
         use_fast=False,
     )
-    config = AutoConfig.from_pretrained(
-        model_args.config_name if model_args.config_name else model_args.model_name_or_path,
-        num_labels=num_labels,
-        cache_dir=model_args.cache_dir,
-    )
-    logger.info('Config: %s', config)
-
     model = AutoModelForEmbedding.from_pretrained(
         model_name_or_path=model_args.model_name_or_path,
         pooling_method=training_args.pooling_method,
     )
     model = model.set_train_type(
         "pairwise",
-        loss_fn=InfoNCE(nn.CrossEntropyLoss(label_smoothing=0.05), negative_samples=1),
+        loss_fn=TripletLoss(),
+        # loss_fn=InfoNCE(
+        #     nn.CrossEntropyLoss(label_smoothing=0.0),
+        #     use_inbatch_negative=training_args.use_inbatch_neg,
+        #     temperature=training_args.temperature,
+        #     train_group_size=data_args.train_group_size,
+        # ),
     )
 
-    # if training_args.fix_position_embedding:
-    #     for k, v in model.named_parameters():
-    #         if "position_embeddings" in k:
-    #             logging.info(f"Freeze the parameters for {k}")
-    #             v.requires_grad = False
-
-    train_dataset = RetrievalDataset(args=data_args, tokenizer=tokenizer, positive_key='pos')
+    train_dataset = RetrievalDataset(
+        args=data_args, tokenizer=tokenizer, positive_key=data_args.positive_key, negative_key=data_args.negative_key
+    )
 
     trainer = RetrievalTrainer(
         model=model,
         args=training_args,
         train_dataset=train_dataset,
-        data_collator=PairCollator(
+        data_collator=TripletCollator(
             tokenizer,
             query_max_length=data_args.query_max_length,
             document_max_length=data_args.document_max_length,
-            document_key='pos',
+            positive_key=data_args.positive_key,
+            negative_key=data_args.negative_key,
         ),
     )
 
     Path(training_args.output_dir).mkdir(parents=True, exist_ok=True)
 
     trainer.train()
-    trainer.save_model()
+    trainer.save_model(training_args.output_dir)
 
     if trainer.is_world_process_zero():
         tokenizer.save_pretrained(training_args.output_dir)

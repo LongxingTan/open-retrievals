@@ -22,7 +22,6 @@ Training stype: Each line of the Train file is a training instance
 ```
 
 - stype3
-Training stype3: Each line of the Train file is a training instance
 ```
 {'query': TEXT_TYPE, 'positives': List[TEXT_TYPE], "scores":List[float]}
 ...
