@@ -4,6 +4,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
 
+import transformers
 from torch import nn
 from transformers import (
     AutoConfig,
@@ -17,6 +18,7 @@ from ..data import ColBertCollator, RerankCollator, RerankDataset
 from ..models.rerank import AutoRanking
 from ..trainer import RerankTrainer
 
+transformers.logging.set_verbosity_error()
 logger = logging.getLogger(__name__)
 
 

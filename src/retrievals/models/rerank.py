@@ -146,7 +146,7 @@ class AutoRanking(nn.Module):
                 elif self.loss_type == 'classification':
                     self.loss_fn = nn.BCEWithLogitsLoss(reduction='mean')
 
-            loss = self.loss_fn(scores, labels.float())
+            loss = self.loss_fn(scores.squeeze(), labels.squeeze().float())
             if return_dict:
                 outputs_dict['loss'] = loss
                 return outputs_dict
