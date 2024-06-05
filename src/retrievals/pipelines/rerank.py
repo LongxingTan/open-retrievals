@@ -15,7 +15,7 @@ from transformers import (
 )
 
 from ..data import ColBertCollator, RerankCollator, RerankDataset
-from ..models.rerank import AutoRanking
+from ..models.rerank import AutoModelForRanking
 from ..trainer import RerankTrainer
 
 transformers.logging.set_verbosity_error()
@@ -114,7 +114,7 @@ def main():
         use_fast=False,
     )
 
-    model = AutoRanking.from_pretrained(
+    model = AutoModelForRanking.from_pretrained(
         model_args.model_name_or_path, num_labels=1, loss_fn=nn.BCEWithLogitsLoss(reduction='mean')
     )
 

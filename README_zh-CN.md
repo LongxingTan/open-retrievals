@@ -115,10 +115,10 @@ print(indices)
 
 **重排**
 ```python
-from retrievals import AutoRanking
+from retrievals import AutoModelForRanking
 
 model_name_or_path: str = "BAAI/bge-reranker-base"
-rerank_model = AutoRanking.from_pretrained(model_name_or_path)
+rerank_model = AutoModelForRanking.from_pretrained(model_name_or_path)
 scores_list = rerank_model.compute_score(
     [["在1974年，第一次在东南亚打自由搏击就得了冠军", "1982年打赢了日本重炮手雷龙"],
      ["铁砂掌，源于泗水铁掌帮，三日练成，收费六百", "铁布衫，源于福建省以北70公里，五日练成，收费八百"]]
@@ -138,7 +138,7 @@ pip install chromadb
 
 ```python
 from retrievals.tools.langchain import LangchainEmbedding, LangchainReranker, LangchainLLM
-from retrievals import AutoRanking
+from retrievals import AutoModelForRanking
 from langchain.retrievers import ContextualCompressionRetriever
 from langchain_community.vectorstores import Chroma as Vectorstore
 from langchain.prompts.prompt import PromptTemplate
@@ -157,7 +157,7 @@ vectordb = Vectorstore(
 retrieval_args = {"search_type" :"similarity", "score_threshold": 0.15, "k": 10}
 retriever = vectordb.as_retriever(**retrieval_args)
 
-ranker = AutoRanking.from_pretrained(rerank_model_name_or_path)
+ranker = AutoModelForRanking.from_pretrained(rerank_model_name_or_path)
 reranker = LangchainReranker(model=ranker, top_n=3)
 compression_retriever = ContextualCompressionRetriever(
     base_compressor=reranker, base_retriever=retriever
@@ -279,7 +279,7 @@ torchrun --nproc_per_node 1 \
 
 ```python
 from transformers import AutoTokenizer, TrainingArguments, get_cosine_schedule_with_warmup, AdamW
-from retrievals import RerankCollator, AutoRanking, RerankTrainer, RerankDataset
+from retrievals import RerankCollator, AutoModelForRanking, RerankTrainer, RerankDataset
 
 model_name_or_path: str = "microsoft/deberta-v3-base"
 max_length: int = 128
@@ -289,7 +289,7 @@ epochs: int = 3
 
 train_dataset = RerankDataset('./t2rank.json', positive_key='pos', negative_key='neg')
 tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, use_fast=False)
-model = AutoRanking.from_pretrained(model_name_or_path, pooling_method="mean")
+model = AutoModelForRanking.from_pretrained(model_name_or_path, pooling_method="mean")
 optimizer = AdamW(model.parameters(), lr=learning_rate)
 num_train_steps = int(len(train_dataset) / batch_size * epochs)
 scheduler = get_cosine_schedule_with_warmup(optimizer, num_warmup_steps=0.05 * num_train_steps, num_training_steps=num_train_steps)

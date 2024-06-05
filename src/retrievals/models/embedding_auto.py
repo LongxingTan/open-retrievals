@@ -422,10 +422,10 @@ class AutoModelForEmbedding(nn.Module):
 
     @classmethod
     def as_reranker(cls, rerank_args, **kwargs):
-        from .rerank import AutoRanking
+        from .rerank import AutoModelForRanking
 
         ranking_model = cls(**kwargs)
-        return AutoRanking(ranking_model, **rerank_args)
+        return AutoModelForRanking(ranking_model, **rerank_args)
 
     @classmethod
     def as_langchain_embedding(cls):

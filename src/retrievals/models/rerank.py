@@ -36,7 +36,7 @@ class BaseRanker(ABC):
         pass
 
 
-class AutoRanking(nn.Module):
+class AutoModelForRanking(nn.Module):
     def __init__(
         self,
         model: Optional[nn.Module] = None,
@@ -52,7 +52,7 @@ class AutoRanking(nn.Module):
     ):
         super().__init__()
         if isinstance(model, str):
-            assert ValueError("Please use AutoRanking.from_pretrained(model_name_or_path)")
+            assert ValueError("Please use AutoModelForRanking.from_pretrained(model_name_or_path)")
 
         self.model: Optional[nn.Module] = model
         self.tokenizer = tokenizer
@@ -336,7 +336,7 @@ class AutoRanking(nn.Module):
         self.model.gradient_checkpointing_enable(gradient_checkpointing_kwargs=gradient_checkpointing_kwargs)
 
 
-class ColBERT(AutoRanking):
+class ColBERT(AutoModelForRanking):
     def __init__(
         self,
         colbert_dim: int = 128,

@@ -8,7 +8,7 @@ from transformers import (
 )
 
 from retrievals import (
-    AutoRanking,
+    AutoModelForRanking,
     ColBertCollator,
     RerankCollator,
     RerankDataset,
@@ -26,7 +26,7 @@ epochs: int = 3
 
 train_dataset = RerankDataset("./t2rank_100.json", positive_key="pos", negative_key="neg")
 tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, use_fast=False)
-model = AutoRanking.from_pretrained(
+model = AutoModelForRanking.from_pretrained(
     model_name_or_path,
     pooling_method="mean",
     loss_fn=nn.CrossEntropyLoss(),

@@ -6,7 +6,7 @@ from transformers import (
     get_cosine_schedule_with_warmup,
 )
 
-from retrievals import AutoRanking, RerankCollator, RerankDataset, RerankTrainer
+from retrievals import AutoModelForRanking, RerankCollator, RerankDataset, RerankTrainer
 
 transformers.logging.set_verbosity_error()
 
@@ -18,7 +18,7 @@ epochs: int = 3
 
 train_dataset = RerankDataset("./t2rank_100.json", positive_key="pos", negative_key="neg")
 tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, use_fast=False)
-model = AutoRanking.from_pretrained(model_name_or_path, pooling_method="mean")
+model = AutoModelForRanking.from_pretrained(model_name_or_path, pooling_method="mean")
 optimizer = AdamW(model.parameters(), lr=learning_rate)
 num_train_steps = int(len(train_dataset) / batch_size * epochs)
 scheduler = get_cosine_schedule_with_warmup(

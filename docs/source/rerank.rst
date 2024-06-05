@@ -8,10 +8,10 @@ Use pretrained rerank
 
 .. code-block:: python
 
-    from retrievals import AutoRanking
+    from retrievals import AutoModelForRanking
 
     model_name_or_path: str = "BAAI/bge-reranker-base"
-    rerank_model = AutoRanking.from_pretrained(model_name_or_path)
+    rerank_model = AutoModelForRanking.from_pretrained(model_name_or_path)
     scores_list = rerank_model.compute_score(["In 1974, I won the championship in Southeast Asia in my first kickboxing match", "In 1982, I defeated the heavy hitter Ryu Long."])
     print(scores_list)
 
@@ -24,7 +24,7 @@ Fine-tuning
 .. code-block:: python
 
     from transformers import AutoTokenizer, TrainingArguments, get_cosine_schedule_with_warmup, AdamW
-    from retrievals import RerankCollator, AutoRanking, RerankTrainer, RerankDataset
+    from retrievals import RerankCollator, AutoModelForRanking, RerankTrainer, RerankDataset
 
     model_name_or_path: str = "microsoft/deberta-v3-base"
     max_length: int = 128
@@ -34,7 +34,7 @@ Fine-tuning
 
     train_dataset = RerankDataset('./t2rank.json', positive_key='pos', negative_key='neg')
     tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, use_fast=False)
-    model = AutoRanking.from_pretrained(model_name_or_path, pooling_method="mean")
+    model = AutoModelForRanking.from_pretrained(model_name_or_path, pooling_method="mean")
     optimizer = AdamW(model.parameters(), lr=learning_rate)
     num_train_steps = int(len(train_dataset) / batch_size * epochs)
     scheduler = get_cosine_schedule_with_warmup(optimizer, num_warmup_steps=0.05 * num_train_steps, num_training_steps=num_train_steps)
