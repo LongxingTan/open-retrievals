@@ -51,6 +51,9 @@ class DataArguments:
             "than this will be truncated, sequences shorter will be padded."
         },
     )
+    positive_key: str = field(default='positive')
+    negative_key: str = field(default='negative')
+    max_negative_samples: int = field(default=8)
 
     def __post_init__(self):
         if not os.path.exists(self.train_data):
