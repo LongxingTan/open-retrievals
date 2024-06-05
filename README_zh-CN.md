@@ -30,7 +30,7 @@
 **Open-Retrievals** 帮助开发者在信息检索、大语言模型等领域便捷地应用文本向量，快速搭建检索、排序、RAG等应用。
 - `AutoModelForEmbedding`一统向量、检索、重排领域
 - 多种对比学习、大语言模型进行向量微调、rerank微调，point-wise、pairwise、listwise训练
-- 结合Langchain、LLamaIndex快速产出RAG demo
+- 结合Langchain、LlamaIndex快速产出RAG demo
 
 
 ## 安装
@@ -68,7 +68,7 @@ pip install -e .
 - Pairwise
 `model = model.set_train_type('pairwise', loss_fn=InfoNCE())`
 - Listwise
-`model = model.ser_train_type('listwise', loss_fn=nn.CrossEntropyLoss()'`
+`model = model.ser_train_type('listwise', loss_fn=nn.CrossEntropyLoss()`
 - Colbert
 `model = model.set_model_type('colbert')`
 - LLM
@@ -202,7 +202,7 @@ print(response)
 
 - Model performance fine-tuned in [T2Ranking](https://huggingface.co/datasets/THUIR/T2Ranking)
 
-| cfg | Size | AP<sup>val</sup> | AP<sub>50</sub><sup>val</sup> | AP<sub>75</sub><sup>val</sup> |
+| Model | Size | AP<sup>val</sup> | AP<sub>50</sub><sup>val</sup> | AP<sub>75</sub><sup>val</sup> |
 | :-- | :-: | :-: | :-: | :-: |
 | TripletLoss | 672 | 47.7% |52.6% | 61.4% |
 

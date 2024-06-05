@@ -46,6 +46,7 @@ class AutoRanking(nn.Module):
         loss_fn: Union[nn.Module, Callable] = None,
         loss_type: Literal['classification', 'regression'] = 'classification',
         max_length: Optional[int] = None,
+        temperature: Optional[float] = None,
         device: Optional[str] = None,
         **kwargs,
     ):
@@ -72,6 +73,7 @@ class AutoRanking(nn.Module):
                 max_length = min(self.model.config.max_position_embeddings, self.tokenizer.model_max_length)
 
         self.max_length = max_length
+        self.temperature = temperature
 
         if device is None:
             self.device = get_device_name()
@@ -126,6 +128,9 @@ class AutoRanking(nn.Module):
         **kwargs,
     ) -> Union[Dict[str, torch.Tensor], Tuple[torch.Tensor, torch.Tensor], torch.Tensor]:
         features = self.encode(input_ids=input_ids, attention_mask=attention_mask)
+
+        if self.temperature is not None:
+            features = features / self.temperature
 
         if not self.training:
             return features
