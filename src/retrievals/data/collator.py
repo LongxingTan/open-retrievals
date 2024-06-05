@@ -157,6 +157,7 @@ class RerankCollator(DataCollatorWithPadding):
 
         self.query_max_length = query_max_length
         self.document_max_length = document_max_length
+        self.max_length = query_max_length + document_max_length
         self.query_key = query_key
         self.document_key = document_key
 
@@ -187,7 +188,7 @@ class RerankCollator(DataCollatorWithPadding):
             text=query_texts,
             text_pair=document_texts,
             padding="max_length",
-            max_length=self.query_max_length,
+            max_length=self.max_length,
             return_tensors="pt",
             **tokenize_args,
         )
