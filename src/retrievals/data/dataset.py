@@ -43,7 +43,10 @@ class RetrievalDataset(Dataset):
                 train_datasets.append(temp_dataset)
             self.dataset = datasets.concatenate_datasets(train_datasets)
         else:
-            self.dataset = datasets.load_dataset("json", data_files=data_name_or_path)
+            try:
+                self.dataset = datasets.load_dataset("json", data_files=data_name_or_path)
+            except FileNotFoundError:
+                self.dataset = datasets.load_dataset(data_name_or_path)
 
         if 'train' in self.dataset:
             self.dataset = self.dataset['train']
@@ -126,7 +129,10 @@ class RerankDataset(Dataset):
             dataset = datasets.concatenate_datasets(train_datasets)
 
         else:
-            dataset = datasets.load_dataset("json", data_files=data_name_or_path)
+            try:
+                dataset = datasets.load_dataset("json", data_files=data_name_or_path)
+            except FileNotFoundError:
+                dataset = datasets.load_dataset(data_name_or_path)
 
         if 'train' in dataset:
             dataset = dataset['train']
