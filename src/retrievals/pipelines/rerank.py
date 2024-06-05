@@ -4,6 +4,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
 
+from torch import nn
 from transformers import (
     AutoConfig,
     AutoTokenizer,
@@ -43,7 +44,7 @@ class ModelArguments:
 class DataArguments:
     train_data: str = field(default=None, metadata={"help": "Path to corpus"})
     train_group_size: int = field(default=8)
-    max_len: int = field(
+    max_length: int = field(
         default=512,
         metadata={
             "help": "The maximum total input sequence length after tokenization for input text. Sequences longer "
@@ -56,8 +57,16 @@ class DataArguments:
             raise FileNotFoundError(f"cannot find file: {self.train_data}, please set a true path")
 
 
+@dataclass
+class RerankerTrainingArguments(TrainingArguments):
+    train_type: str = field(default='pairwise', metadata={'help': "train type of point, pair, or list"})
+    negatives_cross_device: bool = field(default=False, metadata={"help": "share negatives across devices"})
+    temperature: Optional[float] = field(default=0.02)
+    remove_unused_columns: bool = field(default=False)
+
+
 def main():
-    parser = HfArgumentParser((ModelArguments, DataArguments, TrainingArguments))
+    parser = HfArgumentParser((ModelArguments, DataArguments, RerankerTrainingArguments))
     model_args, data_args, training_args = parser.parse_args_into_dataclasses()
     model_args: ModelArguments
     data_args: DataArguments
@@ -93,32 +102,19 @@ def main():
 
     set_seed(training_args.seed)
 
-    num_labels = 1
-
     tokenizer = AutoTokenizer.from_pretrained(
         model_args.tokenizer_name if model_args.tokenizer_name else model_args.model_name_or_path,
         cache_dir=model_args.cache_dir,
         use_fast=False,
     )
-    config = AutoConfig.from_pretrained(
-        model_args.config_name if model_args.config_name else model_args.model_name_or_path,
-        num_labels=num_labels,
-        cache_dir=model_args.cache_dir,
-    )
 
     model = AutoRanking.from_pretrained(
-        model_args,
-        data_args,
-        training_args,
-        model_args.model_name_or_path,
-        from_tf=bool(".ckpt" in model_args.model_name_or_path),
-        config=config,
-        cache_dir=model_args.cache_dir,
+        model_args.model_name_or_path, num_labels=1, loss_fn=nn.BCEWithLogitsLoss(reduction='mean')
     )
 
     train_dataset = RerankDataset(data_args, tokenizer=tokenizer)
-    _trainer_class = RerankTrainer
-    trainer = _trainer_class(
+
+    trainer = RerankTrainer(
         model=model,
         args=training_args,
         train_dataset=train_dataset,
@@ -129,7 +125,10 @@ def main():
     Path(training_args.output_dir).mkdir(parents=True, exist_ok=True)
 
     trainer.train()
-    trainer.save_model()
+    trainer.save_model(training_args.output_dir)
+
+    if trainer.is_world_process_zero():
+        tokenizer.save_pretrained(training_args.output_dir)
 
 
 if __name__ == "__main__":
