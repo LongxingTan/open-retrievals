@@ -112,7 +112,7 @@ def main():
         model_args.model_name_or_path, num_labels=1, loss_fn=nn.BCEWithLogitsLoss(reduction='mean')
     )
 
-    train_dataset = RerankDataset(data_args, tokenizer=tokenizer)
+    train_dataset = RerankDataset(data_args.train_data, tokenizer=tokenizer)
 
     trainer = RerankTrainer(
         model=model,
