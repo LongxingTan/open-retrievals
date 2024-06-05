@@ -51,8 +51,8 @@ class DataArguments:
             "than this will be truncated, sequences shorter will be padded."
         },
     )
-    positive_key: str = field(default='positive')
-    negative_key: str = field(default='negative')
+    positive_key: str = field(default=None)
+    negative_key: str = field(default=None)
     max_negative_samples: int = field(default=8)
 
     def __post_init__(self):
@@ -115,7 +115,7 @@ def main():
         model_args.model_name_or_path, num_labels=1, loss_fn=nn.BCEWithLogitsLoss(reduction='mean')
     )
 
-    train_dataset = RerankDataset(data_args.train_data, tokenizer=tokenizer)
+    train_dataset = RerankDataset(args=data_args, tokenizer=tokenizer)
 
     trainer = RerankTrainer(
         model=model,

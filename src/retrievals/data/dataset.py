@@ -97,8 +97,8 @@ class RerankDataset(Dataset):
         self,
         data_name_or_path: Optional[str] = None,
         query_key: str = 'query',
-        positive_key: Optional[str] = None,
-        negative_key: Optional[str] = None,
+        positive_key: Optional[str] = 'document',
+        negative_key: Optional[str] = 'negative',
         max_negative_samples: Optional[int] = None,
         args: Optional = None,
         tokenizer: PreTrainedTokenizer = None,
@@ -110,9 +110,9 @@ class RerankDataset(Dataset):
         else:
             self.max_negative_samples = max_negative_samples
 
-        self.query_key = query_key
-        self.positive_key = positive_key
-        self.negative_key = negative_key
+        self.query_key = args.query_key or query_key
+        self.positive_key = args.positive_key or positive_key
+        self.negative_key = args.negative_key or negative_key
 
         if os.path.isdir(data_name_or_path):
             train_datasets = []
@@ -143,7 +143,7 @@ class RerankDataset(Dataset):
     def __getitem__(self, item: int):
         if isinstance(self.dataset[item], dict):
             query = self.dataset[item][self.query_key]
-            document = self.dataset[item]['document']
+            document = self.dataset[item][self.positive_key]
             labels = self.dataset[item]['labels']
         else:
             query, document, labels = self.dataset[item]
