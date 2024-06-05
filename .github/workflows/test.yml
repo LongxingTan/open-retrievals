@@ -43,32 +43,11 @@ jobs:
         shell: bash
         run: python -m unittest discover -s ./tests  -p 'test_*.py'
 
-      - name: Codecov startup
-        if: success()
-        run: |
-          codecovcli create-commit
-          codecovcli create-report
-        env:
-          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}'
-
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v4.0.1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           slug: longxingtan/open-retrievals
-
-#      - name: Static Analysis
-#        run: |
-#          codecovcli static-analysis --token=${CODECOV_STATIC_TOKEN} \
-#          --folders-to-exclude .artifacts \
-#          --folders-to-exclude .github \
-#          --folders-to-exclude .venv \
-#          --folders-to-exclude static \
-#          --folders-to-exclude bin
-#        env:
-#          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
-#          CODECOV_STATIC_TOKEN: ${{ secrets.CODECOV_STATIC_TOKEN }}
-
 
   docs:
     name: Test docs build
