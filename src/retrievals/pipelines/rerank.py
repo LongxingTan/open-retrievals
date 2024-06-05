@@ -51,6 +51,7 @@ class DataArguments:
             "than this will be truncated, sequences shorter will be padded."
         },
     )
+    query_key: str = field(default=None)
     positive_key: str = field(default=None)
     negative_key: str = field(default=None)
     max_negative_samples: int = field(default=8)
