@@ -28,8 +28,8 @@
 **[ドキュメント](https://open-retrievals.readthedocs.io)** | **[英語](https://github.com/LongxingTan/open-retrievals/blob/master/README.md)** | **[中文](https://github.com/LongxingTan/open-retrievals/blob/master/README_zh-CN.md)**
 
 **Open-Retrievals** は、PyTorch と Transformers をベースとした、情報検索と LLM 検索拡張生成を指向した、SOTA テキスト埋め込みを取得する使いやすい Python フレームワークです。
-- 対照学習エンベッディング
-- LLM エンベッディング
+- `AutoModelForEmbedding` はベクトル化、検索、リランクの分野を統一します
+- 対照学習エンベッディング, LLM エンベッディング
 - 高速 RAG デモ
 
 

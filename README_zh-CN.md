@@ -28,9 +28,8 @@
 **[中文wiki](https://github.com/LongxingTan/open-retrievals/wiki)** | **[英文文档](https://open-retrievals.readthedocs.io)** | **[Release Notes](https://open-retrievals.readthedocs.io/en/latest/CHANGELOG.html)**
 
 **Open-Retrievals** 帮助开发者在信息检索、大语言模型等领域便捷地应用文本向量，快速搭建检索、排序、RAG等应用。
-- 文本向量, 检索，重排都可以简单的一句开始 `AutoModelForEmbedding`
-- 多种对比学习与大语言模型进行文本向量微调、rerank微调
-- 支持point-wise、pairwise、listwise训练
+- `AutoModelForEmbedding`一统向量、检索、重排领域
+- 多种对比学习、大语言模型进行向量微调、rerank微调，point-wise、pairwise、listwise训练
 - 结合Langchain、LLamaIndex快速产出RAG demo
 
 
