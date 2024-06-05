@@ -36,7 +36,7 @@ class BaseRanker(ABC):
         pass
 
 
-class AutoModelForRanking(nn.Module):
+class AutoRanking(nn.Module):
     def __init__(
         self,
         model: Optional[nn.Module] = None,
@@ -119,8 +119,8 @@ class AutoModelForRanking(nn.Module):
 
     def forward(
         self,
-        input_ids: Optional[torch.Tensor] = None,
-        attention_mask: Optional[torch.Tensor] = None,
+        input_ids: torch.Tensor,
+        attention_mask: torch.Tensor,
         labels: Optional[torch.Tensor] = None,
         return_dict: Optional[bool] = True,
         **kwargs,
@@ -331,7 +331,7 @@ class AutoModelForRanking(nn.Module):
         self.model.gradient_checkpointing_enable(gradient_checkpointing_kwargs=gradient_checkpointing_kwargs)
 
 
-class ColBERT(AutoModelForRanking):
+class ColBERT(AutoRanking):
     def __init__(
         self,
         colbert_dim: int = 128,

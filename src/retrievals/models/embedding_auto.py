@@ -415,10 +415,21 @@ class AutoModelForEmbedding(nn.Module):
 
     @classmethod
     def as_retriever(cls, retrieval_args, **kwargs):
-        from .retrieval_auto import AutoModelForRetrieval
+        from .retrieval_auto import AutoRetrieval
 
         embedding_model = cls(**kwargs)
-        return AutoModelForRetrieval(embedding_model, **retrieval_args)
+        return AutoRetrieval(embedding_model, **retrieval_args)
+
+    @classmethod
+    def as_reranker(cls, rerank_args, **kwargs):
+        from .rerank import AutoRanking
+
+        ranking_model = cls(**kwargs)
+        return AutoRanking(ranking_model, **rerank_args)
+
+    @classmethod
+    def as_langchain_embedding(cls):
+        from ..tools.langchain import LangchainEmbedding
 
     @classmethod
     def from_pretrained(
