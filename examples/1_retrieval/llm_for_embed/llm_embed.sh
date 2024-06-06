@@ -4,7 +4,7 @@
 # accelerate launch --config_file conf_ds.yaml \
 
 accelerate launch \
-    --config_file conf/conf_llm.yaml \
+    --config_file conf_llm.yaml \
     llm_finetune_for_embed.py \
     --model_name_or_path mistralai/Mistral-7B-v0.1 \
     --train_data  \

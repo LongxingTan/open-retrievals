@@ -6,7 +6,7 @@ class PearsonLoss(nn.Module):
     def __init__(self):
         super(PearsonLoss, self).__init__()
 
-    def forward(self, x, y):
+    def forward(self, x: torch.Tensor, y: torch.Tensor):
         mean_x = torch.mean(x)
         mean_y = torch.mean(y)
         xm = x.sub(mean_x)
