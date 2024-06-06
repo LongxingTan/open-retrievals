@@ -110,9 +110,14 @@ class RerankDataset(Dataset):
         else:
             self.max_negative_samples = max_negative_samples
 
-        self.query_key = args.query_key or query_key
-        self.positive_key = args.positive_key or positive_key
-        self.negative_key = args.negative_key or negative_key
+        if args:
+            self.query_key = args.query_key or query_key
+            self.positive_key = args.positive_key or positive_key
+            self.negative_key = args.negative_key or negative_key
+        else:
+            self.query_key = query_key
+            self.positive_key = positive_key
+            self.negative_key = negative_key
 
         if isinstance(data_name_or_path, datasets.Dataset):
             dataset = data_name_or_path

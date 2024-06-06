@@ -16,7 +16,7 @@ learning_rate: float = 3e-5
 batch_size: int = 4
 epochs: int = 3
 
-train_dataset = RerankDataset("./t2rank_100.json", positive_key="pos", negative_key="neg")
+train_dataset = RerankDataset("C-MTEB/T2Reranking", positive_key="pos", negative_key="neg")
 tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, use_fast=False)
 model = AutoModelForRanking.from_pretrained(model_name_or_path, pooling_method="mean")
 optimizer = AdamW(model.parameters(), lr=learning_rate)
