@@ -398,8 +398,6 @@ class AutoModelForEmbedding(nn.Module):
     def set_train_type(self, train_type: Literal['pointwise', 'pairwise', 'listwise'], **kwargs):
         model_class = {'pointwise': self, 'pairwise': PairwiseModel, 'listwise': ListwiseModel}
         model_class = model_class.get(train_type.lower().replace('-', ''))
-        # if 'loss_fn' in kwargs:
-        #     self.loss_fn = kwargs.pop('loss_fn')
 
         return model_class(
             model=self.model,
@@ -542,15 +540,15 @@ class AutoModelForEmbedding(nn.Module):
         else:
             return sum([len(t) for t in text])  # Sum of length of individual strings
 
-    def _dist_gather_tensor(self, t: Optional[torch.Tensor]):
-        if t is None:
+    def _dist_gather_tensor(self, tensor: Optional[torch.Tensor]):
+        if tensor is None:
             return None
-        t = t.contiguous()
+        tensor = tensor.contiguous()
 
-        all_tensors = [torch.empty_like(t) for _ in range(self.world_size)]
-        dist.all_gather(all_tensors, t)
+        all_tensors = [torch.empty_like(tensor) for _ in range(self.world_size)]
+        dist.all_gather(all_tensors, tensor)
 
-        all_tensors[self.process_rank] = t
+        all_tensors[self.process_rank] = tensor
         all_tensors = torch.cat(all_tensors, dim=0)
 
         return all_tensors
