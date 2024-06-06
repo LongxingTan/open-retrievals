@@ -10,7 +10,6 @@ from transformers import (
 from retrievals import (
     AutoModelForRanking,
     ColBertCollator,
-    RerankCollator,
     RerankDataset,
     RerankTrainer,
 )
@@ -19,9 +18,9 @@ transformers.logging.set_verbosity_error()
 
 
 model_name_or_path: str = "microsoft/deberta-v3-base"
-max_length: int = 128
+max_length: int = 512
 learning_rate: float = 3e-5
-batch_size: int = 4
+batch_size: int = 32
 epochs: int = 3
 
 train_dataset = RerankDataset("t2_ranking.jsonl", positive_key="positive", negative_key="negative")
