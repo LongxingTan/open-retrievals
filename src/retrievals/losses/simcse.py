@@ -24,7 +24,7 @@ class SimCSE(nn.Module):
         self.criterion = criterion
         self.temperature = temperature
         if dynamic_temperature:
-            # TODO: dynamic_temperature
+            # TODO
             self.temperature = nn.Parameter(torch.tensor(temperature))
 
     def forward(
@@ -35,7 +35,7 @@ class SimCSE(nn.Module):
     ):
         similarity = F.cosine_similarity(query_embeddings.unsqueeze(1), pos_embeddings.unsqueeze(0), dim=-1)
 
-        if neg_embeddings:
+        if neg_embeddings is not None:
             neg_similarity = F.cosine_similarity(query_embeddings.unsqueeze(1), neg_embeddings.unsqueeze(0), dim=-1)
             similarity = torch.cat([similarity, neg_similarity], dim=1)
 

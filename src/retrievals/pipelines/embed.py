@@ -14,7 +14,7 @@ from transformers import (
 )
 
 from ..data import PairCollator, RetrievalDataset, TripletCollator
-from ..losses import InfoNCE, TripletLoss
+from ..losses import InfoNCE, SimCSE, TripletLoss
 from ..models.embedding_auto import AutoModelForEmbedding
 from ..trainer import RetrievalTrainer
 
