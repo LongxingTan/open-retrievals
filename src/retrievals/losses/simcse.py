@@ -41,7 +41,7 @@ class SimCSE(nn.Module):
             neg_similarity = F.cosine_similarity(query_embeddings.unsqueeze(1), neg_embeddings.unsqueeze(0), dim=-1)
             similarity = torch.cat([similarity, neg_similarity], dim=1)
 
-        labels = torch.arange(0, query_embeddings.size(0), dtype=torch.long, device=query_embeddings.device)
+        target = torch.arange(0, query_embeddings.size(0), dtype=torch.long, device=query_embeddings.device)
 
-        loss = self.criterion(similarity, labels)
+        loss = self.criterion(similarity, target)
         return loss

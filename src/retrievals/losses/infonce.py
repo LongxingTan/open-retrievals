@@ -52,15 +52,15 @@ class InfoNCE(nn.Module):
         if negative_embeddings is None:
             if self.negative_mode == 'unpaired':
                 logits = query_embeddings @ positive_embeddings.transpose(-2, -1)
-                labels = torch.arange(logits.size(0), dtype=torch.long, device=device)
-                loss = self.criterion(logits / self.temperature, labels)
+                target = torch.arange(logits.size(0), dtype=torch.long, device=device)
+                loss = self.criterion(logits / self.temperature, target)
             else:
                 logits1 = query_embeddings @ positive_embeddings.transpose(-2, -1)
                 logits2 = logits1.T
-                labels = torch.arange(logits1.size(0), dtype=torch.long, device=device)
+                target = torch.arange(logits1.size(0), dtype=torch.long, device=device)
                 loss = (
-                    self.criterion(logits1 / self.temperature, labels)
-                    + self.criterion(logits2 / self.temperature, labels)
+                    self.criterion(logits1 / self.temperature, target)
+                    + self.criterion(logits2 / self.temperature, target)
                 ) / 2
             return loss
         else:
@@ -70,13 +70,13 @@ class InfoNCE(nn.Module):
                 similarity = query_embeddings @ logits.transpose(-2, -1)
                 similarity = similarity / self.temperature
                 similarity = similarity.view(query_embeddings.size(0), -1)
-                labels = torch.arange(query_embeddings.size(0), dtype=torch.long, device=device)
+                target = torch.arange(query_embeddings.size(0), dtype=torch.long, device=device)
             else:
                 logits = torch.cat([positive_embeddings, negative_embeddings], dim=0)
-                logits = logits.view(query_embeddings.size(0), -1, self.train_group_size)
-                similarity = query_embeddings.unsqueeze(1) @ logits
+                logits = logits.view(query_embeddings.size(0), self.train_group_size, -1)
+                similarity = query_embeddings.unsqueeze(1) @ logits.transpose(-2, -1)
                 similarity = similarity.squeeze(1) / self.temperature
                 similarity = similarity.view(query_embeddings.size(0), -1)
-                labels = torch.zeros(logits.size(0), dtype=torch.long, device=device)
+                target = torch.zeros(logits.size(0), dtype=torch.long, device=device)
 
-            return self.criterion(similarity, labels)
+            return self.criterion(similarity, target)

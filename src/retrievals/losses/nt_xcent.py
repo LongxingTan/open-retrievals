@@ -16,12 +16,12 @@ class NTXcent(nn.Module):
         self.temperature = temperature
 
     def forward(self, x):
-        xcs = F.cosine_similarity(x[None, :, :], x[:, None, :], dim=-1)
-        xcs[torch.eye(x.size(0)).bool()] = float("-inf")
+        similarity = F.cosine_similarity(x[None, :, :], x[:, None, :], dim=-1)
+        similarity[torch.eye(x.size(0)).bool()] = float("-inf")
+        similarity = similarity / self.temperature
 
         target = torch.arange(x.size(0))
         target[0::2] += 1
         target[1::2] -= 1
 
-        # Standard cross entropy loss
-        return F.cross_entropy(xcs / self.temperature, target, reduction="mean")
+        return F.cross_entropy(similarity, target, reduction="mean")
