@@ -49,9 +49,7 @@ pip install open-retrievals
 
 **源码安装**
 ```shell
-git clone https://github.com/LongxingTan/open-retrievals
-cd open-retrievals
-pip install -e .
+python -m pip install -U git+https://github.com/LongxingTan/open-retrievals.git
 ```
 
 

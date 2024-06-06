@@ -48,19 +48,9 @@ pip install peft  # if necessary
 pip install open-retrievals
 ```
 
-[//]: # (**With conda**)
-
-[//]: # (```shell)
-
-[//]: # (conda install open-retrievals -c conda-forge)
-
-[//]: # (```)
-
 **With source code**
 ```shell
-git clone https://github.com/LongxingTan/open-retrievals
-cd open-retrievals
-pip install -e .
+python -m pip install -U git+https://github.com/LongxingTan/open-retrievals.git
 ```
 
 
