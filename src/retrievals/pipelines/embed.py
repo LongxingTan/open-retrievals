@@ -133,7 +133,7 @@ def main():
     )
     model = model.set_train_type(
         "pairwise",
-        loss_fn=TripletLoss(),
+        loss_fn=TripletLoss(training_args.temperature),
         # loss_fn=InfoNCE(
         #     nn.CrossEntropyLoss(label_smoothing=0.0),
         #     use_inbatch_negative=training_args.use_inbatch_neg,
