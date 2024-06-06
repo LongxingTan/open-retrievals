@@ -138,7 +138,6 @@ def main():
         #     nn.CrossEntropyLoss(label_smoothing=0.0),
         #     use_inbatch_negative=training_args.use_inbatch_neg,
         #     temperature=training_args.temperature,
-        #     train_group_size=data_args.train_group_size,
         # ),
     )
 
