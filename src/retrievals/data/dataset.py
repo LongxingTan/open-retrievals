@@ -100,6 +100,7 @@ class RerankDataset(Dataset):
         positive_key: Optional[str] = 'document',
         negative_key: Optional[str] = 'negative',
         max_negative_samples: Optional[int] = None,
+        nested_each_sample: bool = False,
         args: Optional = None,
         tokenizer: PreTrainedTokenizer = None,
     ):
@@ -114,10 +115,12 @@ class RerankDataset(Dataset):
             self.query_key = args.query_key or query_key
             self.positive_key = args.positive_key or positive_key
             self.negative_key = args.negative_key or negative_key
+            self.nested_each_sample = args.nested_each_sampe or nested_each_sample
         else:
             self.query_key = query_key
             self.positive_key = positive_key
             self.negative_key = negative_key
+            self.nested_each_sample = nested_each_sample
 
         if isinstance(data_name_or_path, datasets.Dataset):
             dataset = data_name_or_path
@@ -160,13 +163,15 @@ class RerankDataset(Dataset):
     def generate_samples(self, dataset):
         samples: List = []
         for data in dataset:
-            for pos_text in data[self.positive_key]:
-                samples.append([data[self.query_key], pos_text, 1])
+            if self.nested_each_sample:
+                for pos_text in data[self.positive_key]:
+                    samples.append([data[self.query_key], pos_text, 1])
+            else:
+                samples.append([data[self.query_key], random.choice(data[self.positive_key])])
 
             negative_samples = data[self.negative_key]
-            if self.max_negative_samples:
-                # TODO: random strategy
-                negative_samples = negative_samples[: self.max_negative_samples]
+            if self.max_negative_samples and self.max_negative_samples > 0:
+                negative_samples = random.sample(negative_samples, self.max_negative_samples)
             for neg_text in negative_samples:
                 samples.append([data[self.query_key], neg_text, 0])
         return samples

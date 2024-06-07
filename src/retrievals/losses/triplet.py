@@ -62,7 +62,7 @@ class TripletLoss(nn.Module):
         return loss
 
     def set_margin(self, margin: float):
-        return
+        self.margin = margin
 
     def _dist_gather_tensor(self, t: Optional[torch.Tensor]):
         if t is None:
@@ -70,7 +70,6 @@ class TripletLoss(nn.Module):
         t = t.contiguous()
 
         all_tensors = [torch.empty_like(t) for _ in range(self.world_size)]
-        # All tensors have the same shape, as pooling already applied to them
         dist.all_gather(all_tensors, t)
 
         all_tensors[self.rank] = t
