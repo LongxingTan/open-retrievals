@@ -505,7 +505,6 @@ class ColBERT(nn.Module):
         causal_lm: bool = False,
         trust_remote_code: bool = True,
         colbert_dim: int = 128,
-        similarity_metric: Literal['cosine', 'l2'] = 'l2',
         loss_fn: Union[nn.Module, Callable] = nn.CrossEntropyLoss(),
         loss_type: Literal['classification', 'regression'] = 'classification',
         device: Optional[str] = None,
@@ -530,7 +529,6 @@ class ColBERT(nn.Module):
             tokenizer=tokenizer,
             linear_layer=linear,
             device=device,
-            similarity_metric=similarity_metric,
             loss_fn=loss_fn,
             loss_type=loss_type,
         )

@@ -46,6 +46,7 @@ class ModelArguments:
 class DataArguments:
     train_data: str = field(default=None, metadata={"help": "Path to corpus"})
     train_group_size: int = field(default=8)
+    unfold_each_positive: bool = field(default=False)
     max_length: int = field(
         default=512,
         metadata={
@@ -56,8 +57,6 @@ class DataArguments:
     query_key: str = field(default=None)
     positive_key: str = field(default=None)
     negative_key: str = field(default=None)
-    max_negative_samples: int = field(default=7)
-    unfold_each_positive: bool = field(default=False)
 
     query_instruction: str = field(default=None, metadata={"help": "instruction for query"})
     passage_instruction: str = field(default=None, metadata={"help": "instruction for passage"})
