@@ -363,7 +363,7 @@ class ColBERT(AutoModelForRanking):
             # self._init_weights(self.linear)
             self.to(self.device)
 
-    def encode(self, input_ids: torch.Tensor, attention_mask: torch.Tensor) -> torch.Tensor:
+    def encode(self, input_ids: torch.Tensor, attention_mask: torch.Tensor, normalize: bool = True) -> torch.Tensor:
         outputs: SequenceClassifierOutput = self.model(input_ids, attention_mask, output_hidden_states=True)
         if hasattr(outputs, 'last_hidden_state'):
             # 3D tensor: [batch, seq_len, attention_dim]
@@ -371,7 +371,11 @@ class ColBERT(AutoModelForRanking):
         else:
             hidden_state = outputs.hidden_states[1]
 
-        embeddings = self.linear(hidden_state)
+        # embeddings = self.linear(hidden_state)
+        embeddings = hidden_state
+
+        if normalize:
+            embeddings = torch.nn.functional.normalize(embeddings, p=2, dim=2)
         return embeddings
 
     def forward(
@@ -386,8 +390,8 @@ class ColBERT(AutoModelForRanking):
         return_dict: Optional[bool] = True,
         **kwargs,
     ):
-        query_embedding = self.encode(query_input_ids, query_attention_mask)
-        document_embedding = self.encode(pos_input_ids, pos_attention_mask)
+        query_embedding = self.encode(query_input_ids, query_attention_mask, normalize=True)
+        document_embedding = self.encode(pos_input_ids, pos_attention_mask, normalize=True)
 
         score = self.score(query_embedding, document_embedding)
         if self.loss_fn is not None and labels is not None:
