@@ -59,6 +59,9 @@ class DataArguments:
     max_negative_samples: int = field(default=7)
     unfold_each_positive: bool = field(default=False)
 
+    query_instruction: str = field(default=None, metadata={"help": "instruction for query"})
+    passage_instruction: str = field(default=None, metadata={"help": "instruction for passage"})
+
     # def __post_init__(self):
     #     if not os.path.exists(self.train_data):
     #         raise FileNotFoundError(f"cannot find file: {self.train_data}, please set a true path")
@@ -129,7 +132,13 @@ def main():
             positive_key=data_args.positive_key,
             negative_key=data_args.negative_key,
         )
-        data_collator = ColBertCollator(tokenizer, query_max_length=64, document_max_length=data_args.max_length)
+        data_collator = ColBertCollator(
+            tokenizer,
+            query_max_length=64,
+            document_max_length=data_args.max_length,
+            positive_key=data_args.positive_key,
+            negative_key=data_args.negative_key,
+        )
     else:
         train_dataset = RerankDataset(args=data_args, tokenizer=tokenizer)
         data_collator = RerankCollator(tokenizer, max_length=data_args.max_length)

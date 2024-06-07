@@ -350,7 +350,6 @@ class ColBERT(nn.Module):
         model: Optional[nn.Module] = None,
         tokenizer: Optional[PreTrainedTokenizer] = None,
         linear_layer: Optional[nn.Module] = None,
-        similarity_metric: Literal['cosine', 'l2'] = 'l2',
         loss_fn: Union[nn.Module, Callable] = None,
         loss_type: Literal['classification', 'regression'] = 'classification',
         max_length: Optional[int] = None,
@@ -361,9 +360,7 @@ class ColBERT(nn.Module):
         super().__init__()
         self.model = model
         self.tokenizer = tokenizer
-
         self.linear = linear_layer
-        self.similarity_metric = similarity_metric
 
         self.loss_fn = loss_fn
         self.loss_type = loss_type
@@ -379,7 +376,7 @@ class ColBERT(nn.Module):
     def encode(self, input_ids: torch.Tensor, attention_mask: torch.Tensor, normalize: bool = True) -> torch.Tensor:
         outputs: SequenceClassifierOutput = self.model(input_ids, attention_mask, output_hidden_states=True)
         if hasattr(outputs, 'last_hidden_state'):
-            # 3D tensor: [batch, seq_len, attention_dim]
+            # [batch, seq_len, attention_dim]
             hidden_state = outputs.last_hidden_state
         else:
             hidden_state = outputs.hidden_states[1]
@@ -402,18 +399,20 @@ class ColBERT(nn.Module):
         **kwargs,
     ):
         query_embedding = self.encode(query_input_ids, query_attention_mask, normalize=True)
-        positive_embedding = self.encode(pos_input_ids, pos_attention_mask, normalize=True)
 
+        positive_embedding = self.encode(pos_input_ids, pos_attention_mask, normalize=True)
         scores = self.score(query_embedding, positive_embedding)
 
         if self.training:
+            scores = scores.unsqueeze(-1)
             if neg_input_ids is not None:
                 negative_embedding = self.encode(neg_input_ids, neg_attention_mask, normalize=True)
                 negative_scores = self.score(query_embedding, negative_embedding)
-                scores = torch.cat([scores, negative_scores], dim=1)
+                scores = torch.cat([scores, negative_scores.unsqueeze(-1)], dim=-1)
 
             if self.temperature is not None:
                 scores = scores / self.temperature
+
             labels = torch.zeros(scores.shape[0], dtype=torch.long, device=scores.device)
             loss = self.loss_fn(scores, labels)
 
@@ -477,21 +476,16 @@ class ColBERT(nn.Module):
 
     def score(
         self,
-        query_embedding: torch.Tensor,
-        document_embedding: torch.Tensor,
-        similarity_metric: str = 'l2',
+        query_embeddings: torch.Tensor,
+        document_embeddings: torch.Tensor,
     ):
-        if similarity_metric == 'cosine':
-            similarity = query_embedding @ document_embedding.transpose(-2, -1)
-            similarity = similarity.max(-1).values.sum(1)
-            return similarity
-
-        elif similarity_metric == 'l2':
-            similarity = (query_embedding.unsqueeze(2) - document_embedding.unsqueeze(1)) ** 2
-            similarity = (-1 * similarity.sum(-1)).max(-1).values.sum(1)
-            return similarity
-        else:
-            raise ValueError('similarity_metric should be cosine or l2')
+        late_interactions = torch.einsum(
+            "bsh,bth->bst",
+            query_embeddings,
+            document_embeddings,
+        )
+        late_interactions = torch.max(late_interactions, axis=2).values.sum(axis=1)
+        return late_interactions
 
     def save_pretrained(self, save_directory: Union[str, os.PathLike], safe_serialization: bool = False):
         state_dict_fn = lambda state_dict: type(state_dict)({k: v.clone().cpu() for k, v in state_dict.items()})

@@ -250,8 +250,11 @@ class ColBertCollator(DataCollatorWithPadding):
             'pos_attention_mask': pos_inputs['attention_mask'],
         }
 
-        if self.negative_key in features:
+        if self.negative_key in features[0]:
             neg_texts = [feature[self.negative_key] for feature in features]
+            if isinstance(neg_texts[0], list):
+                neg_texts = sum(neg_texts, [])  # flatten nested list
+
             neg_inputs = tokenize_fn(
                 neg_texts,
                 padding='max_length',
