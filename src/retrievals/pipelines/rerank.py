@@ -118,6 +118,7 @@ def main():
     model = AutoModelForRanking.from_pretrained(
         model_args.model_name_or_path, num_labels=1, loss_fn=nn.BCEWithLogitsLoss(reduction='mean')
     )
+    model.set_model_type(training_args.model_type)
 
     train_dataset = RerankDataset(args=data_args, tokenizer=tokenizer)
 

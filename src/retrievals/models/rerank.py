@@ -171,8 +171,10 @@ class AutoModelForRanking(nn.Module):
             return logits
 
     def set_model_type(self, model_type: Literal['cross-encoder', 'colbert'], **kwargs):
+        model_type = model_type.lower().replace('-', '')
+        logger.info(f'Set model type: {model_type}')
         model_class = {'crossencoder': self, 'colbert': ColBERT}
-        model_class = model_class.get(model_type.lower().replace('-', ''))
+        model_class = model_class.get(model_type)
         return model_class(
             model=self.model,
             tokenizer=self.tokenizer,
