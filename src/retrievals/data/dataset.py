@@ -100,7 +100,7 @@ class RerankDataset(Dataset):
         positive_key: Optional[str] = 'document',
         negative_key: Optional[str] = 'negative',
         max_negative_samples: Optional[int] = None,
-        nested_each_sample: bool = False,
+        unfold_each_positive: bool = False,
         args: Optional = None,
         tokenizer: PreTrainedTokenizer = None,
     ):
@@ -115,12 +115,12 @@ class RerankDataset(Dataset):
             self.query_key = args.query_key or query_key
             self.positive_key = args.positive_key or positive_key
             self.negative_key = args.negative_key or negative_key
-            self.nested_each_sample = args.nested_each_sampe or nested_each_sample
+            self.unfold_each_positive = args.unfold_each_positive or unfold_each_positive
         else:
             self.query_key = query_key
             self.positive_key = positive_key
             self.negative_key = negative_key
-            self.nested_each_sample = nested_each_sample
+            self.unfold_each_positive = unfold_each_positive
 
         if isinstance(data_name_or_path, datasets.Dataset):
             dataset = data_name_or_path
@@ -163,7 +163,7 @@ class RerankDataset(Dataset):
     def generate_samples(self, dataset):
         samples: List = []
         for data in dataset:
-            if self.nested_each_sample:
+            if self.unfold_each_positive:
                 for pos_text in data[self.positive_key]:
                     samples.append([data[self.query_key], pos_text, 1])
             else:

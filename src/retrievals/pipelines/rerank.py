@@ -57,6 +57,7 @@ class DataArguments:
     positive_key: str = field(default=None)
     negative_key: str = field(default=None)
     max_negative_samples: int = field(default=8)
+    unfold_each_positive: bool = field(default=False)
 
     # def __post_init__(self):
     #     if not os.path.exists(self.train_data):
@@ -65,7 +66,7 @@ class DataArguments:
 
 @dataclass
 class RerankerTrainingArguments(TrainingArguments):
-    train_type: str = field(default='pairwise', metadata={'help': "train type of point, pair, or list"})
+    model_type: str = field(default='cross-encoder', metadata={'help': "train type of cross-encoder, colbert"})
     negatives_cross_device: bool = field(default=False, metadata={"help": "share negatives across devices"})
     temperature: Optional[float] = field(default=0.02)
     remove_unused_columns: bool = field(default=False)
