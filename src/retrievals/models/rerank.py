@@ -350,11 +350,13 @@ class ColBERT(AutoModelForRanking):
     def __init__(
         self,
         colbert_dim: int = 128,
+        similarity_metric: Literal['cosine', 'l2'] = 'l2',
         **kwargs,
     ):
         if "pooling_method" in kwargs:
             kwargs.update({'pooling_method': None})
         super(ColBERT, self).__init__(linear_dim=colbert_dim, **kwargs)
+        self.similarity_metric = similarity_metric
         if self.model:
             num_features: int = self.model.config.hidden_size
             self.linear = nn.Linear(num_features, colbert_dim)
@@ -455,14 +457,14 @@ class ColBERT(AutoModelForRanking):
         similarity_metric: str = 'l2',
     ):
         if similarity_metric == 'cosine':
-            return (query_embedding @ document_embedding.permute(0, 2, 1)).max(2).values.sum(1)
+            similarity = query_embedding @ document_embedding.transpose(-2, -1)
+            similarity = similarity.max(-1).values.sum(1)
+            return similarity
 
         elif similarity_metric == 'l2':
-            return (
-                (-1.0 * ((query_embedding.unsqueeze(2) - document_embedding.unsqueeze(1)) ** 2).sum(-1))
-                .max(-1)
-                .values.sum(-1)
-            )
+            similarity = (query_embedding.unsqueeze(2) - document_embedding.unsqueeze(1)) ** 2
+            similarity = (-1 * similarity.sum(-1)).max(-1).values.sum(1)
+            return similarity
         else:
             raise ValueError('similarity_metric should be cosine or l2')
 
