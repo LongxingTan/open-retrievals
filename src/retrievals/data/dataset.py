@@ -1,4 +1,3 @@
-import copy
 import logging
 import math
 import os
@@ -167,11 +166,15 @@ class RerankDataset(Dataset):
                 for pos_text in data[self.positive_key]:
                     samples.append([data[self.query_key], pos_text, 1])
             else:
-                samples.append([data[self.query_key], random.choice(data[self.positive_key])])
+                samples.append([data[self.query_key], random.choice(data[self.positive_key]), 1])
 
             negative_samples = data[self.negative_key]
             if self.max_negative_samples and self.max_negative_samples > 0:
-                negative_samples = random.sample(negative_samples, self.max_negative_samples)
+                if len(negative_samples) < self.max_negative_samples:
+                    num = math.ceil(self.max_negative_samples / len(negative_samples))
+                    negative_samples = random.sample(negative_samples * num, self.max_negative_samples)
+                else:
+                    negative_samples = random.sample(negative_samples, self.max_negative_samples)
             for neg_text in negative_samples:
                 samples.append([data[self.query_key], neg_text, 0])
         return samples

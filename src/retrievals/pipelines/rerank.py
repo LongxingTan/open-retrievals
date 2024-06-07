@@ -56,7 +56,7 @@ class DataArguments:
     query_key: str = field(default=None)
     positive_key: str = field(default=None)
     negative_key: str = field(default=None)
-    max_negative_samples: int = field(default=8)
+    max_negative_samples: int = field(default=7)
     unfold_each_positive: bool = field(default=False)
 
     # def __post_init__(self):
