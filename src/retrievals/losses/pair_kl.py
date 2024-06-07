@@ -18,8 +18,8 @@ class PairKL(nn.Module):
         self, query_embeddings: torch.Tensor, positive_embeddings: torch.Tensor, scores: torch.Tensor, **kwargs
     ):
         similarity = torch.einsum('bn, bn -> b', query_embeddings, positive_embeddings)
-        scores = scores.to(query_embeddings.device)
-        similarity = torch.log_softmax(similarity / self.temperature, dim=-1)
+        similarity = similarity / self.temperature
+        similarity = torch.log_softmax(similarity, dim=-1)
         target = torch.softmax(scores / self.temperature, dim=-1)
 
         return self.criterion(similarity, target)

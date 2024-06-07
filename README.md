@@ -48,19 +48,9 @@ pip install peft  # if necessary
 pip install open-retrievals
 ```
 
-[//]: # (**With conda**)
-
-[//]: # (```shell)
-
-[//]: # (conda install open-retrievals -c conda-forge)
-
-[//]: # (```)
-
 **With source code**
 ```shell
-git clone https://github.com/LongxingTan/open-retrievals
-cd open-retrievals
-pip install -e .
+python -m pip install -U git+https://github.com/LongxingTan/open-retrievals.git
 ```
 
 
@@ -241,7 +231,7 @@ epochs: int = 3
 
 train_dataset = RerankDataset('./t2rank.json', positive_key='pos', negative_key='neg')
 tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, use_fast=False)
-model = AutoModelForRanking.from_pretrained(model_name_or_path, pooling_method="mean")
+model = AutoModelForRanking.from_pretrained(model_name_or_path)
 optimizer = AdamW(model.parameters(), lr=learning_rate)
 num_train_steps = int(len(train_dataset) / batch_size * epochs)
 scheduler = get_cosine_schedule_with_warmup(optimizer, num_warmup_steps=0.05 * num_train_steps, num_training_steps=num_train_steps)

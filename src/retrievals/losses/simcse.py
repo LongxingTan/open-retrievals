@@ -15,13 +15,16 @@ logger = logging.getLogger(__name__)
 
 class SimCSE(nn.Module):
     def __init__(
-        self, criterion: Union[nn.Module, Callable], temperature: float = 0.05, dynamic_temperature: bool = False
+        self,
+        criterion: Union[nn.Module, Callable] = nn.CrossEntropyLoss(label_smoothing=0.0, reduction='mean'),
+        temperature: float = 0.05,
+        dynamic_temperature: bool = False,
     ):
         super().__init__()
         self.criterion = criterion
         self.temperature = temperature
         if dynamic_temperature:
-            # TODO: dynamic_temperature
+            # TODO
             self.temperature = nn.Parameter(torch.tensor(temperature))
 
     def forward(
@@ -30,12 +33,15 @@ class SimCSE(nn.Module):
         pos_embeddings: torch.Tensor,
         neg_embeddings: Optional[torch.Tensor] = None,
     ):
-        y_true = torch.arange(0, query_embeddings.size(0), device=query_embeddings.device)
+        similarity = F.cosine_similarity(query_embeddings.unsqueeze(1), pos_embeddings.unsqueeze(0), dim=-1)
 
-        sim = F.cosine_similarity(query_embeddings.unsqueeze(1), pos_embeddings.unsqueeze(0), dim=2)
-        # sim = sim - torch.eye(pos_embeddings.shape[0], device=query_embeddings.device) * 1e12
+        if neg_embeddings is not None:
+            neg_similarity = F.cosine_similarity(query_embeddings.unsqueeze(1), neg_embeddings.unsqueeze(0), dim=-1)
+            similarity = torch.cat([similarity, neg_similarity], dim=1)
 
-        sim = sim / self.temperature
-        loss = self.criterion(sim, y_true)
-        loss = torch.mean(loss)
+        similarity = similarity / self.temperature
+
+        target = torch.arange(0, query_embeddings.size(0), dtype=torch.long, device=query_embeddings.device)
+
+        loss = self.criterion(similarity, target)
         return loss

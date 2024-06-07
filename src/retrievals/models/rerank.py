@@ -106,17 +106,25 @@ class AutoModelForRanking(nn.Module):
             module.bias.data.zero_()
             module.weight.data.fill_(1.0)
 
-    def encode(self, input_ids: torch.Tensor, attention_mask: torch.Tensor) -> torch.Tensor:
-        outputs: SequenceClassifierOutput = self.model(input_ids, attention_mask, output_hidden_states=True)
+    def encode(
+        self, input_ids: torch.Tensor, attention_mask: torch.Tensor
+    ) -> Union[torch.Tensor, SequenceClassifierOutput]:
+        model_output: SequenceClassifierOutput = self.model(input_ids, attention_mask, output_hidden_states=True)
 
         if not self.pooling_method:
-            return outputs
+            return model_output
 
-        hidden_state = outputs['last_hidden_state']
-        if self.pooling is not None:
-            embeddings = self.pooling(hidden_state, attention_mask)
+        if 'last_hidden_state' in model_output:
+            last_hidden_state = model_output['last_hidden_state']
+        elif 'hidden_states' not in model_output:
+            last_hidden_state = model_output[0]
         else:
-            embeddings = self.classifier(hidden_state[:, 1:])
+            raise ValueError
+
+        if self.pooling is not None:
+            embeddings = self.pooling(last_hidden_state, attention_mask)
+        else:
+            embeddings = self.classifier(last_hidden_state)
         return embeddings
 
     def forward(

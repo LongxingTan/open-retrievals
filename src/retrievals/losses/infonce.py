@@ -25,7 +25,6 @@ class InfoNCE(nn.Module):
         temperature: float = 0.05,
         use_inbatch_negative: bool = True,
         negative_mode: Literal['paired', 'unpaired'] = "unpaired",
-        train_group_size: int = 1,
     ):
         """
         if not normalized: temperature = 1.0, reset temperature = 1.0 due to using inner product to compute similarity
@@ -36,7 +35,6 @@ class InfoNCE(nn.Module):
         self.temperature = temperature
         self.use_inbatch_negative = use_inbatch_negative
         self.negative_mode = negative_mode
-        self.train_group_size = train_group_size
         if self.temperature > 0.5:
             logger.error('InfoNCE loss use normalized and inner product by default, temperature should be 0.01 ~ 0.1')
 
@@ -52,15 +50,15 @@ class InfoNCE(nn.Module):
         if negative_embeddings is None:
             if self.negative_mode == 'unpaired':
                 logits = query_embeddings @ positive_embeddings.transpose(-2, -1)
-                labels = torch.arange(logits.size(0), dtype=torch.long, device=device)
-                loss = self.criterion(logits / self.temperature, labels)
+                target = torch.arange(logits.size(0), dtype=torch.long, device=device)
+                loss = self.criterion(logits / self.temperature, target)
             else:
                 logits1 = query_embeddings @ positive_embeddings.transpose(-2, -1)
                 logits2 = logits1.T
-                labels = torch.arange(logits1.size(0), dtype=torch.long, device=device)
+                target = torch.arange(logits1.size(0), dtype=torch.long, device=device)
                 loss = (
-                    self.criterion(logits1 / self.temperature, labels)
-                    + self.criterion(logits2 / self.temperature, labels)
+                    self.criterion(logits1 / self.temperature, target)
+                    + self.criterion(logits2 / self.temperature, target)
                 ) / 2
             return loss
         else:
@@ -70,13 +68,12 @@ class InfoNCE(nn.Module):
                 similarity = query_embeddings @ logits.transpose(-2, -1)
                 similarity = similarity / self.temperature
                 similarity = similarity.view(query_embeddings.size(0), -1)
-                labels = torch.arange(query_embeddings.size(0), dtype=torch.long, device=device)
+                target = torch.arange(query_embeddings.size(0), dtype=torch.long, device=device)
             else:
-                logits = torch.cat([positive_embeddings, negative_embeddings], dim=0)
-                logits = logits.view(query_embeddings.size(0), -1, self.train_group_size)
-                similarity = query_embeddings.unsqueeze(1) @ logits
-                similarity = similarity.squeeze(1) / self.temperature
-                similarity = similarity.view(query_embeddings.size(0), -1)
-                labels = torch.zeros(logits.size(0), dtype=torch.long, device=device)
+                similarity = query_embeddings.unsqueeze(1) @ positive_embeddings.unsqueeze(2)
+                negative_similarity = query_embeddings.unsqueeze(1) @ negative_embeddings.unsqueeze(2)
+                similarity = torch.cat([similarity.squeeze(1), negative_similarity.squeeze(1)], dim=1)
+                similarity = similarity / self.temperature
+                target = torch.zeros(query_embeddings.size(0), dtype=torch.long, device=device)
 
-            return self.criterion(similarity, labels)
+            return self.criterion(similarity, target)
