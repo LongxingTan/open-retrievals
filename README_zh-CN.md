@@ -251,14 +251,15 @@ trainer.train()
 
 ```shell
 MODEL_NAME='BAAI/bge-small-zh-v1.5'
+OUTPUT_DIR="/train_out"
 
 torchrun --nproc_per_node 1 \
   -m retrievals.pipelines.embed \
-  --output_dir train \
+  --output_dir $OUTPUT_DIR \
   --overwrite_output_dir \
   --model_name_or_path $MODEL_NAME \
   --do_train \
-  --train_data train.jsonl \
+  --train_data t2_ranking.jsonl \
   --learning_rate 3e-5 \
   --fp16 \
   --num_train_epochs 5 \
@@ -308,6 +309,31 @@ trainer = RerankTrainer(
 trainer.optimizer = optimizer
 trainer.scheduler = scheduler
 trainer.train()
+```
+
+```shell
+MODEL_NAME="BAAI/bge-reranker-base"
+OUTPUT_DIR="/train_out"
+
+torchrun --nproc_per_node 1 \
+  -m retrievals.pipelines.rerank \
+  --output_dir $OUTPUT_DIR \
+  --overwrite_output_dir \
+  --model_name_or_path $MODEL_NAME \
+  --do_train \
+  --train_data t2_ranking.jsonl \
+  --positive_key positive \
+  --negative_key negative \
+  --learning_rate 3e-5 \
+  --fp16 \
+  --num_train_epochs 3 \
+  --per_device_train_batch_size 64 \
+  --dataloader_drop_last True \
+  --max_length 512 \
+  --max_negative_samples 7 \
+  --unfold_each_positive false \
+  --save_total_limit 2 \
+  --logging_steps 100
 ```
 
 
