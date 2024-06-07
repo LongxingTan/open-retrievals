@@ -249,7 +249,19 @@ class ColBertCollator(DataCollatorWithPadding):
             'pos_input_ids': pos_inputs['input_ids'],
             'pos_attention_mask': pos_inputs['attention_mask'],
         }
-        if 'labels' in features[0].keys():
-            labels = [feature['labels'] for feature in features]
-            batch['labels'] = torch.tensor(labels, dtype=torch.float32)
+
+        if self.negative_key in features:
+            neg_texts = [feature[self.negative_key] for feature in features]
+            neg_inputs = tokenize_fn(
+                neg_texts,
+                padding='max_length',
+                max_length=self.document_max_length,
+                return_tensors='pt',
+                **tokenize_args,
+            )
+            batch.update({'neg_input_ids': neg_inputs['input_ids'], 'neg_attention_mask': neg_inputs['attention_mask']})
+
+        # if 'labels' in features[0].keys():
+        #     labels = [feature['labels'] for feature in features]
+        #     batch['labels'] = torch.tensor(labels, dtype=torch.float32)
         return batch

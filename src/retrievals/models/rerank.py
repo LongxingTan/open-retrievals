@@ -31,11 +31,8 @@ class BaseRanker(ABC):
     @abstractmethod
     def __init__(
         self,
-        model: Optional[nn.Module] = None,
-        tokenizer: Optional[PreTrainedTokenizer] = None,
     ):
-        self.model: Optional[nn.Module] = model
-        self.tokenizer = tokenizer
+        pass
 
 
 class AutoModelForRanking(nn.Module, BaseRanker):
@@ -190,7 +187,6 @@ class AutoModelForRanking(nn.Module, BaseRanker):
     def compute_score(
         self,
         text_pairs: Union[List[Tuple[str, str]], Tuple[str, str]],
-        data_collator: Optional[RerankCollator] = None,
         batch_size: int = 128,
         max_length: int = 512,
         normalize: bool = False,
@@ -348,7 +344,7 @@ class AutoModelForRanking(nn.Module, BaseRanker):
         self.model.gradient_checkpointing_enable(gradient_checkpointing_kwargs=gradient_checkpointing_kwargs)
 
 
-class ColBERT(BaseRanker, nn.Module):
+class ColBERT(nn.Module):
     def __init__(
         self,
         model: Optional[nn.Module] = None,
@@ -362,8 +358,8 @@ class ColBERT(BaseRanker, nn.Module):
         device: Optional[str] = None,
         **kwargs,
     ):
-        super(ColBERT, self).__init__()
-        self.model: Optional[nn.Module] = model
+        super().__init__()
+        self.model = model
         self.tokenizer = tokenizer
 
         self.linear = linear_layer
@@ -512,12 +508,11 @@ class ColBERT(BaseRanker, nn.Module):
     def from_pretrained(
         cls,
         model_name_or_path: str,
-        num_labels: int = 1,
         causal_lm: bool = False,
         trust_remote_code: bool = True,
         colbert_dim: int = 128,
         similarity_metric: Literal['cosine', 'l2'] = 'l2',
-        loss_fn: Union[nn.Module, Callable] = None,
+        loss_fn: Union[nn.Module, Callable] = nn.CrossEntropyLoss(),
         loss_type: Literal['classification', 'regression'] = 'classification',
         device: Optional[str] = None,
         **kwargs,
@@ -528,9 +523,7 @@ class ColBERT(BaseRanker, nn.Module):
         tokenizer = AutoTokenizer.from_pretrained(
             model_name_or_path, return_tensors=False, trust_remote_code=trust_remote_code
         )
-        model = AutoModel.from_pretrained(
-            model_name_or_path, num_labels=num_labels, trust_remote_code=trust_remote_code, **kwargs
-        )
+        model = AutoModel.from_pretrained(model_name_or_path, trust_remote_code=trust_remote_code, **kwargs)
         linear = nn.Linear(model.config.hidden_size, colbert_dim, bias=True)
 
         if os.path.exists(os.path.join(model_name_or_path, 'colbert_linear.pt')):
