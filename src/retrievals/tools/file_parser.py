@@ -1,5 +1,4 @@
 """
-refer and rights reserved by:
 https://github.com/InternLM/HuixiangDou
 """
 

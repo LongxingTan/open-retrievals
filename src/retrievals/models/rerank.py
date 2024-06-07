@@ -31,12 +31,14 @@ class BaseRanker(ABC):
     @abstractmethod
     def __init__(
         self,
-        model_name_or_path: str,
+        model: Optional[nn.Module] = None,
+        tokenizer: Optional[PreTrainedTokenizer] = None,
     ):
-        pass
+        self.model: Optional[nn.Module] = model
+        self.tokenizer = tokenizer
 
 
-class AutoModelForRanking(nn.Module):
+class AutoModelForRanking(nn.Module, BaseRanker):
     def __init__(
         self,
         model: Optional[nn.Module] = None,
@@ -346,22 +348,37 @@ class AutoModelForRanking(nn.Module):
         self.model.gradient_checkpointing_enable(gradient_checkpointing_kwargs=gradient_checkpointing_kwargs)
 
 
-class ColBERT(AutoModelForRanking):
+class ColBERT(BaseRanker, nn.Module):
     def __init__(
         self,
-        colbert_dim: int = 128,
+        model: Optional[nn.Module] = None,
+        tokenizer: Optional[PreTrainedTokenizer] = None,
+        linear_layer: Optional[nn.Module] = None,
         similarity_metric: Literal['cosine', 'l2'] = 'l2',
+        loss_fn: Union[nn.Module, Callable] = None,
+        loss_type: Literal['classification', 'regression'] = 'classification',
+        max_length: Optional[int] = None,
+        temperature: Optional[float] = 0.02,
+        device: Optional[str] = None,
         **kwargs,
     ):
-        if "pooling_method" in kwargs:
-            kwargs.update({'pooling_method': None})
-        super(ColBERT, self).__init__(linear_dim=colbert_dim, **kwargs)
+        super(ColBERT, self).__init__()
+        self.model: Optional[nn.Module] = model
+        self.tokenizer = tokenizer
+
+        self.linear = linear_layer
         self.similarity_metric = similarity_metric
-        if self.model:
-            num_features: int = self.model.config.hidden_size
-            self.linear = nn.Linear(num_features, colbert_dim)
-            # self._init_weights(self.linear)
-            self.to(self.device)
+
+        self.loss_fn = loss_fn
+        self.loss_type = loss_type
+        self.temperature = temperature
+
+        if device is None:
+            self.device = get_device_name()
+        else:
+            self.device = device
+
+        self.to(self.device)
 
     def encode(self, input_ids: torch.Tensor, attention_mask: torch.Tensor, normalize: bool = True) -> torch.Tensor:
         outputs: SequenceClassifierOutput = self.model(input_ids, attention_mask, output_hidden_states=True)
@@ -371,8 +388,7 @@ class ColBERT(AutoModelForRanking):
         else:
             hidden_state = outputs.hidden_states[1]
 
-        # embeddings = self.linear(hidden_state)
-        embeddings = hidden_state
+        embeddings = self.linear(hidden_state)
 
         if normalize:
             embeddings = torch.nn.functional.normalize(embeddings, p=2, dim=2)
@@ -386,22 +402,31 @@ class ColBERT(AutoModelForRanking):
         pos_attention_mask: Optional[torch.Tensor],
         neg_input_ids: Optional[torch.Tensor] = None,
         neg_attention_mask: Optional[torch.Tensor] = None,
-        labels: Optional[torch.Tensor] = None,
         return_dict: Optional[bool] = True,
         **kwargs,
     ):
         query_embedding = self.encode(query_input_ids, query_attention_mask, normalize=True)
-        document_embedding = self.encode(pos_input_ids, pos_attention_mask, normalize=True)
+        positive_embedding = self.encode(pos_input_ids, pos_attention_mask, normalize=True)
 
-        score = self.score(query_embedding, document_embedding)
-        if self.loss_fn is not None and labels is not None:
-            loss = self.loss_fn(score, labels)
+        scores = self.score(query_embedding, positive_embedding)
+
+        if self.training:
+            if neg_input_ids is not None:
+                negative_embedding = self.encode(neg_input_ids, neg_attention_mask, normalize=True)
+                negative_scores = self.score(query_embedding, negative_embedding)
+                scores = torch.cat([scores, negative_scores], dim=1)
+
+            if self.temperature is not None:
+                scores = scores / self.temperature
+            labels = torch.zeros(scores.shape[0], dtype=torch.long, device=scores.device)
+            loss = self.loss_fn(scores, labels)
+
             if return_dict:
                 outputs_dict = dict()
                 outputs_dict['loss'] = loss
                 return outputs_dict
             return loss
-        return score
+        return scores
 
     @torch.no_grad()
     def compute_score(
@@ -472,22 +497,29 @@ class ColBERT(AutoModelForRanking):
         else:
             raise ValueError('similarity_metric should be cosine or l2')
 
+    def save_pretrained(self, save_directory: Union[str, os.PathLike], safe_serialization: bool = False):
+        state_dict_fn = lambda state_dict: type(state_dict)({k: v.clone().cpu() for k, v in state_dict.items()})
+        logger.info("Save model to {}".format(save_directory))
+        state_dict = self.model.state_dict()
+
+        self.model.save_pretrained(
+            save_directory, state_dict=state_dict_fn(state_dict), safe_serialization=safe_serialization
+        )
+        torch.save(state_dict_fn(self.linear.state_dict()), os.path.join(save_directory, 'colbert_linear.pt'))
+        self.tokenizer.save_pretrained(save_directory)
+
     @classmethod
     def from_pretrained(
         cls,
         model_name_or_path: str,
-        save_path: Optional[str] = None,
-        pooling_method: Optional[str] = None,
-        loss_type: Literal['classification', 'regression'] = 'classification',
         num_labels: int = 1,
         causal_lm: bool = False,
-        gradient_checkpointing: bool = False,
         trust_remote_code: bool = True,
-        use_fp16: bool = False,
-        use_lora: bool = False,
-        lora_config=None,
-        device: Optional[str] = None,
         colbert_dim: int = 128,
+        similarity_metric: Literal['cosine', 'l2'] = 'l2',
+        loss_fn: Union[nn.Module, Callable] = None,
+        loss_type: Literal['classification', 'regression'] = 'classification',
+        device: Optional[str] = None,
         **kwargs,
     ):
         if not model_name_or_path or not isinstance(model_name_or_path, str):
@@ -496,37 +528,26 @@ class ColBERT(AutoModelForRanking):
         tokenizer = AutoTokenizer.from_pretrained(
             model_name_or_path, return_tensors=False, trust_remote_code=trust_remote_code
         )
-
-        model = AutoModelForSequenceClassification.from_pretrained(
+        model = AutoModel.from_pretrained(
             model_name_or_path, num_labels=num_labels, trust_remote_code=trust_remote_code, **kwargs
         )
+        linear = nn.Linear(model.config.hidden_size, colbert_dim, bias=True)
 
-        if save_path:
-            # TODO: 支持transformers pretrain权重, 以及微调后加载权重
-            model = cls(model=model, tokenizer=tokenizer, pooling_method=pooling_method)
-            model.load_state_dict(torch.load(save_path))
-            return model
+        if os.path.exists(os.path.join(model_name_or_path, 'colbert_linear.pt')):
+            logger.info(f'Loading colbert_linear weight from {model_name_or_path}')
+            colbert_state_dict = torch.load(os.path.join(model_name_or_path, 'colbert_linear.pt'), map_location='cpu')
+            linear.load_state_dict(colbert_state_dict)
 
-        if use_fp16:
-            model.half()
-        if use_lora:
-            # peft config and wrapping
-            from peft import LoraConfig, TaskType, get_peft_model
-
-            if not lora_config:
-                raise ValueError("If use_lora is true, please provide a valid lora_config from peft")
-            model = get_peft_model(model, lora_config)
-            model.print_trainable_parameters()
-
-        reranker = cls(
+        ranker = cls(
             model=model,
             tokenizer=tokenizer,
-            pooling_method=pooling_method,
+            linear_layer=linear,
             device=device,
+            similarity_metric=similarity_metric,
+            loss_fn=loss_fn,
             loss_type=loss_type,
-            colbert_dim=colbert_dim,
         )
-        return reranker
+        return ranker
 
 
 class LLMRank(BaseRanker):

@@ -133,7 +133,8 @@ def main():
     Path(training_args.output_dir).mkdir(parents=True, exist_ok=True)
 
     trainer.train()
-    trainer.save_model(training_args.output_dir)
+    # trainer.save_model(training_args.output_dir)
+    model.save_pretrained(training_args.output_dir)
 
     if trainer.is_world_process_zero():
         tokenizer.save_pretrained(training_args.output_dir)
