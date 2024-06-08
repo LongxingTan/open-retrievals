@@ -32,9 +32,13 @@ class BaseRanker(ABC, torch.nn.Module):
     @abstractmethod
     def __init__(
         self,
+        model: Optional[nn.Module] = None,
+        tokenizer: Optional[PreTrainedTokenizer] = None,
         **kwargs,
     ):
         super(BaseRanker, self).__init__()
+        self.model: Optional[nn.Module] = model
+        self.tokenizer = tokenizer
 
     @abstractmethod
     def forward(self, *args, **kwargs):
@@ -45,6 +49,9 @@ class BaseRanker(ABC, torch.nn.Module):
     def encode(self, *args, **kwargs):
         """Encode documents."""
         pass
+
+    def gradient_checkpointing_enable(self, gradient_checkpointing_kwargs=None):
+        self.model.gradient_checkpointing_enable(gradient_checkpointing_kwargs=gradient_checkpointing_kwargs)
 
 
 class AutoModelForRanking(BaseRanker):
@@ -372,11 +379,8 @@ class AutoModelForRanking(BaseRanker):
         self.model.save_pretrained(path, state_dict=state_dict, safe_serialization=safe_serialization)
         self.tokenizer.save_pretrained(path)
 
-    def gradient_checkpointing_enable(self, gradient_checkpointing_kwargs=None):
-        self.model.gradient_checkpointing_enable(gradient_checkpointing_kwargs=gradient_checkpointing_kwargs)
 
-
-class ColBERT(AutoModelForRanking):
+class ColBERT(BaseRanker):
     def __init__(
         self,
         model: Optional[nn.Module] = None,
@@ -561,9 +565,9 @@ class ColBERT(AutoModelForRanking):
         return ranker
 
 
-class LLMRank(BaseRanker):
-    def __init__(self):
-        pass
+class LLMRanker(BaseRanker):
+    def __init__(self, model, tokenizer):
+        super(LLMRanker, self).__init__()
 
 
 class DocumentSplitter(object):

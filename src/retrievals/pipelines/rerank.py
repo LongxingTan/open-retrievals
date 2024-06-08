@@ -139,6 +139,7 @@ def main():
             model_args.model_name_or_path, num_labels=1, loss_fn=nn.BCEWithLogitsLoss(reduction='mean')
         )
 
+    logger.info(f"Total examples for training: {len(train_dataset)}")
     trainer = RerankTrainer(
         model=model,
         args=training_args,
