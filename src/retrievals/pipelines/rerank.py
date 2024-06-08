@@ -122,7 +122,7 @@ def main():
     # )
     # model.set_model_type(training_args.model_type)
 
-    model = ColBERT.from_pretrained(model_args.model_name_or_path, colbert_dim=128)
+    model = ColBERT.from_pretrained(model_args.model_name_or_path, colbert_dim=768)
 
     if training_args.model_type == 'colbert':
         train_dataset = RetrievalDataset(

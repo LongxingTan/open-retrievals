@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 from abc import ABC, abstractmethod
@@ -27,15 +28,26 @@ from .utils import check_casual_lm, get_device_name
 logger = logging.getLogger(__name__)
 
 
-class BaseRanker(ABC):
+class BaseRanker(ABC, torch.nn.Module):
     @abstractmethod
     def __init__(
         self,
+        **kwargs,
     ):
+        super(BaseRanker, self).__init__()
+
+    @abstractmethod
+    def forward(self, *args, **kwargs):
+        """Pytorch forward method."""
+        pass
+
+    @abstractmethod
+    def encode(self, *args, **kwargs):
+        """Encode documents."""
         pass
 
 
-class AutoModelForRanking(nn.Module, BaseRanker):
+class AutoModelForRanking(BaseRanker):
     def __init__(
         self,
         model: Optional[nn.Module] = None,
@@ -78,19 +90,19 @@ class AutoModelForRanking(nn.Module, BaseRanker):
             self.device = get_device_name()
         else:
             self.device = device
-        # both self.model and self.linear to device
+
         # self._post_init()
         self.to(self.device)
 
-    def _post_init(self):
-        num_features: int = self.model.config.hidden_size
-        self.classifier = nn.Linear(num_features, 1)
-        try:
-            state_dict = torch.load(os.path.join('./', "dense.bin"), map_location=self.device)
-            self.dense_pooler.load_state_dict(state_dict)
-        except FileNotFoundError:
-            self._init_weights(self.classifier)
-            logger.warning("Could not find dense weight, initialize it randomly")
+    # def _post_init(self):
+    #     num_features: int = self.model.config.hidden_size
+    #     self.classifier = nn.Linear(num_features, 1)
+    #     try:
+    #         state_dict = torch.load(os.path.join('./', "colbert_linear"), map_location=self.device)
+    #         self.dense_pooler.load_state_dict(state_dict)
+    #     except FileNotFoundError:
+    #         self._init_weights(self.classifier)
+    #         logger.warning("Could not find dense weight, initialize it randomly")
 
     def _init_weights(self, module: nn.Module):
         if isinstance(module, nn.Linear):
@@ -182,6 +194,26 @@ class AutoModelForRanking(nn.Module, BaseRanker):
             loss_type=self.loss_type,
             **kwargs,
         )
+
+    def preprocess(self, batch_sentence_pair, query_max_len, document_max_len):
+        query_list = [item[0] for item in batch_sentence_pair]
+        document_list = [item[1] for item in batch_sentence_pair]
+
+        query_batch_tokens = self.tokenizer(
+            query_list, padding='max_length', truncation=True, max_length=query_max_len, return_tensors='pt'
+        )
+        query_batch_tokens_on_device = {k: v.to(self.device) for k, v in query_batch_tokens.items()}
+        document_batch_tokens = self.tokenizer(
+            document_list, padding='max_length', truncation=True, max_length=document_max_len, return_tensors='pt'
+        )
+        document_batch_tokens_on_device = {k: v.to(self.device) for k, v in document_batch_tokens.items()}
+
+        return {
+            "query_input_ids": query_batch_tokens_on_device['input_ids'],
+            "query_attention_mask": query_batch_tokens_on_device['attention_mask'],
+            "doc_input_ids": document_batch_tokens_on_device['input_ids'],
+            "doc_attention_mask": document_batch_tokens_on_device['attention_mask'],
+        }
 
     @torch.no_grad()
     def compute_score(
@@ -344,7 +376,7 @@ class AutoModelForRanking(nn.Module, BaseRanker):
         self.model.gradient_checkpointing_enable(gradient_checkpointing_kwargs=gradient_checkpointing_kwargs)
 
 
-class ColBERT(nn.Module):
+class ColBERT(AutoModelForRanking):
     def __init__(
         self,
         model: Optional[nn.Module] = None,
@@ -364,6 +396,7 @@ class ColBERT(nn.Module):
 
         self.loss_fn = loss_fn
         self.loss_type = loss_type
+        self.max_length = max_length
         self.temperature = temperature
 
         if device is None:
@@ -381,6 +414,7 @@ class ColBERT(nn.Module):
         else:
             hidden_state = outputs.hidden_states[1]
 
+        hidden_state = hidden_state * attention_mask
         embeddings = self.linear(hidden_state)
 
         if normalize:
@@ -399,7 +433,6 @@ class ColBERT(nn.Module):
         **kwargs,
     ):
         query_embedding = self.encode(query_input_ids, query_attention_mask, normalize=True)
-
         positive_embedding = self.encode(pos_input_ids, pos_attention_mask, normalize=True)
         scores = self.score(query_embedding, positive_embedding)
 
@@ -408,10 +441,13 @@ class ColBERT(nn.Module):
             if neg_input_ids is not None:
                 negative_embedding = self.encode(neg_input_ids, neg_attention_mask, normalize=True)
                 negative_scores = self.score(query_embedding, negative_embedding)
-                scores = torch.cat([scores, negative_scores.unsqueeze(-1)], dim=-1)
+                if negative_scores.ndim == 1:
+                    negative_scores = negative_scores.unsqueeze(-1)
 
-            if self.temperature is not None:
-                scores = scores / self.temperature
+                scores = torch.cat([scores, negative_scores], dim=-1)
+
+            # if self.temperature is not None:
+            #     scores = scores / self.temperature
 
             labels = torch.zeros(scores.shape[0], dtype=torch.long, device=scores.device)
             loss = self.loss_fn(scores, labels)
@@ -421,6 +457,7 @@ class ColBERT(nn.Module):
                 outputs_dict['loss'] = loss
                 return outputs_dict
             return loss
+
         return scores
 
     @torch.no_grad()
@@ -454,26 +491,6 @@ class ColBERT(nn.Module):
             return scores_list[0]
         return scores_list
 
-    def preprocess(self, batch_sentence_pair, query_max_len, document_max_len):
-        query_list = [item[0] for item in batch_sentence_pair]
-        document_list = [item[1] for item in batch_sentence_pair]
-
-        query_batch_tokens = self.tokenizer(
-            query_list, padding='max_length', truncation=True, max_length=query_max_len, return_tensors='pt'
-        )
-        query_batch_tokens_on_device = {k: v.to(self.device) for k, v in query_batch_tokens.items()}
-        document_batch_tokens = self.tokenizer(
-            document_list, padding='max_length', truncation=True, max_length=document_max_len, return_tensors='pt'
-        )
-        document_batch_tokens_on_device = {k: v.to(self.device) for k, v in document_batch_tokens.items()}
-
-        return {
-            "query_input_ids": query_batch_tokens_on_device['input_ids'],
-            "query_attention_mask": query_batch_tokens_on_device['attention_mask'],
-            "doc_input_ids": document_batch_tokens_on_device['input_ids'],
-            "doc_attention_mask": document_batch_tokens_on_device['attention_mask'],
-        }
-
     def score(
         self,
         query_embeddings: torch.Tensor,
@@ -484,7 +501,7 @@ class ColBERT(nn.Module):
             query_embeddings,
             document_embeddings,
         )
-        late_interactions = torch.max(late_interactions, axis=2).values.sum(axis=1)
+        late_interactions = late_interactions.max(2).values.sum(1)
         return late_interactions
 
     def save_pretrained(self, save_directory: Union[str, os.PathLike], safe_serialization: bool = False):
@@ -504,8 +521,8 @@ class ColBERT(nn.Module):
         model_name_or_path: str,
         causal_lm: bool = False,
         trust_remote_code: bool = True,
-        colbert_dim: int = 128,
-        loss_fn: Union[nn.Module, Callable] = nn.CrossEntropyLoss(),
+        colbert_dim: int = 768,
+        loss_fn: Union[nn.Module, Callable] = nn.CrossEntropyLoss(reduction='mean'),
         loss_type: Literal['classification', 'regression'] = 'classification',
         device: Optional[str] = None,
         **kwargs,
@@ -517,12 +534,21 @@ class ColBERT(nn.Module):
             model_name_or_path, return_tensors=False, trust_remote_code=trust_remote_code
         )
         model = AutoModel.from_pretrained(model_name_or_path, trust_remote_code=trust_remote_code, **kwargs)
+        # model = AutoModelForSequenceClassification(
+        #     model_name_or_path, num_labels=colbert_dim, trust_remote_code=trust_remote_code
+        # )
         linear = nn.Linear(model.config.hidden_size, colbert_dim, bias=True)
 
         if os.path.exists(os.path.join(model_name_or_path, 'colbert_linear.pt')):
             logger.info(f'Loading colbert_linear weight from {model_name_or_path}')
             colbert_state_dict = torch.load(os.path.join(model_name_or_path, 'colbert_linear.pt'), map_location='cpu')
             linear.load_state_dict(colbert_state_dict)
+
+        if os.path.exists(path=os.path.join(model_name_or_path, "metadata.json")):
+            with open(file=os.path.join(model_name_or_path, "metadata.json"), mode="r") as f:
+                metadata = json.load(fp=f)
+            max_length = metadata["max_length"]
+            print(max_length)
 
         ranker = cls(
             model=model,
