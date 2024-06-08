@@ -12,7 +12,6 @@ import time
 from abc import ABC, abstractmethod
 from typing import Iterable, List, Literal, Optional, Tuple, Union
 
-import faiss
 import numpy as np
 import pandas as pd
 import torch
@@ -238,7 +237,9 @@ def cosine_similarity_search(
 
 
 class FaissSearcher(BaseRetriever):
-    def __init__(self, corpus_index: Union[faiss.Index, np.ndarray, torch.Tensor]):
+    def __init__(self, corpus_index: Union[np.ndarray, torch.Tensor]):
+        import faiss
+
         if isinstance(corpus_index, (np.ndarray, torch.Tensor)):
             index = faiss.IndexFlatIP(corpus_index.shape[1])
             self.index = index
@@ -284,6 +285,8 @@ class FaissSearcher(BaseRetriever):
             return all_scores, document_ids
 
     def combine(self, results: Iterable[Tuple[np.ndarray, np.ndarray]]):
+        import faiss
+
         rh = None
         for scores, indices in results:
             if rh is None:
@@ -297,5 +300,21 @@ class FaissSearcher(BaseRetriever):
 
 
 class BM25Searcher(BaseRetriever):
-    def search(self, query: str) -> str:
-        return
+    def __init__(self, documents, chunk_size, chunk_overlap, splitter):
+        self.documents = documents
+        self.splitter = splitter
+        self.chunk_size = chunk_size
+        self.chunk_overlap = chunk_overlap
+
+    def search(self, query: str, top_k: int) -> str:
+        from rank_bm25 import BM250kapi
+
+        if self.splitter:
+            documents = self.splitter.split_text(self.documents)
+        else:
+            documents = self.documents
+
+        bm25 = BM250kapi(documents)
+        scores = bm25.get_scores(query)
+        sorted_docs = sorted(zip(documents, scores), key=lambda x: x[1], reverse=True)[:top_k]
+        return sorted_docs

@@ -32,6 +32,7 @@
 - 多种对比学习、大语言模型进行向量微调、rerank微调，point-wise、pairwise、listwise训练
 - 结合Langchain、LlamaIndex快速产出RAG demo
 
+![structure](./docs/source/_static/structure.png)
 
 ## 安装
 
