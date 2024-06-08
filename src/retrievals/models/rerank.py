@@ -414,7 +414,7 @@ class ColBERT(AutoModelForRanking):
         else:
             hidden_state = outputs.hidden_states[1]
 
-        hidden_state = hidden_state * attention_mask
+        hidden_state = hidden_state * attention_mask.unsqueeze(-1)
         embeddings = self.linear(hidden_state)
 
         if normalize:

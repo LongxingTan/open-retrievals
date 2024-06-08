@@ -117,13 +117,6 @@ def main():
         use_fast=False,
     )
 
-    # model = AutoModelForRanking.from_pretrained(
-    #     model_args.model_name_or_path, num_labels=1, loss_fn=nn.BCEWithLogitsLoss(reduction='mean')
-    # )
-    # model.set_model_type(training_args.model_type)
-
-    model = ColBERT.from_pretrained(model_args.model_name_or_path, colbert_dim=768)
-
     if training_args.model_type == 'colbert':
         train_dataset = RetrievalDataset(
             args=data_args,
@@ -138,9 +131,13 @@ def main():
             positive_key=data_args.positive_key,
             negative_key=data_args.negative_key,
         )
+        model = ColBERT.from_pretrained(model_args.model_name_or_path, colbert_dim=768)
     else:
         train_dataset = RerankDataset(args=data_args, tokenizer=tokenizer)
         data_collator = RerankCollator(tokenizer, max_length=data_args.max_length)
+        model = AutoModelForRanking.from_pretrained(
+            model_args.model_name_or_path, num_labels=1, loss_fn=nn.BCEWithLogitsLoss(reduction='mean')
+        )
 
     trainer = RerankTrainer(
         model=model,
