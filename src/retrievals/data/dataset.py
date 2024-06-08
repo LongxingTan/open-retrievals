@@ -95,20 +95,23 @@ class RerankDataset(Dataset):
     def __init__(
         self,
         data_name_or_path: Optional[str] = None,
+        unfold_each_positive: bool = False,
+        train_group_size: int = 2,
         query_key: str = 'query',
         positive_key: Optional[str] = 'document',
         negative_key: Optional[str] = 'negative',
-        max_negative_samples: Optional[int] = None,
-        unfold_each_positive: bool = False,
         args: Optional = None,
         tokenizer: PreTrainedTokenizer = None,
     ):
+        """
+        train_group_size = 1(positive) + max_negative_samples
+        """
         if not data_name_or_path and args:
             data_name_or_path = args.train_data
-        if args and 'max_negative_samples' in args.__dataclass_fields__:
-            self.max_negative_samples = args.max_negative_samples
+        if args and 'train_group_size' in args.__dataclass_fields__:
+            self.train_group_size = args.train_group_size
         else:
-            self.max_negative_samples = max_negative_samples
+            self.train_group_size = train_group_size
 
         if args:
             self.query_key = args.query_key or query_key
@@ -160,6 +163,10 @@ class RerankDataset(Dataset):
         return sample
 
     def generate_samples(self, dataset):
+        max_negative_samples = None
+        if self.train_group_size and self.train_group_size > 0:
+            max_negative_samples = self.train_group_size - 1
+
         samples: List = []
         for data in dataset:
             if self.unfold_each_positive:
@@ -169,12 +176,12 @@ class RerankDataset(Dataset):
                 samples.append([data[self.query_key], random.choice(data[self.positive_key]), 1])
 
             negative_samples = data[self.negative_key]
-            if self.max_negative_samples and self.max_negative_samples > 0:
-                if len(negative_samples) < self.max_negative_samples:
-                    num = math.ceil(self.max_negative_samples / len(negative_samples))
-                    negative_samples = random.sample(negative_samples * num, self.max_negative_samples)
+            if max_negative_samples:
+                if len(negative_samples) < max_negative_samples:
+                    num = math.ceil(max_negative_samples / len(negative_samples))
+                    negative_samples = random.sample(negative_samples * num, max_negative_samples)
                 else:
-                    negative_samples = random.sample(negative_samples, self.max_negative_samples)
+                    negative_samples = random.sample(negative_samples, max_negative_samples)
             for neg_text in negative_samples:
                 samples.append([data[self.query_key], neg_text, 0])
         return samples

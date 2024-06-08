@@ -14,8 +14,8 @@ from transformers import (
     set_seed,
 )
 
-from ..data import ColBertCollator, RerankCollator, RerankDataset
-from ..models.rerank import AutoModelForRanking
+from ..data import ColBertCollator, RerankCollator, RerankDataset, RetrievalDataset
+from ..models.rerank import AutoModelForRanking, ColBERT
 from ..trainer import RerankTrainer
 
 transformers.logging.set_verbosity_error()
@@ -46,6 +46,7 @@ class ModelArguments:
 class DataArguments:
     train_data: str = field(default=None, metadata={"help": "Path to corpus"})
     train_group_size: int = field(default=8)
+    unfold_each_positive: bool = field(default=False)
     max_length: int = field(
         default=512,
         metadata={
@@ -56,8 +57,9 @@ class DataArguments:
     query_key: str = field(default=None)
     positive_key: str = field(default=None)
     negative_key: str = field(default=None)
-    max_negative_samples: int = field(default=7)
-    unfold_each_positive: bool = field(default=False)
+
+    query_instruction: str = field(default=None, metadata={"help": "instruction for query"})
+    passage_instruction: str = field(default=None, metadata={"help": "instruction for passage"})
 
     # def __post_init__(self):
     #     if not os.path.exists(self.train_data):
@@ -115,24 +117,41 @@ def main():
         use_fast=False,
     )
 
-    model = AutoModelForRanking.from_pretrained(
-        model_args.model_name_or_path, num_labels=1, loss_fn=nn.BCEWithLogitsLoss(reduction='mean')
-    )
-
-    train_dataset = RerankDataset(args=data_args, tokenizer=tokenizer)
+    if training_args.model_type == 'colbert':
+        train_dataset = RetrievalDataset(
+            args=data_args,
+            tokenizer=tokenizer,
+            positive_key=data_args.positive_key,
+            negative_key=data_args.negative_key,
+        )
+        data_collator = ColBertCollator(
+            tokenizer,
+            query_max_length=64,
+            document_max_length=data_args.max_length,
+            positive_key=data_args.positive_key,
+            negative_key=data_args.negative_key,
+        )
+        model = ColBERT.from_pretrained(model_args.model_name_or_path, colbert_dim=768)
+    else:
+        train_dataset = RerankDataset(args=data_args, tokenizer=tokenizer)
+        data_collator = RerankCollator(tokenizer, max_length=data_args.max_length)
+        model = AutoModelForRanking.from_pretrained(
+            model_args.model_name_or_path, num_labels=1, loss_fn=nn.BCEWithLogitsLoss(reduction='mean')
+        )
 
     trainer = RerankTrainer(
         model=model,
         args=training_args,
         train_dataset=train_dataset,
-        data_collator=RerankCollator(tokenizer, max_length=data_args.max_length),
+        data_collator=data_collator,
         tokenizer=tokenizer,
     )
 
     Path(training_args.output_dir).mkdir(parents=True, exist_ok=True)
 
     trainer.train()
-    trainer.save_model(training_args.output_dir)
+    # trainer.save_model(training_args.output_dir)
+    model.save_pretrained(training_args.output_dir)
 
     if trainer.is_world_process_zero():
         tokenizer.save_pretrained(training_args.output_dir)
