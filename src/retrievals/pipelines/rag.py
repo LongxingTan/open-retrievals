@@ -1,4 +1,5 @@
 import logging
+import os
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Literal, Optional, Tuple, TypeVar, Union
 
@@ -9,7 +10,7 @@ from ..tools.file_parser import FileParser
 logger = logging.getLogger(__name__)
 
 
-class ModelCenter(object):
+class ChatCenter(object):
     """Model inference"""
 
     def __init__(self):
@@ -22,14 +23,21 @@ class ModelCenter(object):
 class KnowledgeCenter(object):
     """Knowledge parse, store"""
 
-    def __init__(self):
-        self.parser = FileParser()
+    def __init__(self, knowledge_path, loader, spliter, embedder):
+        self.knowledge_path = knowledge_path
+        self.loader = loader
+        self.splitter = spliter
+        self.embedder = embedder
 
-    def init_vector_db(self):
-        pass
+    def init_vector_db(self, file_path: str):
+        for doc in os.listdir(file_path):
+            logger.info(f'Init knowledge, load file: {doc}')
+            document = self.loader(doc)
+            texts = self.splitter.split_documents(document)
+            self.embedder.build_index(texts, path=self.knowledge_path)
 
     def add_document(self, file_path: str):
-        doc = self.parser.read(file_path)
+        doc = self.loader.read(file_path)
         print(doc)
 
 
@@ -41,7 +49,10 @@ class Session(object):
 
 class SimpleRAG(object):
     def __init__(self):
-        pass
+        self.knowledge_center = KnowledgeCenter()
+        self.chat_center = ChatCenter
+
+        self.retrieval = None
 
     def load_knowledge(self):
         pass
