@@ -31,10 +31,14 @@ class BaseRetriever(ABC):
 
 class AutoModelForRetrieval(object):
     def __init__(
-        self, embedding_model: Optional[nn.Module] = None, method: Literal['cosine', 'knn', 'llm'] = "cosine"
+        self,
+        embedding_model: Optional[nn.Module] = None,
+        reranker_model: Optional[nn.Module] = None,
+        method: Literal['cosine', 'knn', 'llm'] = "cosine",
     ) -> None:
         super().__init__()
         self.embedding_model = embedding_model
+        self.reranker_model = reranker_model
         self.method = method
 
     def similarity_search(
