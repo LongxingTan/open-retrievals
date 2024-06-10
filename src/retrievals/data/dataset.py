@@ -16,6 +16,7 @@ class RetrievalDataset(Dataset):
         self,
         data_name_or_path: Union[str, datasets.Dataset, None] = None,
         train_group_size: int = 2,
+        unfold_each_positive: bool = False,
         query_key: str = 'query',
         positive_key: str = 'positive',
         negative_key='negative',
@@ -47,6 +48,7 @@ class RetrievalDataset(Dataset):
         if 'train' in self.dataset:
             self.dataset = self.dataset['train']
 
+        self.unfold_each_positive = unfold_each_positive
         self.tokenizer = tokenizer
         self.args = args
         self.query_key = query_key
