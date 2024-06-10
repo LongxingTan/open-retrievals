@@ -28,9 +28,11 @@
 **[中文wiki](https://github.com/LongxingTan/open-retrievals/wiki)** | **[英文文档](https://open-retrievals.readthedocs.io)** | **[Release Notes](https://open-retrievals.readthedocs.io/en/latest/CHANGELOG.html)**
 
 **Open-Retrievals** 帮助开发者在信息检索、大语言模型等领域便捷地应用文本向量，快速搭建检索、排序、RAG等应用。
-- `AutoModelForEmbedding`一统向量、检索、重排领域
-- 多种对比学习、大语言模型进行向量微调、rerank微调，point-wise、pairwise、listwise训练
-- 结合Langchain、LlamaIndex快速产出RAG demo
+- `AutoModelForEmbedding`一统向量、检索、重排
+- 多种对比学习、point-wise、pairwise、listwise微调向量模型、rerank模型
+- 集成Langchain、LlamaIndex快速产出RAG demo
+
+![structure](./docs/source/_static/structure.png)
 
 
 ## 安装
@@ -54,26 +56,6 @@ python -m pip install -U git+https://github.com/LongxingTan/open-retrievals.git
 
 
 ## 快速入门
-
-- Embeddings
-`model = AutoModelForEmbedding.from_pretrained(model_name_or_path, pooling_method='cls')`
-- Retrieval
-`retrieval = model.as_retrieval()`
-- Rerank
-`reranker = model.as_ranker()`
-- Point-wise
-`model = model.set_train_type('pointwise', loss_fn=ArcFace())`
-- Pairwise
-`model = model.set_train_type('pairwise', loss_fn=InfoNCE())`
-- Listwise
-`model = model.ser_train_type('listwise', loss_fn=nn.CrossEntropyLoss()`
-- Colbert
-`model = model.set_model_type('colbert')`
-- LLM
-`model = AutoModelForEmbedding.from_pretrained(model_name_or_path, causal_lm=True)`
-- Langchain
-`embedding_model = model.as_langchain_retrieval()`
-
 
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1-WBMisdWLeHUKlzJ2DrREXY_kSV8vjP3?usp=sharing)
 

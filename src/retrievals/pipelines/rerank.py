@@ -118,6 +118,7 @@ def main():
     )
 
     if training_args.model_type == 'colbert':
+        logger.info('Set model to ColBERT')
         train_dataset = RetrievalDataset(
             args=data_args,
             tokenizer=tokenizer,
@@ -126,19 +127,21 @@ def main():
         )
         data_collator = ColBertCollator(
             tokenizer,
-            query_max_length=64,
+            query_max_length=128,
             document_max_length=data_args.max_length,
             positive_key=data_args.positive_key,
             negative_key=data_args.negative_key,
         )
-        model = ColBERT.from_pretrained(model_args.model_name_or_path, colbert_dim=768)
+        model = ColBERT.from_pretrained(model_args.model_name_or_path, colbert_dim=128)
     else:
+        logger.info('Set model to CrossEncoder')
         train_dataset = RerankDataset(args=data_args, tokenizer=tokenizer)
         data_collator = RerankCollator(tokenizer, max_length=data_args.max_length)
         model = AutoModelForRanking.from_pretrained(
             model_args.model_name_or_path, num_labels=1, loss_fn=nn.BCEWithLogitsLoss(reduction='mean')
         )
 
+    logger.info(f"Total examples for training: {len(train_dataset)}")
     trainer = RerankTrainer(
         model=model,
         args=training_args,

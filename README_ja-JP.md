@@ -32,6 +32,8 @@
 - 対照学習エンベッディング, LLM エンベッディング
 - 高速 RAG デモ
 
+![structure](./docs/source/_static/structure.png)
+
 
 ## インストール
 

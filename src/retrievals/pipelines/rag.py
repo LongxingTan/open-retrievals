@@ -1,4 +1,6 @@
 import logging
+import os
+from multiprocessing import Pool
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Literal, Optional, Tuple, TypeVar, Union
 
@@ -9,7 +11,9 @@ from ..tools.file_parser import FileParser
 logger = logging.getLogger(__name__)
 
 
-class ModelCenter(object):
+class ChatCenter(object):
+    """Model inference"""
+
     def __init__(self):
         pass
 
@@ -18,63 +22,60 @@ class ModelCenter(object):
 
 
 class KnowledgeCenter(object):
-    def __init__(self):
-        self.parser = FileParser()
+    """Knowledge parse, store"""
 
-    def init_vector_db(self):
-        pass
+    def __init__(self, knowledge_path, loader, spliter, embedder):
+        self.knowledge_path = knowledge_path
+        self.loader = loader
+        self.splitter = spliter
+        self.embedder = embedder
+        self.file_parser = FileParser()
+
+    def init_vector_db(self, file_path: str):
+        for doc in os.listdir(file_path):
+            logger.info(f'Init knowledge center to {self.knowledge_path}, load file: {doc}')
+            document = self.loader(doc)
+            texts = self.splitter.split_documents(document)
+            self.embedder.build_index(texts, path=self.knowledge_path)
 
     def add_document(self, file_path: str):
-        doc = self.parser.read(file_path)
+        doc = self.loader.read(file_path)
         print(doc)
 
+    def _preprocess(self, files: List[str]):
+        pool = Pool(processes=16)
 
-class RagPipe(object):
+        for idx, file in enumerate(files):
+            if file._type in ['pdf', 'word', 'excel', 'ppt', 'html']:
+                md5 = self.file_parser.md5(file.origin)
+                print(md5)
+                pool.apply_async(self._read_and_save, file)
+        pass
+
+    def _read_and_save(self, file):
+        content, error = self.file_parser.read(file.origin)
+        with open(file.copypath, 'w') as f:
+            f.write(content)
+
+
+class Session(object):
+    def __init__(self, query: str, history: list):
+        self.query = query
+        self.history = history
+
+
+class SimpleRAG(object):
     def __init__(self):
+        self.knowledge_center = KnowledgeCenter()
+        self.chat_center = ChatCenter
+
+        self.retrieval = None
+
+    def load_knowledge(self):
         pass
 
-    @classmethod
-    def from_pretrained(
-        cls,
-        model_name_or_path: Union[str, Path],
-        n_gpu: int = -1,
-        verbose: int = 1,
-        index_root: Optional[str] = None,
-    ):
-        instance = cls()
-        instance.model = AutoModel()
-        return instance
-
-    @classmethod
-    def from_index(cls, index_path: Union[str, Path], n_gpu: int = -1, verbose: int = 1):
-        instance = cls()
-        index_path = Path(index_path)
-        instance.model = AutoModel()
-
-        return instance
-
-    def add_to_index(self):
-        return
-
-    def encode(self):
-        return
-
-    def index(self):
-        return
-
-    def search(self):
-        return
-
-
-class Generator(object):
-    def __init__(self, config_path: str):
-        self.config_path = config_path
-
-    def _load_config(self):
-        # with open(self.config_path, encoding='utf8') as f:
-        #     config = pytoml.load(f)
-        #     return config['llm']
+    def add_knowledge(self, file_path: Union[str]):
         pass
 
-    def generate(self, prompt, history=None, remote=False):
+    def chat(self, question: str):
         pass

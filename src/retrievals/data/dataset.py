@@ -16,6 +16,7 @@ class RetrievalDataset(Dataset):
         self,
         data_name_or_path: Union[str, datasets.Dataset, None] = None,
         train_group_size: int = 2,
+        unfold_each_positive: bool = False,
         query_key: str = 'query',
         positive_key: str = 'positive',
         negative_key='negative',
@@ -47,6 +48,7 @@ class RetrievalDataset(Dataset):
         if 'train' in self.dataset:
             self.dataset = self.dataset['train']
 
+        self.unfold_each_positive = unfold_each_positive
         self.tokenizer = tokenizer
         self.args = args
         self.query_key = query_key
@@ -84,10 +86,6 @@ class RetrievalDataset(Dataset):
     def dynamic_sample(self, batch_size: int, missing_list=None, wrong_dict=None, max_wrong: int = 16):
         logger.info('\nDynamic Shuffle Sample...')
 
-        return
-
-    @classmethod
-    def from_local(cls):
         return
 
 
@@ -185,7 +183,3 @@ class RerankDataset(Dataset):
             for neg_text in negative_samples:
                 samples.append([data[self.query_key], neg_text, 0])
         return samples
-
-    @classmethod
-    def from_local(cls):
-        return

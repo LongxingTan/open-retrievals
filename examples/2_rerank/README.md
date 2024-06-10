@@ -32,6 +32,7 @@ torchrun --nproc_per_node 1 \
   --output_dir $OUTPUT_DIR \
   --overwrite_output_dir \
   --model_name_or_path $MODEL_NAME \
+  --model_type cross-encoder \
   --do_train \
   --train_data $TRAIN_DATA \
   --positive_key positive \
@@ -42,7 +43,7 @@ torchrun --nproc_per_node 1 \
   --per_device_train_batch_size 32 \
   --dataloader_drop_last True \
   --max_length 512 \
-  --max_negative_samples 2 \
+  --train_group_size 3 \
   --logging_steps 100
 ```
 

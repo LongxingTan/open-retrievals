@@ -1,4 +1,4 @@
-Text embedding
+Embedding
 ====================
 
 .. _embed:

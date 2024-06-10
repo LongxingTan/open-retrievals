@@ -1,4 +1,4 @@
-Information Retrieval
+Retrieval
 ========================
 
 To enhance the retrieval performance:

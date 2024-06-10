@@ -32,9 +32,13 @@ class BaseRanker(ABC, torch.nn.Module):
     @abstractmethod
     def __init__(
         self,
+        model: Optional[nn.Module] = None,
+        tokenizer: Optional[PreTrainedTokenizer] = None,
         **kwargs,
     ):
         super(BaseRanker, self).__init__()
+        self.model: Optional[nn.Module] = model
+        self.tokenizer = tokenizer
 
     @abstractmethod
     def forward(self, *args, **kwargs):
@@ -45,6 +49,29 @@ class BaseRanker(ABC, torch.nn.Module):
     def encode(self, *args, **kwargs):
         """Encode documents."""
         pass
+
+    def gradient_checkpointing_enable(self, gradient_checkpointing_kwargs=None):
+        self.model.gradient_checkpointing_enable(gradient_checkpointing_kwargs=gradient_checkpointing_kwargs)
+
+    def preprocess(self, batch_sentence_pair, query_max_length, document_max_length):
+        query_list = [item[0] for item in batch_sentence_pair]
+        document_list = [item[1] for item in batch_sentence_pair]
+
+        query_batch_tokens = self.tokenizer(
+            query_list, padding='max_length', truncation=True, max_length=query_max_length, return_tensors='pt'
+        )
+        query_batch_tokens_on_device = {k: v.to(self.device) for k, v in query_batch_tokens.items()}
+        document_batch_tokens = self.tokenizer(
+            document_list, padding='max_length', truncation=True, max_length=document_max_length, return_tensors='pt'
+        )
+        document_batch_tokens_on_device = {k: v.to(self.device) for k, v in document_batch_tokens.items()}
+
+        return {
+            "query_input_ids": query_batch_tokens_on_device['input_ids'],
+            "query_attention_mask": query_batch_tokens_on_device['attention_mask'],
+            "doc_input_ids": document_batch_tokens_on_device['input_ids'],
+            "doc_attention_mask": document_batch_tokens_on_device['attention_mask'],
+        }
 
 
 class AutoModelForRanking(BaseRanker):
@@ -194,26 +221,6 @@ class AutoModelForRanking(BaseRanker):
             loss_type=self.loss_type,
             **kwargs,
         )
-
-    def preprocess(self, batch_sentence_pair, query_max_len, document_max_len):
-        query_list = [item[0] for item in batch_sentence_pair]
-        document_list = [item[1] for item in batch_sentence_pair]
-
-        query_batch_tokens = self.tokenizer(
-            query_list, padding='max_length', truncation=True, max_length=query_max_len, return_tensors='pt'
-        )
-        query_batch_tokens_on_device = {k: v.to(self.device) for k, v in query_batch_tokens.items()}
-        document_batch_tokens = self.tokenizer(
-            document_list, padding='max_length', truncation=True, max_length=document_max_len, return_tensors='pt'
-        )
-        document_batch_tokens_on_device = {k: v.to(self.device) for k, v in document_batch_tokens.items()}
-
-        return {
-            "query_input_ids": query_batch_tokens_on_device['input_ids'],
-            "query_attention_mask": query_batch_tokens_on_device['attention_mask'],
-            "doc_input_ids": document_batch_tokens_on_device['input_ids'],
-            "doc_attention_mask": document_batch_tokens_on_device['attention_mask'],
-        }
 
     @torch.no_grad()
     def compute_score(
@@ -372,11 +379,8 @@ class AutoModelForRanking(BaseRanker):
         self.model.save_pretrained(path, state_dict=state_dict, safe_serialization=safe_serialization)
         self.tokenizer.save_pretrained(path)
 
-    def gradient_checkpointing_enable(self, gradient_checkpointing_kwargs=None):
-        self.model.gradient_checkpointing_enable(gradient_checkpointing_kwargs=gradient_checkpointing_kwargs)
 
-
-class ColBERT(AutoModelForRanking):
+class ColBERT(BaseRanker):
     def __init__(
         self,
         model: Optional[nn.Module] = None,
@@ -414,8 +418,9 @@ class ColBERT(AutoModelForRanking):
         else:
             hidden_state = outputs.hidden_states[1]
 
-        hidden_state = hidden_state * attention_mask.unsqueeze(-1)
-        embeddings = self.linear(hidden_state)
+        embeddings = hidden_state * attention_mask.unsqueeze(-1)
+        if self.linear is not None:
+            embeddings = self.linear(embeddings)
 
         if normalize:
             embeddings = torch.nn.functional.normalize(embeddings, p=2, dim=2)
@@ -441,8 +446,7 @@ class ColBERT(AutoModelForRanking):
             if neg_input_ids is not None:
                 negative_embedding = self.encode(neg_input_ids, neg_attention_mask, normalize=True)
                 negative_scores = self.score(query_embedding, negative_embedding)
-                if negative_scores.ndim == 1:
-                    negative_scores = negative_scores.unsqueeze(-1)
+                negative_scores = negative_scores.unsqueeze(-1)
 
                 scores = torch.cat([scores, negative_scores], dim=-1)
 
@@ -478,10 +482,14 @@ class ColBERT(AutoModelForRanking):
         scores_list: List[float] = []
         for i in tqdm(range(0, len(text_pairs), batch_size), desc="Scoring", disable=not show_progress_bar):
             batch_on_device = self.preprocess(
-                text_pairs[i : i + batch_size], query_max_len=max_length, document_max_len=max_length
+                text_pairs[i : i + batch_size], query_max_length=max_length, document_max_length=max_length
             )
-            query_embedding = self.encode(batch_on_device['query_input_ids'], batch_on_device['query_attention_mask'])
-            doc_embedding = self.encode(batch_on_device['doc_input_ids'], batch_on_device['doc_attention_mask'])
+            query_embedding = self.encode(
+                batch_on_device['query_input_ids'], batch_on_device['query_attention_mask'], normalize=True
+            )
+            doc_embedding = self.encode(
+                batch_on_device['doc_input_ids'], batch_on_device['doc_attention_mask'], normalize=True
+            )
             scores = self.score(query_embedding, doc_embedding)
             if normalize:
                 scores = torch.sigmoid(scores)
@@ -504,11 +512,10 @@ class ColBERT(AutoModelForRanking):
         late_interactions = late_interactions.max(2).values.sum(1)
         return late_interactions
 
-    def save_pretrained(self, save_directory: Union[str, os.PathLike], safe_serialization: bool = False):
-        state_dict_fn = lambda state_dict: type(state_dict)({k: v.clone().cpu() for k, v in state_dict.items()})
+    def save_pretrained(self, save_directory: Union[str, os.PathLike], safe_serialization: bool = True):
         logger.info("Save model to {}".format(save_directory))
+        state_dict_fn = lambda state_dict: type(state_dict)({k: v.clone().cpu() for k, v in state_dict.items()})
         state_dict = self.model.state_dict()
-
         self.model.save_pretrained(
             save_directory, state_dict=state_dict_fn(state_dict), safe_serialization=safe_serialization
         )
@@ -537,12 +544,14 @@ class ColBERT(AutoModelForRanking):
         # model = AutoModelForSequenceClassification(
         #     model_name_or_path, num_labels=colbert_dim, trust_remote_code=trust_remote_code
         # )
-        linear = nn.Linear(model.config.hidden_size, colbert_dim, bias=True)
+        linear_layer = nn.Linear(model.config.hidden_size, colbert_dim, dtype=torch.float32, bias=False)
 
-        if os.path.exists(os.path.join(model_name_or_path, 'colbert_linear.pt')):
+        if os.path.exists(path=os.path.join(model_name_or_path, 'colbert_linear.pt')):
             logger.info(f'Loading colbert_linear weight from {model_name_or_path}')
             colbert_state_dict = torch.load(os.path.join(model_name_or_path, 'colbert_linear.pt'), map_location='cpu')
-            linear.load_state_dict(colbert_state_dict)
+            linear_layer.load_state_dict(colbert_state_dict)
+        else:
+            torch.nn.init.xavier_uniform_(tensor=linear_layer.weight)
 
         if os.path.exists(path=os.path.join(model_name_or_path, "metadata.json")):
             with open(file=os.path.join(model_name_or_path, "metadata.json"), mode="r") as f:
@@ -553,7 +562,7 @@ class ColBERT(AutoModelForRanking):
         ranker = cls(
             model=model,
             tokenizer=tokenizer,
-            linear_layer=linear,
+            linear_layer=linear_layer,
             device=device,
             loss_fn=loss_fn,
             loss_type=loss_type,
@@ -561,9 +570,9 @@ class ColBERT(AutoModelForRanking):
         return ranker
 
 
-class LLMRank(BaseRanker):
-    def __init__(self):
-        pass
+class LLMRanker(BaseRanker):
+    def __init__(self, model, tokenizer):
+        super(LLMRanker, self).__init__()
 
 
 class DocumentSplitter(object):

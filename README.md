@@ -33,6 +33,8 @@
 - Cross-encoder, ColBERT and LLM enhanced Reranking
 - Fast RAG demo integrated with Langchain and LlamaIndex
 
+![structure](./docs/source/_static/structure.png)
+
 
 ## Installation
 

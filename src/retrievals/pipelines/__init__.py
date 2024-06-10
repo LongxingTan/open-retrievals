@@ -1,1 +1,1 @@
-from .rag import KnowledgeCenter, ModelCenter
+from .rag import ChatCenter, KnowledgeCenter

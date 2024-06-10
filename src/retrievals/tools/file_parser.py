@@ -12,6 +12,111 @@ import requests
 logger = logging.getLogger(__name__)
 
 
+def process_pdf_plumber(file_path):
+    import pdfplumber
+
+    with pdfplumber.open(file_path) as pdf:
+        text = ''
+        for i, page in enumerate(pdf.pages):
+            text = page.extract_text()
+            if text:
+                lines = text.split('\n')
+                text_wo_header_footer = '\n'.join(lines[1:-1])
+                text += text_wo_header_footer + '\n\n'
+
+            if page.extract_tables():
+                for table in page.extract_tables():
+                    markdown_table = ''
+                    for i, row in enumerate(table):
+                        row = [cell for cell in row if cell]
+                        processed_row = [str(cell).strip() if cell is not None else '' for cell in row]
+                        markdown_row = '| ' + '| '.join(processed_row) + '|\n'
+                        markdown_table += markdown_row
+                        if i == 0:
+                            sep = [':----' if cell.isdigit() else '----' for cell in row]
+                            markdown_table += '| ' + '| '.join(sep) + '|\n'
+                    text += markdown_table + '\n'
+    return text
+
+
+def process_pdf(file_path):
+    import pypdf
+
+    text = ""
+    with open(file_path, 'rb') as file:
+        reader = pypdf.PdfReader(file)
+        for page in reader.pages:
+            text += page.extract_text()
+    return text
+
+
+def process_pdf2(file_path):
+    import PyPDF2
+
+    text = ""
+    with open(file_path, 'rb') as file:
+        reader = PyPDF2.PdfReader(file)
+        for page in reader.pages:
+            text += page.extract_text().strip()
+    return text
+
+
+def process_url(url):
+    response = requests.get(url)
+    if url.endswith('.pdf'):
+        return process_pdf(io.BytesIO(response.content))
+    elif url.endswith('.txt'):
+        return response.text
+    else:
+        return "Unsupported file format"
+
+
+def process_txt(filename):
+    with open(filename, 'r', encoding='utf-8') as file:
+        return file.read()
+
+
+def process_word(file_path):
+    from docx import Document
+
+    doc = Document(file_path)
+    text = ''
+    for paragraph in doc.paragraphs:
+        text_ = paragraph.text.strip()
+        if text_:
+            text += text_
+            text += '\n'
+    return text
+
+
+def process_excel(filepath: str):
+    if filepath.endswith('.csv'):
+        table = pd.read_csv(filepath)
+    else:
+        table = pd.read_excel(filepath)
+    if table is None:
+        return ''
+    json_text = table.dropna(axis=1).to_json(force_ascii=False)
+    return json_text
+
+
+def process_epub(filepath: str):
+    import ebooklib
+    from bs4 import BeautifulSoup
+
+    book = ebooklib.epub.read_epub(filepath)
+
+    text_content = []
+    for item in book.get_items():
+        if item.get_type() == ebooklib.ITEM_DOCUMENT:
+            text_content.append(item.get_content().decode("utf-8"))
+
+    wt = "\n".join(text_content)
+    sp = BeautifulSoup(wt, "html.parser")
+    text = sp.get_text()
+    return text
+
+
 class FileParser:
     def __init__(self):
         self.image_suffix = ['.jpg', '.jpeg', '.png', '.bmp']
@@ -42,10 +147,10 @@ class FileParser:
                     text = f.read()
 
             elif file_type == 'pdf':
-                text += self.read_pdf(filepath)
+                text += process_pdf(filepath)
 
             elif file_type == 'excel':
-                text += self.read_excel(filepath)
+                text += process_excel(filepath)
 
             elif file_type == 'word' or file_type == 'ppt':
                 import textract
@@ -112,59 +217,3 @@ class FileParser:
                 hash_object.update(chunk)
 
         return hash_object.hexdigest()[0:8]
-
-    def read_pdf(self, filename):
-        with open(filename, 'rb') as file:
-            text = self.extract_text_from_pdf(file)
-        return text
-
-    @staticmethod
-    def read_txt(filename):
-        with open(filename, 'r', encoding='utf-8') as file:
-            return file.read()
-
-    def read_url(self, url):
-        response = requests.get(url)
-        if url.endswith('.pdf'):
-            return self.extract_text_from_pdf(io.BytesIO(response.content))
-        elif url.endswith('.txt'):
-            return response.text
-        else:
-            return "Unsupported file format"
-
-    def read_excel(self, filepath: str):
-        table = None
-        if filepath.endswith('.csv'):
-            table = pd.read_csv(filepath)
-        else:
-            table = pd.read_excel(filepath)
-        if table is None:
-            return ''
-        json_text = table.dropna(axis=1).to_json(force_ascii=False)
-        return json_text
-
-    def read_epub(self, filepath: str):
-        import ebooklib
-        from bs4 import BeautifulSoup
-
-        book = ebooklib.epub.read_epub(filepath)
-
-        text_content = []
-        for item in book.get_items():
-            if item.get_type() == ebooklib.ITEM_DOCUMENT:
-                text_content.append(item.get_content().decode("utf-8"))
-
-        wt = "\n".join(text_content)
-        sp = BeautifulSoup(wt, "html.parser")
-        text = sp.get_text()
-        return text
-
-    @staticmethod
-    def extract_text_from_pdf(file_stream):
-        import pypdf
-
-        text = ""
-        reader = pypdf.PdfReader(file_stream)
-        for page in reader.pages:
-            text += page.extract_text()
-        return text
