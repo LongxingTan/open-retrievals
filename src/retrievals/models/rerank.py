@@ -509,7 +509,7 @@ class ColBERT(BaseRanker):
         late_interactions = late_interactions.max(2).values.sum(1)
         return late_interactions
 
-    def save_pretrained(self, save_directory: Union[str, os.PathLike], safe_serialization: bool = False):
+    def save_pretrained(self, save_directory: Union[str, os.PathLike], safe_serialization: bool = True):
         logger.info("Save model to {}".format(save_directory))
         state_dict_fn = lambda state_dict: type(state_dict)({k: v.clone().cpu() for k, v in state_dict.items()})
         state_dict = self.model.state_dict()

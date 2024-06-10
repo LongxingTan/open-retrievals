@@ -397,7 +397,7 @@ class AutoModelForEmbedding(nn.Module):
 
     def set_train_type(self, train_type: Literal['pointwise', 'pairwise', 'listwise'], **kwargs):
         train_type = train_type.lower().replace('-', '')
-        logger.info(f'Set train type: {train_type}')
+        logger.info(f'Set train type to {train_type}')
         model_class = {'pointwise': self, 'pairwise': PairwiseModel, 'listwise': ListwiseModel}
         model_class = model_class.get(train_type)
 
