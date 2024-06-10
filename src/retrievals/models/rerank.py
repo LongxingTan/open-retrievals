@@ -53,16 +53,16 @@ class BaseRanker(ABC, torch.nn.Module):
     def gradient_checkpointing_enable(self, gradient_checkpointing_kwargs=None):
         self.model.gradient_checkpointing_enable(gradient_checkpointing_kwargs=gradient_checkpointing_kwargs)
 
-    def preprocess(self, batch_sentence_pair, query_max_len, document_max_len):
+    def preprocess(self, batch_sentence_pair, query_max_length, document_max_length):
         query_list = [item[0] for item in batch_sentence_pair]
         document_list = [item[1] for item in batch_sentence_pair]
 
         query_batch_tokens = self.tokenizer(
-            query_list, padding='max_length', truncation=True, max_length=query_max_len, return_tensors='pt'
+            query_list, padding='max_length', truncation=True, max_length=query_max_length, return_tensors='pt'
         )
         query_batch_tokens_on_device = {k: v.to(self.device) for k, v in query_batch_tokens.items()}
         document_batch_tokens = self.tokenizer(
-            document_list, padding='max_length', truncation=True, max_length=document_max_len, return_tensors='pt'
+            document_list, padding='max_length', truncation=True, max_length=document_max_length, return_tensors='pt'
         )
         document_batch_tokens_on_device = {k: v.to(self.device) for k, v in document_batch_tokens.items()}
 
@@ -482,7 +482,7 @@ class ColBERT(BaseRanker):
         scores_list: List[float] = []
         for i in tqdm(range(0, len(text_pairs), batch_size), desc="Scoring", disable=not show_progress_bar):
             batch_on_device = self.preprocess(
-                text_pairs[i : i + batch_size], query_max_len=max_length, document_max_len=max_length
+                text_pairs[i : i + batch_size], query_max_length=max_length, document_max_length=max_length
             )
             query_embedding = self.encode(
                 batch_on_device['query_input_ids'], batch_on_device['query_attention_mask'], normalize=True
