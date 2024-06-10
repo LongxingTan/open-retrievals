@@ -88,10 +88,6 @@ class RetrievalDataset(Dataset):
 
         return
 
-    @classmethod
-    def from_local(cls):
-        return
-
 
 class RerankDataset(Dataset):
     def __init__(
@@ -187,7 +183,3 @@ class RerankDataset(Dataset):
             for neg_text in negative_samples:
                 samples.append([data[self.query_key], neg_text, 0])
         return samples
-
-    @classmethod
-    def from_local(cls):
-        return

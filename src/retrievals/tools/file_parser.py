@@ -90,7 +90,6 @@ def process_word(file_path):
 
 
 def process_excel(filepath: str):
-    table = None
     if filepath.endswith('.csv'):
         table = pd.read_csv(filepath)
     else:
