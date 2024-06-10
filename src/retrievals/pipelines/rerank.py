@@ -126,12 +126,12 @@ def main():
         )
         data_collator = ColBertCollator(
             tokenizer,
-            query_max_length=64,
+            query_max_length=128,
             document_max_length=data_args.max_length,
             positive_key=data_args.positive_key,
             negative_key=data_args.negative_key,
         )
-        model = ColBERT.from_pretrained(model_args.model_name_or_path, colbert_dim=768)
+        model = ColBERT.from_pretrained(model_args.model_name_or_path, colbert_dim=128)
     else:
         train_dataset = RerankDataset(args=data_args, tokenizer=tokenizer)
         data_collator = RerankCollator(tokenizer, max_length=data_args.max_length)

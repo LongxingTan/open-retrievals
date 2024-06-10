@@ -21,7 +21,6 @@ Installation
 Install the **Prerequisites**
 
 * transformers
-* peft
 * faiss-cpu / faiss-gpu
 
 
@@ -31,10 +30,15 @@ Now you are ready, proceed with
 
     $ pip install open-retrievals
 
+To run evaluation
+
+.. code-block:: shell
+
+    $ pip install open-retrievals[eval]
+
 
 Examples
 ------------------
-
 
 
 .. toctree::

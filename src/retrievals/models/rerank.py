@@ -418,8 +418,9 @@ class ColBERT(BaseRanker):
         else:
             hidden_state = outputs.hidden_states[1]
 
-        hidden_state = hidden_state * attention_mask.unsqueeze(-1)
-        embeddings = self.linear(hidden_state)
+        embeddings = hidden_state * attention_mask.unsqueeze(-1)
+        if self.linear is not None:
+            embeddings = self.linear(embeddings)
 
         if normalize:
             embeddings = torch.nn.functional.normalize(embeddings, p=2, dim=2)
@@ -509,10 +510,9 @@ class ColBERT(BaseRanker):
         return late_interactions
 
     def save_pretrained(self, save_directory: Union[str, os.PathLike], safe_serialization: bool = False):
-        state_dict_fn = lambda state_dict: type(state_dict)({k: v.clone().cpu() for k, v in state_dict.items()})
         logger.info("Save model to {}".format(save_directory))
+        state_dict_fn = lambda state_dict: type(state_dict)({k: v.clone().cpu() for k, v in state_dict.items()})
         state_dict = self.model.state_dict()
-
         self.model.save_pretrained(
             save_directory, state_dict=state_dict_fn(state_dict), safe_serialization=safe_serialization
         )
@@ -541,12 +541,14 @@ class ColBERT(BaseRanker):
         # model = AutoModelForSequenceClassification(
         #     model_name_or_path, num_labels=colbert_dim, trust_remote_code=trust_remote_code
         # )
-        linear = nn.Linear(model.config.hidden_size, colbert_dim, bias=True)
+        linear_layer = nn.Linear(model.config.hidden_size, colbert_dim, dtype=torch.float32, bias=False)
 
-        if os.path.exists(os.path.join(model_name_or_path, 'colbert_linear.pt')):
+        if os.path.exists(path=os.path.join(model_name_or_path, 'colbert_linear.pt')):
             logger.info(f'Loading colbert_linear weight from {model_name_or_path}')
             colbert_state_dict = torch.load(os.path.join(model_name_or_path, 'colbert_linear.pt'), map_location='cpu')
-            linear.load_state_dict(colbert_state_dict)
+            linear_layer.load_state_dict(colbert_state_dict)
+        else:
+            torch.nn.init.xavier_uniform_(tensor=linear_layer.weight)
 
         if os.path.exists(path=os.path.join(model_name_or_path, "metadata.json")):
             with open(file=os.path.join(model_name_or_path, "metadata.json"), mode="r") as f:
@@ -557,7 +559,7 @@ class ColBERT(BaseRanker):
         ranker = cls(
             model=model,
             tokenizer=tokenizer,
-            linear_layer=linear,
+            linear_layer=linear_layer,
             device=device,
             loss_fn=loss_fn,
             loss_type=loss_type,
