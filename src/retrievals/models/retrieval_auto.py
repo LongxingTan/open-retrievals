@@ -28,6 +28,12 @@ class BaseRetriever(ABC):
     def search(self, query: str) -> str:
         pass
 
+    def from_documents(self, documents):
+        return
+
+    def save_local(self, save_path):
+        return
+
 
 class AutoModelForRetrieval(object):
     def __init__(

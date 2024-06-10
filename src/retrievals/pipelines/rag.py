@@ -1,5 +1,6 @@
 import logging
 import os
+from multiprocessing import Pool
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Literal, Optional, Tuple, TypeVar, Union
 
@@ -28,10 +29,11 @@ class KnowledgeCenter(object):
         self.loader = loader
         self.splitter = spliter
         self.embedder = embedder
+        self.file_parser = FileParser()
 
     def init_vector_db(self, file_path: str):
         for doc in os.listdir(file_path):
-            logger.info(f'Init knowledge, load file: {doc}')
+            logger.info(f'Init knowledge center to {self.knowledge_path}, load file: {doc}')
             document = self.loader(doc)
             texts = self.splitter.split_documents(document)
             self.embedder.build_index(texts, path=self.knowledge_path)
@@ -39,6 +41,21 @@ class KnowledgeCenter(object):
     def add_document(self, file_path: str):
         doc = self.loader.read(file_path)
         print(doc)
+
+    def _preprocess(self, files: List[str]):
+        pool = Pool(processes=16)
+
+        for idx, file in enumerate(files):
+            if file._type in ['pdf', 'word', 'excel', 'ppt', 'html']:
+                md5 = self.file_parser.md5(file.origin)
+                print(md5)
+                pool.apply_async(self._read_and_save, file)
+        pass
+
+    def _read_and_save(self, file):
+        content, error = self.file_parser.read(file.origin)
+        with open(file.copypath, 'w') as f:
+            f.write(content)
 
 
 class Session(object):
