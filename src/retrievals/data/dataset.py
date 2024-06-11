@@ -31,7 +31,7 @@ class RetrievalDataset(Dataset):
             self.train_group_size = train_group_size
 
         if isinstance(data_name_or_path, datasets.Dataset):
-            self.dataset = data_name_or_path
+            dataset = data_name_or_path
         elif os.path.isdir(data_name_or_path):
             train_datasets = []
             for file in os.listdir(data_name_or_path):
@@ -41,12 +41,12 @@ class RetrievalDataset(Dataset):
                 )
 
                 train_datasets.append(temp_dataset)
-            self.dataset = datasets.concatenate_datasets(train_datasets)
+            dataset = datasets.concatenate_datasets(train_datasets)
         else:
-            self.dataset = datasets.load_dataset("json", data_files=data_name_or_path)
+            dataset = datasets.load_dataset("json", data_files=data_name_or_path)
 
-        if 'train' in self.dataset:
-            self.dataset = self.dataset['train']
+        if 'train' in dataset:
+            dataset = dataset['train']
 
         self.unfold_each_positive = unfold_each_positive
         self.tokenizer = tokenizer
@@ -54,34 +54,60 @@ class RetrievalDataset(Dataset):
         self.query_key = query_key
         self.positive_key = positive_key
         self.negative_key = negative_key
-        logger.info("Loaded {} retrieval data.".format(len(self.dataset)))
+        logger.info("Loaded original {} retrieval data.".format(len(dataset)))
+
+        dataset = self.generate_samples(dataset)
+        self.dataset = dataset
+        logger.info("Transferred to {} retrieval data.".format(len(self.dataset)))
 
     def __len__(self) -> int:
         return len(self.dataset)
 
     def __getitem__(self, item: int) -> Union[Dict[str, str], List[BatchEncoding]]:
-        query = self.dataset[item][self.query_key]
-        if self.args and self.args.query_instruction is not None:
-            query = self.args.query_instruction + query
+        return self.dataset[item]
 
-        if isinstance(self.dataset[item][self.positive_key], (list, tuple)):
-            pos = random.choice(self.dataset[item][self.positive_key])
-        else:
-            pos = self.dataset[item][self.positive_key]
+    def generate_samples(self, dataset):
+        samples: List = []
+        for data in dataset:
+            if self.unfold_each_positive:
+                for pos_text in data[self.positive_key]:
+                    sample = {self.query_key: data[self.query_key], self.positive_key: pos_text}
 
-        sample = {self.query_key: query, self.positive_key: pos}
-        if self.negative_key in self.dataset[item]:
-            if isinstance(self.dataset[item][self.negative_key], (list, tuple)):
-                if len(self.dataset[item][self.negative_key]) < self.train_group_size - 1:
-                    num = math.ceil((self.train_group_size - 1) / len(self.dataset[item][self.negative_key]))
-                    negs = random.sample(self.dataset[item][self.negative_key] * num, self.train_group_size - 1)
-                else:
-                    negs = random.sample(self.dataset[item][self.negative_key], self.train_group_size - 1)
-
+                    if self.negative_key in data:
+                        if isinstance(data[self.negative_key], (list, tuple)):
+                            if len(data[self.negative_key]) < self.train_group_size - 1:
+                                num = math.ceil((self.train_group_size - 1) / len(data[self.negative_key]))
+                                negs = random.sample(data[self.negative_key] * num, self.train_group_size - 1)
+                            else:
+                                negs = random.sample(data[self.negative_key], self.train_group_size - 1)
+                        else:
+                            negs = data[self.negative_key]
+                        sample.update({self.negative_key: negs})
+                    samples.append(sample)
             else:
-                negs = self.dataset[item][self.negative_key][0]
-            sample.update({self.negative_key: negs})
-        return sample
+                query = data[self.query_key]
+                if self.args and self.args.query_instruction is not None:
+                    query = self.args.query_instruction + query
+
+                if isinstance(data[self.positive_key], (list, tuple)):
+                    pos = random.choice(data[self.positive_key])
+                else:
+                    pos = data[self.positive_key]
+
+                sample = {self.query_key: query, self.positive_key: pos}
+                if self.negative_key in data:
+                    if isinstance(data[self.negative_key], (list, tuple)):
+                        if len(data[self.negative_key]) < self.train_group_size - 1:
+                            num = math.ceil((self.train_group_size - 1) / len(data[self.negative_key]))
+                            negs = random.sample(data[self.negative_key] * num, self.train_group_size - 1)
+                        else:
+                            negs = random.sample(data[self.negative_key], self.train_group_size - 1)
+
+                    else:
+                        negs = data[self.negative_key][0]
+                    sample.update({self.negative_key: negs})
+                samples.append(sample)
+        return samples
 
     def dynamic_sample(self, batch_size: int, missing_list=None, wrong_dict=None, max_wrong: int = 16):
         logger.info('\nDynamic Shuffle Sample...')
