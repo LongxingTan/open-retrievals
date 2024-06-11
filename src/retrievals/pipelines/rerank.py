@@ -161,7 +161,7 @@ def main():
             model_args.model_name_or_path, num_labels=1, loss_fn=nn.BCEWithLogitsLoss(reduction='mean')
         )
 
-    logger.info(f"Total examples for training: {len(train_dataset)}")
+    logger.info(f"Total training examples: {len(train_dataset)}")
     optimizer = get_optimizer(model, learning_rate=training_args.learning_rate)
 
     num_train_steps = int(

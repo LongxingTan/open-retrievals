@@ -146,6 +146,7 @@ def main():
     train_dataset = RetrievalDataset(
         args=data_args, tokenizer=tokenizer, positive_key=data_args.positive_key, negative_key=data_args.negative_key
     )
+    logger.info(f"Total training examples: {len(train_dataset)}")
 
     trainer = RetrievalTrainer(
         model=model,
