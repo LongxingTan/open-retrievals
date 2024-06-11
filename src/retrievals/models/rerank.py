@@ -22,6 +22,7 @@ from transformers.modeling_outputs import (
 )
 
 from ..data.collator import RerankCollator
+from ..losses.colbert_loss import ColbertLoss
 from .pooling import AutoPooling
 from .utils import check_casual_lm, get_device_name
 
@@ -442,16 +443,11 @@ class ColBERT(BaseRanker):
         scores = self.score(query_embedding, positive_embedding)
 
         if self.training:
+            negative_embedding = None
             if neg_input_ids is not None:
                 negative_embedding = self.encode(neg_input_ids, neg_attention_mask, normalize=True)
-                negative_scores = self.score(query_embedding, negative_embedding)
-                scores = torch.cat([scores, negative_scores], dim=-1)
 
-            if self.temperature is not None:
-                scores = scores / self.temperature
-
-            labels = torch.zeros(scores.shape[0], dtype=torch.long, device=scores.device)
-            loss = self.loss_fn(scores, labels)
+            loss = self.loss_fn(query_embedding, positive_embedding, negative_embedding)
 
             if return_dict:
                 outputs_dict = dict()
@@ -496,24 +492,17 @@ class ColBERT(BaseRanker):
             return scores_list[0]
         return scores_list
 
-    def score(self, query_embeddings: torch.Tensor, document_embeddings: torch.Tensor, in_batch_negative: bool = False):
-        if query_embeddings.size(0) != document_embeddings.size(0) and in_batch_negative:
-            late_interactions = torch.einsum(
-                "bsh,cdh->bcsd",
-                query_embeddings,
-                document_embeddings,
-            )
-        else:
-            document_embeddings = document_embeddings.view(
-                query_embeddings.size(0), -1, document_embeddings.size(1), document_embeddings.size(2)
-            )
-
-            late_interactions = torch.einsum(
-                "bsh,bdth->bdst",
-                query_embeddings,
-                document_embeddings,
-            )
-        late_interactions = late_interactions.max(-1).values.sum(-1)
+    def score(
+        self,
+        query_embeddings: torch.Tensor,
+        document_embeddings: torch.Tensor,
+    ):
+        late_interactions = torch.einsum(
+            "bsh,bth->bst",
+            query_embeddings,
+            document_embeddings,
+        )
+        late_interactions = late_interactions.max(2).values.sum(1)
         return late_interactions
 
     def save_pretrained(self, save_directory: Union[str, os.PathLike], safe_serialization: bool = True):
@@ -533,7 +522,7 @@ class ColBERT(BaseRanker):
         causal_lm: bool = False,
         trust_remote_code: bool = True,
         colbert_dim: int = 768,
-        loss_fn: Union[nn.Module, Callable] = nn.CrossEntropyLoss(reduction='mean'),
+        loss_fn: Union[nn.Module, Callable] = ColbertLoss(),
         loss_type: Literal['classification', 'regression'] = 'classification',
         device: Optional[str] = None,
         **kwargs,

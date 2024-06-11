@@ -17,6 +17,7 @@ from transformers import (
 )
 
 from ..data import ColBertCollator, RerankCollator, RerankDataset, RetrievalDataset
+from ..losses import ColbertLoss
 from ..models.rerank import AutoModelForRanking, ColBERT
 from ..trainer import RerankTrainer
 
@@ -72,6 +73,7 @@ class DataArguments:
 class RerankerTrainingArguments(TrainingArguments):
     model_type: str = field(default='cross-encoder', metadata={'help': "train type of cross-encoder, colbert"})
     negatives_cross_device: bool = field(default=False, metadata={"help": "share negatives across devices"})
+    use_inbatch_negative: bool = field(default=False)
     temperature: Optional[float] = field(default=0.02)
     remove_unused_columns: bool = field(default=False)
     num_train_epochs: int = field(default=3)
@@ -152,7 +154,11 @@ def main():
             positive_key=data_args.positive_key,
             negative_key=data_args.negative_key,
         )
-        model = ColBERT.from_pretrained(model_args.model_name_or_path, colbert_dim=128)
+        model = ColBERT.from_pretrained(
+            model_args.model_name_or_path,
+            colbert_dim=128,
+            loss_fn=ColbertLoss(use_inbatch_negative=training_args.use_inbatch_negative),
+        )
     else:
         logger.info('Set model to CrossEncoder')
         train_dataset = RerankDataset(args=data_args, tokenizer=tokenizer)
