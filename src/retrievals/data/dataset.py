@@ -54,7 +54,7 @@ class RetrievalDataset(Dataset):
         self.query_key = query_key
         self.positive_key = positive_key
         self.negative_key = negative_key
-        logger.info("Loaded original {} retrieval data.".format(len(dataset)))
+        logger.info("Load original {} retrieval data.".format(len(dataset)))
 
         dataset = self.generate_samples(dataset)
         self.dataset = dataset
@@ -167,7 +167,7 @@ class RerankDataset(Dataset):
         if 'train' in dataset:
             dataset = dataset['train']
 
-        logger.info("Loaded original {} rerank data.".format(len(dataset)))
+        logger.info("Load original {} rerank data.".format(len(dataset)))
         if positive_key:
             dataset = self.generate_samples(dataset)
 

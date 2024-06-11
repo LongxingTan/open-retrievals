@@ -122,6 +122,7 @@ def main():
         train_dataset = RetrievalDataset(
             args=data_args,
             tokenizer=tokenizer,
+            unfold_each_positive=data_args.unfold_each_positive,
             positive_key=data_args.positive_key,
             negative_key=data_args.negative_key,
         )
