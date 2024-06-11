@@ -225,6 +225,11 @@ class ColBertCollator(DataCollatorWithPadding):
         query_texts = [feature[self.query_key] for feature in features]
         pos_texts = [feature[self.positive_key] for feature in features]
 
+        if isinstance(query_texts[0], list):
+            query_texts = sum(query_texts, [])
+        if isinstance(pos_texts[0], list):
+            pos_texts = sum(pos_texts, [])
+
         if isinstance(query_texts[0], str):
             tokenize_fn = self.tokenizer
             tokenize_args = {
@@ -252,6 +257,7 @@ class ColBertCollator(DataCollatorWithPadding):
 
         if self.negative_key in features[0]:
             neg_texts = [feature[self.negative_key] for feature in features]
+
             if isinstance(neg_texts[0], list):
                 neg_texts = sum(neg_texts, [])  # flatten nested list
 
@@ -264,7 +270,4 @@ class ColBertCollator(DataCollatorWithPadding):
             )
             batch.update({'neg_input_ids': neg_inputs['input_ids'], 'neg_attention_mask': neg_inputs['attention_mask']})
 
-        # if 'labels' in features[0].keys():
-        #     labels = [feature['labels'] for feature in features]
-        #     batch['labels'] = torch.tensor(labels, dtype=torch.float32)
         return batch

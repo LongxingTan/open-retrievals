@@ -442,12 +442,9 @@ class ColBERT(BaseRanker):
         scores = self.score(query_embedding, positive_embedding)
 
         if self.training:
-            scores = scores.unsqueeze(-1)
             if neg_input_ids is not None:
                 negative_embedding = self.encode(neg_input_ids, neg_attention_mask, normalize=True)
                 negative_scores = self.score(query_embedding, negative_embedding)
-                negative_scores = negative_scores.unsqueeze(-1)
-
                 scores = torch.cat([scores, negative_scores], dim=-1)
 
             if self.temperature is not None:
@@ -504,12 +501,16 @@ class ColBERT(BaseRanker):
         query_embeddings: torch.Tensor,
         document_embeddings: torch.Tensor,
     ):
+        document_embeddings = document_embeddings.view(
+            query_embeddings.size(0), -1, query_embeddings.size(1), query_embeddings.size(2)
+        )
+
         late_interactions = torch.einsum(
-            "bsh,bth->bst",
+            "bsh,bath->bast",
             query_embeddings,
             document_embeddings,
         )
-        late_interactions = late_interactions.max(2).values.sum(1)
+        late_interactions = late_interactions.max(-1).values.sum(-1)
         return late_interactions
 
     def save_pretrained(self, save_directory: Union[str, os.PathLike], safe_serialization: bool = True):
