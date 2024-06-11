@@ -497,7 +497,6 @@ class ColBERT(BaseRanker):
         return scores_list
 
     def score(self, query_embeddings: torch.Tensor, document_embeddings: torch.Tensor, in_batch_negative: bool = False):
-        query_embeddings = query_embeddings.unsqueeze(1)
         if query_embeddings.size(0) != document_embeddings.size(0) and in_batch_negative:
             late_interactions = torch.einsum(
                 "bsh,cdh->bcsd",
