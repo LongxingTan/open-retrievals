@@ -196,7 +196,7 @@ tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, use_fast=False)
 model = AutoModelForEmbedding.from_pretrained(model_name_or_path, pooling_method="cls")
 # model = model.set_train_type('pointwise')  # 'pointwise', 'pairwise', 'listwise'
 optimizer = AdamW(model.parameters(), lr=5e-5)
-num_train_steps=int(len(train_dataset) / batch_size * epochs)
+num_train_steps = int(len(train_dataset) / batch_size * epochs)
 scheduler = get_linear_schedule_with_warmup(optimizer, num_warmup_steps=0.05 * num_train_steps, num_training_steps=num_train_steps)
 
 training_arguments = TrainingArguments(

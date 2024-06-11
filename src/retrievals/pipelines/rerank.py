@@ -7,10 +7,12 @@ from typing import Optional
 import transformers
 from torch import nn
 from transformers import (
+    AdamW,
     AutoConfig,
     AutoTokenizer,
     HfArgumentParser,
     TrainingArguments,
+    get_linear_schedule_with_warmup,
     set_seed,
 )
 
@@ -72,6 +74,23 @@ class RerankerTrainingArguments(TrainingArguments):
     negatives_cross_device: bool = field(default=False, metadata={"help": "share negatives across devices"})
     temperature: Optional[float] = field(default=0.02)
     remove_unused_columns: bool = field(default=False)
+    num_train_epochs: int = field(default=3)
+
+
+def get_optimizer(model, learning_rate, weight_decay=0.0):
+    optimizer_parameters = [
+        {
+            "params": [p for n, p in model.model.named_parameters()],
+            "lr": learning_rate,
+            "weight_decay": weight_decay,
+        },
+        {
+            "params": [p for n, p in model.named_parameters() if "model" not in n],
+            "lr": learning_rate * 20,
+            "weight_decay": 0.0,
+        },
+    ]
+    return AdamW(optimizer_parameters)
 
 
 def main():
@@ -143,6 +162,15 @@ def main():
         )
 
     logger.info(f"Total examples for training: {len(train_dataset)}")
+    optimizer = get_optimizer(model, learning_rate=training_args.learning_rate)
+
+    num_train_steps = int(
+        len(train_dataset) / training_args.per_device_train_batch_size * training_args.num_train_epochs
+    )
+    scheduler = get_linear_schedule_with_warmup(
+        optimizer, num_warmup_steps=0.05 * num_train_steps, num_training_steps=num_train_steps
+    )
+
     trainer = RerankTrainer(
         model=model,
         args=training_args,
@@ -150,6 +178,8 @@ def main():
         data_collator=data_collator,
         tokenizer=tokenizer,
     )
+    trainer.optimizer = optimizer
+    trainer.scheduler = scheduler
 
     Path(training_args.output_dir).mkdir(parents=True, exist_ok=True)
 

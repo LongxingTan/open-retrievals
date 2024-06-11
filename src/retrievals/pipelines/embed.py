@@ -6,6 +6,7 @@ from typing import Optional
 
 from torch import nn
 from transformers import (
+    AdamW,
     AutoConfig,
     AutoTokenizer,
     HfArgumentParser,
