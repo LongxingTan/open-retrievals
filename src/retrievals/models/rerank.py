@@ -450,8 +450,8 @@ class ColBERT(BaseRanker):
 
                 scores = torch.cat([scores, negative_scores], dim=-1)
 
-            # if self.temperature is not None:
-            #     scores = scores / self.temperature
+            if self.temperature is not None:
+                scores = scores / self.temperature
 
             labels = torch.zeros(scores.shape[0], dtype=torch.long, device=scores.device)
             loss = self.loss_fn(scores, labels)

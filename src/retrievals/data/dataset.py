@@ -58,7 +58,7 @@ class RetrievalDataset(Dataset):
 
         dataset = self.generate_samples(dataset)
         self.dataset = dataset
-        logger.info("Transferred to {} retrieval data.".format(len(self.dataset)))
+        logger.info("Generate total {} retrieval data.".format(len(self.dataset)))
 
     def __len__(self) -> int:
         return len(self.dataset)
@@ -167,11 +167,12 @@ class RerankDataset(Dataset):
         if 'train' in dataset:
             dataset = dataset['train']
 
+        logger.info("Loaded original {} rerank data.".format(len(dataset)))
         if positive_key:
             dataset = self.generate_samples(dataset)
 
         self.dataset = dataset
-        logger.info("Loaded {} rerank data.".format(len(self.dataset)))
+        logger.info("Generate total {} rerank data.".format(len(self.dataset)))
 
     def __len__(self):
         return len(self.dataset)
