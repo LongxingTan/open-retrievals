@@ -1,5 +1,5 @@
 # Copyright (c) Longxing Tan.
-VERSION = (0, 0, 5)
+VERSION = (0, 0, 6)
 
 __version__ = ".".join(map(str, VERSION))
 short_version = __version__

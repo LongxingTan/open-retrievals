@@ -71,9 +71,15 @@ def process_url(url):
         return "Unsupported file format"
 
 
-def process_txt(filename):
-    with open(filename, 'r', encoding='utf-8') as file:
-        return file.read()
+def process_txt(file_path, text_splitter):
+    with open(file_path, 'r', encoding='utf-8') as file:
+        text = file.read()
+    chunks = text_splitter.create_documents([text])
+    documents = []
+    for chunk in chunks:
+        chunk.metadata = {'source': file_path, 'read': file_path}
+        documents.append(chunk)
+    return documents
 
 
 def process_word(file_path):
@@ -89,22 +95,52 @@ def process_word(file_path):
     return text
 
 
-def process_excel(filepath: str):
-    if filepath.endswith('.csv'):
-        table = pd.read_csv(filepath)
+def process_excel(file_path: str):
+    if file_path.endswith('.csv'):
+        table = pd.read_csv(file_path)
     else:
-        table = pd.read_excel(filepath)
+        table = pd.read_excel(file_path)
     if table is None:
         return ''
     json_text = table.dropna(axis=1).to_json(force_ascii=False)
     return json_text
 
 
-def process_epub(filepath: str):
+def process_markdown(file_path: str, head_splitter, md_splitter, text_splitter):
+    text = ''
+    with open(file_path, encoding='utf8') as f:
+        text = f.read()
+
+    docs = head_splitter.split_text(text)
+    final = []
+    for doc in docs:
+        header = ''
+        if len(doc.metadata) > 0:
+            if 'Header 1' in doc.metadata:
+                header += doc.metadata['Header 1']
+            if 'Header 2' in doc.metadata:
+                header += ' '
+                header += doc.metadata['Header 2']
+            if 'Header 3' in doc.metadata:
+                header += ' '
+                header += doc.metadata['Header 3']
+
+        if len(doc.page_content) >= 1024:
+            subdocs = md_splitter.create_documents([doc.page_content])
+            for subdoc in subdocs:
+                if len(subdoc.page_content) >= 10:
+                    final.append('{} {}'.format(header, subdoc.page_content.lower()))
+        elif len(doc.page_content) >= 10:
+            final.append('{} {}'.format(header, doc.page_content.lower()))  # noqa E501
+
+        return final
+
+
+def process_epub(file_path: str):
     import ebooklib
     from bs4 import BeautifulSoup
 
-    book = ebooklib.epub.read_epub(filepath)
+    book = ebooklib.epub.read_epub(file_path)
 
     text_content = []
     for item in book.get_items():
@@ -137,37 +173,37 @@ class FileParser:
             + self.html_suffix
         )
 
-    def read(self, filepath: str, to_document: bool = False):
-        file_type = self.get_type(filepath)
+    def read(self, file_path: str, to_document: bool = False):
+        file_type = self.get_type(file_path)
         text = ''
 
         try:
             if file_type == 'md' or file_type == 'text':
-                with open(filepath) as f:
+                with open(file_path) as f:
                     text = f.read()
 
             elif file_type == 'pdf':
-                text += process_pdf(filepath)
+                text += process_pdf(file_path)
 
             elif file_type == 'excel':
-                text += process_excel(filepath)
+                text += process_excel(file_path)
 
             elif file_type == 'word' or file_type == 'ppt':
                 import textract
 
-                text = textract.process(filepath).decode('utf8')
+                text = textract.process(file_path).decode('utf8')
                 if file_type == 'ppt':
                     text = text.replace('\n', ' ')
 
             elif file_type == 'html':
                 from bs4 import BeautifulSoup
 
-                with open(filepath) as f:
+                with open(file_path) as f:
                     soup = BeautifulSoup(f.read(), 'html.parser')
                     text += soup.text
 
         except Exception as e:
-            logger.error((filepath, str(e)))
+            logger.error((file_path, str(e)))
             return '', e
 
         text = text.replace('\n\n\n', '\n')
@@ -175,43 +211,43 @@ class FileParser:
         text = text.replace('  ', ' ')
         return text, None
 
-    def get_type(self, filepath: str):
+    def get_type(self, file_path: str):
         for suffix in self.pdf_suffix:
-            if filepath.endswith(suffix):
+            if file_path.endswith(suffix):
                 return 'pdf'
 
         for suffix in self.md_suffix:
-            if filepath.endswith(suffix):
+            if file_path.endswith(suffix):
                 return 'md'
 
         for suffix in self.ppt_suffix:
-            if filepath.endswith(suffix):
+            if file_path.endswith(suffix):
                 return 'ppt'
 
         for suffix in self.image_suffix:
-            if filepath.endswith(suffix):
+            if file_path.endswith(suffix):
                 return 'image'
 
         for suffix in self.text_suffix:
-            if filepath.endswith(suffix):
+            if file_path.endswith(suffix):
                 return 'text'
 
         for suffix in self.word_suffix:
-            if filepath.endswith(suffix):
+            if file_path.endswith(suffix):
                 return 'word'
 
         for suffix in self.excel_suffix:
-            if filepath.endswith(suffix):
+            if file_path.endswith(suffix):
                 return 'excel'
 
         for suffix in self.html_suffix:
-            if filepath.endswith(suffix):
+            if file_path.endswith(suffix):
                 return 'html'
         return None
 
-    def md5(self, filepath: str):
+    def md5(self, file_path: str):
         hash_object = hashlib.sha256()
-        with open(filepath, 'rb') as file:
+        with open(file_path, 'rb') as file:
             chunk_size = 8192
             while chunk := file.read(chunk_size):
                 hash_object.update(chunk)
