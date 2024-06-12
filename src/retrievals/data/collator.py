@@ -120,6 +120,8 @@ class TripletCollator(DataCollatorWithPadding):
             tokenize_fn = self.tokenizer
             tokenize_args = {
                 "truncation": True,
+                "return_token_type_ids": False,
+                "add_special_tokens": True,
             }
         else:
             tokenize_fn = self.tokenizer.pad
