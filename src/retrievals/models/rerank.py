@@ -12,6 +12,7 @@ from tqdm.auto import tqdm
 from transformers import (
     AutoConfig,
     AutoModel,
+    AutoModelForCausalLM,
     AutoModelForSequenceClassification,
     AutoTokenizer,
     PreTrainedTokenizer,
@@ -344,9 +345,12 @@ class AutoModelForRanking(BaseRanker):
             model_name_or_path, return_tensors=False, trust_remote_code=trust_remote_code
         )
 
-        model = AutoModelForSequenceClassification.from_pretrained(
-            model_name_or_path, num_labels=num_labels, trust_remote_code=trust_remote_code, **kwargs
-        )
+        if causal_lm or check_casual_lm(model_name_or_path):
+            model = AutoModelForCausalLM.from_pretrained(model_name_or_path, trust_remote_code=trust_remote_code)
+        else:
+            model = AutoModelForSequenceClassification.from_pretrained(
+                model_name_or_path, num_labels=num_labels, trust_remote_code=trust_remote_code, **kwargs
+            )
 
         if use_fp16:
             model.half()
