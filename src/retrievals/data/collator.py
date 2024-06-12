@@ -10,6 +10,7 @@ class PairCollator(DataCollatorWithPadding):
         tokenizer: PreTrainedTokenizer,
         query_max_length: int = 32,
         document_max_length: int = 128,
+        append_eos_token: bool = False,
         query_key: str = 'query',
         document_key: str = 'positive',
     ) -> None:
@@ -74,6 +75,7 @@ class TripletCollator(DataCollatorWithPadding):
         tokenizer: PreTrainedTokenizer,
         query_max_length: int = 32,
         document_max_length: int = 128,
+        append_eos_token: bool = False,
         query_key: str = 'query',
         positive_key: str = 'positive',
         negative_key: Optional[str] = 'negative',
@@ -147,6 +149,7 @@ class RerankCollator(DataCollatorWithPadding):
         self,
         tokenizer: PreTrainedTokenizer,
         max_length: int = 128,
+        append_eos_token: bool = False,
         query_key: str = 'query',
         document_key: str = 'document',
     ):
