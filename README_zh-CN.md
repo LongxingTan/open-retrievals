@@ -59,7 +59,7 @@ python -m pip install -U git+https://github.com/LongxingTan/open-retrievals.git
 
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1-WBMisdWLeHUKlzJ2DrREXY_kSV8vjP3?usp=sharing)
 
-**使用预训练权重的文本向量**
+**向量：使用预训练权重**
 ```python
 from retrievals import AutoModelForEmbedding
 
@@ -77,7 +77,7 @@ scores = (embeddings[:2] @ embeddings[2:].T) * 100
 print(scores.tolist())
 ```
 
-**使用Faiss向量数据库检索**
+**检索：使用Faiss向量数据库**
 ```python
 from retrievals import AutoModelForEmbedding, AutoModelForRetrieval
 
@@ -93,7 +93,7 @@ dists, indices = matcher.similarity_search(query_embed, index_path=index_path)
 print(indices)
 ```
 
-**重排**
+**重排：使用预训练权重**
 ```python
 from retrievals import AutoModelForRanking
 
@@ -106,7 +106,7 @@ scores_list = rerank_model.compute_score(
 print(scores_list)
 ```
 
-**搭配Langchain构建RAG应用**
+**RAG：搭配Langchain**
 
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1fJC-8er-a4NRkdJkwWr4On7lGt9rAO4P?usp=sharing)
 
@@ -178,13 +178,16 @@ print(response)
 ```
 
 
-**微调文本向量模型**
+**向量模型微调**
 
-- Model performance fine-tuned in [T2Ranking](https://huggingface.co/datasets/THUIR/T2Ranking)
+[//]: # (- Model performance fine-tuned in [T2Ranking]&#40;https://huggingface.co/datasets/THUIR/T2Ranking&#41;)
 
-| Model | Size | AP<sup>val</sup> | AP<sub>50</sub><sup>val</sup> | AP<sub>75</sub><sup>val</sup> |
-| :-- | :-: | :-: | :-: | :-: |
-| TripletLoss | 672 | 47.7% |52.6% | 61.4% |
+[//]: # ()
+[//]: # (| Model | Size | AP<sup>val</sup> | AP<sub>50</sub><sup>val</sup> | AP<sub>75</sub><sup>val</sup> |)
+
+[//]: # (| :-- | :-: | :-: | :-: | :-: |)
+
+[//]: # (| TripletLoss | 672 | 47.7% |52.6% | 61.4% |)
 
 
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/17KXe2lnNRID-HiVvMtzQnONiO74oGs91?usp=sharing)
@@ -227,7 +230,7 @@ trainer.scheduler = scheduler
 trainer.train()
 ```
 
-- 一键训练
+- shell训练
 
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1w2dRoRThG6DnUW46swqEUuWySKS1AXCp?usp=sharing)
 
@@ -254,7 +257,7 @@ torchrun --nproc_per_node 1 \
 ```
 
 
-**微调重排模型**
+**重排模型微调**
 
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1QvbUkZtG56SXomGYidwI4RQzwODQrWNm?usp=sharing)
 
