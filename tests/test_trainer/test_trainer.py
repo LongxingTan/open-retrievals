@@ -13,7 +13,6 @@ from transformers import AutoTokenizer, HfArgumentParser
 
 from src.retrievals import AutoModelForEmbedding, TripletCollator
 from src.retrievals.losses import TripletLoss
-from src.retrievals.trainer.custom_trainer import CustomTrainer
 from src.retrievals.trainer.trainer import RerankTrainer, RetrievalTrainer
 
 

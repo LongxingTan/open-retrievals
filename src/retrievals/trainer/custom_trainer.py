@@ -50,7 +50,7 @@ def train_fn(
         if isinstance(inputs, (list, tuple)) and len(inputs) == 2:
             inputs, labels = inputs
         elif isinstance(inputs, dict):
-            assert data_collator is not None, "if labels are in inputs keys, can't set data_collator to None"
+            # assert data_collator is not None, "if labels are in inputs keys, can't set data_collator to None"
             labels = inputs['labels']
             inputs.pop('labels', None)
 
@@ -73,7 +73,7 @@ def train_fn(
         with torch.cuda.amp.autocast(enabled=apex):
             if criterion is None:
                 try:
-                    preds = model(inputs=inputs, labels=labels)
+                    preds = model(inputs, labels=labels)
                 except ValueError:
                     preds = model(**inputs, labels=labels)
             else:

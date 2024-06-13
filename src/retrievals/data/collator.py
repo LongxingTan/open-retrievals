@@ -1,3 +1,4 @@
+import random
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 import torch
@@ -276,3 +277,14 @@ class ColBertCollator(DataCollatorWithPadding):
             batch.update({'neg_input_ids': neg_inputs['input_ids'], 'neg_attention_mask': neg_inputs['attention_mask']})
 
         return batch
+
+
+def mask_pad_token(q: Dict[str, torch.Tensor], prob=0.9):
+    if random.random() > prob:
+        tensor = q['input_ids'].float()
+        mask = torch.rand(tensor.shape)
+        mask = (mask > prob).float()
+        tensor = tensor * (1 - mask) + 2 * mask
+        tensor = tensor.long()
+        q['input_ids'] = tensor
+    return q
