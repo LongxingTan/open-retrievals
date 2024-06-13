@@ -442,7 +442,7 @@ class AutoModelForEmbedding(nn.Module):
         causal_lm: bool = False,
         custom_config_dict: Optional[Dict] = None,
         fp16: bool = False,
-        use_lora: bool = False,
+        lora_name_or_path: Optional[str] = None,
         lora_config=None,
         device: Optional[str] = None,
         query_instruction: Optional[str] = None,
@@ -483,12 +483,9 @@ class AutoModelForEmbedding(nn.Module):
         if fp16:
             model.half()
 
-        if use_lora:
-            # peft config and wrapping
+        if lora_config is not None:
             from peft import LoraConfig, TaskType, get_peft_model
 
-            if not lora_config:
-                raise ValueError("If use_lora is true, please provide a valid lora_config")
             model = get_peft_model(model, lora_config)
             model.print_trainable_parameters()
 
