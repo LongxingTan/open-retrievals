@@ -163,7 +163,7 @@ class AWP:
         self.backup_eps = dict()
         self.scaler = scaler
 
-    def attack_backward(self, inputs, criterion, labels, epoch):
+    def attack_backward(self, inputs, criterion, labels, epoch: int):
         if self.adv_lr == 0 or epoch < self.start_epoch:
             return None
 
