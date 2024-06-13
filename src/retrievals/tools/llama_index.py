@@ -10,6 +10,7 @@ from llama_index.utils import infer_torch_device
 
 from ..models.embedding_auto import AutoModelForEmbedding
 from ..models.rerank import AutoModelForRanking
+from .generator import BaseLLM
 
 
 class LlamaIndexEmbedding(AutoModelForEmbedding, BaseEmbedding):
@@ -99,6 +100,9 @@ class LlamaIndexReranker(BaseNodePostprocessor):
         return new_nodes
 
 
-class LlamaIndexLLM:
+class LlamaIndexLLM(BaseLLM):
     def __init__(self):
         pass
+
+    def generate(self, prompt: str) -> str:
+        return

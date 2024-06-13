@@ -1,5 +1,4 @@
 """
-TODO:
 - support bm25 retrieval
 - dense retrieval
 - web retrieval
@@ -25,14 +24,9 @@ logger = logging.getLogger(__name__)
 
 class BaseRetriever(ABC):
     @abstractmethod
-    def search(self, query: str) -> str:
-        pass
-
-    def from_documents(self, documents):
-        return
-
-    def save_local(self, save_path):
-        return
+    def search(self, query: str, top_k: int) -> str:
+        """search the str, return the top list maybe with score"""
+        raise NotImplementedError
 
 
 class AutoModelForRetrieval(object):
@@ -194,15 +188,6 @@ class AutoModelForRetrieval(object):
         return pd.DataFrame(samples)
 
 
-class EnsembleRetriever(object):
-    """
-    RRF_fusion
-    """
-
-    def __init__(self, retrievers, weights=None):
-        pass
-
-
 def cosine_similarity_search(
     query_embed: torch.Tensor,
     document_embed: torch.Tensor,
@@ -316,7 +301,7 @@ class BM25Searcher(BaseRetriever):
         self.chunk_size = chunk_size
         self.chunk_overlap = chunk_overlap
 
-    def search(self, query: str, top_k: int) -> str:
+    def search(self, query: str, top_k: int) -> List[str]:
         from rank_bm25 import BM250kapi
 
         if self.splitter:
@@ -328,3 +313,22 @@ class BM25Searcher(BaseRetriever):
         scores = bm25.get_scores(query)
         sorted_docs = sorted(zip(documents, scores), key=lambda x: x[1], reverse=True)[:top_k]
         return sorted_docs
+
+
+class EnsembleRetriever(BaseRetriever):
+    """
+    RRF_fusion
+    """
+
+    def __init__(self, retrievers: List[BaseRetriever], weights=None):
+        self.retrievers = retrievers
+
+    def search(self, query: str, top_k: int = 10) -> List[str]:
+        combined_results = []
+        for retriever in self.retrievers:
+            combined_results.extend(retriever.search(query, top_k))
+
+        unique_results = list(set(combined_results))
+        unique_results.sort()
+
+        return unique_results[:top_k]

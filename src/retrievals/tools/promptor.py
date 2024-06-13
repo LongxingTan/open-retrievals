@@ -42,9 +42,3 @@ class Prompt(object):
 
     def get_response(self, output: str) -> str:
         return output.split(self.template["response_split"])[1].strip()
-
-
-class Retrieval:
-    # retrieval prompt
-    generate_cn = "生成检索数据"
-    generate_en = "Generate data"

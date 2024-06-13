@@ -12,6 +12,7 @@ from tqdm.auto import tqdm
 from transformers import (
     AutoConfig,
     AutoModel,
+    AutoModelForCausalLM,
     AutoModelForSequenceClassification,
     AutoTokenizer,
     PreTrainedTokenizer,
@@ -22,6 +23,7 @@ from transformers.modeling_outputs import (
 )
 
 from ..data.collator import RerankCollator
+from ..losses.colbert_loss import ColbertLoss
 from .pooling import AutoPooling
 from .utils import check_casual_lm, get_device_name
 
@@ -43,12 +45,12 @@ class BaseRanker(ABC, torch.nn.Module):
     @abstractmethod
     def forward(self, *args, **kwargs):
         """Pytorch forward method."""
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     def encode(self, *args, **kwargs):
         """Encode documents."""
-        pass
+        raise NotImplementedError
 
     def gradient_checkpointing_enable(self, gradient_checkpointing_kwargs=None):
         self.model.gradient_checkpointing_enable(gradient_checkpointing_kwargs=gradient_checkpointing_kwargs)
@@ -343,9 +345,12 @@ class AutoModelForRanking(BaseRanker):
             model_name_or_path, return_tensors=False, trust_remote_code=trust_remote_code
         )
 
-        model = AutoModelForSequenceClassification.from_pretrained(
-            model_name_or_path, num_labels=num_labels, trust_remote_code=trust_remote_code, **kwargs
-        )
+        if causal_lm or check_casual_lm(model_name_or_path):
+            model = AutoModelForCausalLM.from_pretrained(model_name_or_path, trust_remote_code=trust_remote_code)
+        else:
+            model = AutoModelForSequenceClassification.from_pretrained(
+                model_name_or_path, num_labels=num_labels, trust_remote_code=trust_remote_code, **kwargs
+            )
 
         if use_fp16:
             model.half()
@@ -442,19 +447,11 @@ class ColBERT(BaseRanker):
         scores = self.score(query_embedding, positive_embedding)
 
         if self.training:
-            scores = scores.unsqueeze(-1)
+            negative_embedding = None
             if neg_input_ids is not None:
                 negative_embedding = self.encode(neg_input_ids, neg_attention_mask, normalize=True)
-                negative_scores = self.score(query_embedding, negative_embedding)
-                negative_scores = negative_scores.unsqueeze(-1)
 
-                scores = torch.cat([scores, negative_scores], dim=-1)
-
-            # if self.temperature is not None:
-            #     scores = scores / self.temperature
-
-            labels = torch.zeros(scores.shape[0], dtype=torch.long, device=scores.device)
-            loss = self.loss_fn(scores, labels)
+            loss = self.loss_fn(query_embedding, positive_embedding, negative_embedding)
 
             if return_dict:
                 outputs_dict = dict()
@@ -529,7 +526,7 @@ class ColBERT(BaseRanker):
         causal_lm: bool = False,
         trust_remote_code: bool = True,
         colbert_dim: int = 768,
-        loss_fn: Union[nn.Module, Callable] = nn.CrossEntropyLoss(reduction='mean'),
+        loss_fn: Union[nn.Module, Callable] = ColbertLoss(),
         loss_type: Literal['classification', 'regression'] = 'classification',
         device: Optional[str] = None,
         **kwargs,

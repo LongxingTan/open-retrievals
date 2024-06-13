@@ -11,6 +11,11 @@ RAG could help solve the false information, out-of-date information, and data se
 * Output reference for explainability
 * LLM Hallucination
 
+
+Integrated with Langchain
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
 .. code-block:: python
 
     from retrievals.tools.langchain import LangchainEmbedding, LangchainReranker, LangchainLLM
@@ -71,6 +76,15 @@ RAG could help solve the false information, out-of-date information, and data se
     user_query = 'Introduce this'
     response = qa_chain({"query": user_query})
     print(response)
+
+
+Integrated with Llamaindex
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+Custom RAG
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 
 
 Enhance RAG Performance

@@ -6,8 +6,7 @@ from typing import Callable, Dict, List, Literal, Optional, Tuple, Union
 
 import numpy as np
 import torch
-
-# from accelerate import Accelerator
+from accelerate import Accelerator
 from torch import nn
 from tqdm import tqdm
 

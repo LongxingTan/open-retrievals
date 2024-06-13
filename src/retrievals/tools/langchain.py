@@ -15,6 +15,7 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 
 from ..models.embedding_auto import AutoModelForEmbedding
 from ..models.rerank import AutoModelForRanking
+from .generator import BaseLLM
 
 logger = logging.getLogger(__name__)
 
@@ -37,17 +38,16 @@ class LangchainEmbedding(AutoModelForEmbedding, Embeddings):
     """
 
     client: Any
-    model_name_or_path: Optional[str] = None
+    model_name: Optional[str] = None
     cache_folder: Optional[str] = None
     model_kwargs: Dict[str, Any] = dict()
     encode_kwargs: Dict[str, Any] = dict()
 
-    def __init__(self, **kwargs: Any):
+    def __init__(self, model_name=None, model_kwargs: Any = None, encode_kwargs: Any = None):
         Embeddings.__init__(self)
-        if 'model_name' in kwargs:
-            kwargs['model_name_or_path'] = kwargs.pop('model_name')
+        self.encode_kwargs = encode_kwargs
 
-        model = AutoModelForEmbedding.from_pretrained(**kwargs)
+        model = AutoModelForEmbedding.from_pretrained(model_name_or_path=model_name, **model_kwargs)
         for key, value in model.__dict__.items():
             self.__dict__[key] = value
 

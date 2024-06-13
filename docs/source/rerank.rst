@@ -3,7 +3,7 @@ Rerank
 
 .. _rerank:
 
-Use pretrained rerank
+Rerank by pretrained
 -------------------------
 
 .. code-block:: python

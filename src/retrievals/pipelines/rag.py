@@ -1,5 +1,6 @@
 import logging
 import os
+from argparse import ArgumentParser
 from multiprocessing import Pool
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Literal, Optional, Tuple, TypeVar, Union
@@ -9,6 +10,11 @@ from transformers import AutoModel
 from ..tools.file_parser import FileParser
 
 logger = logging.getLogger(__name__)
+
+
+parser = ArgumentParser()
+parser.add_argument('--tokenizer_name', required=True)
+args = parser.parse_args()
 
 
 class ChatCenter(object):
@@ -79,3 +85,11 @@ class SimpleRAG(object):
 
     def chat(self, question: str):
         pass
+
+
+def main():
+    return
+
+
+if __name__ == '__main__':
+    main()
