@@ -335,7 +335,6 @@ class AutoModelForRanking(BaseRanker):
         causal_lm: bool = False,
         trust_remote_code: bool = True,
         use_fp16: bool = False,
-        use_lora: bool = False,
         lora_config=None,
         device: Optional[str] = None,
         linear_dim: int = 1,
@@ -355,11 +354,9 @@ class AutoModelForRanking(BaseRanker):
         if use_fp16:
             model.half()
 
-        if use_lora:
+        if lora_config is not None:
             from peft import LoraConfig, TaskType, get_peft_model
 
-            if not lora_config:
-                raise ValueError("If use_lora is true, please provide a valid lora_config from peft")
             model = get_peft_model(model, lora_config)
             model.print_trainable_parameters()
 
