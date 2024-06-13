@@ -13,7 +13,7 @@ Retrievals is an easy-to-use python framework supporting state-of-the-art embedd
 Installation
 ------------------
 
-Install the **Prerequisites**
+Install the **prerequisites**
 
 * transformers
 * peft
