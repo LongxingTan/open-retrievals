@@ -17,8 +17,8 @@ Rerank by pretrained
 
 
 
-Fine-tuning
--------------------
+Fine tuning Cross-encoder
+----------------------------
 
 
 .. code-block:: python
@@ -57,6 +57,9 @@ Fine-tuning
     trainer.train()
 
 
+Fine tuning ColBERT
+----------------------------
 
-Hard negative
-------------------
+
+Fine tuning LLM ranker
+----------------------------

@@ -452,8 +452,6 @@ class AutoModelForEmbedding(nn.Module):
         if not model_name_or_path or not isinstance(model_name_or_path, str):
             assert ValueError('Please input valid model_name_or_path')
 
-        tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, trust_remote_code=trust_remote_code)
-
         if config_path:
             config = AutoConfig.from_pretrained(
                 config_path, output_hidden_states=True, trust_remote_code=trust_remote_code
@@ -472,6 +470,10 @@ class AutoModelForEmbedding(nn.Module):
                 )
             else:
                 model = AutoModelForCausalLM.from_config(config)
+            tokenizer = AutoTokenizer.from_pretrained(
+                model_name_or_path, trust_remote_code=trust_remote_code, add_eos_token=True
+            )
+            tokenizer.pad_token = tokenizer.eos_token
         else:
             if pretrained:
                 model = AutoModel.from_pretrained(
@@ -479,6 +481,7 @@ class AutoModelForEmbedding(nn.Module):
                 )
             else:
                 model = AutoModel.from_config(config)
+            tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, trust_remote_code=trust_remote_code)
 
         if fp16:
             model.half()

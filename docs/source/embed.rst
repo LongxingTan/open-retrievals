@@ -4,8 +4,15 @@ Embedding
 .. _embed:
 
 
-Fine-tuning text embedding
-------------------------------
+Pretrained
+---------------------
+
+we can use `AutoModelForEmbedding` to get the sentence embedding from pretrained transformer or large language model.
+
+
+
+Pair wise
+----------------------
 
 .. code-block:: python
 
@@ -47,12 +54,20 @@ Fine-tuning text embedding
 
 
 
-
 Point wise
---------------------------
+-------------------
 
 arcface
 - layer wise learning rate
 - batch size is important
 - dynamic arcface_margin, margin is important
 - arc_weight init
+
+
+List wise
+-------------------
+
+
+
+Hard negative
+--------------------

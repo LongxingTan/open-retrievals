@@ -1,6 +1,17 @@
 Retrieval
 ========================
 
+
+Offline document encoding
+----------------------------
+
+
+
+Query retrieval
+----------------------------
+
+
+
 To enhance the retrieval performance:
 
 * Pretrain
