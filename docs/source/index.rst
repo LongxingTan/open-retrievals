@@ -1,8 +1,3 @@
-.. Retrievals documentation master file, created by
-   sphinx-quickstart on Mon Feb 19 14:43:55 2024.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
-
 Open-Retrievals Documentation
 ======================================
 .. raw:: html
@@ -21,7 +16,8 @@ Installation
 Install the **Prerequisites**
 
 * transformers
-* faiss-cpu / faiss-gpu
+* peft
+* faiss-cpu
 
 
 Now you are ready, proceed with

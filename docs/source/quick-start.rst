@@ -3,6 +3,9 @@ Quick start
 
 .. _quick-start:
 
+Open-retrievals is designed to simplify the information retrieval and RAG application, especially for retrieval, rerank.
+
+
 1. Embedding
 -----------------------------
 
@@ -17,6 +20,10 @@ We can use the pretrained embedding easily from transformers or sentence-transfo
     model = AutoModelForEmbedding.from_pretrained(model_name_or_path, pooling_method="mean")
     sentence_embeddings = model.encode(sentences, normalize_embeddings=True, convert_to_tensor=True)
     print(sentence_embeddings)
+
+.. code::
+
+    output
 
 
 Embedding fine-tuned
@@ -43,3 +50,5 @@ Rerank fine-tuned
 
 4. RAG
 -----------------------------
+
+We can use open-retrievals easily to build RAG application, or integrated with LangChain and Llamaindex.

@@ -4,7 +4,6 @@ Embedding
 .. _embed:
 
 
-
 Fine-tuning text embedding
 ------------------------------
 
