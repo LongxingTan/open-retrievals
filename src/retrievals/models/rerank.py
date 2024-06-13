@@ -45,12 +45,12 @@ class BaseRanker(ABC, torch.nn.Module):
     @abstractmethod
     def forward(self, *args, **kwargs):
         """Pytorch forward method."""
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     def encode(self, *args, **kwargs):
         """Encode documents."""
-        pass
+        raise NotImplementedError
 
     def gradient_checkpointing_enable(self, gradient_checkpointing_kwargs=None):
         self.model.gradient_checkpointing_enable(gradient_checkpointing_kwargs=gradient_checkpointing_kwargs)
