@@ -15,6 +15,7 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 
 from ..models.embedding_auto import AutoModelForEmbedding
 from ..models.rerank import AutoModelForRanking
+from .generator import BaseLLM
 
 logger = logging.getLogger(__name__)
 
