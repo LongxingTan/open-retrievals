@@ -56,6 +56,8 @@ Pair wise
 Point wise
 -------------------
 
+If the positive and negative examples have some noise in label, the directly point-wise cross-entropy maybe not the best. The pair wise just compare relatively, or the hinge loss with margin could be better.
+
 arcface
 
 - layer wise learning rate

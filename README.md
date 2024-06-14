@@ -60,7 +60,7 @@ python -m pip install -U git+https://github.com/LongxingTan/open-retrievals.git
 
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1-WBMisdWLeHUKlzJ2DrREXY_kSV8vjP3?usp=sharing)
 
-**Text embeddings from Pretrained weights**
+**Embeddings from pretrained weights**
 ```python
 from retrievals import AutoModelForEmbedding
 
@@ -175,7 +175,7 @@ print(response)
 ```
 
 
-**Text embedding model fine-tuned by contrastive learning**
+**Embedding fine-tuning**
 
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/17KXe2lnNRID-HiVvMtzQnONiO74oGs91?usp=sharing)
 
@@ -217,7 +217,7 @@ trainer.scheduler = scheduler
 trainer.train()
 ```
 
-**Fine-tuning of rerank models**
+**Rerank Fine-tuning**
 
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1QvbUkZtG56SXomGYidwI4RQzwODQrWNm?usp=sharing)
 
