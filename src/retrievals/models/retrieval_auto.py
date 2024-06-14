@@ -313,7 +313,7 @@ class BM25Searcher(BaseRetriever):
 
         self.bm25 = BM25Okapi(documents)
 
-    def search(self, query: str, top_k: int, batch_size: int = -1) -> List[str]:
+    def search(self, query: str, top_k: int, batch_size: int = -1) -> List[Tuple[List[str], float]]:
         scores = self.bm25.get_scores(query)
         sorted_docs = sorted(zip(self.documents, scores), key=lambda x: x[1], reverse=True)[:top_k]
         return sorted_docs
