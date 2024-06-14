@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 
 class BaseRetriever(ABC):
     @abstractmethod
-    def search(self, query: str, top_k: int) -> str:
+    def search(self, query: str, top_k: int, batch_size: int = -1) -> str:
         """search the str, return the top list maybe with score"""
         raise NotImplementedError
 
@@ -111,7 +111,7 @@ class AutoModelForRetrieval(object):
 
         return dists, indices
 
-    def search(self):
+    def search(self, query: str, top_k: int):
         return
 
     def similarity(self, queries: Union[str, List[str]], keys: Union[str, List[str], np.ndarray]):
@@ -295,24 +295,40 @@ class FaissSearcher(BaseRetriever):
 
 
 class BM25Searcher(BaseRetriever):
-    def __init__(self, documents, chunk_size, chunk_overlap, splitter):
+    def __init__(
+        self, documents, chunk_size=None, chunk_overlap=None, splitter=None, stop_words_dir: Optional[str] = None
+    ):
+        from rank_bm25 import BM25Okapi
+
         self.documents = documents
         self.splitter = splitter
         self.chunk_size = chunk_size
         self.chunk_overlap = chunk_overlap
-
-    def search(self, query: str, top_k: int) -> List[str]:
-        from rank_bm25 import BM250kapi
+        self.stop_words_dir = stop_words_dir
 
         if self.splitter:
             documents = self.splitter.split_text(self.documents)
         else:
             documents = self.documents
 
-        bm25 = BM250kapi(documents)
-        scores = bm25.get_scores(query)
-        sorted_docs = sorted(zip(documents, scores), key=lambda x: x[1], reverse=True)[:top_k]
+        self.bm25 = BM25Okapi(documents)
+
+    def search(self, query: str, top_k: int, batch_size: int = -1) -> List[str]:
+        scores = self.bm25.get_scores(query)
+        sorted_docs = sorted(zip(self.documents, scores), key=lambda x: x[1], reverse=True)[:top_k]
         return sorted_docs
+
+    def _load_stop_words(self):
+        stop_words_path = os.path.join(self.stop_words_dir, 'stop_words.txt')
+        if not os.path.exists(stop_words_path):
+            raise Exception(f"system stop words: {stop_words_path} not found")
+
+        stop_words = []
+        with open(stop_words_path, 'r', encoding='utf8') as reader:
+            for line in reader:
+                line = line.strip()
+                stop_words.append(line)
+        return stop_words
 
 
 class EnsembleRetriever(BaseRetriever):
@@ -323,7 +339,7 @@ class EnsembleRetriever(BaseRetriever):
     def __init__(self, retrievers: List[BaseRetriever], weights=None):
         self.retrievers = retrievers
 
-    def search(self, query: str, top_k: int = 10) -> List[str]:
+    def search(self, query: str, top_k: int = 10, batch_size: int = -1) -> List[str]:
         combined_results = []
         for retriever in self.retrievers:
             combined_results.extend(retriever.search(query, top_k))
