@@ -15,7 +15,6 @@ import numpy as np
 import pandas as pd
 import torch
 import torch.nn as nn
-from sklearn.neighbors import NearestNeighbors
 from tqdm import tqdm
 from tqdm.autonotebook import trange
 
@@ -95,6 +94,8 @@ class AutoModelForRetrieval(object):
             return dists, indices
 
         elif self.method == "knn":
+            from sklearn.neighbors import NearestNeighbors
+
             neighbors_model = NearestNeighbors(n_neighbors=top_k, metric="cosine", n_jobs=-1)
             neighbors_model.fit(document_embed)
             dists, indices = neighbors_model.kneighbors(query_embed)
