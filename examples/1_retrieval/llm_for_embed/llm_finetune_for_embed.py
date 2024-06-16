@@ -99,7 +99,6 @@ class TrainingArguments(transformers.TrainingArguments):
     use_inbatch_neg: bool = field(default=True, metadata={"help": "Freeze the parameters of position embeddings"})
     gradient_accumulation_steps: int = field(default=1024)
     fp16: bool = field(default=True)
-    use_lora: bool = field(default=True)
 
 
 @dataclass
@@ -243,16 +242,13 @@ def main():
     train_dataset = TrainDatasetForEmbedding(args=data_args, tokenizer=tokenizer)
     print(len(train_dataset))
 
-    if training_args.use_lora:
-        lora_config = LoraConfig(**json.load(open("./conf/lora.json")))
-    else:
-        lora_config = None
+    # lora_config = LoraConfig(**json.load(open("./conf/lora.json")))
+    lora_config = None
 
     # model = PairwiseModel.from_pretrained(model_args.model_name_or_path, pooling_method="mean")
     model = AutoModelForEmbedding.from_pretrained(
         model_args.model_name_or_path,
         pooling_method="last",
-        use_lora=training_args.use_lora,
         lora_config=lora_config,
     )
     optimizer = get_optimizer(model, lr=5e-5, weight_decay=1e-3)

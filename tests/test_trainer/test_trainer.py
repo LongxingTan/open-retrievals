@@ -13,7 +13,6 @@ from transformers import AutoTokenizer, HfArgumentParser
 
 from src.retrievals import AutoModelForEmbedding, TripletCollator
 from src.retrievals.losses import TripletLoss
-from src.retrievals.trainer.custom_trainer import CustomTrainer
 from src.retrievals.trainer.trainer import RerankTrainer, RetrievalTrainer
 
 
@@ -118,7 +117,10 @@ class TrainerTest(TestCase):
 
 # class TestRerankTrainer(TestCase):
 #     def test_init_with_default_loss_fn(self):
-#         model = MagicMock()
+#         model = None
 #
 #         trainer = RerankTrainer(model)
 #         self.assertIsInstance(trainer.loss_fn, nn.BCEWithLogitsLoss)
+#
+#     def test_train(self):
+#         pass

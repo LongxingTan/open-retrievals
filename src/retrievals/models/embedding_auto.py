@@ -442,7 +442,7 @@ class AutoModelForEmbedding(nn.Module):
         causal_lm: bool = False,
         custom_config_dict: Optional[Dict] = None,
         fp16: bool = False,
-        use_lora: bool = False,
+        lora_name_or_path: Optional[str] = None,
         lora_config=None,
         device: Optional[str] = None,
         query_instruction: Optional[str] = None,
@@ -451,8 +451,6 @@ class AutoModelForEmbedding(nn.Module):
     ):
         if not model_name_or_path or not isinstance(model_name_or_path, str):
             assert ValueError('Please input valid model_name_or_path')
-
-        tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, trust_remote_code=trust_remote_code)
 
         if config_path:
             config = AutoConfig.from_pretrained(
@@ -472,6 +470,10 @@ class AutoModelForEmbedding(nn.Module):
                 )
             else:
                 model = AutoModelForCausalLM.from_config(config)
+            tokenizer = AutoTokenizer.from_pretrained(
+                model_name_or_path, trust_remote_code=trust_remote_code, add_eos_token=True
+            )
+            tokenizer.pad_token = tokenizer.eos_token
         else:
             if pretrained:
                 model = AutoModel.from_pretrained(
@@ -479,16 +481,14 @@ class AutoModelForEmbedding(nn.Module):
                 )
             else:
                 model = AutoModel.from_config(config)
+            tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, trust_remote_code=trust_remote_code)
 
         if fp16:
             model.half()
 
-        if use_lora:
-            # peft config and wrapping
+        if lora_config is not None:
             from peft import LoraConfig, TaskType, get_peft_model
 
-            if not lora_config:
-                raise ValueError("If use_lora is true, please provide a valid lora_config")
             model = get_peft_model(model, lora_config)
             model.print_trainable_parameters()
 
