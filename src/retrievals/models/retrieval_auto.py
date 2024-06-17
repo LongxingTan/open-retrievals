@@ -94,11 +94,7 @@ class AutoModelForRetrieval(object):
             return dists, indices
 
         elif self.method == "knn":
-            from sklearn.neighbors import NearestNeighbors
-
-            neighbors_model = NearestNeighbors(n_neighbors=top_k, metric="cosine", n_jobs=-1)
-            neighbors_model.fit(document_embed)
-            dists, indices = neighbors_model.kneighbors(query_embed)
+            dists, indices = knn_search(query_embed, document_embed, top_k)
 
         elif self.method == "cosine":
             dists, indices = cosine_similarity_search(
@@ -187,6 +183,15 @@ class AutoModelForRetrieval(object):
                         samples.append({query_key: query_id, document_key: id, 'label': 1})
 
         return pd.DataFrame(samples)
+
+
+def knn_search(query_embed, document_embed, top_k):
+    from sklearn.neighbors import NearestNeighbors
+
+    neighbors_model = NearestNeighbors(n_neighbors=top_k, metric="cosine", n_jobs=-1)
+    neighbors_model.fit(document_embed)
+    dists, indices = neighbors_model.kneighbors(query_embed)
+    return dists, indices
 
 
 def cosine_similarity_search(

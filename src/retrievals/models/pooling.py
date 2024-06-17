@@ -6,16 +6,18 @@ import torch.nn.functional as F
 class AutoPooling(nn.Module):
     def __init__(self, pooling_method: str, **kwargs) -> None:
         super().__init__()
-        if pooling_method == "mean":
+        if pooling_method in ["mean", 'avg', 'average']:
             self.pooling = MeanPooling()
-        elif pooling_method == "cls":
+        elif pooling_method in ["cls", 'first']:
             self.pooling = ClsTokenPooling()
         elif pooling_method == "weighted":
             self.pooling = WeightedLayerPooling()
-        elif pooling_method == "last":
+        elif pooling_method in ['eos', "last"]:
             self.pooling = LastTokenPooling()
         else:
-            raise ValueError("Please input valid pooling_method: 'cls', 'mean', 'weighted', 'last'")
+            raise ValueError(
+                f"pooling_method {pooling_method} is not a valid method: 'cls', 'mean', 'weighted', 'last'"
+            )
 
     def forward(self, last_hidden_state: torch.Tensor, attention_mask: torch.Tensor) -> torch.Tensor:
         return self.pooling(last_hidden_state, attention_mask)

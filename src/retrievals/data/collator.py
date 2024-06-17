@@ -202,6 +202,16 @@ class RerankCollator(DataCollatorWithPadding):
         return batch
 
 
+class LLMRerankCollator(DataCollatorWithPadding):
+    """Rerank collator for casual llm, with examples query, positive and negative"""
+
+    def __init__(self):
+        pass
+
+    def __call__(self, features: List[Dict[str, Any]]):
+        return
+
+
 class ColBertCollator(DataCollatorWithPadding):
     def __init__(
         self,
