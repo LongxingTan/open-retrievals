@@ -86,6 +86,7 @@ class AutoModelForRanking(BaseRanker):
         loss_fn: Union[nn.Module, Callable] = None,
         loss_type: Literal['classification', 'regression'] = 'classification',
         max_length: Optional[int] = None,
+        label_token_loc: Optional[int] = None,
         temperature: Optional[float] = None,
         device: Optional[str] = None,
         **kwargs,
@@ -114,6 +115,7 @@ class AutoModelForRanking(BaseRanker):
 
         self.max_length = max_length
         self.temperature = temperature
+        self.label_token_loc = label_token_loc
 
         if device is None:
             self.device = get_device_name()
@@ -166,6 +168,15 @@ class AutoModelForRanking(BaseRanker):
         else:
             embeddings = self.classifier(last_hidden_state)
         return embeddings
+
+    def casual_encode(self, input_ids: torch.Tensor, attention_mask: torch.Tensor, labels: torch.Tensor):
+        model_output = self.model(input_ids, attention_mask, output_hidden_states=True)
+        _, max_indices = torch.max(labels, dim=1)
+        predict_indices = max_indices - 1
+        logits = [model_output.logits[i, predict_indices[i], :] for i in range(model_output.logits.shape[0])]
+        logits = torch.stack(logits, dim=0)
+        scores = logits[:, self.label_token_loc]
+        return scores.contiguous()
 
     def forward(
         self,
