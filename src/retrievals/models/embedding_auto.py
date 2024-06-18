@@ -53,6 +53,9 @@ class AutoModelForEmbedding(nn.Module):
         device: Optional[str] = None,
         **kwargs,
     ):
+        """
+        Loads or creates an Embedding model that can be used to map sentences / text.
+        """
         super().__init__()
         if isinstance(model, str):
             assert ValueError("Please use AutoModelForEmbedding.from_pretrained(model_name_or_path)")
