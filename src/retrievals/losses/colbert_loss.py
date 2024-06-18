@@ -12,7 +12,7 @@ class ColbertLoss(nn.Module):
         use_inbatch_negative: bool = True,
     ):
         super(ColbertLoss, self).__init__()
-        self.crietrion = criterion
+        self.criterion = criterion
         self.temperature = temperature
         self.use_inbatch_negative = use_inbatch_negative
 
@@ -32,7 +32,7 @@ class ColbertLoss(nn.Module):
             scores = scores / self.temperature
 
         labels = torch.zeros(scores.shape[0], dtype=torch.long, device=scores.device)
-        loss = self.crietrion(scores, labels)
+        loss = self.criterion(scores, labels)
 
         return loss
 
