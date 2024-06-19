@@ -1,3 +1,4 @@
+numpy
 torch
 transformers
 accelerator
@@ -6,4 +7,3 @@ datasets
 faiss-cpu
 scikit-learn
 tqdm
-numpy
