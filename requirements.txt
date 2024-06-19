@@ -6,3 +6,4 @@ datasets
 faiss-cpu
 scikit-learn
 tqdm
+numpy
