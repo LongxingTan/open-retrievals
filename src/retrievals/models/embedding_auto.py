@@ -468,6 +468,7 @@ class AutoModelForEmbedding(nn.Module):
             config.update(custom_config_dict)
 
         if causal_lm or check_casual_lm(model_name_or_path):
+            logger.info('Set model to AutoModelForCasualLM')
             if pretrained:
                 model = AutoModelForCausalLM.from_pretrained(
                     model_name_or_path, config=config, trust_remote_code=trust_remote_code, **kwargs

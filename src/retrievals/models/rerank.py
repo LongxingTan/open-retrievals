@@ -357,6 +357,7 @@ class AutoModelForRanking(BaseRanker):
         )
 
         if causal_lm or check_casual_lm(model_name_or_path):
+            logger.info('Set model to AutoModelForCasualLM')
             model = AutoModelForCausalLM.from_pretrained(model_name_or_path, trust_remote_code=trust_remote_code)
         else:
             model = AutoModelForSequenceClassification.from_pretrained(
