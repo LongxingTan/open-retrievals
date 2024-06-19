@@ -59,11 +59,13 @@ class RetrievalDataset(Dataset):
         args_query_instruction = None
         if self.args and self.args.query_instruction is not None:
             args_query_instruction = self.args.query_instruction
-        self.query_instruction = query_instruction or args_query_instruction
+        self.query_instruction = query_instruction if args_query_instruction is None else args_query_instruction
         args_document_instruction = None
         if self.args and self.args.document_instruction is not None:
             args_document_instruction = self.args.document_instruction
-        self.document_instruction = document_instruction or args_document_instruction
+        self.document_instruction = (
+            document_instruction if args_document_instruction is None else args_document_instruction
+        )
         logger.info("Load original {} retrieval data.".format(len(dataset)))
 
         if self.unfold_each_positive:
@@ -100,6 +102,7 @@ class RetrievalDataset(Dataset):
             else:
                 negs = data[self.negative_key][0]
             sample.update({self.negative_key: [self.document_instruction + neg for neg in negs]})
+        return sample
 
     def generate_unfold_samples(self, dataset):
         samples: List = []
