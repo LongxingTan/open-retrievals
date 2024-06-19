@@ -115,7 +115,8 @@ class AutoModelForRanking(BaseRanker):
 
         self.max_length = max_length
         self.temperature = temperature
-        self.token_label_loc = self.tokenizer(token_label, add_special_tokens=False)['input_ids'][-1]
+        if token_label:
+            self.token_label_loc = self.tokenizer(token_label, add_special_tokens=False)['input_ids'][-1]
 
         if device is None:
             self.device = get_device_name()

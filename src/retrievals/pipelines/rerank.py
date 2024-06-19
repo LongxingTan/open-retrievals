@@ -112,7 +112,6 @@ def main():
             f"Output directory ({training_args.output_dir}) is not empty. Use --overwrite_output_dir to overcome."
         )
 
-    # Setup logging
     logging.basicConfig(
         format="%(asctime)s - %(levelname)s - %(name)s -   %(message)s",
         datefmt="%m/%d/%Y %H:%M:%S",
