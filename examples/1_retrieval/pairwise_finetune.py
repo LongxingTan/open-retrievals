@@ -16,7 +16,7 @@ from src.retrievals import (
 from src.retrievals.losses import InfoNCE, SimCSE, TripletLoss
 
 model_name_or_path: str = "sentence-transformers/paraphrase-multilingual-mpnet-base-v2"
-batch_size: int = 128
+batch_size: int = 32
 epochs: int = 3
 
 train_dataset = load_dataset('shibing624/nli_zh', 'STS-B')['train']

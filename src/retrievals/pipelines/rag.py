@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 
 parser = ArgumentParser()
-parser.add_argument('--tokenizer_name', required=True)
+parser.add_argument('--tokenizer_name', required=False)
 args = parser.parse_args()
 
 

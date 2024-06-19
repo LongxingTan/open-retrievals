@@ -48,11 +48,14 @@ class AutoModelForEmbedding(nn.Module):
         loss_fn: Optional[Callable] = None,
         query_instruction: Optional[str] = None,
         document_instruction: Optional[str] = None,
-        fp16: bool = False,
+        use_fp16: bool = False,
         generation_args: Dict = None,
         device: Optional[str] = None,
         **kwargs,
     ):
+        """
+        Loads or creates an Embedding model that can be used to map sentences / text.
+        """
         super().__init__()
         if isinstance(model, str):
             assert ValueError("Please use AutoModelForEmbedding.from_pretrained(model_name_or_path)")
@@ -77,7 +80,7 @@ class AutoModelForEmbedding(nn.Module):
 
         self.query_instruction = query_instruction
         self.document_instruction = document_instruction
-        self.fp16 = fp16
+        self.use_fp16 = use_fp16
         if generation_args is not None:
             generation_config = self.model.generation_config.to_dict()
             generation_config.update(generation_args)
@@ -208,7 +211,7 @@ class AutoModelForEmbedding(nn.Module):
         all_embeddings = []
 
         for idx, inputs in enumerate(tqdm(loader, desc="Encoding", disable=not show_progress_bar)):
-            with torch.autocast(device_type=device) if self.fp16 else nullcontext():
+            with torch.autocast(device_type=device) if self.use_fp16 else nullcontext():
                 with torch.no_grad():
                     inputs_on_device = {k: v.to(device) for k, v in inputs.items()}
                     embeddings = self.forward_from_loader(inputs_on_device)
@@ -441,9 +444,10 @@ class AutoModelForEmbedding(nn.Module):
         trust_remote_code: bool = True,
         causal_lm: bool = False,
         custom_config_dict: Optional[Dict] = None,
-        fp16: bool = False,
+        use_fp16: bool = False,
         lora_name_or_path: Optional[str] = None,
         lora_config=None,
+        quantization_config=None,
         device: Optional[str] = None,
         query_instruction: Optional[str] = None,
         document_instruction: Optional[str] = None,
@@ -464,6 +468,7 @@ class AutoModelForEmbedding(nn.Module):
             config.update(custom_config_dict)
 
         if causal_lm or check_casual_lm(model_name_or_path):
+            logger.info('Set model to AutoModelForCasualLM')
             if pretrained:
                 model = AutoModelForCausalLM.from_pretrained(
                     model_name_or_path, config=config, trust_remote_code=trust_remote_code, **kwargs
@@ -483,7 +488,7 @@ class AutoModelForEmbedding(nn.Module):
                 model = AutoModel.from_config(config)
             tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, trust_remote_code=trust_remote_code)
 
-        if fp16:
+        if use_fp16:
             model.half()
 
         if lora_config is not None:
@@ -499,7 +504,7 @@ class AutoModelForEmbedding(nn.Module):
             device=device,
             query_instruction=query_instruction,
             document_instruction=document_instruction,
-            fp16=fp16,
+            use_fp16=use_fp16,
             **kwargs,
         )
 
