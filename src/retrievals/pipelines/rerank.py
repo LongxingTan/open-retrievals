@@ -62,11 +62,7 @@ class DataArguments:
     negative_key: str = field(default=None)
 
     query_instruction: str = field(default=None, metadata={"help": "instruction for query"})
-    passage_instruction: str = field(default=None, metadata={"help": "instruction for passage"})
-
-    # def __post_init__(self):
-    #     if not os.path.exists(self.train_data):
-    #         raise FileNotFoundError(f"cannot find file: {self.train_data}, please set a true path")
+    document_instruction: str = field(default=None, metadata={"help": "instruction for document"})
 
 
 @dataclass
