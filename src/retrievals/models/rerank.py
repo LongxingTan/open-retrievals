@@ -172,6 +172,7 @@ class AutoModelForRanking(BaseRanker):
     def casual_encode(self, input_ids: torch.Tensor, attention_mask: torch.Tensor, labels: torch.Tensor):
         model_output = self.model(input_ids, attention_mask, output_hidden_states=True)
         _, max_indices = torch.max(labels, dim=1)
+        # shift the targets such that output n predicts token n+1
         predict_indices = max_indices - 1
         logits = [model_output.logits[i, predict_indices[i], :] for i in range(model_output.logits.shape[0])]
         logits = torch.stack(logits, dim=0)

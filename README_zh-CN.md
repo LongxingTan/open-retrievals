@@ -230,7 +230,7 @@ trainer.scheduler = scheduler
 trainer.train()
 ```
 
-- shell训练
+- 命令行快速使用
 
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1w2dRoRThG6DnUW46swqEUuWySKS1AXCp?usp=sharing)
 
@@ -296,6 +296,7 @@ trainer.scheduler = scheduler
 trainer.train()
 ```
 
+- 命令行快速使用
 ```shell
 MODEL_NAME="BAAI/bge-reranker-base"
 OUTPUT_DIR="/train_out"

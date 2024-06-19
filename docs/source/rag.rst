@@ -7,6 +7,7 @@ Build an RAG Application
 ---------------------------
 
 RAG could help solve the false information, out-of-date information, and data security for LLM by searching the external data.
+The basic RAG process is document indexing, query embedding, retrieval, optional rerank, and LLM generate.
 
 * Output reference for explainability
 * LLM Hallucination
@@ -104,21 +105,36 @@ Enhance RAG Performance
 pdf parse
 --------------
 
+There are some tools help parse the pdf file.
+
 * PyPDF2
+    - Good for English
+    - Without bbox
 * pdfplumber
+    - Good for English and Chinese
+    - Good for table parse
+    - With bbox
+* pdfminer
+* Camelot
+* pymupdf
+* papermage
+* llama_index parse
+    - support table and figure
+
+
+But if the file is a scanned pdf, we need to use the OCR.
+
 * fitz
-* llama_index parse (support table and figure)
-
-
-OCR
-------------
-
+    - transfer pdf to image
 * https://github.com/mittagessen/kraken
+* ppocr
 
 
 Layout
---------------
+~~~~~~~~~~~~~~~~~
 
 * https://github.com/LynnHaDo/Document-Layout-Analysis
-* fitz
+* Layout-parser
 * llama_index parse (support table and figure)
+* ppsturcture
+* unstructured
