@@ -17,8 +17,6 @@ class PairCollator(DataCollatorWithPadding):
         tokenizer: PreTrainedTokenizer,
         query_max_length: int = 32,
         document_max_length: int = 128,
-        query_instruction: str = '',
-        document_instruction: str = '',
         append_eos_token: bool = False,
         query_key: str = 'query',
         document_key: str = 'positive',
@@ -29,8 +27,6 @@ class PairCollator(DataCollatorWithPadding):
 
         self.query_max_length = query_max_length
         self.document_max_length = document_max_length
-        self.query_instruction = query_instruction
-        self.document_instruction = document_instruction
         self.query_key = query_key
         self.document_key = document_key
 
@@ -42,11 +38,11 @@ class PairCollator(DataCollatorWithPadding):
                 self.query_key in features[0] and self.document_key in features[0]
             ), f"PairCollator should have {self.query_key} and {self.document_key} in features, while get {features[0]}"
 
-            query_texts = [self.query_instruction + feature[self.query_key] for feature in features]
-            document_texts = [self.document_instruction + feature[self.document_key] for feature in features]
+            query_texts = [feature[self.query_key] for feature in features]
+            document_texts = [feature[self.document_key] for feature in features]
         elif isinstance(features[0], (list, tuple)):
-            query_texts = [self.query_instruction + f[0] for f in features]
-            document_texts = [self.document_instruction + f[1] for f in features]
+            query_texts = [f[0] for f in features]
+            document_texts = [f[1] for f in features]
         else:
             raise ValueError
 
@@ -86,8 +82,6 @@ class TripletCollator(DataCollatorWithPadding):
         tokenizer: PreTrainedTokenizer,
         query_max_length: int = 32,
         document_max_length: int = 128,
-        query_instruction: str = '',
-        document_instruction: str = '',
         append_eos_token: bool = False,
         query_key: str = 'query',
         positive_key: str = 'positive',
@@ -99,8 +93,7 @@ class TripletCollator(DataCollatorWithPadding):
 
         self.query_max_length = query_max_length
         self.document_max_length = document_max_length
-        self.query_instruction = query_instruction
-        self.document_instruction = document_instruction
+
         self.query_key = query_key
         self.positive_key = positive_key
         self.negative_key = negative_key
@@ -114,13 +107,13 @@ class TripletCollator(DataCollatorWithPadding):
                 and self.negative_key in features[0]
             ), f"TripletCollator should have {self.query_key}, {self.positive_key} and {self.negative_key} in dict key"
 
-            query_texts = [self.query_instruction + feature[self.query_key] for feature in features]
-            pos_texts = [self.document_instruction + feature[self.positive_key] for feature in features]
-            neg_texts = [self.document_instruction + feature[self.negative_key] for feature in features]
+            query_texts = [feature[self.query_key] for feature in features]
+            pos_texts = [feature[self.positive_key] for feature in features]
+            neg_texts = [feature[self.negative_key] for feature in features]
         elif isinstance(features[0], (list, tuple)):
-            query_texts = [self.query_instruction + feature[0] for feature in features]
-            pos_texts = [self.document_instruction + feature[1] for feature in features]
-            neg_texts = [self.document_instruction + feature[2] for feature in features]
+            query_texts = [feature[0] for feature in features]
+            pos_texts = [feature[1] for feature in features]
+            neg_texts = [feature[2] for feature in features]
         else:
             raise ValueError
 
