@@ -86,7 +86,7 @@ class AutoModelForRanking(BaseRanker):
         loss_fn: Union[nn.Module, Callable] = None,
         loss_type: Literal['classification', 'regression'] = 'classification',
         max_length: Optional[int] = None,
-        label_token_loc: Optional[int] = None,
+        token_label: Optional[int] = None,
         temperature: Optional[float] = None,
         device: Optional[str] = None,
         **kwargs,
@@ -115,7 +115,7 @@ class AutoModelForRanking(BaseRanker):
 
         self.max_length = max_length
         self.temperature = temperature
-        self.label_token_loc = label_token_loc
+        self.token_label_loc = self.tokenizer(token_label, add_special_tokens=False)['input_ids'][-1]
 
         if device is None:
             self.device = get_device_name()
@@ -175,7 +175,7 @@ class AutoModelForRanking(BaseRanker):
         predict_indices = max_indices - 1
         logits = [model_output.logits[i, predict_indices[i], :] for i in range(model_output.logits.shape[0])]
         logits = torch.stack(logits, dim=0)
-        scores = logits[:, self.label_token_loc]
+        scores = logits[:, self.token_label_loc]
         return scores.contiguous()
 
     def forward(
