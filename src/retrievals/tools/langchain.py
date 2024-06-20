@@ -25,12 +25,12 @@ class LangchainEmbedding(AutoModelForEmbedding, Embeddings):
     Example:
         .. code-block:: python
 
-            from langchain_community.embeddings import HuggingFaceBgeEmbeddings
+            from retrievals import LangchainEmbedding
 
             model_name_or_path = "BAAI/bge-large-en"
             model_kwargs = {'device': 'cpu'}
             encode_kwargs = {'normalize_embeddings': True}
-            hf = LangchainEmbeddings(
+            hf = LangchainEmbedding(
                 model_name_or_path=model_name_or_path,
                 model_kwargs=model_kwargs,
                 encode_kwargs=encode_kwargs

@@ -495,9 +495,11 @@ class AutoModelForEmbedding(nn.Module):
             tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, trust_remote_code=trust_remote_code)
 
         if use_fp16:
+            logger.info('Set model to fp16')
             model.half()
 
         if use_lora:
+            logger.info('Set model to lora')
             from peft import LoraConfig, TaskType, get_peft_model
 
             if lora_config is None:

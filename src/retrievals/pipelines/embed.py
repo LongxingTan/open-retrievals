@@ -79,6 +79,7 @@ class RetrieverTrainingArguments(TrainingArguments):
     normalized: bool = field(default=True)
     use_inbatch_neg: bool = field(default=True, metadata={"help": "use documents in the same batch as negatives"})
     remove_unused_columns: bool = field(default=False)
+    use_lora: bool = field(default=False)
 
 
 def main():
@@ -130,6 +131,7 @@ def main():
         pooling_method=training_args.pooling_method,
         use_fp16=training_args.fp16,
         causal_lm=model_args.causal_lm,
+        use_lora=training_args.use_lora,
     )
     model = model.set_train_type(
         "pairwise",

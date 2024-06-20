@@ -26,3 +26,10 @@ torchrun --nproc_per_node 1 \
   --temperature 0.02 \
   --use_inbatch_neg false
 ```
+
+
+If you want to finetune a LLM for embedding:
+- Use causal LM
+  - AutoModelForEmbedding.from_pretrained(model_name_or_path, causal_lm=True)
+- add query_instruction
+  - "Given a query and a relevant document, retrieve the document that are pertinent to the query\nQuery: "
