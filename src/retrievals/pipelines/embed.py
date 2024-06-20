@@ -128,6 +128,7 @@ def main():
     model = AutoModelForEmbedding.from_pretrained(
         model_name_or_path=model_args.model_name_or_path,
         pooling_method=training_args.pooling_method,
+        use_fp16=training_args.fp16,
         causal_lm=model_args.causal_lm,
     )
     model = model.set_train_type(

@@ -5,7 +5,7 @@ import torch
 from torch import nn
 from transformers import PreTrainedModel
 
-DEFAULT_LLM_PATTERNS = [r'.*llama.*', r'.*qwen.*', r'.*baichuan.*', r'.*mistral.*', r'.*intern.*']
+DEFAULT_LLM_PATTERNS = [r'.*llama.*', r'.*mistral.*', r'.*qwen.*', r'.*baichuan.*', r'.*intern.*', r'.*Phi.*']
 
 
 def get_device_name() -> Literal["mps", "cuda", "cpu"]:
