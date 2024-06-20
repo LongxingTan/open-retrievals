@@ -135,7 +135,7 @@ class AutoModelForEmbedding(nn.Module):
             return outputs
 
     def forward_from_loader(self, input_ids: torch.Tensor, attention_mask: torch.Tensor, without_pooling: bool = False):
-        model_output = self.model(input_ids, attention_mask)
+        model_output = self.model(input_ids, attention_mask, return_dict=True)
         if self.pooling is not None and not without_pooling:
             if 'last_hidden_state' in model_output:
                 last_hidden_state = model_output['last_hidden_state']
