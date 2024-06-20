@@ -210,7 +210,7 @@ class RerankCollator(DataCollatorWithPadding):
 
 
 class LLMRerankCollator(DataCollatorForSeq2Seq):
-    """Rerank collator for casual llm, with examples query, positive and negative"""
+    """Rerank collator for causal llm, with examples query, positive and negative"""
 
     query_max_length: int = 32
     document_max_length: int = 128

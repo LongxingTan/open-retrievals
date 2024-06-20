@@ -36,6 +36,7 @@ class ModelArguments:
     cache_dir: Optional[str] = field(
         default=None, metadata={"help": "Where do you want to store the pretrained models downloaded from s3"}
     )
+    causal_lm: bool = field(default=False, metadata={'help': "Whether the model is a causal lm or not"})
 
 
 @dataclass
@@ -76,7 +77,7 @@ class RetrieverTrainingArguments(TrainingArguments):
     )
     pooling_method: str = field(default='cls', metadata={"help": "the pooling method, should be cls or mean"})
     normalized: bool = field(default=True)
-    use_inbatch_neg: bool = field(default=True, metadata={"help": "use passages in the same batch as negatives"})
+    use_inbatch_neg: bool = field(default=True, metadata={"help": "use documents in the same batch as negatives"})
     remove_unused_columns: bool = field(default=False)
 
 
@@ -127,6 +128,7 @@ def main():
     model = AutoModelForEmbedding.from_pretrained(
         model_name_or_path=model_args.model_name_or_path,
         pooling_method=training_args.pooling_method,
+        causal_lm=model_args.causal_lm,
     )
     model = model.set_train_type(
         "pairwise",

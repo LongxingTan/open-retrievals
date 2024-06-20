@@ -24,7 +24,7 @@ from transformers import (
 )
 
 from .pooling import AutoPooling
-from .utils import batch_to_device, check_casual_lm, get_device_name
+from .utils import batch_to_device, check_causal_lm, get_device_name
 
 logger = logging.getLogger(__name__)
 
@@ -467,8 +467,8 @@ class AutoModelForEmbedding(nn.Module):
         if custom_config_dict:
             config.update(custom_config_dict)
 
-        if causal_lm or check_casual_lm(model_name_or_path):
-            logger.info('Set model to AutoModelForCasualLM')
+        if causal_lm or check_causal_lm(model_name_or_path):
+            logger.info('Set model to AutoModelForCausalLM')
             if pretrained:
                 model = AutoModelForCausalLM.from_pretrained(
                     model_name_or_path, config=config, trust_remote_code=trust_remote_code, **kwargs
