@@ -100,7 +100,6 @@ def main():
             "Use --overwrite_output_dir to overcome."
         )
 
-    # Setup logging
     logging.basicConfig(
         format="%(asctime)s - %(levelname)s - %(name)s -   %(message)s",
         datefmt="%m/%d/%Y %H:%M:%S",
@@ -129,7 +128,6 @@ def main():
     model = AutoModelForEmbedding.from_pretrained(
         model_name_or_path=model_args.model_name_or_path,
         pooling_method=training_args.pooling_method,
-        use_fp16=training_args.fp16,
         causal_lm=model_args.causal_lm,
         use_lora=training_args.use_lora,
     )

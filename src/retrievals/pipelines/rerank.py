@@ -163,7 +163,6 @@ def main():
             model_args.model_name_or_path,
             num_labels=1,
             loss_fn=nn.BCEWithLogitsLoss(reduction='mean'),
-            use_fp16=training_args.fp16,
             causal_lm=model_args.causal_lm,
         )
 

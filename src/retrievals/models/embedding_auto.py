@@ -495,7 +495,7 @@ class AutoModelForEmbedding(nn.Module):
             tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, trust_remote_code=trust_remote_code)
 
         if use_fp16:
-            logger.info('Set model to fp16')
+            logger.info('Set model to fp16, please note that if you want fp16 during training, set training_args fp16')
             model.half()
 
         if use_lora:
