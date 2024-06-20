@@ -24,7 +24,12 @@ from transformers import (
 )
 
 from .pooling import AutoPooling
-from .utils import batch_to_device, check_causal_lm, get_device_name
+from .utils import (
+    batch_to_device,
+    check_causal_lm,
+    find_all_linear_names,
+    get_device_name,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -445,6 +450,7 @@ class AutoModelForEmbedding(nn.Module):
         causal_lm: bool = False,
         custom_config_dict: Optional[Dict] = None,
         use_fp16: bool = False,
+        use_lora: bool = False,
         lora_name_or_path: Optional[str] = None,
         lora_config=None,
         quantization_config=None,
@@ -491,8 +497,20 @@ class AutoModelForEmbedding(nn.Module):
         if use_fp16:
             model.half()
 
-        if lora_config is not None:
+        if use_lora:
             from peft import LoraConfig, TaskType, get_peft_model
+
+            if lora_config is None:
+                lora_alpha = 128
+                lora_dropout = 0.05
+                target_modules = find_all_linear_names(model)
+                lora_config = LoraConfig(
+                    lora_alpha=lora_alpha,
+                    lora_dropout=lora_dropout,
+                    target_modules=target_modules,
+                    bias='none',
+                    task_type='CAUSAL_LM',
+                )
 
             model = get_peft_model(model, lora_config)
             model.print_trainable_parameters()
