@@ -35,9 +35,10 @@ If you want to finetune a LLM for embedding:
 - use the appropriate pooling_method
   - last
 - maybe reduce the batch_size due to large model size
+- set use_lora to True if you want to use lora
 
 ```shell
-MODEL_NAME="Qwen/Qwen2-1.5B-Instruct"
+MODEL_NAME="intfloat/e5-mistral-7b-instruct"
 TRAIN_DATA="/t2_ranking.jsonl"
 OUTPUT_DIR="/t2_output"
 
@@ -56,7 +57,7 @@ torchrun --nproc_per_node 1 \
   --learning_rate 3e-5 \
   --bf16 \
   --num_train_epochs 5 \
-  --per_device_train_batch_size 4 \
+  --per_device_train_batch_size 2 \
   --gradient_accumulation_steps 1 \
   --dataloader_drop_last True \
   --query_max_length 128 \

@@ -33,7 +33,7 @@ class RetrievalTrainer(Trainer):
             return self.compute_pair_loss(model=model, inputs=inputs, return_outputs=return_outputs)
 
         outputs = model(inputs, return_dict=True)
-        if not self.loss_fn:
+        if isinstance(outputs, dict) and 'loss' in outputs:
             return outputs['loss']
         else:
             return self.loss_fn(*outputs)

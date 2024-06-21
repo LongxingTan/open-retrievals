@@ -86,7 +86,6 @@ class AutoModelForEmbedding(nn.Module):
         self.query_instruction = query_instruction
         self.document_instruction = document_instruction
         self.use_fp16 = use_fp16
-
         self.device = device or get_device_name()
         self.model.to(self.device)
 
@@ -457,15 +456,17 @@ class AutoModelForEmbedding(nn.Module):
         if not model_name_or_path or not isinstance(model_name_or_path, str):
             assert ValueError('Please input valid model_name_or_path')
 
+        config = None
         if config_path:
             config = AutoConfig.from_pretrained(
                 config_path, output_hidden_states=True, trust_remote_code=trust_remote_code
             )
-        else:
-            config = AutoConfig.from_pretrained(
-                model_name_or_path, output_hidden_states=True, trust_remote_code=trust_remote_code
-            )
+
         if custom_config_dict:
+            if not config:
+                config = AutoConfig.from_pretrained(
+                    model_name_or_path, output_hidden_states=True, trust_remote_code=trust_remote_code
+                )
             config.update(custom_config_dict)
 
         if causal_lm:
