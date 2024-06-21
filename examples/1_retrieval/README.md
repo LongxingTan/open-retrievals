@@ -51,11 +51,10 @@ torchrun --nproc_per_node 1 \
   --positive_key positive \
   --negative_key negative \
   --use_lora False \
-  --causal_lm True \
   --query_instruction "Given a query and a relevant document, retrieve the document that are pertinent to the query\nQuery: " \
   --document_instruction '### Document: ' \
   --learning_rate 3e-5 \
-  --fp16 \
+  --bf16 \
   --num_train_epochs 5 \
   --per_device_train_batch_size 4 \
   --gradient_accumulation_steps 1 \

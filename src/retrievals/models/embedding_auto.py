@@ -86,11 +86,6 @@ class AutoModelForEmbedding(nn.Module):
         self.query_instruction = query_instruction
         self.document_instruction = document_instruction
         self.use_fp16 = use_fp16
-        if generation_args is not None:
-            generation_config = self.model.generation_config.to_dict()
-            generation_config.update(generation_args)
-            generation_config.update({"pad_token_id": self.tokenizer.pad_token_id})
-            self.model.generation_config = GenerationConfig(**generation_config)
 
         self.device = device or get_device_name()
         self.model.to(self.device)
@@ -451,7 +446,7 @@ class AutoModelForEmbedding(nn.Module):
         custom_config_dict: Optional[Dict] = None,
         use_fp16: bool = False,
         use_lora: bool = False,
-        lora_name_or_path: Optional[str] = None,
+        lora_path: Optional[str] = None,
         lora_config=None,
         quantization_config=None,
         device: Optional[str] = None,
@@ -653,10 +648,12 @@ class PairwiseModel(AutoModelForEmbedding):
             else:
                 # bi-encoder, pooling in each
                 if self.shared_weights:
-                    pooled_output1 = super().forward_from_loader(ids1, mask1)
-                    pooled_output2 = super().forward_from_loader(ids2, mask2)
+                    pooled_output1 = super().forward_from_loader(ids1, attention_mask=mask1)
+                    pooled_output2 = super().forward_from_loader(ids2, attention_mask=mask2)
                     if len(inputs) == 3:
-                        pooled_output3 = super().forward_from_loader(input3['input_ids'], input3['attention_mask'])
+                        pooled_output3 = super().forward_from_loader(
+                            input3['input_ids'], attention_mask=input3['attention_mask']
+                        )
                         if self.loss_fn is None:
                             return pooled_output1, pooled_output2, pooled_output3
                         outputs = dict()
@@ -665,7 +662,7 @@ class PairwiseModel(AutoModelForEmbedding):
                         return outputs
 
                 else:
-                    pooled_output1 = super().forward_from_loader(ids1, mask1)
+                    pooled_output1 = super().forward_from_loader(ids1, attention_mask=mask1)
                     pooled_output2 = self.document_model(ids2, mask2)
 
             if self.loss_fn is None:
