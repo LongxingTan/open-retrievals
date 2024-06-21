@@ -54,7 +54,6 @@ class AutoModelForEmbedding(nn.Module):
         query_instruction: Optional[str] = None,
         document_instruction: Optional[str] = None,
         use_fp16: bool = False,
-        generation_args: Dict = None,
         device: Optional[str] = None,
         **kwargs,
     ):
@@ -451,6 +450,7 @@ class AutoModelForEmbedding(nn.Module):
         device: Optional[str] = None,
         query_instruction: Optional[str] = None,
         document_instruction: Optional[str] = None,
+        max_length: Optional[int] = None,
         **kwargs,
     ):
         if not model_name_or_path or not isinstance(model_name_or_path, str):
@@ -512,6 +512,12 @@ class AutoModelForEmbedding(nn.Module):
 
             model = get_peft_model(model, lora_config)
             model.print_trainable_parameters()
+        if lora_path is not None:
+            logger.info('Load together with lora')
+            from peft import LoraConfig, PeftModel
+
+            model = PeftModel.from_pretrained(model, lora_path)
+            model = model.merge_and_unload()
 
         return cls(
             model=model,
@@ -521,6 +527,7 @@ class AutoModelForEmbedding(nn.Module):
             query_instruction=query_instruction,
             document_instruction=document_instruction,
             use_fp16=use_fp16,
+            max_length=max_length,
             **kwargs,
         )
 
