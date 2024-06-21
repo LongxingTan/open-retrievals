@@ -3,10 +3,9 @@ import logging
 import os
 import time
 from contextlib import nullcontext
-from typing import Callable, Dict, List, Literal, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Callable, Dict, List, Literal, Optional, Tuple, Union
 
 import numpy as np
-import pandas as pd
 import torch
 import torch.distributed as dist
 import torch.nn as nn
@@ -30,6 +29,9 @@ from .utils import (
     find_all_linear_names,
     get_device_name,
 )
+
+if TYPE_CHECKING:
+    import pandas as pd
 
 logger = logging.getLogger(__name__)
 
@@ -179,7 +181,7 @@ class AutoModelForEmbedding(nn.Module):
                 device=device,
                 normalize_embeddings=normalize_embeddings,
             )
-        elif isinstance(inputs, (str, List, Tuple, pd.Series, np.ndarray)):
+        elif isinstance(inputs, (str, List, Tuple, 'pd.Series', np.ndarray)):
             return self.encode_from_text(
                 sentences=inputs,
                 batch_size=batch_size,
@@ -225,7 +227,7 @@ class AutoModelForEmbedding(nn.Module):
 
     def encode_from_text(
         self,
-        sentences: Union[str, List[str], Tuple[str], pd.Series, np.ndarray],
+        sentences: Union[str, List[str], Tuple[str], 'pd.Series', np.ndarray],
         batch_size: int = 128,
         show_progress_bar: bool = None,
         output_value: str = "sentence_embedding",
@@ -330,28 +332,6 @@ class AutoModelForEmbedding(nn.Module):
             all_embeddings = all_embeddings[0]
 
         return all_embeddings
-
-    def encode_queries(self, queries: List[str], **kwargs) -> np.ndarray:
-        """For MTEB eval
-        This function will be used for retrieval task
-        if there is an instruction for queries, we will add it to the query text
-        """
-        if self.query_instruction is not None:
-            input_texts = ['{}{}'.format(self.query_instruction, q) for q in queries]
-        else:
-            input_texts = queries
-        return self.encode_from_text(input_texts, batch_size=4)
-
-    def encode_corpus(self, corpus: List[Union[Dict[str, str], str]], **kwargs) -> np.ndarray:
-        """For MTEB eval
-        This function will be used for retrieval task
-        encode corpus for retrieval task
-        """
-        if isinstance(corpus[0], dict):
-            input_texts = ['{} {}'.format(doc.get('title', ''), doc['text']).strip() for doc in corpus]
-        else:
-            input_texts = corpus
-        return self.encode_from_text(input_texts, batch_size=4)
 
     def build_index(
         self,
@@ -750,3 +730,30 @@ class ListwiseModel(AutoModelForEmbedding):
         result.scatter_add_(0, segment_ids, data)
         count.scatter_add_(0, segment_ids, torch.ones_like(data))
         return result / count.clamp(min=1)
+
+
+class AutoModelForEmbeddingEval(AutoModelForEmbedding):
+    def __init__(self, **kwargs):
+        super(AutoModelForEmbeddingEval, self).__init__()
+
+    def encode_queries(self, queries: List[str], **kwargs) -> np.ndarray:
+        """For MTEB eval
+        This function will be used for retrieval task
+        if there is an instruction for queries, we will add it to the query text
+        """
+        if self.query_instruction is not None:
+            input_texts = ['{}{}'.format(self.query_instruction, q) for q in queries]
+        else:
+            input_texts = queries
+        return self.encode_from_text(input_texts, batch_size=4)
+
+    def encode_corpus(self, corpus: List[Union[Dict[str, str], str]], **kwargs) -> np.ndarray:
+        """For MTEB eval
+        This function will be used for retrieval task
+        encode corpus for retrieval task
+        """
+        if isinstance(corpus[0], dict):
+            input_texts = ['{} {}'.format(doc.get('title', ''), doc['text']).strip() for doc in corpus]
+        else:
+            input_texts = corpus
+        return self.encode_from_text(input_texts, batch_size=4)
