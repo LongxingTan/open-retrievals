@@ -8,6 +8,7 @@ from transformers import BertTokenizer
 
 from src.retrievals.data.collator import (
     ColBertCollator,
+    LLMRerankCollator,
     PairCollator,
     RerankCollator,
     TripletCollator,
@@ -65,6 +66,17 @@ class CollatorTest(TestCase):
         ]
 
         data_collator = RerankCollator(tokenizer=self.tokenizer, max_length=11, document_key='positive')
+        batch = data_collator(features)
+        self.assertEqual(batch['input_ids'].shape, torch.Size([2, 11]))
+        self.assertEqual(batch['attention_mask'].shape, torch.Size([2, 11]))
+
+    def test_llm_rerank_collator(self):
+        features = [
+            {'query': 'how are you', 'positive': 'fine'},
+            {'query': 'hallo?', 'positive': 'what is your problem'},
+        ]
+
+        data_collator = LLMRerankCollator(tokenizer=self.tokenizer, max_length=11)
         batch = data_collator(features)
         self.assertEqual(batch['input_ids'].shape, torch.Size([2, 11]))
         self.assertEqual(batch['attention_mask'].shape, torch.Size([2, 11]))

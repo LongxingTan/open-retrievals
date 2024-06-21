@@ -63,3 +63,36 @@ Fine tuning ColBERT
 
 Fine tuning LLM ranker
 ----------------------------
+
+- Point-wise style prompt:
+
+    "Passage: {text}\nPlease write a question based on this passage."
+
+- Point-wise style prompt:
+
+    "Passage: {text}\nQuery: {query}\nDoes the passage answer the query? Answer 'Yes' or 'No'"
+
+- pairwise style prompt:
+
+    """Given a query "{query}", which of the following two passages is more relevant to the query?
+
+    Passage A: "{doc1}"
+
+    Passage B: "{doc2}"
+
+    Output Passage A or Passage B:"""
+
+- listwise style prompt:
+
+    I will provide you with {num} passages, each indicated by number identifier []. \nRank the passages based on their relevance to query: {query}."
+
+- set-wise style prompt:
+
+    Given a query "{query}", which of the following passages is the most relevant one to the query?\n\n' \
+    + passages + '\n\nOutput only the passage label of the most relevant passage:'
+
+
+Reference
+-------------------
+
+- https://github.com/ielab/llm-rankers/tree/main
