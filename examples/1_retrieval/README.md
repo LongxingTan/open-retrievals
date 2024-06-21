@@ -51,9 +51,9 @@ torchrun --nproc_per_node 1 \
   --train_data $TRAIN_DATA \
   --positive_key positive \
   --negative_key negative \
-  --use_lora False \
+  --use_lora True \
   --query_instruction "Given a query and a relevant document, retrieve the document that are pertinent to the query\nQuery: " \
-  --document_instruction '### Document: ' \
+  --document_instruction '# Document: ' \
   --learning_rate 3e-5 \
   --bf16 \
   --num_train_epochs 5 \
