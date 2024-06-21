@@ -499,7 +499,7 @@ class AutoModelForEmbedding(nn.Module):
             from peft import LoraConfig, TaskType, get_peft_model
 
             if lora_config is None:
-                lora_alpha = 128
+                lora_alpha = 64
                 lora_dropout = 0.05
                 target_modules = find_all_linear_names(model)
                 lora_config = LoraConfig(
@@ -507,7 +507,7 @@ class AutoModelForEmbedding(nn.Module):
                     lora_dropout=lora_dropout,
                     target_modules=target_modules,
                     bias='none',
-                    task_type='CAUSAL_LM',
+                    task_type='FEATURE_EXTRACTION',
                 )
 
             model = get_peft_model(model, lora_config)
