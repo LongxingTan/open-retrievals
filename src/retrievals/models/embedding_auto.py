@@ -135,7 +135,7 @@ class AutoModelForEmbedding(nn.Module):
             return outputs
 
     def forward_from_loader(self, input_ids: torch.Tensor, attention_mask: torch.Tensor, without_pooling: bool = False):
-        model_output = self.model(input_ids, attention_mask, return_dict=True)
+        model_output = self.model(input_ids, attention_mask=attention_mask, return_dict=True)
         if self.pooling is not None and not without_pooling:
             if 'last_hidden_state' in model_output:
                 last_hidden_state = model_output['last_hidden_state']
@@ -144,7 +144,7 @@ class AutoModelForEmbedding(nn.Module):
             else:
                 hidden_states = model_output['hidden_states']
                 last_hidden_state = hidden_states[-1]
-            embeddings = self.pooling(last_hidden_state, attention_mask)
+            embeddings = self.pooling(last_hidden_state, attention_mask=attention_mask)
 
             if self.normalize_embeddings:
                 embeddings = torch.nn.functional.normalize(embeddings, p=2, dim=1)
@@ -473,7 +473,7 @@ class AutoModelForEmbedding(nn.Module):
         if custom_config_dict:
             config.update(custom_config_dict)
 
-        if causal_lm or check_causal_lm(model_name_or_path):
+        if causal_lm:
             logger.info('Set model to AutoModelForCausalLM')
             if pretrained:
                 model = AutoModelForCausalLM.from_pretrained(
