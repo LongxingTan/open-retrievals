@@ -143,7 +143,7 @@ class AutoModelForEmbedding(nn.Module):
                 last_hidden_state = model_output[0]
             else:
                 hidden_states = model_output['hidden_states']
-                last_hidden_state = (hidden_states[0] + hidden_states[-1]) / 2.0
+                last_hidden_state = hidden_states[-1]
             embeddings = self.pooling(last_hidden_state, attention_mask)
 
             if self.normalize_embeddings:
