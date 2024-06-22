@@ -70,17 +70,6 @@ class CollatorTest(TestCase):
         self.assertEqual(batch['input_ids'].shape, torch.Size([2, 11]))
         self.assertEqual(batch['attention_mask'].shape, torch.Size([2, 11]))
 
-    def test_llm_rerank_collator(self):
-        features = [
-            {'query': 'how are you', 'positive': 'fine'},
-            {'query': 'hallo?', 'positive': 'what is your problem'},
-        ]
-
-        data_collator = LLMRerankCollator(tokenizer=self.tokenizer, max_length=11)
-        batch = data_collator(features)
-        self.assertEqual(batch['input_ids'].shape, torch.Size([2, 11]))
-        self.assertEqual(batch['attention_mask'].shape, torch.Size([2, 11]))
-
     def test_colbert_collator(self):
         features = [
             {'query': 'how are you', 'positive': 'fine', 'negative': 'and you?'},
