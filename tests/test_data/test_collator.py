@@ -8,7 +8,6 @@ from transformers import BertTokenizer
 
 from src.retrievals.data.collator import (
     ColBertCollator,
-    LLMRerankCollator,
     PairCollator,
     RerankCollator,
     TripletCollator,
