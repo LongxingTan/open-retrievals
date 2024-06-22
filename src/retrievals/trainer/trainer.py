@@ -33,7 +33,7 @@ class RetrievalTrainer(Trainer):
             return self.compute_pair_loss(model=model, inputs=inputs, return_outputs=return_outputs)
 
         outputs = model(inputs, return_dict=True)
-        if not self.loss_fn:
+        if isinstance(outputs, dict) and 'loss' in outputs:
             return outputs['loss']
         else:
             return self.loss_fn(*outputs)
@@ -67,7 +67,8 @@ class RetrievalTrainer(Trainer):
         output_dir = output_dir if output_dir is not None else self.args.output_dir
         os.makedirs(output_dir, exist_ok=True)
         logger.info(f"Saving model checkpoint to {output_dir}")
-        self.model.save_pretrained(output_dir)
+        save_model = self.model.model if hasattr(self.model, 'model') else self.model
+        save_model.save_pretrained(output_dir)
         self.model.tokenizer.save_pretrained(output_dir)
 
         if is_deepspeed_zero3_enabled():

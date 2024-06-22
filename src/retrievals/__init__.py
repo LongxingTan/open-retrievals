@@ -1,6 +1,5 @@
 from .data.collator import (
     ColBertCollator,
-    LLMRerankCollator,
     PairCollator,
     RerankCollator,
     TripletCollator,

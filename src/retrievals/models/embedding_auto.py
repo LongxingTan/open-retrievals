@@ -3,10 +3,9 @@ import logging
 import os
 import time
 from contextlib import nullcontext
-from typing import Callable, Dict, List, Literal, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Callable, Dict, List, Literal, Optional, Tuple, Union
 
 import numpy as np
-import pandas as pd
 import torch
 import torch.distributed as dist
 import torch.nn as nn
@@ -24,7 +23,15 @@ from transformers import (
 )
 
 from .pooling import AutoPooling
-from .utils import batch_to_device, check_casual_lm, get_device_name
+from .utils import (
+    batch_to_device,
+    check_causal_lm,
+    find_all_linear_names,
+    get_device_name,
+)
+
+if TYPE_CHECKING:
+    import pandas as pd
 
 logger = logging.getLogger(__name__)
 
@@ -49,7 +56,6 @@ class AutoModelForEmbedding(nn.Module):
         query_instruction: Optional[str] = None,
         document_instruction: Optional[str] = None,
         use_fp16: bool = False,
-        generation_args: Dict = None,
         device: Optional[str] = None,
         **kwargs,
     ):
@@ -81,12 +87,6 @@ class AutoModelForEmbedding(nn.Module):
         self.query_instruction = query_instruction
         self.document_instruction = document_instruction
         self.use_fp16 = use_fp16
-        if generation_args is not None:
-            generation_config = self.model.generation_config.to_dict()
-            generation_config.update(generation_args)
-            generation_config.update({"pad_token_id": self.tokenizer.pad_token_id})
-            self.model.generation_config = GenerationConfig(**generation_config)
-
         self.device = device or get_device_name()
         self.model.to(self.device)
 
@@ -130,7 +130,7 @@ class AutoModelForEmbedding(nn.Module):
             return outputs
 
     def forward_from_loader(self, input_ids: torch.Tensor, attention_mask: torch.Tensor, without_pooling: bool = False):
-        model_output = self.model(input_ids, attention_mask)
+        model_output = self.model(input_ids, attention_mask=attention_mask, return_dict=True)
         if self.pooling is not None and not without_pooling:
             if 'last_hidden_state' in model_output:
                 last_hidden_state = model_output['last_hidden_state']
@@ -138,8 +138,8 @@ class AutoModelForEmbedding(nn.Module):
                 last_hidden_state = model_output[0]
             else:
                 hidden_states = model_output['hidden_states']
-                last_hidden_state = (hidden_states[0] + hidden_states[-1]) / 2.0
-            embeddings = self.pooling(last_hidden_state, attention_mask)
+                last_hidden_state = hidden_states[-1]
+            embeddings = self.pooling(last_hidden_state, attention_mask=attention_mask)
 
             if self.normalize_embeddings:
                 embeddings = torch.nn.functional.normalize(embeddings, p=2, dim=1)
@@ -181,7 +181,7 @@ class AutoModelForEmbedding(nn.Module):
                 device=device,
                 normalize_embeddings=normalize_embeddings,
             )
-        elif isinstance(inputs, (str, List, Tuple, pd.Series, np.ndarray)):
+        elif isinstance(inputs, (str, List, Tuple, 'pd.Series', np.ndarray)):
             return self.encode_from_text(
                 sentences=inputs,
                 batch_size=batch_size,
@@ -227,7 +227,7 @@ class AutoModelForEmbedding(nn.Module):
 
     def encode_from_text(
         self,
-        sentences: Union[str, List[str], Tuple[str], pd.Series, np.ndarray],
+        sentences: Union[str, List[str], Tuple[str], 'pd.Series', np.ndarray],
         batch_size: int = 128,
         show_progress_bar: bool = None,
         output_value: str = "sentence_embedding",
@@ -333,28 +333,6 @@ class AutoModelForEmbedding(nn.Module):
 
         return all_embeddings
 
-    def encode_queries(self, queries: List[str], **kwargs) -> np.ndarray:
-        '''
-        This function will be used for retrieval task
-        if there is a instruction for queries, we will add it to the query text
-        '''
-        if self.query_instruction is not None:
-            input_texts = ['{}{}'.format(self.query_instruction, q) for q in queries]
-        else:
-            input_texts = queries
-        return self.encode_from_text(input_texts)
-
-    def encode_corpus(self, corpus: List[Union[Dict[str, str], str]], **kwargs) -> np.ndarray:
-        '''
-        This function will be used for retrieval task
-        encode corpus for retrieval task
-        '''
-        if isinstance(corpus[0], dict):
-            input_texts = ['{} {}'.format(doc.get('title', ''), doc['text']).strip() for doc in corpus]
-        else:
-            input_texts = corpus
-        return self.encode_from_text(input_texts)
-
     def build_index(
         self,
         inputs: Union[DataLoader, Dict, List, str],
@@ -445,30 +423,34 @@ class AutoModelForEmbedding(nn.Module):
         causal_lm: bool = False,
         custom_config_dict: Optional[Dict] = None,
         use_fp16: bool = False,
-        lora_name_or_path: Optional[str] = None,
+        use_lora: bool = False,
+        lora_path: Optional[str] = None,
         lora_config=None,
         quantization_config=None,
         device: Optional[str] = None,
         query_instruction: Optional[str] = None,
         document_instruction: Optional[str] = None,
+        max_length: Optional[int] = None,
         **kwargs,
     ):
         if not model_name_or_path or not isinstance(model_name_or_path, str):
             assert ValueError('Please input valid model_name_or_path')
 
+        config = None
         if config_path:
             config = AutoConfig.from_pretrained(
                 config_path, output_hidden_states=True, trust_remote_code=trust_remote_code
             )
-        else:
-            config = AutoConfig.from_pretrained(
-                model_name_or_path, output_hidden_states=True, trust_remote_code=trust_remote_code
-            )
+
         if custom_config_dict:
+            if not config:
+                config = AutoConfig.from_pretrained(
+                    model_name_or_path, output_hidden_states=True, trust_remote_code=trust_remote_code
+                )
             config.update(custom_config_dict)
 
-        if causal_lm or check_casual_lm(model_name_or_path):
-            logger.info('Set model to AutoModelForCasualLM')
+        if causal_lm:
+            logger.info('Set model to AutoModelForCausalLM')
             if pretrained:
                 model = AutoModelForCausalLM.from_pretrained(
                     model_name_or_path, config=config, trust_remote_code=trust_remote_code, **kwargs
@@ -489,13 +471,33 @@ class AutoModelForEmbedding(nn.Module):
             tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, trust_remote_code=trust_remote_code)
 
         if use_fp16:
+            logger.info('Set model to fp16, please note that if you want fp16 during training, set training_args fp16')
             model.half()
 
-        if lora_config is not None:
+        if use_lora:
+            logger.info('Set model to lora')
             from peft import LoraConfig, TaskType, get_peft_model
+
+            if lora_config is None:
+                lora_alpha = 64
+                lora_dropout = 0.05
+                target_modules = find_all_linear_names(model)
+                lora_config = LoraConfig(
+                    lora_alpha=lora_alpha,
+                    lora_dropout=lora_dropout,
+                    target_modules=target_modules,
+                    bias='none',
+                    task_type='FEATURE_EXTRACTION',
+                )
 
             model = get_peft_model(model, lora_config)
             model.print_trainable_parameters()
+        if lora_path is not None:
+            logger.info('Load together with lora')
+            from peft import LoraConfig, PeftModel
+
+            model = PeftModel.from_pretrained(model, lora_path)
+            model = model.merge_and_unload()
 
         return cls(
             model=model,
@@ -505,6 +507,7 @@ class AutoModelForEmbedding(nn.Module):
             query_instruction=query_instruction,
             document_instruction=document_instruction,
             use_fp16=use_fp16,
+            max_length=max_length,
             **kwargs,
         )
 
@@ -633,10 +636,12 @@ class PairwiseModel(AutoModelForEmbedding):
             else:
                 # bi-encoder, pooling in each
                 if self.shared_weights:
-                    pooled_output1 = super().forward_from_loader(ids1, mask1)
-                    pooled_output2 = super().forward_from_loader(ids2, mask2)
+                    pooled_output1 = super().forward_from_loader(ids1, attention_mask=mask1)
+                    pooled_output2 = super().forward_from_loader(ids2, attention_mask=mask2)
                     if len(inputs) == 3:
-                        pooled_output3 = super().forward_from_loader(input3['input_ids'], input3['attention_mask'])
+                        pooled_output3 = super().forward_from_loader(
+                            input3['input_ids'], attention_mask=input3['attention_mask']
+                        )
                         if self.loss_fn is None:
                             return pooled_output1, pooled_output2, pooled_output3
                         outputs = dict()
@@ -645,7 +650,7 @@ class PairwiseModel(AutoModelForEmbedding):
                         return outputs
 
                 else:
-                    pooled_output1 = super().forward_from_loader(ids1, mask1)
+                    pooled_output1 = super().forward_from_loader(ids1, attention_mask=mask1)
                     pooled_output2 = self.document_model(ids2, mask2)
 
             if self.loss_fn is None:

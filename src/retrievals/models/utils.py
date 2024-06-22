@@ -5,7 +5,7 @@ import torch
 from torch import nn
 from transformers import PreTrainedModel
 
-DEFAULT_LLM_PATTERNS = [r'.*llama.*', r'.*qwen.*', r'.*baichuan.*', r'.*mistral.*', r'.*intern.*']
+DEFAULT_LLM_PATTERNS = [r'.*llama.*', r'.*mistral.*', r'.*qwen.*', r'.*baichuan.*', r'.*intern.*', r'.*Phi.*']
 
 
 def get_device_name() -> Literal["mps", "cuda", "cpu"]:
@@ -37,7 +37,7 @@ def batch_to_device(batch: Dict, target_device: str) -> Dict[str, torch.Tensor]:
     return batch
 
 
-def check_casual_lm(model_name_or_path: str, llm_regex_patterns: List[str] = None) -> bool:
+def check_causal_lm(model_name_or_path: str, llm_regex_patterns: List[str] = None) -> bool:
     if llm_regex_patterns is not None:
         llm_regex_patterns += DEFAULT_LLM_PATTERNS
     else:

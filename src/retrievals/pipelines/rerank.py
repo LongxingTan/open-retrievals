@@ -43,6 +43,7 @@ class ModelArguments:
     cache_dir: Optional[str] = field(
         default=None, metadata={"help": "Where do you want to store the pretrained models downloaded from s3"}
     )
+    causal_lm: bool = field(default=False, metadata={'help': "Whether the model is a causal lm or not"})
 
 
 @dataclass
@@ -159,7 +160,10 @@ def main():
         train_dataset = RerankDataset(args=data_args, tokenizer=tokenizer)
         data_collator = RerankCollator(tokenizer, max_length=data_args.max_length)
         model = AutoModelForRanking.from_pretrained(
-            model_args.model_name_or_path, num_labels=1, loss_fn=nn.BCEWithLogitsLoss(reduction='mean')
+            model_args.model_name_or_path,
+            num_labels=1,
+            loss_fn=nn.BCEWithLogitsLoss(reduction='mean'),
+            causal_lm=model_args.causal_lm,
         )
 
     logger.info(f"Total training examples: {len(train_dataset)}")

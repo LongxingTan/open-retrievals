@@ -25,7 +25,7 @@ from transformers.modeling_outputs import (
 from ..data.collator import RerankCollator
 from ..losses.colbert_loss import ColbertLoss
 from .pooling import AutoPooling
-from .utils import check_casual_lm, get_device_name
+from .utils import check_causal_lm, get_device_name
 
 logger = logging.getLogger(__name__)
 
@@ -170,7 +170,7 @@ class AutoModelForRanking(BaseRanker):
             embeddings = self.classifier(last_hidden_state)
         return embeddings
 
-    def casual_encode(self, input_ids: torch.Tensor, attention_mask: torch.Tensor, labels: torch.Tensor):
+    def causal_encode(self, input_ids: torch.Tensor, attention_mask: torch.Tensor, labels: torch.Tensor):
         model_output = self.model(input_ids, attention_mask, output_hidden_states=True)
         _, max_indices = torch.max(labels, dim=1)
         # shift the targets such that output n predicts token n+1
@@ -351,14 +351,15 @@ class AutoModelForRanking(BaseRanker):
         lora_config=None,
         device: Optional[str] = None,
         linear_dim: int = 1,
+        temperature: Optional[float] = None,
         **kwargs,
     ):
         tokenizer = AutoTokenizer.from_pretrained(
             model_name_or_path, return_tensors=False, trust_remote_code=trust_remote_code
         )
 
-        if causal_lm or check_casual_lm(model_name_or_path):
-            logger.info('Set model to AutoModelForCasualLM')
+        if causal_lm or check_causal_lm(model_name_or_path):
+            logger.info('Set model to AutoModelForCausalLM')
             model = AutoModelForCausalLM.from_pretrained(model_name_or_path, trust_remote_code=trust_remote_code)
         else:
             model = AutoModelForSequenceClassification.from_pretrained(
@@ -382,6 +383,7 @@ class AutoModelForRanking(BaseRanker):
             loss_fn=loss_fn,
             loss_type=loss_type,
             linear_dim=linear_dim,
+            temperature=temperature,
         )
         return reranker
 

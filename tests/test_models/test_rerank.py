@@ -24,7 +24,7 @@ class AutoModelForRankingTest(TestCase, ModelTesterMixin):
         # self.config_tester = ConfigTester()
         model_name_or_path = 'BAAI/bge-reranker-base'
         self.data_collator = RerankCollator(AutoTokenizer.from_pretrained(model_name_or_path))
-        self.model = AutoModelForRanking.from_pretrained(model_name_or_path, pooling_method="mean")
+        self.model = AutoModelForRanking.from_pretrained(model_name_or_path, temperature=0.05)
 
         vocab_tokens = ["[UNK]", "[CLS]", "[SEP]", "[PAD]", "[MASK]"]
         self.vocab_file = os.path.join(self.output_dir, "vocab.txt")

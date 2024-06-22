@@ -16,12 +16,12 @@ ds_train.to_json("t2_ranking.jsonl", force_ascii=False)
 ```
 
 ## train
-- cross encoder
+cross encoder
 ```shell
 python train_cross_encoder.py
 ```
 
-- cross encoder
+
 ```shell
 MODEL_NAME="BAAI/bge-reranker-base"
 TRAIN_DATA="/t2_ranking.jsonl"
@@ -48,7 +48,12 @@ torchrun --nproc_per_node 1 \
 ```
 
 
-- colbert
+colbert
 ```shell
 python train_colbert.py
 ```
+
+
+LLM
+- AutoModelForRanking.from_pretrained(model_name_or_path, causal_lm = True)
+- Prompt: "Given a query with a relevant body, determine whether the document is pertinent to the query by providing a prediction of either 'Yes' or 'No'."
