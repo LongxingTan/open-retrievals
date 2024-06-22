@@ -128,7 +128,7 @@ class TestRerankTrainer(TestCase):
         self.output_dir = tempfile.mkdtemp()
         model_name_or_path = "distilbert/distilbert-base-uncased"
         self.model = AutoModelForRanking.from_pretrained(model_name_or_path)
-        self.train_dataset = PseudoDataset()
+        self.train_dataset = PseudoRerankDataset()
         self.tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, cache_dir=self.output_dir)
 
     def tearDown(self):

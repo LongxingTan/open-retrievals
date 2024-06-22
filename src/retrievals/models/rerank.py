@@ -351,6 +351,7 @@ class AutoModelForRanking(BaseRanker):
         lora_config=None,
         device: Optional[str] = None,
         linear_dim: int = 1,
+        temperature: Optional[float] = None,
         **kwargs,
     ):
         tokenizer = AutoTokenizer.from_pretrained(
@@ -382,6 +383,7 @@ class AutoModelForRanking(BaseRanker):
             loss_fn=loss_fn,
             loss_type=loss_type,
             linear_dim=linear_dim,
+            temperature=temperature,
         )
         return reranker
 
