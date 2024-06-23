@@ -43,9 +43,9 @@ class LangchainEmbedding(AutoModelForEmbedding, Embeddings):
     model_kwargs: Dict[str, Any] = dict()
     encode_kwargs: Dict[str, Any] = dict()
 
-    def __init__(self, model_name=None, model_kwargs: Any = None, encode_kwargs: Any = None):
+    def __init__(self, model_name=None, **model_kwargs):
         Embeddings.__init__(self)
-        self.encode_kwargs = encode_kwargs
+        self.model_kwargs = model_kwargs
 
         model = AutoModelForEmbedding.from_pretrained(model_name_or_path=model_name, **model_kwargs)
         for key, value in model.__dict__.items():
