@@ -297,8 +297,10 @@ class LLMRerankCollator(DataCollatorForSeq2Seq):
     query_instruction: Optional[str] = None
     document_instruction: Optional[str] = None
 
-    def __init__(self, prompt: str):
+    def __init__(self, tokenizer: PreTrainedTokenizer, prompt: str, max_length: int = 128):
+        self.tokenizer = tokenizer
         self.prompt = prompt
+        self.max_length = max_length
 
     def __call__(self, features: List[Dict[str, Any]], return_tensors='pt'):
         examples = []
@@ -318,8 +320,30 @@ class LLMRerankCollator(DataCollatorForSeq2Seq):
             return_attention_mask=False,
             return_token_type_ids=False,
         )
-        batch['attention_mask'] = torch.ones_like(batch['attention_mask'])
+
+        batch['attention_mask'] = [[1] * len(example) for example in batch['input_ids']]
         batch['labels'] = batch['input_ids'].copy()
+        batch['labels'] = [[-100] * (len(example) - 1) + example[-1:] for example in batch['labels']]
+
+        max_label_length = max(len(l) for l in batch['labels'])
+        padding_side = self.tokenizer.padding_side
+        for i in range(len(batch['labels'])):
+            feature = batch['labels'][i]
+            remainder = [self.label_pad_token_id] * (max_label_length - len(feature))
+            if isinstance(feature, list):
+                batch['labels'][i] = feature + remainder if padding_side == "right" else remainder + feature
+            elif padding_side == "right":
+                batch['labels'][i] = np.concatenate([feature, remainder]).astype(np.int64)
+            else:
+                batch['labels'][i] = np.concatenate([remainder, feature]).astype(np.int64)
+
+        batch = self.tokenizer.pad(
+            batch,
+            padding='longest',
+            max_length=self.max_length,
+            return_tensors=return_tensors,
+            pad_to_multiple_of=self.pad_to_multiple_of,
+        )
 
         return batch
 
