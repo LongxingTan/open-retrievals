@@ -286,6 +286,44 @@ class ColBertCollator(DataCollatorWithPadding):
         return batch
 
 
+class LLMRerankCollator(DataCollatorForSeq2Seq):
+    """Rerank collator for casual llm, with examples query, positive and negative"""
+
+    tokenizers: PreTrainedTokenizer
+    query_key: str = 'query'
+    positive_key: str = 'positive'
+    negative_key: str = 'negative'
+    max_length: int = 128
+    query_instruction: Optional[str] = None
+    document_instruction: Optional[str] = None
+
+    def __init__(self, prompt: str):
+        self.prompt = prompt
+
+    def __call__(self, features: List[Dict[str, Any]], return_tensors='pt'):
+        examples = []
+        for i in range(len(features)):
+            examples.append((features[i][self.query_key], features[i][self.positive_key]))
+            for neg in features[i][self.negative_key]:
+                examples.append((features[i][self.query_key], neg))
+
+        batch = self.tokenizer(
+            [i[0] for i in examples],
+            ["\n" + i[1] + '\n' + self.prompt + 'Yes' for i in examples],
+            return_tensors=None,
+            max_length=self.max_length,
+            truncation='only_second',
+            add_special_tokens=False,
+            padding=False,
+            return_attention_mask=False,
+            return_token_type_ids=False,
+        )
+        batch['attention_mask'] = torch.ones_like(batch['attention_mask'])
+        batch['labels'] = batch['input_ids'].copy()
+
+        return batch
+
+
 def mask_pad_token(q: Dict[str, torch.Tensor], prob=0.9):
     if random.random() > prob:
         tensor = q['input_ids'].float()
