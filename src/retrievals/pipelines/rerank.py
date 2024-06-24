@@ -17,7 +17,8 @@ from transformers import (
 )
 
 from ..data import ColBertCollator, RerankCollator, RerankDataset, RetrievalDataset
-from ..losses import ColbertLoss
+from ..data.collator import LLMRerankCollator
+from ..losses import ColbertLoss, TokenLoss
 from ..models.rerank import AutoModelForRanking, ColBERT
 from ..trainer import RerankTrainer
 
@@ -155,7 +156,7 @@ def main():
             colbert_dim=128,
             loss_fn=ColbertLoss(use_inbatch_negative=training_args.use_inbatch_negative),
         )
-    else:
+    elif training_args.model_type == 'cross-encoder':
         logger.info('Set model to CrossEncoder')
         train_dataset = RerankDataset(args=data_args, tokenizer=tokenizer)
         data_collator = RerankCollator(tokenizer, max_length=data_args.max_length)
@@ -164,6 +165,12 @@ def main():
             num_labels=1,
             loss_fn=nn.BCEWithLogitsLoss(reduction='mean'),
             causal_lm=model_args.causal_lm,
+        )
+    elif training_args.model_type == 'llm':
+        pass
+    else:
+        raise ValueError(
+            f'model_type should be one of colbert, cross-encoder and llm, instead of {training_args.model_type}'
         )
 
     logger.info(f"Total training examples: {len(train_dataset)}")
