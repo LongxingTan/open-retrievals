@@ -65,7 +65,12 @@ class DataArguments:
 
     query_instruction: str = field(default=None, metadata={"help": "instruction for query"})
     document_instruction: str = field(default=None, metadata={"help": "instruction for document"})
-    task_prompt: str = field(default=None)
+    task_prompt: str = field(
+        default=(
+            "Given a query A and a passage B, determine whether the passage contains an answer "
+            "to the query by providing a prediction of either 'Yes' or 'No'."
+        )
+    )
 
 
 @dataclass
@@ -160,7 +165,7 @@ def main():
         )
     elif training_args.model_type == 'cross-encoder':
         logger.info('Set rank model to CrossEncoder')
-        train_dataset = RerankDataset(args=data_args, tokenizer=tokenizer)
+        train_dataset = RetrievalDataset(args=data_args, tokenizer=tokenizer)
         data_collator = RerankCollator(tokenizer, max_length=data_args.max_length)
         model = AutoModelForRanking.from_pretrained(
             model_args.model_name_or_path,
@@ -170,7 +175,13 @@ def main():
         )
     elif training_args.model_type == 'llm':
         logger.info('Set rank model to LLM')
-        train_dataset = RerankDataset(args=data_args, tokenizer=tokenizer)
+        train_dataset = RerankDataset(
+            args=data_args,
+            tokenizer=tokenizer,
+            unfold_each_positive=data_args.unfold_each_positive,
+            positive_key=data_args.positive_key,
+            negative_key=data_args.negative_key,
+        )
         data_collator = LLMRerankCollator(
             tokenizer=tokenizer, max_length=data_args.max_length, prompt=data_args.task_prompt
         )
@@ -179,7 +190,7 @@ def main():
             model_args.model_name_or_path,
             num_labels=1,
             loss_fn=TokenLoss(check_loc=check_loc),
-            causal_lm=model_args.causal_lm,
+            causal_lm=True,  # model_args.causal_lm
         )
     else:
         raise ValueError(
