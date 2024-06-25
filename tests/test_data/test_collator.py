@@ -8,6 +8,7 @@ from transformers import BertTokenizer
 
 from src.retrievals.data.collator import (
     ColBertCollator,
+    LLMRerankCollator,
     PairCollator,
     RerankCollator,
     TripletCollator,
@@ -84,3 +85,19 @@ class CollatorTest(TestCase):
         self.assertEqual(batch['pos_attention_mask'].shape, torch.Size([2, 11]))
         self.assertEqual(batch['neg_input_ids'].shape, torch.Size([2, 11]))
         self.assertEqual(batch['neg_attention_mask'].shape, torch.Size([2, 11]))
+
+    def test_llm_reranker_collator(self):
+        features = [
+            {'query': 'how are you', 'positive': 'fine', 'negative': ['and you?']},
+            {'query': 'hallo?', 'positive': 'what is your problem', 'negative': ['I am a doctor']},
+        ]
+        data_collator = LLMRerankCollator(
+            tokenizer=self.tokenizer,
+            max_length=128,
+            prompt=(
+                "Given a query A and a passage B, determine whether the passage contains an answer"
+                "to the query by providing a prediction of either 'Yes' or 'No'."
+            ),
+        )
+        batch = data_collator(features)
+        print(batch)

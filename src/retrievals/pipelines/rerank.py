@@ -17,7 +17,8 @@ from transformers import (
 )
 
 from ..data import ColBertCollator, RerankCollator, RerankDataset, RetrievalDataset
-from ..losses import ColbertLoss
+from ..data.collator import LLMRerankCollator
+from ..losses import ColbertLoss, TokenLoss
 from ..models.rerank import AutoModelForRanking, ColBERT
 from ..trainer import RerankTrainer
 
@@ -64,6 +65,12 @@ class DataArguments:
 
     query_instruction: str = field(default=None, metadata={"help": "instruction for query"})
     document_instruction: str = field(default=None, metadata={"help": "instruction for document"})
+    task_prompt: str = field(
+        default=(
+            "Given a query A and a passage B, determine whether the passage contains an answer "
+            "to the query by providing a prediction of either 'Yes' or 'No'."
+        )
+    )
 
 
 @dataclass
@@ -74,6 +81,7 @@ class RerankerTrainingArguments(TrainingArguments):
     temperature: Optional[float] = field(default=0.02)
     remove_unused_columns: bool = field(default=False)
     num_train_epochs: int = field(default=3)
+    use_lora: bool = field(default=False)
 
 
 def get_optimizer(model, learning_rate, weight_decay=0.0):
@@ -135,7 +143,7 @@ def main():
     )
 
     if training_args.model_type == 'colbert':
-        logger.info('Set model to ColBERT')
+        logger.info('Set rank model to ColBERT')
         train_dataset = RetrievalDataset(
             args=data_args,
             tokenizer=tokenizer,
@@ -155,8 +163,8 @@ def main():
             colbert_dim=128,
             loss_fn=ColbertLoss(use_inbatch_negative=training_args.use_inbatch_negative),
         )
-    else:
-        logger.info('Set model to CrossEncoder')
+    elif training_args.model_type == 'cross-encoder':
+        logger.info('Set rank model to CrossEncoder')
         train_dataset = RerankDataset(args=data_args, tokenizer=tokenizer)
         data_collator = RerankCollator(tokenizer, max_length=data_args.max_length)
         model = AutoModelForRanking.from_pretrained(
@@ -164,6 +172,30 @@ def main():
             num_labels=1,
             loss_fn=nn.BCEWithLogitsLoss(reduction='mean'),
             causal_lm=model_args.causal_lm,
+        )
+    elif training_args.model_type == 'llm':
+        logger.info('Set rank model to LLM')
+        train_dataset = RetrievalDataset(
+            args=data_args,
+            tokenizer=tokenizer,
+            unfold_each_positive=data_args.unfold_each_positive,
+            positive_key=data_args.positive_key,
+            negative_key=data_args.negative_key,
+        )
+        data_collator = LLMRerankCollator(
+            tokenizer=tokenizer, max_length=data_args.max_length, prompt=data_args.task_prompt
+        )
+        check_loc = tokenizer('Yes', add_special_tokens=False)['input_ids'][-1]
+        model = AutoModelForRanking.from_pretrained(
+            model_args.model_name_or_path,
+            num_labels=1,
+            loss_fn=TokenLoss(check_loc=check_loc),
+            causal_lm=True,  # model_args.causal_lm
+            use_lora=training_args.use_lora,
+        )
+    else:
+        raise ValueError(
+            f'model_type should be one of colbert, cross-encoder and llm, instead of {training_args.model_type}'
         )
 
     logger.info(f"Total training examples: {len(train_dataset)}")

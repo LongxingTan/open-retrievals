@@ -4,6 +4,6 @@ transformers
 accelerator
 peft
 datasets
-faiss-cpu
+faiss-cpu<=1.8.0
 scikit-learn
 tqdm

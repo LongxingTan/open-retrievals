@@ -129,7 +129,7 @@ embed_model_name_or_path = "sentence-transformers/all-MiniLM-L6-v2"
 rerank_model_name_or_path = "BAAI/bge-reranker-base"
 llm_model_name_or_path = "microsoft/Phi-3-mini-128k-instruct"
 
-embeddings = LangchainEmbedding(model_name_or_path=embed_model_name_or_path)
+embeddings = LangchainEmbedding(model_name=embed_model_name_or_path)
 vectordb = Vectorstore(
     persist_directory=persist_directory,
     embedding_function=embeddings,
@@ -230,7 +230,7 @@ trainer.scheduler = scheduler
 trainer.train()
 ```
 
-- 命令行快速使用
+命令行快速使用
 
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1w2dRoRThG6DnUW46swqEUuWySKS1AXCp?usp=sharing)
 
@@ -296,7 +296,7 @@ trainer.scheduler = scheduler
 trainer.train()
 ```
 
-- 命令行快速使用
+命令行快速使用
 ```shell
 MODEL_NAME="BAAI/bge-reranker-base"
 OUTPUT_DIR="/train_out"

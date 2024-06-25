@@ -126,7 +126,7 @@ embed_model_name_or_path = "sentence-transformers/all-MiniLM-L6-v2"
 rerank_model_name_or_path = "BAAI/bge-reranker-base"
 llm_model_name_or_path = "microsoft/Phi-3-mini-128k-instruct"
 
-embeddings = LangchainEmbedding(model_name_or_path=embed_model_name_or_path)
+embeddings = LangchainEmbedding(model_name=embed_model_name_or_path)
 vectordb = Vectorstore(
     persist_directory=persist_directory,
     embedding_function=embeddings,

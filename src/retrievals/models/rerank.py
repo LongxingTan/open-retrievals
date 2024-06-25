@@ -25,7 +25,7 @@ from transformers.modeling_outputs import (
 from ..data.collator import RerankCollator
 from ..losses.colbert_loss import ColbertLoss
 from .pooling import AutoPooling
-from .utils import check_causal_lm, get_device_name
+from .utils import check_causal_lm, find_all_linear_names, get_device_name
 
 logger = logging.getLogger(__name__)
 
@@ -86,7 +86,7 @@ class AutoModelForRanking(BaseRanker):
         loss_fn: Union[nn.Module, Callable] = None,
         loss_type: Literal['classification', 'regression'] = 'classification',
         max_length: Optional[int] = None,
-        token_label: Optional[int] = None,
+        causal_lm: bool = False,
         temperature: Optional[float] = None,
         device: Optional[str] = None,
         **kwargs,
@@ -104,6 +104,7 @@ class AutoModelForRanking(BaseRanker):
 
         self.loss_fn = loss_fn
         self.loss_type = loss_type
+        self.causal_lm = causal_lm
 
         if max_length is None:
             if (
@@ -115,8 +116,6 @@ class AutoModelForRanking(BaseRanker):
 
         self.max_length = max_length
         self.temperature = temperature
-        if token_label:
-            self.token_label_loc = self.tokenizer(token_label, add_special_tokens=False)['input_ids'][-1]
 
         if device is None:
             self.device = get_device_name()
@@ -170,16 +169,6 @@ class AutoModelForRanking(BaseRanker):
             embeddings = self.classifier(last_hidden_state)
         return embeddings
 
-    def causal_encode(self, input_ids: torch.Tensor, attention_mask: torch.Tensor, labels: torch.Tensor):
-        model_output = self.model(input_ids, attention_mask, output_hidden_states=True)
-        _, max_indices = torch.max(labels, dim=1)
-        # shift the targets such that output n predicts token n+1
-        predict_indices = max_indices - 1
-        logits = [model_output.logits[i, predict_indices[i], :] for i in range(model_output.logits.shape[0])]
-        logits = torch.stack(logits, dim=0)
-        scores = logits[:, self.token_label_loc]
-        return scores.contiguous()
-
     def forward(
         self,
         input_ids: torch.Tensor,
@@ -188,6 +177,16 @@ class AutoModelForRanking(BaseRanker):
         return_dict: Optional[bool] = True,
         **kwargs,
     ) -> Union[Dict[str, torch.Tensor], Tuple[torch.Tensor, torch.Tensor], torch.Tensor]:
+        if self.causal_lm:
+            # LLM rerank
+            model_output = self.model(input_ids, attention_mask, output_hidden_states=True)
+            loss = self.loss_fn(model_output.logits, labels)
+            outputs_dict = dict()
+            outputs_dict['logits'] = model_output.logits
+            outputs_dict['loss'] = loss
+            return outputs_dict
+
+        # cross-encoder rerank
         features = self.encode(input_ids=input_ids, attention_mask=attention_mask)
 
         if self.temperature is not None:
@@ -348,6 +347,7 @@ class AutoModelForRanking(BaseRanker):
         causal_lm: bool = False,
         trust_remote_code: bool = True,
         use_fp16: bool = False,
+        use_lora: bool = False,
         lora_config=None,
         device: Optional[str] = None,
         linear_dim: int = 1,
@@ -362,6 +362,7 @@ class AutoModelForRanking(BaseRanker):
             logger.info('Set model to AutoModelForCausalLM')
             model = AutoModelForCausalLM.from_pretrained(model_name_or_path, trust_remote_code=trust_remote_code)
         else:
+            logger.info('Set model to  AutoModelForSequenceClassification')
             model = AutoModelForSequenceClassification.from_pretrained(
                 model_name_or_path, num_labels=num_labels, trust_remote_code=trust_remote_code, **kwargs
             )
@@ -369,8 +370,21 @@ class AutoModelForRanking(BaseRanker):
         if use_fp16:
             model.half()
 
-        if lora_config is not None:
+        if use_lora:
+            logger.info('Set model to lora')
             from peft import LoraConfig, TaskType, get_peft_model
+
+            if lora_config is None:
+                lora_alpha = 64
+                lora_dropout = 0.05
+                target_modules = find_all_linear_names(model)
+                lora_config = LoraConfig(
+                    lora_alpha=lora_alpha,
+                    lora_dropout=lora_dropout,
+                    target_modules=target_modules,
+                    bias='none',
+                    task_type='FEATURE_EXTRACTION',
+                )
 
             model = get_peft_model(model, lora_config)
             model.print_trainable_parameters()
@@ -384,6 +398,7 @@ class AutoModelForRanking(BaseRanker):
             loss_type=loss_type,
             linear_dim=linear_dim,
             temperature=temperature,
+            causal_lm=causal_lm,
         )
         return reranker
 
