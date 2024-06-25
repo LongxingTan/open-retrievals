@@ -191,6 +191,7 @@ def main():
             num_labels=1,
             loss_fn=TokenLoss(check_loc=check_loc),
             causal_lm=True,  # model_args.causal_lm
+            use_lora=training_args.use_lora,
         )
     else:
         raise ValueError(
