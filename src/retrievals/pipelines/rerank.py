@@ -65,6 +65,7 @@ class DataArguments:
 
     query_instruction: str = field(default=None, metadata={"help": "instruction for query"})
     document_instruction: str = field(default=None, metadata={"help": "instruction for document"})
+    task_prompt: str = field(default=None)
 
 
 @dataclass
@@ -136,7 +137,7 @@ def main():
     )
 
     if training_args.model_type == 'colbert':
-        logger.info('Set model to ColBERT')
+        logger.info('Set rank model to ColBERT')
         train_dataset = RetrievalDataset(
             args=data_args,
             tokenizer=tokenizer,
@@ -157,7 +158,7 @@ def main():
             loss_fn=ColbertLoss(use_inbatch_negative=training_args.use_inbatch_negative),
         )
     elif training_args.model_type == 'cross-encoder':
-        logger.info('Set model to CrossEncoder')
+        logger.info('Set rank model to CrossEncoder')
         train_dataset = RerankDataset(args=data_args, tokenizer=tokenizer)
         data_collator = RerankCollator(tokenizer, max_length=data_args.max_length)
         model = AutoModelForRanking.from_pretrained(
@@ -167,7 +168,18 @@ def main():
             causal_lm=model_args.causal_lm,
         )
     elif training_args.model_type == 'llm':
-        pass
+        logger.info('Set rank model to LLM')
+        train_dataset = RerankDataset(args=data_args, tokenizer=tokenizer)
+        data_collator = LLMRerankCollator(
+            tokenizer=tokenizer, max_length=data_args.max_length, prompt=data_args.task_prompt
+        )
+        check_loc = tokenizer('Yes', add_special_tokens=False)['input_ids'][-1]
+        model = AutoModelForRanking.from_pretrained(
+            model_args.model_name_or_path,
+            num_labels=1,
+            loss_fn=TokenLoss(check_loc=check_loc),
+            causal_lm=model_args.causal_lm,
+        )
     else:
         raise ValueError(
             f'model_type should be one of colbert, cross-encoder and llm, instead of {training_args.model_type}'

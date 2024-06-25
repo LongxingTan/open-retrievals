@@ -17,9 +17,10 @@ class TokenLoss(nn.Module):
         self.check_loc = check_loc
         self.criterion = criterion
 
-    def forward(self, logits, labels):
+    def forward(self, logits: torch.Tensor, labels: torch.Tensor):
         batch_size = labels.size(0)
         _, max_indices = torch.max(labels, dim=1)
+        # shift the targets such that output n predicts token n+1
         predict_indices = max_indices - 1
         logits = [logits[i, predict_indices[i], :] for i in range(logits.shape[0])]
         logits = torch.stack(logits, dim=0)
