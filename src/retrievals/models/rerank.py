@@ -86,7 +86,7 @@ class AutoModelForRanking(BaseRanker):
         loss_fn: Union[nn.Module, Callable] = None,
         loss_type: Literal['classification', 'regression'] = 'classification',
         max_length: Optional[int] = None,
-        casual_lm: bool = False,
+        causal_lm: bool = False,
         temperature: Optional[float] = None,
         device: Optional[str] = None,
         **kwargs,
@@ -104,7 +104,7 @@ class AutoModelForRanking(BaseRanker):
 
         self.loss_fn = loss_fn
         self.loss_type = loss_type
-        self.casual_lm = casual_lm
+        self.causal_lm = causal_lm
 
         if max_length is None:
             if (
@@ -177,7 +177,7 @@ class AutoModelForRanking(BaseRanker):
         return_dict: Optional[bool] = True,
         **kwargs,
     ) -> Union[Dict[str, torch.Tensor], Tuple[torch.Tensor, torch.Tensor], torch.Tensor]:
-        if self.casual_lm:
+        if self.causal_lm:
             # LLM rerank
             model_output = self.model(input_ids, attention_mask, output_hidden_states=True)
             loss = self.loss_fn(model_output.logits, labels)
@@ -362,6 +362,7 @@ class AutoModelForRanking(BaseRanker):
             logger.info('Set model to AutoModelForCausalLM')
             model = AutoModelForCausalLM.from_pretrained(model_name_or_path, trust_remote_code=trust_remote_code)
         else:
+            logger.info('Set model to  AutoModelForSequenceClassification')
             model = AutoModelForSequenceClassification.from_pretrained(
                 model_name_or_path, num_labels=num_labels, trust_remote_code=trust_remote_code, **kwargs
             )

@@ -287,7 +287,7 @@ class ColBertCollator(DataCollatorWithPadding):
 
 
 class LLMRerankCollator(DataCollatorForSeq2Seq):
-    """Rerank collator for casual llm, with examples query, positive and negative"""
+    """Rerank collator for causal llm, with examples query, positive and negative"""
 
     tokenizers: PreTrainedTokenizer
     query_key: str = 'query'
