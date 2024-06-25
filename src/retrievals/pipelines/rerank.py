@@ -76,6 +76,7 @@ class RerankerTrainingArguments(TrainingArguments):
     temperature: Optional[float] = field(default=0.02)
     remove_unused_columns: bool = field(default=False)
     num_train_epochs: int = field(default=3)
+    use_lora: bool = field(default=False)
 
 
 def get_optimizer(model, learning_rate, weight_decay=0.0):

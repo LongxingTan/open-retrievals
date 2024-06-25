@@ -25,7 +25,7 @@ from transformers.modeling_outputs import (
 from ..data.collator import RerankCollator
 from ..losses.colbert_loss import ColbertLoss
 from .pooling import AutoPooling
-from .utils import check_causal_lm, get_device_name
+from .utils import check_causal_lm, find_all_linear_names, get_device_name
 
 logger = logging.getLogger(__name__)
 
@@ -347,6 +347,7 @@ class AutoModelForRanking(BaseRanker):
         causal_lm: bool = False,
         trust_remote_code: bool = True,
         use_fp16: bool = False,
+        use_lora: bool = False,
         lora_config=None,
         device: Optional[str] = None,
         linear_dim: int = 1,
@@ -368,8 +369,21 @@ class AutoModelForRanking(BaseRanker):
         if use_fp16:
             model.half()
 
-        if lora_config is not None:
+        if use_lora:
+            logger.info('Set model to lora')
             from peft import LoraConfig, TaskType, get_peft_model
+
+            if lora_config is None:
+                lora_alpha = 64
+                lora_dropout = 0.05
+                target_modules = find_all_linear_names(model)
+                lora_config = LoraConfig(
+                    lora_alpha=lora_alpha,
+                    lora_dropout=lora_dropout,
+                    target_modules=target_modules,
+                    bias='none',
+                    task_type='FEATURE_EXTRACTION',
+                )
 
             model = get_peft_model(model, lora_config)
             model.print_trainable_parameters()
