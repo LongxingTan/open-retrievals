@@ -128,6 +128,7 @@ def main():
         use_fast=False,
     )
     if training_args.use_bnb_config:
+        logger.info('Use quantization bnb config')
         quantization_config = BitsAndBytesConfig(
             load_in_4bit=True,
             bnb_4bit_use_double_quant=True,
