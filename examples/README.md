@@ -1,16 +1,21 @@
 # Open-Retrievals examples
 
 ## Basic Usage
+
+| Exp                  | Model              | Performance | Finetune | Colab |
+|----------------------|--------------------|-------------|-----------|-------|
+| embed finetune       | bge-base-zh-v1.5   | 0.657       | 0.701     |[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/17KXe2lnNRID-HiVvMtzQnONiO74oGs91?usp=sharing)|
+| embed llm finetune   |                    |             |           |       |
+| rerank cross encoder | bge-reranker-base  | 0.666       | 0.691     |[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1QvbUkZtG56SXomGYidwI4RQzwODQrWNm?usp=sharing)|
+| rerank colbert       | |             |           |[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1QVtqhQ080ZMltXoJyODMmvEQYI6oo5kO?usp=sharing)|
+| rerank llm finetune  | |             |           |       |
+
+
 - [embedding-pairwise finetune](./embedding_pairwise_finetune.py)
 - [embedding-llm pairwise finetune](./embedding_llm_finetune.py)
 - [rerank-cross encoder](./rerank_cross_encoder.py)
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1QvbUkZtG56SXomGYidwI4RQzwODQrWNm?usp=sharing)
-
 - [rerank-colbert](./rerank_colbert.py)
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1QVtqhQ080ZMltXoJyODMmvEQYI6oo5kO?usp=sharing)
-
-- [rerank-llm finetune](./rerank_llm_finetune.py)
-
+- [rerank-llm finetune](../reference/rerank_llm_finetune.py)
 - [RAG with Langchain](./rag_langchain_demo.py)
 
 

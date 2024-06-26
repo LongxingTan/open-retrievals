@@ -1,6 +1,5 @@
 import json
 import os
-import re
 import tempfile
 
 import streamlit as st
