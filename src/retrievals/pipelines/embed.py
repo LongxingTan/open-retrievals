@@ -5,14 +5,7 @@ from pathlib import Path
 from typing import Optional
 
 from torch import nn
-from transformers import (
-    AdamW,
-    AutoConfig,
-    AutoTokenizer,
-    HfArgumentParser,
-    TrainingArguments,
-    set_seed,
-)
+from transformers import AutoTokenizer, HfArgumentParser, TrainingArguments, set_seed
 
 from ..data import PairCollator, RetrievalDataset, TripletCollator
 from ..losses import InfoNCE, SimCSE, TripletLoss
@@ -77,6 +70,7 @@ class RetrieverTrainingArguments(TrainingArguments):
     )
     pooling_method: str = field(default='cls', metadata={"help": "the pooling method, should be cls or mean"})
     normalized: bool = field(default=True)
+    loss_fn: str = field(default='infonce')
     use_inbatch_neg: bool = field(default=True, metadata={"help": "use documents in the same batch as negatives"})
     remove_unused_columns: bool = field(default=False)
     use_lora: bool = field(default=False)
@@ -131,15 +125,22 @@ def main():
         causal_lm=model_args.causal_lm,
         use_lora=training_args.use_lora,
     )
-    model = model.set_train_type(
-        "pairwise",
-        # loss_fn=TripletLoss(training_args.temperature),
-        # loss_fn=SimCSE(temperature=training_args.temperature),
-        loss_fn=InfoNCE(
+    if training_args.loss_fn == 'infonce':
+        loss_fn = InfoNCE(
             nn.CrossEntropyLoss(label_smoothing=0.0),
             use_inbatch_negative=training_args.use_inbatch_neg,
             temperature=training_args.temperature,
-        ),
+        )
+    elif training_args.loss_fn == 'simcse':
+        loss_fn = SimCSE(temperature=training_args.temperature)
+    elif training_args.loss_fn == 'triplet':
+        loss_fn = (TripletLoss(training_args.temperature),)
+    else:
+        raise ValueError
+
+    model = model.set_train_type(
+        "pairwise",
+        loss_fn=loss_fn,
     )
 
     train_dataset = RetrievalDataset(
