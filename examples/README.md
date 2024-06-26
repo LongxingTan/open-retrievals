@@ -2,21 +2,22 @@
 
 ## Basic Usage
 
-| Exp                        | Model                   | Performance | Finetune  | Colab                                                                                                                                                               |
-|----------------------------|-------------------------|-------------|-----------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| embed pairwise finetune    | bge-base-zh-v1.5        | 0.657       | **0.701** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/17KXe2lnNRID-HiVvMtzQnONiO74oGs91?usp=sharing) |
-| embed llm finetune (LoRA)  | Qwen2-1.5B-Instruct     | 0.554       |           | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1jj1kBQWFcuQ3a7P9ttnl1hgX7H8WA_Za?usp=sharing) |
-| rerank cross encoder       | bge-reranker-base       | 0.666       | **0.691** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1QvbUkZtG56SXomGYidwI4RQzwODQrWNm?usp=sharing) |
-| rerank colbert (zero shot) | chinese-roberta-wwm-ext |             |           | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1QVtqhQ080ZMltXoJyODMmvEQYI6oo5kO?usp=sharing) |
-| rerank llm finetune (LoRA) | Qwen2-1.5B-Instruct     |             |           |                                                                                                                                                                     |
-
-
 - [embedding-pairwise finetune](./embedding_pairwise_finetune.py)
 - [embedding-llm pairwise finetune](./embedding_llm_finetune.py)
 - [rerank-cross encoder](./rerank_cross_encoder.py)
 - [rerank-colbert](./rerank_colbert.py)
 - [rerank-llm finetune](../reference/rerank_llm_finetune.py)
 - [RAG with Langchain](./rag_langchain_demo.py)
+
+| Exp                        | Model                   | Original  | Finetune  | Colab                                                                                                                                                               |
+|----------------------------|-------------------------|-----------|-----------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| embed pairwise finetune    | bge-base-zh-v1.5        | 0.657     | **0.701** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/17KXe2lnNRID-HiVvMtzQnONiO74oGs91?usp=sharing) |
+| embed llm finetune (LoRA)  | Qwen2-1.5B-Instruct     | 0.554     | ****      | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1jj1kBQWFcuQ3a7P9ttnl1hgX7H8WA_Za?usp=sharing) |
+| rerank cross encoder       | bge-reranker-base       | 0.666     | **0.691** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1QvbUkZtG56SXomGYidwI4RQzwODQrWNm?usp=sharing) |
+| rerank colbert (zero shot) | chinese-roberta-wwm-ext |           |           | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1QVtqhQ080ZMltXoJyODMmvEQYI6oo5kO?usp=sharing) |
+| rerank llm finetune (LoRA) | Qwen2-1.5B-Instruct     |           |           |                                                                                                                                                                     |
+
+* The metrics is evaluated by MAP in t2-ranking data
 
 
 ## Retrieval
@@ -124,7 +125,6 @@ torchrun --nproc_per_node 1 \
   --logging_steps 100
 ```
 
-
 **Colbert reranking**
 
 ```shell
@@ -155,9 +155,7 @@ torchrun --nproc_per_node 1 \
   --logging_steps 100
 ```
 
-
 **LLM reranking**
-
 - AutoModelForRanking.from_pretrained(model_name_or_path, causal_lm = True)
 - Prompt: "Given a query with a relevant body, determine whether the document is pertinent to the query by providing a prediction of either 'Yes' or 'No'."
 
