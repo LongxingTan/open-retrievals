@@ -2,7 +2,6 @@ import copy
 import logging
 import os
 import time
-from contextlib import nullcontext
 from typing import TYPE_CHECKING, Callable, Dict, List, Literal, Optional, Tuple, Union
 
 import numpy as np
@@ -18,17 +17,12 @@ from transformers import (
     AutoModelForCausalLM,
     AutoTokenizer,
     BatchEncoding,
-    GenerationConfig,
     PreTrainedTokenizer,
 )
 
+from .base import Base
 from .pooling import AutoPooling
-from .utils import (
-    batch_to_device,
-    check_causal_lm,
-    find_all_linear_names,
-    get_device_name,
-)
+from .utils import batch_to_device, find_all_linear_names, get_device_name
 
 if TYPE_CHECKING:
     import pandas as pd
@@ -36,7 +30,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class AutoModelForEmbedding(nn.Module):
+class AutoModelForEmbedding(Base):
     """
     Loads or creates an Embedding model that can be used to map sentences / text.
 
@@ -172,7 +166,7 @@ class AutoModelForEmbedding(nn.Module):
         normalize_embeddings: bool = False,
     ):
         if isinstance(inputs, (DataLoader, BatchEncoding, Dict)):
-            return self.encode_from_loader(
+            return self._encode_from_loader(
                 loader=inputs,
                 show_progress_bar=show_progress_bar,
                 output_value=output_value,
@@ -194,36 +188,6 @@ class AutoModelForEmbedding(nn.Module):
             )
         else:
             raise ValueError(f'Input type: {type(inputs)}')
-
-    def encode_from_loader(
-        self,
-        loader: DataLoader,
-        convert_to_numpy: bool = True,
-        device: str = None,
-        normalize_embeddings: bool = False,
-        show_progress_bar: bool = None,
-        **kwargs,
-    ) -> Union[List[torch.Tensor], np.ndarray, torch.Tensor]:
-        device = device or self.device
-        self.model.eval()
-        self.model.to(device)
-
-        all_embeddings = []
-
-        for idx, inputs in enumerate(tqdm(loader, desc="Encoding", disable=not show_progress_bar)):
-            with torch.autocast(device_type=device) if self.use_fp16 else nullcontext():
-                with torch.no_grad():
-                    inputs_on_device = {k: v.to(device) for k, v in inputs.items()}
-                    embeddings = self.forward_from_loader(inputs_on_device)
-                    embeddings = embeddings.detach()
-                    if normalize_embeddings:
-                        embeddings = torch.nn.functional.normalize(embeddings, p=2, dim=1)
-                    all_embeddings.append(embeddings)
-        if convert_to_numpy:
-            all_embeddings = np.concatenate([emb.cpu().numpy() for emb in all_embeddings], axis=0)
-        else:
-            all_embeddings = torch.concat(all_embeddings)
-        return all_embeddings
 
     def encode_from_text(
         self,
@@ -464,7 +428,11 @@ class AutoModelForEmbedding(nn.Module):
         else:
             if pretrained:
                 model = AutoModel.from_pretrained(
-                    model_name_or_path, config=config, trust_remote_code=trust_remote_code, **kwargs
+                    model_name_or_path,
+                    config=config,
+                    trust_remote_code=trust_remote_code,
+                    quantization_config=quantization_config,
+                    **kwargs,
                 )
             else:
                 model = AutoModel.from_config(config)
@@ -474,7 +442,7 @@ class AutoModelForEmbedding(nn.Module):
             logger.info('Set model to fp16, please note that if you want fp16 during training, set training_args fp16')
             model.half()
 
-        if use_lora:
+        if use_lora and lora_path is not None:
             logger.info('Set model to lora')
             from peft import LoraConfig, TaskType, get_peft_model
 

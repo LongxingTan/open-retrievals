@@ -4,15 +4,9 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
 
+import torch
 from torch import nn
-from transformers import (
-    AdamW,
-    AutoConfig,
-    AutoTokenizer,
-    HfArgumentParser,
-    TrainingArguments,
-    set_seed,
-)
+from transformers import AutoTokenizer, HfArgumentParser, TrainingArguments, set_seed
 
 from ..data import PairCollator, RetrievalDataset, TripletCollator
 from ..losses import InfoNCE, SimCSE, TripletLoss
@@ -65,6 +59,7 @@ class DataArguments:
     query_key: str = field(default=None)
     positive_key: str = field(default='positive')
     negative_key: str = field(default='negative')
+    is_query: bool = field(default=False)
 
 
 @dataclass
@@ -77,9 +72,12 @@ class RetrieverTrainingArguments(TrainingArguments):
     )
     pooling_method: str = field(default='cls', metadata={"help": "the pooling method, should be cls or mean"})
     normalized: bool = field(default=True)
+    loss_fn: str = field(default='infonce')
     use_inbatch_neg: bool = field(default=True, metadata={"help": "use documents in the same batch as negatives"})
     remove_unused_columns: bool = field(default=False)
     use_lora: bool = field(default=False)
+    use_bnb_config: bool = field(default=False)
+    do_encode: bool = field(default=False, metadata={"help": "run the encoding loop"})
 
 
 def main():
@@ -125,48 +123,77 @@ def main():
         cache_dir=model_args.cache_dir,
         use_fast=False,
     )
+    if training_args.use_bnb_config:
+        from transformers import BitsAndBytesConfig
+
+        logger.info('Use quantization bnb config')
+        quantization_config = BitsAndBytesConfig(
+            load_in_4bit=True,
+            bnb_4bit_use_double_quant=True,
+            bnb_4bit_quant_type="nf4",
+            bnb_4bit_compute_dtype=torch.bfloat16,
+        )
+    else:
+        quantization_config = None
+
     model = AutoModelForEmbedding.from_pretrained(
         model_name_or_path=model_args.model_name_or_path,
         pooling_method=training_args.pooling_method,
         causal_lm=model_args.causal_lm,
         use_lora=training_args.use_lora,
+        quantization_config=quantization_config,
     )
-    model = model.set_train_type(
-        "pairwise",
-        # loss_fn=TripletLoss(training_args.temperature),
-        # loss_fn=SimCSE(temperature=training_args.temperature),
-        loss_fn=InfoNCE(
-            nn.CrossEntropyLoss(label_smoothing=0.0),
-            use_inbatch_negative=training_args.use_inbatch_neg,
-            temperature=training_args.temperature,
-        ),
-    )
+    if training_args.do_train:
+        if training_args.loss_fn == 'infonce':
+            loss_fn = InfoNCE(
+                nn.CrossEntropyLoss(label_smoothing=0.0),
+                use_inbatch_negative=training_args.use_inbatch_neg,
+                temperature=training_args.temperature,
+            )
+        elif training_args.loss_fn == 'simcse':
+            loss_fn = SimCSE(temperature=training_args.temperature)
+        elif training_args.loss_fn == 'triplet':
+            loss_fn = (TripletLoss(training_args.temperature),)
+        else:
+            raise ValueError
 
-    train_dataset = RetrievalDataset(
-        args=data_args, tokenizer=tokenizer, positive_key=data_args.positive_key, negative_key=data_args.negative_key
-    )
-    logger.info(f"Total training examples: {len(train_dataset)}")
+        model = model.set_train_type(
+            "pairwise",
+            loss_fn=loss_fn,
+        )
 
-    trainer = RetrievalTrainer(
-        model=model,
-        args=training_args,
-        train_dataset=train_dataset,
-        data_collator=TripletCollator(
-            tokenizer,
-            query_max_length=data_args.query_max_length,
-            document_max_length=data_args.document_max_length,
+        train_dataset = RetrievalDataset(
+            args=data_args,
+            tokenizer=tokenizer,
             positive_key=data_args.positive_key,
             negative_key=data_args.negative_key,
-        ),
-    )
+        )
+        logger.info(f"Total training examples: {len(train_dataset)}")
 
-    Path(training_args.output_dir).mkdir(parents=True, exist_ok=True)
+        trainer = RetrievalTrainer(
+            model=model,
+            args=training_args,
+            train_dataset=train_dataset,
+            data_collator=TripletCollator(
+                tokenizer,
+                query_max_length=data_args.query_max_length,
+                document_max_length=data_args.document_max_length,
+                positive_key=data_args.positive_key,
+                negative_key=data_args.negative_key,
+            ),
+        )
 
-    trainer.train()
-    trainer.save_model(training_args.output_dir)
+        Path(training_args.output_dir).mkdir(parents=True, exist_ok=True)
 
-    if trainer.is_world_process_zero():
-        tokenizer.save_pretrained(training_args.output_dir)
+        trainer.train()
+        trainer.save_model(training_args.output_dir)
+
+        if trainer.is_world_process_zero():
+            tokenizer.save_pretrained(training_args.output_dir)
+
+    if training_args.do_encode:
+        max_length = data_args.query_max_length if data_args.is_query else data_args.document_max_length
+        print(max_length)
 
 
 if __name__ == "__main__":

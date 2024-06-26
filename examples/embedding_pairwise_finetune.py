@@ -7,12 +7,7 @@ from transformers import (
     get_linear_schedule_with_warmup,
 )
 
-from src.retrievals import (
-    AutoModelForEmbedding,
-    PairCollator,
-    RetrievalTrainer,
-    TripletCollator,
-)
+from src.retrievals import AutoModelForEmbedding, PairCollator, RetrievalTrainer
 from src.retrievals.losses import InfoNCE, SimCSE, TripletLoss
 
 model_name_or_path: str = "sentence-transformers/paraphrase-multilingual-mpnet-base-v2"

@@ -1,4 +1,18 @@
-import json
+"""
+# torchrun --nnodes 1 --nproc-per-node 4
+# deepspeed --include localhost:0,1,2,3
+# CUDA_VISIBLE_DEVICES=1,2,3 python
+# accelerate launch --config_file conf_ds.yaml \
+
+accelerate launch \
+    --config_file conf_llm.yaml \
+    llm_finetune_for_embed.py \
+    --model_name_or_path mistralai/Mistral-7B-v0.1 \
+    --train_data  \
+    --output_dir modeloutput \
+
+"""
+
 import logging
 import os
 import random
@@ -218,21 +232,8 @@ def main():
     logger.info("Training/evaluation parameters %s", training_args)
     logger.info("MODEL parameters %s", model_args)
 
-    # from modelscope.hub.snapshot_download import snapshot_download
-    # snapshot_download(
-    #     model_args.model_name_or_path,
-    #     cache_dir=training_args.cache_dir,
-    #     revision="master",
-    # )
-
     set_seed(training_args.seed)
 
-    # num_labels = 1
-    # config = AutoConfig.from_pretrained(
-    #     (model_args.config_name if model_args.config_name else model_args.model_name_or_path),
-    #     num_labels=num_labels,
-    #     cache_dir=training_args.cache_dir,
-    # )
     tokenizer = AutoTokenizer.from_pretrained(
         (model_args.tokenizer_name if model_args.tokenizer_name else model_args.model_name_or_path),
         cache_dir=training_args.cache_dir,
