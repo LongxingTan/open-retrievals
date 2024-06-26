@@ -17,7 +17,6 @@ from transformers import (
     AutoModelForCausalLM,
     AutoTokenizer,
     BatchEncoding,
-    GenerationConfig,
     PreTrainedTokenizer,
 )
 

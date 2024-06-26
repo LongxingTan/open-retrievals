@@ -1,85 +1,192 @@
 # Open-Retrievals examples
 
+## Basic Usage
+- [embedding-pairwise finetune](./embedding_pairwise_finetune.py)
+- [embedding-llm pairwise finetune](./embedding_llm_finetune.py)
+- [rerank-cross encoder](./rerank_cross_encoder.py)
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1QvbUkZtG56SXomGYidwI4RQzwODQrWNm?usp=sharing)
 
-## Embedding & Retrieval
+- [rerank-colbert](./rerank_colbert.py)
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1QVtqhQ080ZMltXoJyODMmvEQYI6oo5kO?usp=sharing)
 
-[Text embeddings finetune with contrastive learning](./1_retrieval/pairwise_finetune2.py)
+- [rerank-llm finetune](./rerank_llm_finetune.py)
+
+- [RAG with Langchain](./rag_langchain_demo.py)
+
+
+## Retrieval
 
 **Data Format**
-
-Training stype: Each line of the Train file is a training instance
-
-- stype1
-```
-{'query': TEXT_TYPE, 'document': List[TEXT_TYPE]}
-...
-```
-
-- stype2
 ```
 {'query': TEXT_TYPE, 'positive': List[TEXT_TYPE], 'negative': List[TEXT_TYPE]}
 ...
 ```
 
-- stype3
-```
-{'query': TEXT_TYPE, 'positives': List[TEXT_TYPE], "scores":List[float]}
-...
-```
-
-Inference/Encoding: Each line of the encoding file is a piece of text to be encoded
-```
-{text_id: "xxx", 'text': TEXT_TYPE}
-...
-```
-
-**Training**
 ```shell
-cd 1_retrieval
-python pairwise_finetune.py
+MODEL_NAME="BAAI/bge-base-zh-v1.5"
+TRAIN_DATA="/t2_ranking.jsonl"
+OUTPUT_DIR="/t2_output"
+
+torchrun --nproc_per_node 1 \
+  -m retrievals.pipelines.embed \
+  --output_dir $OUTPUT_DIR \
+  --overwrite_output_dir \
+  --model_name_or_path $MODEL_NAME \
+  --do_train \
+  --train_data $TRAIN_DATA \
+  --positive_key positive \
+  --negative_key negative \
+  --learning_rate 3e-5 \
+  --fp16 \
+  --num_train_epochs 5 \
+  --per_device_train_batch_size 32 \
+  --dataloader_drop_last True \
+  --query_max_length 64 \
+  --document_max_length 512 \
+  --train_group_size 2 \
+  --logging_steps 100 \
+  --temperature 0.02 \
+  --use_inbatch_neg false
 ```
 
-```shell
-cd 1_retrieval
 
-CUDA_VISIBLE_DEVICES=0 python pairwise_finetune2.py \
-    --model_name_or_path bert-base-multilingual-uncased \
-    --train_data ./example_data/toy_finetune_data.jsonl \
-    --output_dir modeloutput
-```
+If you want to finetune a LLM for embedding:
+
+- add query_instruction
+  - "Given a query and a relevant document, retrieve the document that are pertinent to the query\nQuery: "
+- use the appropriate pooling_method
+  - last
+- maybe reduce the batch_size due to large model size
+- set use_lora to True if you want to use lora
 
 ```shell
-cd 1_retrieval
-sh llm_embed.sh
+MODEL_NAME="intfloat/e5-mistral-7b-instruct"
+TRAIN_DATA="/t2_ranking.jsonl"
+OUTPUT_DIR="/t2_output"
+
+torchrun --nproc_per_node 1 \
+  -m retrievals.pipelines.embed \
+  --output_dir $OUTPUT_DIR \
+  --overwrite_output_dir \
+  --model_name_or_path $MODEL_NAME \
+  --do_train \
+  --train_data $TRAIN_DATA \
+  --positive_key positive \
+  --negative_key negative \
+  --use_lora True \
+  --query_instruction "Given a query and a relevant document, retrieve the document that are pertinent to the query\nQuery: " \
+  --document_instruction '# Document: ' \
+  --learning_rate 3e-5 \
+  --bf16 \
+  --num_train_epochs 5 \
+  --per_device_train_batch_size 2 \
+  --gradient_accumulation_steps 1 \
+  --dataloader_drop_last True \
+  --query_max_length 128 \
+  --document_max_length 256 \
+  --train_group_size 2 \
+  --logging_steps 100 \
+  --temperature 0.02 \
+  --use_inbatch_neg false
 ```
 
 
 ## Rerank
-- [Cross-encoder Rerank using T2Ranking data](2_rerank/train_cross_encoder.py)
 
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1QvbUkZtG56SXomGYidwI4RQzwODQrWNm?usp=sharing)
+cross encoder
 
 ```shell
-cd 2_rerank
-python train_cross_encoder.py
+MODEL_NAME="BAAI/bge-reranker-base"
+TRAIN_DATA="/t2_ranking.jsonl"
+OUTPUT_DIR="/t2_output"
+
+torchrun --nproc_per_node 1 \
+  -m retrievals.pipelines.rerank \
+  --output_dir $OUTPUT_DIR \
+  --overwrite_output_dir \
+  --model_name_or_path $MODEL_NAME \
+  --model_type cross-encoder \
+  --do_train \
+  --train_data $TRAIN_DATA \
+  --positive_key positive \
+  --negative_key negative \
+  --learning_rate 3e-5 \
+  --fp16 \
+  --num_train_epochs 3 \
+  --per_device_train_batch_size 32 \
+  --dataloader_drop_last True \
+  --max_length 512 \
+  --train_group_size 3 \
+  --logging_steps 100
 ```
 
 
-- [ColBERT rerank](2_rerank/train_colbert.py)
-
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1QVtqhQ080ZMltXoJyODMmvEQYI6oo5kO?usp=sharing)
+colbert
 
 ```shell
-cd 2_rerank
-python train_colbert.py
+MODEL_NAME='hfl/chinese-roberta-wwm-ext'
+TRAIN_DATA="/t2_ranking.jsonl"
+OUTPUT_DIR="/t2_output"
+
+torchrun --nproc_per_node 1 \
+  --module retrievals.pipelines.rerank \
+  --output_dir $OUTPUT_DIR \
+  --overwrite_output_dir \
+  --model_name_or_path $MODEL_NAME \
+  --tokenizer_name $MODEL_NAME \
+  --model_type colbert \
+  --do_train \
+  --train_data $TRAIN_DATA \
+  --positive_key positive \
+  --negative_key negative \
+  --learning_rate 1e-5 \
+  --fp16 \
+  --num_train_epochs 3 \
+  --per_device_train_batch_size 8 \
+  --dataloader_drop_last True \
+  --max_length 512 \
+  --train_group_size 8 \
+  --unfold_each_positive false \
+  --save_total_limit 2 \
+  --logging_steps 100
+```
+
+
+LLM
+- AutoModelForRanking.from_pretrained(model_name_or_path, causal_lm = True)
+- Prompt: "Given a query with a relevant body, determine whether the document is pertinent to the query by providing a prediction of either 'Yes' or 'No'."
+
+```shell
+MODEL_NAME="Qwen/Qwen2-1.5B-Instruct"
+TRAIN_DATA="/t2_ranking.jsonl"
+OUTPUT_DIR="/t2_output"
+
+torchrun --nproc_per_node 1 \
+    -m retrievals.pipelines.rerank \
+    --output_dir ${OUTPUT_DIR} \
+    --overwrite_output_dir \
+    --model_name_or_path $MODEL_NAME \
+    --model_type llm \
+    --causal_lm True \
+    --use_lora True \
+    --train_data $TRAIN_DATA \
+    --task_prompt "Given a query A and a passage B, determine whether the passage contains an answer to the query by providing a prediction of either 'Yes' or 'No'." \
+    --query_instruction "A: " \
+    --document_instruction 'B: ' \
+    --positive_key positive \
+    --negative_key negative \
+    --learning_rate 2e-4 \
+    --num_train_epochs 1 \
+    --per_device_train_batch_size 1 \
+    --gradient_accumulation_steps 16 \
+    --dataloader_drop_last True \
+    --max_len 256 \
+    --train_group_size 4 \
+    --logging_steps 1 \
+    --save_steps 2000 \
+    --save_total_limit 2 \
+    --bf16
 ```
 
 
 ## RAG
-- [RAG application with retrieval and rerank in langchain](./3_rag/rag_langchain_demo.py)
-
-
-```shell
-cd 3_rag
-python rag_langchain_demo.py
-```
