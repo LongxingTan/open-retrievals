@@ -7,7 +7,7 @@ import torch
 from transformers import AutoConfig, AutoTokenizer, BertTokenizer
 
 from src.retrievals.data.collator import RerankCollator
-from src.retrievals.models.rerank import AutoModelForRanking, BaseRanker, ColBERT
+from src.retrievals.models.rerank import AutoModelForRanking, ColBERT
 
 from .test_modeling_common import (
     ModelTesterMixin,
