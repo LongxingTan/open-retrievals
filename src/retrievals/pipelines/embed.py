@@ -6,13 +6,7 @@ from typing import Optional
 
 import torch
 from torch import nn
-from transformers import (
-    AutoTokenizer,
-    BitsAndBytesConfig,
-    HfArgumentParser,
-    TrainingArguments,
-    set_seed,
-)
+from transformers import AutoTokenizer, HfArgumentParser, TrainingArguments, set_seed
 
 from ..data import PairCollator, RetrievalDataset, TripletCollator
 from ..losses import InfoNCE, SimCSE, TripletLoss
@@ -128,6 +122,8 @@ def main():
         use_fast=False,
     )
     if training_args.use_bnb_config:
+        from transformers import BitsAndBytesConfig
+
         logger.info('Use quantization bnb config')
         quantization_config = BitsAndBytesConfig(
             load_in_4bit=True,
