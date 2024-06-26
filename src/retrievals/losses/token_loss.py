@@ -26,7 +26,7 @@ class TokenLoss(nn.Module):
         predict_indices = max_indices - 1
         logits = [logits[i, predict_indices[i], :] for i in range(logits.shape[0])]
         logits = torch.stack(logits, dim=0)
-        scores = logits[:, self.check_loc]
+        scores = logits[:, self.token_index]
 
         grouped_scores = scores.contiguous().view(batch_size, -1)
         target = torch.zeros(batch_size, device=grouped_scores.device, dtype=torch.long)
