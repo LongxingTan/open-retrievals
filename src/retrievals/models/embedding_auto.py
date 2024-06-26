@@ -23,12 +23,7 @@ from transformers import (
 
 from .base import Base
 from .pooling import AutoPooling
-from .utils import (
-    batch_to_device,
-    check_causal_lm,
-    find_all_linear_names,
-    get_device_name,
-)
+from .utils import batch_to_device, find_all_linear_names, get_device_name
 
 if TYPE_CHECKING:
     import pandas as pd

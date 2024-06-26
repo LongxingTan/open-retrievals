@@ -24,59 +24,14 @@ from transformers.modeling_outputs import (
 
 from ..data.collator import RerankCollator
 from ..losses.colbert_loss import ColbertLoss
+from .base import Base
 from .pooling import AutoPooling
 from .utils import check_causal_lm, find_all_linear_names, get_device_name
 
 logger = logging.getLogger(__name__)
 
 
-class BaseRanker(ABC, torch.nn.Module):
-    @abstractmethod
-    def __init__(
-        self,
-        model: Optional[nn.Module] = None,
-        tokenizer: Optional[PreTrainedTokenizer] = None,
-        **kwargs,
-    ):
-        super(BaseRanker, self).__init__()
-        self.model: Optional[nn.Module] = model
-        self.tokenizer = tokenizer
-
-    @abstractmethod
-    def forward(self, *args, **kwargs):
-        """Pytorch forward method."""
-        raise NotImplementedError
-
-    @abstractmethod
-    def encode(self, *args, **kwargs):
-        """Encode documents."""
-        raise NotImplementedError
-
-    def gradient_checkpointing_enable(self, gradient_checkpointing_kwargs=None):
-        self.model.gradient_checkpointing_enable(gradient_checkpointing_kwargs=gradient_checkpointing_kwargs)
-
-    def preprocess(self, batch_sentence_pair, query_max_length, document_max_length):
-        query_list = [item[0] for item in batch_sentence_pair]
-        document_list = [item[1] for item in batch_sentence_pair]
-
-        query_batch_tokens = self.tokenizer(
-            query_list, padding='max_length', truncation=True, max_length=query_max_length, return_tensors='pt'
-        )
-        query_batch_tokens_on_device = {k: v.to(self.device) for k, v in query_batch_tokens.items()}
-        document_batch_tokens = self.tokenizer(
-            document_list, padding='max_length', truncation=True, max_length=document_max_length, return_tensors='pt'
-        )
-        document_batch_tokens_on_device = {k: v.to(self.device) for k, v in document_batch_tokens.items()}
-
-        return {
-            "query_input_ids": query_batch_tokens_on_device['input_ids'],
-            "query_attention_mask": query_batch_tokens_on_device['attention_mask'],
-            "doc_input_ids": document_batch_tokens_on_device['input_ids'],
-            "doc_attention_mask": document_batch_tokens_on_device['attention_mask'],
-        }
-
-
-class AutoModelForRanking(BaseRanker):
+class AutoModelForRanking(Base):
     def __init__(
         self,
         model: Optional[nn.Module] = None,
@@ -413,7 +368,7 @@ class AutoModelForRanking(BaseRanker):
         self.tokenizer.save_pretrained(path)
 
 
-class ColBERT(BaseRanker):
+class ColBERT(Base):
     def __init__(
         self,
         model: Optional[nn.Module] = None,
@@ -593,11 +548,6 @@ class ColBERT(BaseRanker):
             loss_type=loss_type,
         )
         return ranker
-
-
-class LLMRanker(BaseRanker):
-    def __init__(self, model, tokenizer):
-        super(LLMRanker, self).__init__()
 
 
 class DocumentSplitter(object):
