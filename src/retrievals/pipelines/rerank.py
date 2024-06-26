@@ -8,7 +8,6 @@ import transformers
 from torch import nn
 from transformers import (
     AdamW,
-    AutoConfig,
     AutoTokenizer,
     HfArgumentParser,
     TrainingArguments,

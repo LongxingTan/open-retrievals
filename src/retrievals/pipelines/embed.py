@@ -59,6 +59,7 @@ class DataArguments:
     query_key: str = field(default=None)
     positive_key: str = field(default='positive')
     negative_key: str = field(default='negative')
+    is_query: bool = field(default=False)
 
 
 @dataclass
@@ -76,6 +77,7 @@ class RetrieverTrainingArguments(TrainingArguments):
     remove_unused_columns: bool = field(default=False)
     use_lora: bool = field(default=False)
     use_bnb_config: bool = field(default=False)
+    do_encode: bool = field(default=False, metadata={"help": "run the encoding loop"})
 
 
 def main():
@@ -141,49 +143,57 @@ def main():
         use_lora=training_args.use_lora,
         quantization_config=quantization_config,
     )
-    if training_args.loss_fn == 'infonce':
-        loss_fn = InfoNCE(
-            nn.CrossEntropyLoss(label_smoothing=0.0),
-            use_inbatch_negative=training_args.use_inbatch_neg,
-            temperature=training_args.temperature,
+    if training_args.do_train:
+        if training_args.loss_fn == 'infonce':
+            loss_fn = InfoNCE(
+                nn.CrossEntropyLoss(label_smoothing=0.0),
+                use_inbatch_negative=training_args.use_inbatch_neg,
+                temperature=training_args.temperature,
+            )
+        elif training_args.loss_fn == 'simcse':
+            loss_fn = SimCSE(temperature=training_args.temperature)
+        elif training_args.loss_fn == 'triplet':
+            loss_fn = (TripletLoss(training_args.temperature),)
+        else:
+            raise ValueError
+
+        model = model.set_train_type(
+            "pairwise",
+            loss_fn=loss_fn,
         )
-    elif training_args.loss_fn == 'simcse':
-        loss_fn = SimCSE(temperature=training_args.temperature)
-    elif training_args.loss_fn == 'triplet':
-        loss_fn = (TripletLoss(training_args.temperature),)
-    else:
-        raise ValueError
 
-    model = model.set_train_type(
-        "pairwise",
-        loss_fn=loss_fn,
-    )
-
-    train_dataset = RetrievalDataset(
-        args=data_args, tokenizer=tokenizer, positive_key=data_args.positive_key, negative_key=data_args.negative_key
-    )
-    logger.info(f"Total training examples: {len(train_dataset)}")
-
-    trainer = RetrievalTrainer(
-        model=model,
-        args=training_args,
-        train_dataset=train_dataset,
-        data_collator=TripletCollator(
-            tokenizer,
-            query_max_length=data_args.query_max_length,
-            document_max_length=data_args.document_max_length,
+        train_dataset = RetrievalDataset(
+            args=data_args,
+            tokenizer=tokenizer,
             positive_key=data_args.positive_key,
             negative_key=data_args.negative_key,
-        ),
-    )
+        )
+        logger.info(f"Total training examples: {len(train_dataset)}")
 
-    Path(training_args.output_dir).mkdir(parents=True, exist_ok=True)
+        trainer = RetrievalTrainer(
+            model=model,
+            args=training_args,
+            train_dataset=train_dataset,
+            data_collator=TripletCollator(
+                tokenizer,
+                query_max_length=data_args.query_max_length,
+                document_max_length=data_args.document_max_length,
+                positive_key=data_args.positive_key,
+                negative_key=data_args.negative_key,
+            ),
+        )
 
-    trainer.train()
-    trainer.save_model(training_args.output_dir)
+        Path(training_args.output_dir).mkdir(parents=True, exist_ok=True)
 
-    if trainer.is_world_process_zero():
-        tokenizer.save_pretrained(training_args.output_dir)
+        trainer.train()
+        trainer.save_model(training_args.output_dir)
+
+        if trainer.is_world_process_zero():
+            tokenizer.save_pretrained(training_args.output_dir)
+
+    if training_args.do_encode:
+        max_length = data_args.query_max_length if data_args.is_query else data_args.document_max_length
+        print(max_length)
 
 
 if __name__ == "__main__":
