@@ -185,11 +185,11 @@ def main():
         data_collator = LLMRerankCollator(
             tokenizer=tokenizer, max_length=data_args.max_length, prompt=data_args.task_prompt
         )
-        check_loc = tokenizer('Yes', add_special_tokens=False)['input_ids'][-1]
+        token_index = tokenizer('Yes', add_special_tokens=False)['input_ids'][-1]
         model = AutoModelForRanking.from_pretrained(
             model_args.model_name_or_path,
             num_labels=1,
-            loss_fn=TokenLoss(check_loc=check_loc),
+            loss_fn=TokenLoss(token_index=token_index, train_group_size=data_args.train_group_size),
             causal_lm=True,  # model_args.causal_lm
             use_lora=training_args.use_lora,
         )
