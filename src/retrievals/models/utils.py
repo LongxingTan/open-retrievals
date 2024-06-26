@@ -38,6 +38,7 @@ def batch_to_device(batch: Dict, target_device: str) -> Dict[str, torch.Tensor]:
 
 
 def check_causal_lm(model_name_or_path: str, llm_regex_patterns: List[str] = None) -> bool:
+    """check if it's a decoder-only causal model"""
     if llm_regex_patterns is not None:
         llm_regex_patterns += DEFAULT_LLM_PATTERNS
     else:
@@ -76,4 +77,26 @@ def resize_token_embeddings(
     new_num_tokens: Optional[int] = None,
     pad_to_multiple_of: Optional[int] = None,
 ) -> nn.Embedding:
+    """when you modify the tokenizer, such as adding new tokens or changing the vocabulary size"""
     return model.resize_token_embeddings(new_num_tokens=new_num_tokens, pad_to_multiple_of=pad_to_multiple_of)
+
+
+def save_swa_weights(model: nn.Module, model_path_list: List[str], save_file: str, device: str):
+    """Get the swa weights from a list of model weights"""
+
+    def average_state_dicts(state_dicts: List[dict]) -> dict:
+        """Average the state dictionaries."""
+        averaged_state = {}
+        num_states = len(state_dicts)
+        for key in state_dicts[0]:
+            averaged_state[key] = sum(state_dict[key] for state_dict in state_dicts) / num_states
+        return averaged_state
+
+    state_list = [torch.load(path, map_location=device) for path in model_path_list]
+    averaged_state = average_state_dicts(state_list)
+    msg = model.load_state_dict(averaged_state, strict=False)
+    print(f"State dict load message: {msg}")
+
+    model.half()
+    torch.save(model.state_dict(), save_file)
+    print(f"Checkpoint saved at: {save_file}")
