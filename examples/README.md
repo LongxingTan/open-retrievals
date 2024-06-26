@@ -9,13 +9,13 @@
 - [rerank-llm finetune](../reference/rerank_llm_finetune.py)
 - [RAG with Langchain](./rag_langchain_demo.py)
 
-| Exp                        | Model                   | Original  | Finetune  | Colab                                                                                                                                                               |
-|----------------------------|-------------------------|-----------|-----------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| embed pairwise finetune    | bge-base-zh-v1.5        | 0.657     | **0.701** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/17KXe2lnNRID-HiVvMtzQnONiO74oGs91?usp=sharing) |
-| embed llm finetune (LoRA)  | Qwen2-1.5B-Instruct     | 0.554     | ****      | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1jj1kBQWFcuQ3a7P9ttnl1hgX7H8WA_Za?usp=sharing) |
-| rerank cross encoder       | bge-reranker-base       | 0.666     | **0.691** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1QvbUkZtG56SXomGYidwI4RQzwODQrWNm?usp=sharing) |
-| rerank colbert (zero shot) | chinese-roberta-wwm-ext |           |           | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1QVtqhQ080ZMltXoJyODMmvEQYI6oo5kO?usp=sharing) |
-| rerank llm finetune (LoRA) | Qwen2-1.5B-Instruct     |           |           |                                                                                                                                                                     |
+| Exp                        | Model                   | Original | Finetune  | Colab                                                                                                                                                               |
+|----------------------------|-------------------------|----------|-----------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| embed pairwise finetune    | bge-base-zh-v1.5        | 0.657    | **0.701** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/17KXe2lnNRID-HiVvMtzQnONiO74oGs91?usp=sharing) |
+| embed llm finetune (LoRA)  | Qwen2-1.5B-Instruct     | 0.554    | **-**     | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1jj1kBQWFcuQ3a7P9ttnl1hgX7H8WA_Za?usp=sharing) |
+| rerank cross encoder       | bge-reranker-base       | 0.666    | **0.691** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1QvbUkZtG56SXomGYidwI4RQzwODQrWNm?usp=sharing) |
+| rerank colbert (zero shot) | chinese-roberta-wwm-ext | 0.643    | **-**     | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1QVtqhQ080ZMltXoJyODMmvEQYI6oo5kO?usp=sharing) |
+| rerank llm finetune (LoRA) | Qwen2-1.5B-Instruct     |          | **-**     |                                                                                                                                                                     |
 
 * The metrics is evaluated by MAP in t2-ranking data
 

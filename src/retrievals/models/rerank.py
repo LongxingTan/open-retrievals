@@ -522,11 +522,8 @@ class ColBERT(Base):
             model_name_or_path, return_tensors=False, trust_remote_code=trust_remote_code
         )
         model = AutoModel.from_pretrained(model_name_or_path, trust_remote_code=trust_remote_code, **kwargs)
-        # model = AutoModelForSequenceClassification(
-        #     model_name_or_path, num_labels=colbert_dim, trust_remote_code=trust_remote_code
-        # )
-        linear_layer = nn.Linear(model.config.hidden_size, colbert_dim, dtype=torch.float32, bias=False)
 
+        linear_layer = nn.Linear(model.config.hidden_size, colbert_dim, dtype=torch.float32, bias=False)
         if os.path.exists(path=os.path.join(model_name_or_path, 'colbert_linear.pt')):
             logger.info(f'Loading colbert_linear weight from {model_name_or_path}')
             colbert_state_dict = torch.load(os.path.join(model_name_or_path, 'colbert_linear.pt'), map_location='cpu')
