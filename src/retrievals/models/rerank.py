@@ -305,7 +305,7 @@ class AutoModelForRanking(Base):
         use_lora: bool = False,
         lora_config=None,
         device: Optional[str] = None,
-        linear_dim: int = 1,
+        quantization_config=None,
         temperature: Optional[float] = None,
         **kwargs,
     ):
@@ -315,7 +315,9 @@ class AutoModelForRanking(Base):
 
         if causal_lm or check_causal_lm(model_name_or_path):
             logger.info('Set model to AutoModelForCausalLM')
-            model = AutoModelForCausalLM.from_pretrained(model_name_or_path, trust_remote_code=trust_remote_code)
+            model = AutoModelForCausalLM.from_pretrained(
+                model_name_or_path, quantization_config=quantization_config, trust_remote_code=trust_remote_code
+            )
         else:
             logger.info('Set model to  AutoModelForSequenceClassification')
             model = AutoModelForSequenceClassification.from_pretrained(
@@ -351,7 +353,6 @@ class AutoModelForRanking(Base):
             device=device,
             loss_fn=loss_fn,
             loss_type=loss_type,
-            linear_dim=linear_dim,
             temperature=temperature,
             causal_lm=causal_lm,
         )

@@ -4,8 +4,15 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
 
+import torch
 from torch import nn
-from transformers import AutoTokenizer, HfArgumentParser, TrainingArguments, set_seed
+from transformers import (
+    AutoTokenizer,
+    BitsAndBytesConfig,
+    HfArgumentParser,
+    TrainingArguments,
+    set_seed,
+)
 
 from ..data import PairCollator, RetrievalDataset, TripletCollator
 from ..losses import InfoNCE, SimCSE, TripletLoss
@@ -74,6 +81,7 @@ class RetrieverTrainingArguments(TrainingArguments):
     use_inbatch_neg: bool = field(default=True, metadata={"help": "use documents in the same batch as negatives"})
     remove_unused_columns: bool = field(default=False)
     use_lora: bool = field(default=False)
+    use_bnb_config: bool = field(default=False)
 
 
 def main():
@@ -119,11 +127,22 @@ def main():
         cache_dir=model_args.cache_dir,
         use_fast=False,
     )
+    if training_args.use_bnb_config:
+        quantization_config = BitsAndBytesConfig(
+            load_in_4bit=True,
+            bnb_4bit_use_double_quant=True,
+            bnb_4bit_quant_type="nf4",
+            bnb_4bit_compute_dtype=torch.bfloat16,
+        )
+    else:
+        quantization_config = None
+
     model = AutoModelForEmbedding.from_pretrained(
         model_name_or_path=model_args.model_name_or_path,
         pooling_method=training_args.pooling_method,
         causal_lm=model_args.causal_lm,
         use_lora=training_args.use_lora,
+        quantization_config=quantization_config,
     )
     if training_args.loss_fn == 'infonce':
         loss_fn = InfoNCE(

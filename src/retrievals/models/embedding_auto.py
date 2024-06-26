@@ -428,7 +428,11 @@ class AutoModelForEmbedding(Base):
         else:
             if pretrained:
                 model = AutoModel.from_pretrained(
-                    model_name_or_path, config=config, trust_remote_code=trust_remote_code, **kwargs
+                    model_name_or_path,
+                    config=config,
+                    trust_remote_code=trust_remote_code,
+                    quantization_config=quantization_config,
+                    **kwargs,
                 )
             else:
                 model = AutoModel.from_config(config)
