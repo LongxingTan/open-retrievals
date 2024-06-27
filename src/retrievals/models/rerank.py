@@ -386,16 +386,13 @@ class ColBERT(Base):
         self.loss_type = loss_type
         self.max_length = max_length
         self.temperature = temperature
-
-        if device is None:
-            self.device = get_device_name()
-        else:
-            self.device = device
-
+        self.device = device or get_device_name()
         self.to(self.device)
 
     def encode(self, input_ids: torch.Tensor, attention_mask: torch.Tensor, normalize: bool = True) -> torch.Tensor:
-        outputs: SequenceClassifierOutput = self.model(input_ids, attention_mask, output_hidden_states=True)
+        outputs: SequenceClassifierOutput = self.model(
+            input_ids, attention_mask=attention_mask, output_hidden_states=True
+        )
         if hasattr(outputs, 'last_hidden_state'):
             # [batch, seq_len, attention_dim]
             hidden_state = outputs.last_hidden_state

@@ -204,7 +204,7 @@ def main():
             model_args.model_name_or_path,
             num_labels=1,
             loss_fn=TokenLoss(token_index=token_index, train_group_size=data_args.train_group_size),
-            causal_lm=True,  # model_args.causal_lm
+            causal_lm=True,
             use_lora=training_args.use_lora,
             quantization_config=quantization_config,
         )

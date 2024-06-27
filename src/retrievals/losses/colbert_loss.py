@@ -8,7 +8,7 @@ class ColbertLoss(nn.Module):
     def __init__(
         self,
         criterion: Union[nn.Module, Callable] = nn.CrossEntropyLoss(reduction='mean'),
-        temperature: float = 0.05,
+        temperature: float = 0.02,
         use_inbatch_negative: bool = True,
     ):
         super(ColbertLoss, self).__init__()
