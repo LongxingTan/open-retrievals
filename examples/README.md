@@ -9,7 +9,7 @@
 - [rerank-llm finetune](../reference/rerank_llm_finetune.py)
 - [RAG with Langchain](./rag_langchain_demo.py)
 
-| Exp                        | Model                   | Original | Finetune  | Colab                                                                                                                                                               |
+| Exp                        | Model                   | Original | Finetune  | Demo                                                                                                                                                                |
 |----------------------------|-------------------------|----------|-----------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | embed pairwise finetune    | bge-base-zh-v1.5        | 0.657    | **0.701** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/17KXe2lnNRID-HiVvMtzQnONiO74oGs91?usp=sharing) |
 | embed llm finetune (LoRA)  | Qwen2-1.5B-Instruct     | 0.541    | **0.64**  | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1jj1kBQWFcuQ3a7P9ttnl1hgX7H8WA_Za?usp=sharing) |
