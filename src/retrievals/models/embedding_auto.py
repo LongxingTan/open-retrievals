@@ -441,7 +441,7 @@ class AutoModelForEmbedding(Base):
             logger.info('Set model to fp16, please note that if you want fp16 during training, set training_args fp16')
             model.half()
 
-        if use_lora and lora_path is not None:
+        if use_lora and lora_path is None:
             logger.info('Set fine-tuning to lora')
             from peft import LoraConfig, TaskType, get_peft_model
 
