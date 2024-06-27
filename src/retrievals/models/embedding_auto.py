@@ -81,8 +81,8 @@ class AutoModelForEmbedding(Base):
         self.max_length = max_length
         self.normalize_embeddings = normalize_embeddings
 
-        self.query_instruction = query_instruction
-        self.document_instruction = document_instruction
+        self.query_instruction = query_instruction if query_instruction else ''
+        self.document_instruction = document_instruction if document_instruction else ''
         self.use_fp16 = use_fp16
         self.device = device or get_device_name()
         self.model.to(self.device)
