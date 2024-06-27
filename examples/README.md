@@ -74,6 +74,7 @@ torchrun --nproc_per_node 1 \
   --output_dir $OUTPUT_DIR \
   --overwrite_output_dir \
   --model_name_or_path $MODEL_NAME \
+  --pooling_method last \
   --do_train \
   --train_data $TRAIN_DATA \
   --positive_key positive \

@@ -26,7 +26,12 @@ from ..data.collator import RerankCollator
 from ..losses.colbert_loss import ColbertLoss
 from .base import Base
 from .pooling import AutoPooling
-from .utils import check_causal_lm, find_all_linear_names, get_device_name
+from .utils import (
+    batch_to_device,
+    check_causal_lm,
+    find_all_linear_names,
+    get_device_name,
+)
 
 logger = logging.getLogger(__name__)
 

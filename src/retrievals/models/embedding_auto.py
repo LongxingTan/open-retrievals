@@ -21,7 +21,12 @@ from transformers import (
 
 from .base import Base
 from .pooling import AutoPooling
-from .utils import batch_to_device, find_all_linear_names, get_device_name
+from .utils import (
+    batch_to_device,
+    check_causal_lm,
+    find_all_linear_names,
+    get_device_name,
+)
 
 if TYPE_CHECKING:
     import pandas as pd
@@ -424,30 +429,21 @@ class AutoModelForEmbedding(Base):
                 )
             config.update(custom_config_dict)
 
-        if causal_lm:
-            logger.info('Set model to AutoModelForCausalLM')
-            if pretrained:
-                model = AutoModelForCausalLM.from_pretrained(
-                    model_name_or_path, config=config, trust_remote_code=trust_remote_code, **kwargs
-                )
-            else:
-                model = AutoModelForCausalLM.from_config(config)
-            tokenizer = AutoTokenizer.from_pretrained(
-                model_name_or_path, trust_remote_code=trust_remote_code, add_eos_token=True
+        if check_causal_lm(model_name_or_path):
+            pooling_method = 'last'
+            logger.info('Set pooling_method to last')
+
+        if pretrained:
+            model = AutoModel.from_pretrained(
+                model_name_or_path,
+                config=config,
+                trust_remote_code=trust_remote_code,
+                quantization_config=quantization_config,
+                **kwargs,
             )
-            tokenizer.pad_token = tokenizer.eos_token
         else:
-            if pretrained:
-                model = AutoModel.from_pretrained(
-                    model_name_or_path,
-                    config=config,
-                    trust_remote_code=trust_remote_code,
-                    quantization_config=quantization_config,
-                    **kwargs,
-                )
-            else:
-                model = AutoModel.from_config(config)
-            tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, trust_remote_code=trust_remote_code)
+            model = AutoModel.from_config(config)
+        tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, trust_remote_code=trust_remote_code)
 
         if use_fp16:
             logger.info('Set model to fp16, please note that if you want fp16 during training, set training_args fp16')
