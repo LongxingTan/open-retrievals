@@ -328,7 +328,7 @@ class AutoModelForRanking(Base):
             model.half()
 
         if use_lora:
-            logger.info('Set model to lora')
+            logger.info('Set fine-tuning to lora')
             from peft import LoraConfig, TaskType, get_peft_model
 
             if lora_config is None:
@@ -340,7 +340,7 @@ class AutoModelForRanking(Base):
                     lora_dropout=lora_dropout,
                     target_modules=target_modules,
                     bias='none',
-                    task_type='FEATURE_EXTRACTION',
+                    task_type=TaskType.CAUSAL_LM,
                 )
 
             model = get_peft_model(model, lora_config)
