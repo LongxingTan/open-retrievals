@@ -79,15 +79,15 @@ torchrun --nproc_per_node 1 \
   --positive_key positive \
   --negative_key negative \
   --use_lora True \
-  --query_instruction "Given a query and a relevant document, retrieve the document that are pertinent to the query\nQuery: " \
-  --document_instruction '# Document: ' \
+  --query_instruction "Retrieve semantically similar text.\n#Query: " \
+  --document_instruction "#Document: " \
   --learning_rate 3e-5 \
   --bf16 \
   --num_train_epochs 5 \
   --per_device_train_batch_size 2 \
   --gradient_accumulation_steps 1 \
   --dataloader_drop_last True \
-  --query_max_length 128 \
+  --query_max_length 256 \
   --document_max_length 256 \
   --train_group_size 2 \
   --logging_steps 100 \

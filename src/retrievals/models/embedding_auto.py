@@ -285,7 +285,6 @@ class AutoModelForEmbedding(Base):
                     if normalize_embeddings:
                         embeddings = torch.nn.functional.normalize(embeddings, p=2, dim=1)
 
-                    # fixes for #522 and #487 to avoid oom problems on gpu with large datasets
                     if convert_to_numpy:
                         embeddings = embeddings.cpu()
 
