@@ -138,7 +138,7 @@ def main():
     model = AutoModelForEmbedding.from_pretrained(
         model_name_or_path=model_args.model_name_or_path,
         pooling_method=training_args.pooling_method,
-        causal_lm=model_args.causal_lm,
+        causal_lm=False,
         use_lora=training_args.use_lora,
         quantization_config=quantization_config,
     )

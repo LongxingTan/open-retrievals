@@ -538,6 +538,26 @@ class ColBERT(Base):
         return ranker
 
 
+class LLMRanker(Base):
+    def __init__(self):
+        super(LLMRanker, self).__init__()
+
+    def forward(
+        self,
+        input_ids: torch.Tensor,
+        attention_mask: torch.Tensor,
+        labels: Optional[torch.Tensor] = None,
+        return_dict: Optional[bool] = True,
+        **kwargs,
+    ):
+        model_output = self.model(input_ids, attention_mask, output_hidden_states=True)
+        loss = self.loss_fn(model_output.logits, labels)
+        outputs_dict = dict()
+        outputs_dict['logits'] = model_output.logits
+        outputs_dict['loss'] = loss
+        return outputs_dict
+
+
 class DocumentSplitter(object):
     """
     Rerank the long document

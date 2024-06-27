@@ -32,11 +32,6 @@ class Base(ABC, torch.nn.Module):
         """Pytorch forward method."""
         raise NotImplementedError
 
-    @abstractmethod
-    def encode(self, *args, **kwargs):
-        """Encode documents."""
-        pass
-
     def _encode_from_loader(
         self,
         loader: DataLoader,
