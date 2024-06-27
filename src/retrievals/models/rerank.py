@@ -328,7 +328,7 @@ class AutoModelForRanking(Base):
             model.half()
 
         if use_lora:
-            logger.info('Set fine-tuning to lora')
+            logger.info('Set fine-tuning to LoRA')
             from peft import LoraConfig, TaskType, get_peft_model
 
             if lora_config is None:

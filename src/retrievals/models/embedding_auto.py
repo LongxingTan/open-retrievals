@@ -156,6 +156,7 @@ class AutoModelForEmbedding(Base):
     def encode(
         self,
         inputs: Union[DataLoader, Dict, List, str],
+        is_query: bool = False,
         batch_size: int = 128,
         show_progress_bar: bool = None,
         output_value: str = "sentence_embedding",
@@ -177,6 +178,7 @@ class AutoModelForEmbedding(Base):
         elif isinstance(inputs, (str, List, Tuple, 'pd.Series', np.ndarray)):
             return self.encode_from_text(
                 sentences=inputs,
+                is_query=is_query,
                 batch_size=batch_size,
                 show_progress_bar=show_progress_bar,
                 output_value=output_value,
@@ -191,6 +193,7 @@ class AutoModelForEmbedding(Base):
     def encode_from_text(
         self,
         sentences: Union[str, List[str], Tuple[str], 'pd.Series', np.ndarray],
+        is_query: bool = False,
         batch_size: int = 128,
         show_progress_bar: bool = None,
         output_value: str = "sentence_embedding",
@@ -241,6 +244,12 @@ class AutoModelForEmbedding(Base):
         all_embeddings = []
         length_sorted_idx = np.argsort([-self._text_length(sentence) for sentence in sentences])
         sentences_sorted = [sentences[idx] for idx in length_sorted_idx]
+        if is_query:
+            logger.info("Encoding query")
+            sentences_sorted = [self.query_instruction + sentence for sentence in sentences_sorted]
+        else:
+            logger.info('Encoding document')
+            sentences_sorted = [self.document_instruction + sentence for sentence in sentences_sorted]
 
         for start_index in trange(0, len(sentences), batch_size, desc="Batches", disable=not show_progress_bar):
             sentences_batch = sentences_sorted[start_index : start_index + batch_size]
@@ -442,7 +451,7 @@ class AutoModelForEmbedding(Base):
             model.half()
 
         if use_lora and lora_path is None:
-            logger.info('Set fine-tuning to lora')
+            logger.info('Set fine-tuning to LoRA')
             from peft import LoraConfig, TaskType, get_peft_model
 
             if lora_config is None:
