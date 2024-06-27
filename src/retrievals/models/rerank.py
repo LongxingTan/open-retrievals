@@ -1,7 +1,6 @@
 import json
 import logging
 import os
-from abc import ABC, abstractmethod
 from copy import deepcopy
 from typing import Callable, Dict, List, Literal, Optional, Tuple, Union
 
@@ -10,7 +9,6 @@ import torch
 import torch.nn as nn
 from tqdm.auto import tqdm
 from transformers import (
-    AutoConfig,
     AutoModel,
     AutoModelForCausalLM,
     AutoModelForSequenceClassification,
@@ -26,7 +24,12 @@ from ..data.collator import RerankCollator
 from ..losses.colbert_loss import ColbertLoss
 from .base import Base
 from .pooling import AutoPooling
-from .utils import check_causal_lm, find_all_linear_names, get_device_name
+from .utils import (
+    batch_to_device,
+    check_causal_lm,
+    find_all_linear_names,
+    get_device_name,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -180,7 +183,7 @@ class AutoModelForRanking(Base):
     def set_model_type(self, model_type: Literal['cross-encoder', 'colbert'], **kwargs):
         model_type = model_type.lower().replace('-', '')
         logger.info(f'Set model type: {model_type}')
-        model_class = {'crossencoder': self, 'colbert': ColBERT}
+        model_class = {'crossencoder': self, 'colbert': ColBERT, 'llm': LLMRanker}
         model_class = model_class.get(model_type)
         return model_class(
             model=self.model,
@@ -328,7 +331,7 @@ class AutoModelForRanking(Base):
             model.half()
 
         if use_lora:
-            logger.info('Set model to lora')
+            logger.info('Set fine-tuning to LoRA')
             from peft import LoraConfig, TaskType, get_peft_model
 
             if lora_config is None:
@@ -340,7 +343,7 @@ class AutoModelForRanking(Base):
                     lora_dropout=lora_dropout,
                     target_modules=target_modules,
                     bias='none',
-                    task_type='FEATURE_EXTRACTION',
+                    task_type=TaskType.CAUSAL_LM,
                 )
 
             model = get_peft_model(model, lora_config)
@@ -358,16 +361,6 @@ class AutoModelForRanking(Base):
         )
         return reranker
 
-    def save_pretrained(self, path: str, safe_serialization: bool = True):
-        """
-        Saves all model and tokenizer to path
-        """
-        logger.info("Save model to {}".format(path))
-        state_dict = self.model.state_dict()
-        state_dict = type(state_dict)({k: v.clone().cpu() for k, v in state_dict.items()})
-        self.model.save_pretrained(path, state_dict=state_dict, safe_serialization=safe_serialization)
-        self.tokenizer.save_pretrained(path)
-
 
 class ColBERT(Base):
     def __init__(
@@ -375,10 +368,8 @@ class ColBERT(Base):
         model: Optional[nn.Module] = None,
         tokenizer: Optional[PreTrainedTokenizer] = None,
         linear_layer: Optional[nn.Module] = None,
-        loss_fn: Union[nn.Module, Callable] = None,
-        loss_type: Literal['classification', 'regression'] = 'classification',
         max_length: Optional[int] = None,
-        temperature: Optional[float] = 0.02,
+        loss_fn: Union[nn.Module, Callable] = None,
         device: Optional[str] = None,
         **kwargs,
     ):
@@ -387,20 +378,15 @@ class ColBERT(Base):
         self.tokenizer = tokenizer
         self.linear = linear_layer
 
-        self.loss_fn = loss_fn
-        self.loss_type = loss_type
+        self.loss_fn = loss_fn if loss_fn else ColbertLoss()
         self.max_length = max_length
-        self.temperature = temperature
-
-        if device is None:
-            self.device = get_device_name()
-        else:
-            self.device = device
-
+        self.device = device or get_device_name()
         self.to(self.device)
 
     def encode(self, input_ids: torch.Tensor, attention_mask: torch.Tensor, normalize: bool = True) -> torch.Tensor:
-        outputs: SequenceClassifierOutput = self.model(input_ids, attention_mask, output_hidden_states=True)
+        outputs: SequenceClassifierOutput = self.model(
+            input_ids, attention_mask=attention_mask, output_hidden_states=True
+        )
         if hasattr(outputs, 'last_hidden_state'):
             # [batch, seq_len, attention_dim]
             hidden_state = outputs.last_hidden_state
@@ -426,14 +412,13 @@ class ColBERT(Base):
         return_dict: Optional[bool] = True,
         **kwargs,
     ):
-        query_embedding = self.encode(query_input_ids, query_attention_mask, normalize=True)
-        positive_embedding = self.encode(pos_input_ids, pos_attention_mask, normalize=True)
-        scores = self.score(query_embedding, positive_embedding)
+        query_embedding = self.encode(query_input_ids, attention_mask=query_attention_mask, normalize=True)
+        positive_embedding = self.encode(pos_input_ids, attention_mask=pos_attention_mask, normalize=True)
 
         if self.training:
             negative_embedding = None
             if neg_input_ids is not None:
-                negative_embedding = self.encode(neg_input_ids, neg_attention_mask, normalize=True)
+                negative_embedding = self.encode(neg_input_ids, attention_mask=neg_attention_mask, normalize=True)
 
             loss = self.loss_fn(query_embedding, positive_embedding, negative_embedding)
 
@@ -443,6 +428,7 @@ class ColBERT(Base):
                 return outputs_dict
             return loss
 
+        scores = self.score(query_embedding, positive_embedding)
         return scores
 
     @torch.no_grad()
@@ -507,20 +493,13 @@ class ColBERT(Base):
     def from_pretrained(
         cls,
         model_name_or_path: str,
-        causal_lm: bool = False,
-        trust_remote_code: bool = True,
         colbert_dim: int = 768,
         loss_fn: Union[nn.Module, Callable] = ColbertLoss(),
-        loss_type: Literal['classification', 'regression'] = 'classification',
+        trust_remote_code: bool = True,
         device: Optional[str] = None,
         **kwargs,
     ):
-        if not model_name_or_path or not isinstance(model_name_or_path, str):
-            assert ValueError('Please input valid model_name_or_path')
-
-        tokenizer = AutoTokenizer.from_pretrained(
-            model_name_or_path, return_tensors=False, trust_remote_code=trust_remote_code
-        )
+        tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, trust_remote_code=trust_remote_code)
         model = AutoModel.from_pretrained(model_name_or_path, trust_remote_code=trust_remote_code, **kwargs)
 
         linear_layer = nn.Linear(model.config.hidden_size, colbert_dim, dtype=torch.float32, bias=False)
@@ -529,6 +508,7 @@ class ColBERT(Base):
             colbert_state_dict = torch.load(os.path.join(model_name_or_path, 'colbert_linear.pt'), map_location='cpu')
             linear_layer.load_state_dict(colbert_state_dict)
         else:
+            logger.info('Xavier uniform random colbert linear layer')
             torch.nn.init.xavier_uniform_(tensor=linear_layer.weight)
 
         if os.path.exists(path=os.path.join(model_name_or_path, "metadata.json")):
@@ -543,9 +523,28 @@ class ColBERT(Base):
             linear_layer=linear_layer,
             device=device,
             loss_fn=loss_fn,
-            loss_type=loss_type,
         )
         return ranker
+
+
+class LLMRanker(Base):
+    def __init__(self):
+        super(LLMRanker, self).__init__()
+
+    def forward(
+        self,
+        input_ids: torch.Tensor,
+        attention_mask: torch.Tensor,
+        labels: Optional[torch.Tensor] = None,
+        return_dict: Optional[bool] = True,
+        **kwargs,
+    ):
+        model_output = self.model(input_ids, attention_mask, output_hidden_states=True)
+        loss = self.loss_fn(model_output.logits, labels)
+        outputs_dict = dict()
+        outputs_dict['logits'] = model_output.logits
+        outputs_dict['loss'] = loss
+        return outputs_dict
 
 
 class DocumentSplitter(object):

@@ -73,7 +73,7 @@ class RetrieverTrainingArguments(TrainingArguments):
     pooling_method: str = field(default='cls', metadata={"help": "the pooling method, should be cls or mean"})
     normalized: bool = field(default=True)
     loss_fn: str = field(default='infonce')
-    use_inbatch_neg: bool = field(default=True, metadata={"help": "use documents in the same batch as negatives"})
+    use_inbatch_negative: bool = field(default=True, metadata={"help": "use documents in the same batch as negatives"})
     remove_unused_columns: bool = field(default=False)
     use_lora: bool = field(default=False)
     use_bnb_config: bool = field(default=False)
@@ -115,7 +115,6 @@ def main():
     logger.info("Model parameters %s", model_args)
     logger.info("Data parameters %s", data_args)
 
-    # Set seed
     set_seed(training_args.seed)
 
     tokenizer = AutoTokenizer.from_pretrained(
@@ -139,7 +138,7 @@ def main():
     model = AutoModelForEmbedding.from_pretrained(
         model_name_or_path=model_args.model_name_or_path,
         pooling_method=training_args.pooling_method,
-        causal_lm=model_args.causal_lm,
+        causal_lm=False,
         use_lora=training_args.use_lora,
         quantization_config=quantization_config,
     )
@@ -147,7 +146,7 @@ def main():
         if training_args.loss_fn == 'infonce':
             loss_fn = InfoNCE(
                 nn.CrossEntropyLoss(label_smoothing=0.0),
-                use_inbatch_negative=training_args.use_inbatch_neg,
+                use_inbatch_negative=training_args.use_inbatch_negative,
                 temperature=training_args.temperature,
             )
         elif training_args.loss_fn == 'simcse':
@@ -186,7 +185,8 @@ def main():
         Path(training_args.output_dir).mkdir(parents=True, exist_ok=True)
 
         trainer.train()
-        trainer.save_model(training_args.output_dir)
+        # trainer.save_model(training_args.output_dir)
+        model.save_pretrained(training_args.output_dir)
 
         if trainer.is_world_process_zero():
             tokenizer.save_pretrained(training_args.output_dir)

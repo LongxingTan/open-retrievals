@@ -6,7 +6,6 @@ from typing import TYPE_CHECKING, Callable, Dict, List, Literal, Optional, Tuple
 
 import numpy as np
 import torch
-import torch.distributed as dist
 import torch.nn as nn
 from torch.utils.data import DataLoader
 from tqdm.auto import tqdm
@@ -14,7 +13,6 @@ from tqdm.autonotebook import trange
 from transformers import (
     AutoConfig,
     AutoModel,
-    AutoModelForCausalLM,
     AutoTokenizer,
     BatchEncoding,
     PreTrainedTokenizer,
@@ -22,7 +20,12 @@ from transformers import (
 
 from .base import Base
 from .pooling import AutoPooling
-from .utils import batch_to_device, find_all_linear_names, get_device_name
+from .utils import (
+    batch_to_device,
+    check_causal_lm,
+    find_all_linear_names,
+    get_device_name,
+)
 
 if TYPE_CHECKING:
     import pandas as pd
@@ -78,8 +81,8 @@ class AutoModelForEmbedding(Base):
         self.max_length = max_length
         self.normalize_embeddings = normalize_embeddings
 
-        self.query_instruction = query_instruction
-        self.document_instruction = document_instruction
+        self.query_instruction = query_instruction if query_instruction else ''
+        self.document_instruction = document_instruction if document_instruction else ''
         self.use_fp16 = use_fp16
         self.device = device or get_device_name()
         self.model.to(self.device)
@@ -157,6 +160,7 @@ class AutoModelForEmbedding(Base):
     def encode(
         self,
         inputs: Union[DataLoader, Dict, List, str],
+        is_query: bool = False,
         batch_size: int = 128,
         show_progress_bar: bool = None,
         output_value: str = "sentence_embedding",
@@ -178,6 +182,7 @@ class AutoModelForEmbedding(Base):
         elif isinstance(inputs, (str, List, Tuple, 'pd.Series', np.ndarray)):
             return self.encode_from_text(
                 sentences=inputs,
+                is_query=is_query,
                 batch_size=batch_size,
                 show_progress_bar=show_progress_bar,
                 output_value=output_value,
@@ -192,6 +197,7 @@ class AutoModelForEmbedding(Base):
     def encode_from_text(
         self,
         sentences: Union[str, List[str], Tuple[str], 'pd.Series', np.ndarray],
+        is_query: bool = False,
         batch_size: int = 128,
         show_progress_bar: bool = None,
         output_value: str = "sentence_embedding",
@@ -204,6 +210,7 @@ class AutoModelForEmbedding(Base):
         Computes sentence embeddings from sentence-transformers library.
 
         :param sentences: the sentences to embed.
+        :param is_query: if the text is query or document
         :param batch_size: the batch size used for the computation.
         :param show_progress_bar: Whether to output a progress bar when encode sentences.
         :param output_value: The type of embeddings to return: "sentence_embedding" to get sentence embeddings,
@@ -242,6 +249,12 @@ class AutoModelForEmbedding(Base):
         all_embeddings = []
         length_sorted_idx = np.argsort([-self._text_length(sentence) for sentence in sentences])
         sentences_sorted = [sentences[idx] for idx in length_sorted_idx]
+        if is_query:
+            logger.info("Encoding query")
+            # sentences_sorted = [self.query_instruction + sentence for sentence in sentences_sorted]
+        else:
+            logger.info('Encoding document')
+            # sentences_sorted = [self.document_instruction + sentence for sentence in sentences_sorted]
 
         for start_index in trange(0, len(sentences), batch_size, desc="Batches", disable=not show_progress_bar):
             sentences_batch = sentences_sorted[start_index : start_index + batch_size]
@@ -276,7 +289,6 @@ class AutoModelForEmbedding(Base):
                     if normalize_embeddings:
                         embeddings = torch.nn.functional.normalize(embeddings, p=2, dim=1)
 
-                    # fixes for #522 and #487 to avoid oom problems on gpu with large datasets
                     if convert_to_numpy:
                         embeddings = embeddings.cpu()
 
@@ -296,6 +308,9 @@ class AutoModelForEmbedding(Base):
             all_embeddings = all_embeddings[0]
 
         return all_embeddings
+
+    def encode_queries(self, queries: List[str], **kwargs) -> np.ndarray:
+        return self.encode_from_text(queries, is_query=True, **kwargs)
 
     def build_index(
         self,
@@ -413,37 +428,27 @@ class AutoModelForEmbedding(Base):
                 )
             config.update(custom_config_dict)
 
-        if causal_lm:
-            logger.info('Set model to AutoModelForCausalLM')
-            if pretrained:
-                model = AutoModelForCausalLM.from_pretrained(
-                    model_name_or_path, config=config, trust_remote_code=trust_remote_code, **kwargs
-                )
-            else:
-                model = AutoModelForCausalLM.from_config(config)
-            tokenizer = AutoTokenizer.from_pretrained(
-                model_name_or_path, trust_remote_code=trust_remote_code, add_eos_token=True
+        if check_causal_lm(model_name_or_path) and pooling_method != 'last':
+            logger.warning('You are using a LLM model, while pooling_method is not last, is that sure?')
+
+        if pretrained:
+            model = AutoModel.from_pretrained(
+                model_name_or_path,
+                config=config,
+                trust_remote_code=trust_remote_code,
+                quantization_config=quantization_config,
+                **kwargs,
             )
-            tokenizer.pad_token = tokenizer.eos_token
         else:
-            if pretrained:
-                model = AutoModel.from_pretrained(
-                    model_name_or_path,
-                    config=config,
-                    trust_remote_code=trust_remote_code,
-                    quantization_config=quantization_config,
-                    **kwargs,
-                )
-            else:
-                model = AutoModel.from_config(config)
-            tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, trust_remote_code=trust_remote_code)
+            model = AutoModel.from_config(config)
+        tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, trust_remote_code=trust_remote_code)
 
         if use_fp16:
             logger.info('Set model to fp16, please note that if you want fp16 during training, set training_args fp16')
             model.half()
 
-        if use_lora and lora_path is not None:
-            logger.info('Set model to lora')
+        if use_lora and lora_path is None:
+            logger.info('Set fine-tuning to LoRA')
             from peft import LoraConfig, TaskType, get_peft_model
 
             if lora_config is None:
@@ -461,7 +466,7 @@ class AutoModelForEmbedding(Base):
             model = get_peft_model(model, lora_config)
             model.print_trainable_parameters()
         if lora_path is not None:
-            logger.info('Load together with lora')
+            logger.info('Load pretrained with LoRA adapter')
             from peft import LoraConfig, PeftModel
 
             model = PeftModel.from_pretrained(model, lora_path)
@@ -479,29 +484,6 @@ class AutoModelForEmbedding(Base):
             **kwargs,
         )
 
-    def save_pretrained(self, path: str, safe_serialization: bool = True):
-        """
-        Saves all model and tokenizer to path
-        """
-        logger.info("Save model to {}".format(path))
-        state_dict = self.model.state_dict()
-        state_dict = type(state_dict)({k: v.clone().cpu() for k, v in state_dict.items()})
-        self.model.save_pretrained(path, state_dict=state_dict, safe_serialization=safe_serialization)
-        self.tokenizer.save_pretrained(path)
-
-    def push_to_hub(self, hub_model_id: str, private: bool = True, **kwargs):
-        """push model to hub
-
-        :param hub_model_id: str, hub model id.
-        :param private: bool, whether push to private repo. Default True.
-        :param kwargs: other kwargs for `push_to_hub` method.
-        """
-        self.tokenizer.push_to_hub(hub_model_id, private=private, **kwargs)
-        self.backbone.push_to_hub(hub_model_id, private=private, **kwargs)
-
-    def gradient_checkpointing_enable(self, gradient_checkpointing_kwargs=None):
-        self.model.gradient_checkpointing_enable(gradient_checkpointing_kwargs=gradient_checkpointing_kwargs)
-
     def _text_length(self, text: Union[List[int], List[List[int]]]):
         """
         Help function to get the length for the input text. Text can be either
@@ -517,19 +499,6 @@ class AutoModelForEmbedding(Base):
             return len(text)
         else:
             return sum([len(t) for t in text])  # Sum of length of individual strings
-
-    def _dist_gather_tensor(self, tensor: Optional[torch.Tensor]):
-        if tensor is None:
-            return None
-        tensor = tensor.contiguous()
-
-        all_tensors = [torch.empty_like(tensor) for _ in range(self.world_size)]
-        dist.all_gather(all_tensors, tensor)
-
-        all_tensors[self.process_rank] = tensor
-        all_tensors = torch.cat(all_tensors, dim=0)
-
-        return all_tensors
 
 
 class PairwiseModel(AutoModelForEmbedding):
