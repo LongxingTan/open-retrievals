@@ -115,7 +115,6 @@ def main():
     logger.info("Model parameters %s", model_args)
     logger.info("Data parameters %s", data_args)
 
-    # Set seed
     set_seed(training_args.seed)
 
     tokenizer = AutoTokenizer.from_pretrained(
@@ -186,7 +185,8 @@ def main():
         Path(training_args.output_dir).mkdir(parents=True, exist_ok=True)
 
         trainer.train()
-        trainer.save_model(training_args.output_dir)
+        # trainer.save_model(training_args.output_dir)
+        model.save_pretrained(training_args.output_dir)
 
         if trainer.is_world_process_zero():
             tokenizer.save_pretrained(training_args.output_dir)

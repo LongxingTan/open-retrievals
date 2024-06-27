@@ -483,7 +483,7 @@ class AutoModelForEmbedding(Base):
         """
         Saves all model and tokenizer to path
         """
-        logger.info("Save model to {}".format(path))
+        logger.info("Save embed model to {}".format(path))
         state_dict = self.model.state_dict()
         state_dict = type(state_dict)({k: v.clone().cpu() for k, v in state_dict.items()})
         self.model.save_pretrained(path, state_dict=state_dict, safe_serialization=safe_serialization)
