@@ -6,7 +6,6 @@ from typing import TYPE_CHECKING, Callable, Dict, List, Literal, Optional, Tuple
 
 import numpy as np
 import torch
-import torch.distributed as dist
 import torch.nn as nn
 from torch.utils.data import DataLoader
 from tqdm.auto import tqdm
@@ -479,29 +478,6 @@ class AutoModelForEmbedding(Base):
             **kwargs,
         )
 
-    def save_pretrained(self, path: str, safe_serialization: bool = True):
-        """
-        Saves all model and tokenizer to path
-        """
-        logger.info("Save embed model to {}".format(path))
-        state_dict = self.model.state_dict()
-        state_dict = type(state_dict)({k: v.clone().cpu() for k, v in state_dict.items()})
-        self.model.save_pretrained(path, state_dict=state_dict, safe_serialization=safe_serialization)
-        self.tokenizer.save_pretrained(path)
-
-    def push_to_hub(self, hub_model_id: str, private: bool = True, **kwargs):
-        """push model to hub
-
-        :param hub_model_id: str, hub model id.
-        :param private: bool, whether push to private repo. Default True.
-        :param kwargs: other kwargs for `push_to_hub` method.
-        """
-        self.tokenizer.push_to_hub(hub_model_id, private=private, **kwargs)
-        self.backbone.push_to_hub(hub_model_id, private=private, **kwargs)
-
-    def gradient_checkpointing_enable(self, gradient_checkpointing_kwargs=None):
-        self.model.gradient_checkpointing_enable(gradient_checkpointing_kwargs=gradient_checkpointing_kwargs)
-
     def _text_length(self, text: Union[List[int], List[List[int]]]):
         """
         Help function to get the length for the input text. Text can be either
@@ -517,19 +493,6 @@ class AutoModelForEmbedding(Base):
             return len(text)
         else:
             return sum([len(t) for t in text])  # Sum of length of individual strings
-
-    def _dist_gather_tensor(self, tensor: Optional[torch.Tensor]):
-        if tensor is None:
-            return None
-        tensor = tensor.contiguous()
-
-        all_tensors = [torch.empty_like(tensor) for _ in range(self.world_size)]
-        dist.all_gather(all_tensors, tensor)
-
-        all_tensors[self.process_rank] = tensor
-        all_tensors = torch.cat(all_tensors, dim=0)
-
-        return all_tensors
 
 
 class PairwiseModel(AutoModelForEmbedding):

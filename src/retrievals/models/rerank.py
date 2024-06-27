@@ -358,16 +358,6 @@ class AutoModelForRanking(Base):
         )
         return reranker
 
-    def save_pretrained(self, path: str, safe_serialization: bool = True):
-        """
-        Saves all model and tokenizer to path
-        """
-        logger.info("Save model to {}".format(path))
-        state_dict = self.model.state_dict()
-        state_dict = type(state_dict)({k: v.clone().cpu() for k, v in state_dict.items()})
-        self.model.save_pretrained(path, state_dict=state_dict, safe_serialization=safe_serialization)
-        self.tokenizer.save_pretrained(path)
-
 
 class ColBERT(Base):
     def __init__(
