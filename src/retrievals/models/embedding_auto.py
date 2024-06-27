@@ -206,6 +206,7 @@ class AutoModelForEmbedding(Base):
         Computes sentence embeddings from sentence-transformers library.
 
         :param sentences: the sentences to embed.
+        :param is_query: if the text is query or document
         :param batch_size: the batch size used for the computation.
         :param show_progress_bar: Whether to output a progress bar when encode sentences.
         :param output_value: The type of embeddings to return: "sentence_embedding" to get sentence embeddings,
@@ -304,6 +305,9 @@ class AutoModelForEmbedding(Base):
             all_embeddings = all_embeddings[0]
 
         return all_embeddings
+
+    def encode_queries(self, queries: List[str], **kwargs) -> np.ndarray:
+        return self.encode_from_text(queries, is_query=True, **kwargs)
 
     def build_index(
         self,
@@ -469,7 +473,7 @@ class AutoModelForEmbedding(Base):
             model = get_peft_model(model, lora_config)
             model.print_trainable_parameters()
         if lora_path is not None:
-            logger.info('Load with lora adapter for inference')
+            logger.info('Load pretrained with LoRA adapter')
             from peft import LoraConfig, PeftModel
 
             model = PeftModel.from_pretrained(model, lora_path)
