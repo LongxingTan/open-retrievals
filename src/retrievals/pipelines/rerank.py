@@ -4,6 +4,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
 
+import torch
 import transformers
 from torch import nn
 from transformers import (
@@ -81,6 +82,7 @@ class RerankerTrainingArguments(TrainingArguments):
     remove_unused_columns: bool = field(default=False)
     num_train_epochs: int = field(default=3)
     use_lora: bool = field(default=False)
+    use_bnb_config: bool = field(default=False)
 
 
 def get_optimizer(model, learning_rate, weight_decay=0.0):
@@ -141,6 +143,19 @@ def main():
         use_fast=False,
     )
 
+    if training_args.use_bnb_config:
+        from transformers import BitsAndBytesConfig
+
+        logger.info('Use quantization bnb config')
+        quantization_config = BitsAndBytesConfig(
+            load_in_4bit=True,
+            bnb_4bit_use_double_quant=True,
+            bnb_4bit_quant_type="nf4",
+            bnb_4bit_compute_dtype=torch.bfloat16,
+        )
+    else:
+        quantization_config = None
+
     if training_args.model_type == 'colbert':
         logger.info('Set rank model to ColBERT')
         train_dataset = RetrievalDataset(
@@ -191,6 +206,7 @@ def main():
             loss_fn=TokenLoss(token_index=token_index, train_group_size=data_args.train_group_size),
             causal_lm=True,  # model_args.causal_lm
             use_lora=training_args.use_lora,
+            quantization_config=quantization_config,
         )
     else:
         raise ValueError(

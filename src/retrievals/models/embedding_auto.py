@@ -429,9 +429,8 @@ class AutoModelForEmbedding(Base):
                 )
             config.update(custom_config_dict)
 
-        if check_causal_lm(model_name_or_path):
-            pooling_method = 'last'
-            logger.info('Set pooling_method to last')
+        if check_causal_lm(model_name_or_path) and pooling_method != 'last':
+            logger.warning('You are using a LLM model, while pooling_method is not last, is that sure?')
 
         if pretrained:
             model = AutoModel.from_pretrained(
