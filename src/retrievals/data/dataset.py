@@ -72,7 +72,11 @@ class RetrievalDataset(Dataset):
             self.samples = self.generate_unfold_samples(dataset)
         else:
             self.dataset = dataset
-        logger.info("Generate total {} retrieval data.".format(len(self.dataset)))
+        logger.info(
+            "Generate total {} retrieval data. Query instruction: {}, Document instruction: {}".format(
+                len(self.dataset), self.query_instruction, self.document_instruction
+            )
+        )
 
     def __len__(self) -> int:
         return len(self.dataset)
