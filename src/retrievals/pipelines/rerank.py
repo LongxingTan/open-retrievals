@@ -174,7 +174,7 @@ def main():
         )
         model = ColBERT.from_pretrained(
             model_args.model_name_or_path,
-            colbert_dim=128,
+            colbert_dim=512,
             loss_fn=ColbertLoss(use_inbatch_negative=training_args.use_inbatch_negative),
         )
     elif training_args.model_type == 'cross-encoder':

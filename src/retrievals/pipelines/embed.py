@@ -73,7 +73,7 @@ class RetrieverTrainingArguments(TrainingArguments):
     pooling_method: str = field(default='cls', metadata={"help": "the pooling method, should be cls or mean"})
     normalized: bool = field(default=True)
     loss_fn: str = field(default='infonce')
-    use_inbatch_neg: bool = field(default=True, metadata={"help": "use documents in the same batch as negatives"})
+    use_inbatch_negative: bool = field(default=True, metadata={"help": "use documents in the same batch as negatives"})
     remove_unused_columns: bool = field(default=False)
     use_lora: bool = field(default=False)
     use_bnb_config: bool = field(default=False)
@@ -146,7 +146,7 @@ def main():
         if training_args.loss_fn == 'infonce':
             loss_fn = InfoNCE(
                 nn.CrossEntropyLoss(label_smoothing=0.0),
-                use_inbatch_negative=training_args.use_inbatch_neg,
+                use_inbatch_negative=training_args.use_inbatch_negative,
                 temperature=training_args.temperature,
             )
         elif training_args.loss_fn == 'simcse':

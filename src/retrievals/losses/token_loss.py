@@ -1,10 +1,8 @@
-import logging
 from typing import Callable, Literal, Optional, Union
 
 import torch
 import torch.distributed.nn
 import torch.nn as nn
-import torch.nn.functional as F
 
 
 class TokenLoss(nn.Module):

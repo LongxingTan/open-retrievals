@@ -53,7 +53,7 @@ torchrun --nproc_per_node 1 \
   --train_group_size 2 \
   --logging_steps 100 \
   --temperature 0.02 \
-  --use_inbatch_neg false
+  --use_inbatch_negative false
 ```
 
 **Pairwise LLM embedding finetune**
@@ -93,7 +93,7 @@ torchrun --nproc_per_node 1 \
   --train_group_size 2 \
   --logging_steps 100 \
   --temperature 0.02 \
-  --use_inbatch_neg false
+  --use_inbatch_negative false
 ```
 
 
@@ -153,7 +153,8 @@ torchrun --nproc_per_node 1 \
   --train_group_size 8 \
   --unfold_each_positive false \
   --save_total_limit 2 \
-  --logging_steps 100
+  --logging_steps 100 \
+  --use_inbatch_negative false
 ```
 
 **LLM reranking**
