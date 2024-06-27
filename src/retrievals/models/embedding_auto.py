@@ -13,7 +13,6 @@ from tqdm.autonotebook import trange
 from transformers import (
     AutoConfig,
     AutoModel,
-    AutoModelForCausalLM,
     AutoTokenizer,
     BatchEncoding,
     PreTrainedTokenizer,

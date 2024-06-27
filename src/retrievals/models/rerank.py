@@ -1,7 +1,6 @@
 import json
 import logging
 import os
-from abc import ABC, abstractmethod
 from copy import deepcopy
 from typing import Callable, Dict, List, Literal, Optional, Tuple, Union
 
@@ -10,7 +9,6 @@ import torch
 import torch.nn as nn
 from tqdm.auto import tqdm
 from transformers import (
-    AutoConfig,
     AutoModel,
     AutoModelForCausalLM,
     AutoModelForSequenceClassification,
@@ -185,7 +183,7 @@ class AutoModelForRanking(Base):
     def set_model_type(self, model_type: Literal['cross-encoder', 'colbert'], **kwargs):
         model_type = model_type.lower().replace('-', '')
         logger.info(f'Set model type: {model_type}')
-        model_class = {'crossencoder': self, 'colbert': ColBERT}
+        model_class = {'crossencoder': self, 'colbert': ColBERT, 'llm': LLMRanker}
         model_class = model_class.get(model_type)
         return model_class(
             model=self.model,
@@ -370,10 +368,8 @@ class ColBERT(Base):
         model: Optional[nn.Module] = None,
         tokenizer: Optional[PreTrainedTokenizer] = None,
         linear_layer: Optional[nn.Module] = None,
-        loss_fn: Union[nn.Module, Callable] = None,
-        loss_type: Literal['classification', 'regression'] = 'classification',
         max_length: Optional[int] = None,
-        temperature: Optional[float] = 0.02,
+        loss_fn: Union[nn.Module, Callable] = None,
         device: Optional[str] = None,
         **kwargs,
     ):
@@ -382,10 +378,8 @@ class ColBERT(Base):
         self.tokenizer = tokenizer
         self.linear = linear_layer
 
-        self.loss_fn = loss_fn
-        self.loss_type = loss_type
+        self.loss_fn = loss_fn if loss_fn else ColbertLoss()
         self.max_length = max_length
-        self.temperature = temperature
         self.device = device or get_device_name()
         self.to(self.device)
 
@@ -418,14 +412,13 @@ class ColBERT(Base):
         return_dict: Optional[bool] = True,
         **kwargs,
     ):
-        query_embedding = self.encode(query_input_ids, query_attention_mask, normalize=True)
-        positive_embedding = self.encode(pos_input_ids, pos_attention_mask, normalize=True)
-        scores = self.score(query_embedding, positive_embedding)
+        query_embedding = self.encode(query_input_ids, attention_mask=query_attention_mask, normalize=True)
+        positive_embedding = self.encode(pos_input_ids, attention_mask=pos_attention_mask, normalize=True)
 
         if self.training:
             negative_embedding = None
             if neg_input_ids is not None:
-                negative_embedding = self.encode(neg_input_ids, neg_attention_mask, normalize=True)
+                negative_embedding = self.encode(neg_input_ids, attention_mask=neg_attention_mask, normalize=True)
 
             loss = self.loss_fn(query_embedding, positive_embedding, negative_embedding)
 
@@ -435,6 +428,7 @@ class ColBERT(Base):
                 return outputs_dict
             return loss
 
+        scores = self.score(query_embedding, positive_embedding)
         return scores
 
     @torch.no_grad()
@@ -499,20 +493,13 @@ class ColBERT(Base):
     def from_pretrained(
         cls,
         model_name_or_path: str,
-        causal_lm: bool = False,
-        trust_remote_code: bool = True,
         colbert_dim: int = 768,
         loss_fn: Union[nn.Module, Callable] = ColbertLoss(),
-        loss_type: Literal['classification', 'regression'] = 'classification',
+        trust_remote_code: bool = True,
         device: Optional[str] = None,
         **kwargs,
     ):
-        if not model_name_or_path or not isinstance(model_name_or_path, str):
-            assert ValueError('Please input valid model_name_or_path')
-
-        tokenizer = AutoTokenizer.from_pretrained(
-            model_name_or_path, return_tensors=False, trust_remote_code=trust_remote_code
-        )
+        tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, trust_remote_code=trust_remote_code)
         model = AutoModel.from_pretrained(model_name_or_path, trust_remote_code=trust_remote_code, **kwargs)
 
         linear_layer = nn.Linear(model.config.hidden_size, colbert_dim, dtype=torch.float32, bias=False)
@@ -521,6 +508,7 @@ class ColBERT(Base):
             colbert_state_dict = torch.load(os.path.join(model_name_or_path, 'colbert_linear.pt'), map_location='cpu')
             linear_layer.load_state_dict(colbert_state_dict)
         else:
+            logger.info('Xavier uniform random colbert linear layer')
             torch.nn.init.xavier_uniform_(tensor=linear_layer.weight)
 
         if os.path.exists(path=os.path.join(model_name_or_path, "metadata.json")):
@@ -535,7 +523,6 @@ class ColBERT(Base):
             linear_layer=linear_layer,
             device=device,
             loss_fn=loss_fn,
-            loss_type=loss_type,
         )
         return ranker
 
