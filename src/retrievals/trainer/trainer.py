@@ -71,24 +71,6 @@ class RetrievalTrainer(Trainer):
         save_model.save_pretrained(output_dir)
         self.model.tokenizer.save_pretrained(output_dir)
 
-        if is_deepspeed_zero3_enabled():
-            from peft import PeftModel, get_peft_model_state_dict
-
-            if state_dict is None:
-                state_dict = self.model.state_dict()
-            prefix = 'encoder.'
-            assert all(k.startswith(prefix) for k in state_dict.keys()), list(state_dict.keys())
-            state_dict = {k[len(prefix) :]: v for k, v in state_dict.items()}
-            if isinstance(self.model.encoder, PeftModel):
-                lora_state_dict = get_peft_model_state_dict(self.model.encoder, state_dict)
-                if self.args.process_index <= 0:
-                    torch.save(lora_state_dict, os.path.join(output_dir, "adapter_model.bin"))
-                    print(f"Save retrieval adapter model to {output_dir}")
-            else:
-                if self.args.process_index <= 0:
-                    torch.save(state_dict, os.path.join(output_dir, "pytorch_model.bin"))
-                    print(f"Save retrieval model to {output_dir}")
-
 
 class RerankTrainer(Trainer):
     def __init__(self, loss_fn: Callable = None, **kwargs):
@@ -105,7 +87,7 @@ class RerankTrainer(Trainer):
     def _save(self, output_dir: Optional[str] = None, state_dict=None):
         output_dir = output_dir if output_dir is not None else self.args.output_dir
         os.makedirs(output_dir, exist_ok=True)
-
+        logger.info(f"Saving rerank model checkpoint to {output_dir}")
         self.model.save_pretrained(output_dir)
         self.model.tokenizer.save_pretrained(output_dir)
 
