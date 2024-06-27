@@ -9,16 +9,6 @@
 - [rerank-llm finetune](../reference/rerank_llm_finetune.py)
 - [RAG with Langchain](./rag_langchain_demo.py)
 
-| Exp                        | Model                   | Original | Finetune  | Demo                                                                                                                                                                |
-|----------------------------|-------------------------|----------|-----------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| embed pairwise finetune    | bge-base-zh-v1.5        | 0.657    | **0.701** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/17KXe2lnNRID-HiVvMtzQnONiO74oGs91?usp=sharing) |
-| embed llm finetune (LoRA)  | Qwen2-1.5B-Instruct     | 0.541    | **0.690** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1jj1kBQWFcuQ3a7P9ttnl1hgX7H8WA_Za?usp=sharing) |
-| rerank cross encoder       | bge-reranker-base       | 0.666    | **0.691** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1QvbUkZtG56SXomGYidwI4RQzwODQrWNm?usp=sharing) |
-| rerank colbert             | chinese-roberta-wwm-ext | 0.643    | **-**     | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1QVtqhQ080ZMltXoJyODMmvEQYI6oo5kO?usp=sharing) |
-| rerank llm finetune (LoRA) | Qwen2-1.5B-Instruct     |          | **-**     | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1fzq1iV7-f8hNKFnjMmpVhVxadqPb9IXk?usp=sharing) |
-
-* The metrics is evaluated by MAP in [t2-reranking data](https://huggingface.co/datasets/C-MTEB/T2Reranking). Original score of LLM and colbert original is Zero-shot
-
 
 ## Retrieval
 
@@ -145,12 +135,12 @@ torchrun --nproc_per_node 1 \
   --positive_key positive \
   --negative_key negative \
   --learning_rate 1e-5 \
-  --fp16 \
-  --num_train_epochs 3 \
+  --bf16 \
+  --num_train_epochs 5 \
   --per_device_train_batch_size 8 \
   --dataloader_drop_last True \
   --max_length 512 \
-  --train_group_size 8 \
+  --train_group_size 2 \
   --unfold_each_positive false \
   --save_total_limit 2 \
   --logging_steps 100 \
@@ -192,3 +182,8 @@ torchrun --nproc_per_node 1 \
     --save_total_limit 2 \
     --bf16
 ```
+
+
+## Common question
+- If grad_norm during training is always zero, consider to change fp16 or bf16
+- If the fine-tuned embedding performance during inference is worse, check whether the pooling_method is correct
