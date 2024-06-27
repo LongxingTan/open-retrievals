@@ -60,9 +60,9 @@ torchrun --nproc_per_node 1 \
 - add query_instruction
   - "Given a query and a relevant document, retrieve the document that are pertinent to the query\nQuery: "
 - use the appropriate pooling_method
-  - last
-- maybe reduce the batch_size due to large model size
-- set use_lora to True if you want to use lora
+  - `last`
+- maybe we need to reduce the batch_size due to large model size
+- set `use_lora` to True if you want to use lora
 
 ```shell
 MODEL_NAME="intfloat/e5-mistral-7b-instruct"
@@ -156,7 +156,7 @@ torchrun --nproc_per_node 1 \
 ```
 
 **LLM reranking**
-- AutoModelForRanking.from_pretrained(model_name_or_path, causal_lm = True)
+- `AutoModelForRanking.from_pretrained(model_name_or_path, causal_lm=True)`
 - Prompt: "Given a query with a relevant body, determine whether the document is pertinent to the query by providing a prediction of either 'Yes' or 'No'."
 
 ```shell
