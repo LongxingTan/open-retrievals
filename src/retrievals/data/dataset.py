@@ -86,7 +86,6 @@ class RetrievalDataset(Dataset):
             return self.samples[item]
 
         data = self.dataset[item]
-
         query = self.query_instruction + data[self.query_key]
 
         if isinstance(data[self.positive_key], (list, tuple)):
@@ -132,7 +131,7 @@ class RetrievalDataset(Dataset):
         return samples
 
     def dynamic_sample(self, batch_size: int, missing_list=None, wrong_dict=None, max_wrong: int = 16):
-        logger.info('\nDynamic Shuffle Sample...')
+        logger.info('Dynamic Shuffle Sample')
         return
 
 
