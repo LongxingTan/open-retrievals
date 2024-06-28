@@ -184,8 +184,8 @@ class AutoModelForRanking(Base):
             return logits
 
     def set_model_type(self, model_type: Literal['cross-encoder', 'colbert'], **kwargs):
-        model_type = model_type.lower().replace('-', '')
-        logger.info(f'Set model type: {model_type}')
+        model_type = model_type.lower().replace('-', '').replace('_', '')
+        logger.info(f'Set model type to: {model_type}')
         model_class = {'crossencoder': self, 'colbert': ColBERT, 'llm': LLMRanker}
         model_class = model_class.get(model_type)
         return model_class(
@@ -587,8 +587,8 @@ class ColBERT(Base):
 
 
 class LLMRanker(AutoModelForRanking):
-    def __init__(self, task_prompt: Optional[str] = None, token='Yes'):
-        super(LLMRanker, self).__init__()
+    def __init__(self, task_prompt: Optional[str] = None, token='Yes', **kwargs):
+        super(LLMRanker, self).__init__(**kwargs)
         if task_prompt is None:
             self.task_prompt = (
                 "Given a query A and a passage B, determine whether the passage contains an answer to the query"
