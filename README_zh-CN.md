@@ -34,12 +34,12 @@
 - 支持向量与重排模型多种微调方式，对比学习、大模型、point-wise、pairwise、listwise
 - 定制化RAG框架，也支持在Langchain、LlamaIndex中便捷使用微调后的模型
 
-| 实验              | 模型                      | 原分数 | 微调分数      | Demo代码                                                                                                                                                             |
-|-----------------|---------------------------|--------|-----------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| 向量pairwise微调   | bge-base-zh-v1.5          | 0.657  | **0.703** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/17KXe2lnNRID-HiVvMtzQnONiO74oGs91?usp=sharing)|
-| 向量大模型LoRA微调  | Qwen2-1.5B-Instruct       | 0.541  | **0.690** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1jj1kBQWFcuQ3a7P9ttnl1hgX7H8WA_Za?usp=sharing)|
-| cross encoder重排 | bge-reranker-base         | 0.666  | **0.691** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1QvbUkZtG56SXomGYidwI4RQzwODQrWNm?usp=sharing)|
-| colbert重排       | chinese-roberta-wwm-ext   | 0.643  | **0.684** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1QVtqhQ080ZMltXoJyODMmvEQYI6oo5kO?usp=sharing)|
+| 实验              | 模型                     | 尺寸 | 原分数  | 微调分数   | Demo代码                                                                                                                           |
+|------------------|-------------------------|------|-------|-----------|-------------------------------------------------------------------------------------------------------------------------------------|
+| 向量pairwise微调   | bge-base-zh-v1.5        | 0    | 0.657 | **0.703** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/17KXe2lnNRID-HiVvMtzQnONiO74oGs91?usp=sharing)    |
+| 向量大模型LoRA微调  | Qwen2-1.5B-Instruct     | 0    | 0.541 | **0.690** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1jj1kBQWFcuQ3a7P9ttnl1hgX7H8WA_Za?usp=sharing)    |
+| cross encoder重排 | bge-reranker-base       | 0    | 0.666 | **0.691** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1QvbUkZtG56SXomGYidwI4RQzwODQrWNm?usp=sharing)    |
+| colbert重排       | chinese-roberta-wwm-ext | 0    | 0.643 | **0.684** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1QVtqhQ080ZMltXoJyODMmvEQYI6oo5kO?usp=sharing)    |
 
 * 指标为[t2-reranking数据](https://huggingface.co/datasets/C-MTEB/T2Reranking)的MAP. 其中大模型与LLM的原分数为Zero-shot
 
@@ -189,14 +189,10 @@ print(response)
 
 **向量模型微调**
 
-[//]: # (- Model performance fine-tuned in [T2Ranking]&#40;https://huggingface.co/datasets/THUIR/T2Ranking&#41;)
+- Model performance fine-tuned in [T2Ranking](https://huggingface.co/datasets/THUIR/T2Ranking)
 
-[//]: # ()
-[//]: # (| Model | Size | AP<sup>val</sup> | AP<sub>50</sub><sup>val</sup> | AP<sub>75</sub><sup>val</sup> |)
 
-[//]: # (| :-- | :-: | :-: | :-: | :-: |)
 
-[//]: # (| TripletLoss | 672 | 47.7% |52.6% | 61.4% |)
 
 
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/17KXe2lnNRID-HiVvMtzQnONiO74oGs91?usp=sharing)
@@ -291,7 +287,7 @@ training_args = TrainingArguments(
     learning_rate=learning_rate,
     per_device_train_batch_size=batch_size,
     num_train_epochs=epochs,
-    output_dir = './checkpoints',
+    output_dir='./checkpoints',
     remove_unused_columns=False,
 )
 trainer = RerankTrainer(

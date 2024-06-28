@@ -34,6 +34,13 @@
 - 対照学習エンベッディング, LLM エンベッディング
 - 高速 RAG デモ
 
+| Exp                        | Model                   | Size | Original | Finetune  | Demo                                                                                                                                                                |
+|----------------------------|-------------------------|------|----------|-----------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| embed pairwise finetune    | bge-base-zh-v1.5        | 0    | 0.657    | **0.703** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/17KXe2lnNRID-HiVvMtzQnONiO74oGs91?usp=sharing) |
+| embed llm finetune (LoRA)  | Qwen2-1.5B-Instruct     | 0    | 0.541    | **0.690** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1jj1kBQWFcuQ3a7P9ttnl1hgX7H8WA_Za?usp=sharing) |
+| rerank cross encoder       | bge-reranker-base       | 0    | 0.666    | **0.691** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1QvbUkZtG56SXomGYidwI4RQzwODQrWNm?usp=sharing) |
+| rerank colbert             | chinese-roberta-wwm-ext | 0    | 0.643    | **0.684** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1QVtqhQ080ZMltXoJyODMmvEQYI6oo5kO?usp=sharing) |
+
 
 ## インストール
 

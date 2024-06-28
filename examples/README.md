@@ -75,8 +75,8 @@ torchrun --nproc_per_node 1 \
   --learning_rate 5e-5 \
   --bf16 \
   --num_train_epochs 5 \
-  --per_device_train_batch_size 2 \
-  --gradient_accumulation_steps 1 \
+  --per_device_train_batch_size 8 \
+  --gradient_accumulation_steps 16 \
   --dataloader_drop_last True \
   --query_max_length 256 \
   --document_max_length 256 \
