@@ -251,10 +251,10 @@ class AutoModelForEmbedding(Base):
         sentences_sorted = [sentences[idx] for idx in length_sorted_idx]
         if is_query:
             logger.info("Encoding query")
-            # sentences_sorted = [self.query_instruction + sentence for sentence in sentences_sorted]
+            sentences_sorted = [self.query_instruction + sentence for sentence in sentences_sorted]
         else:
             logger.info('Encoding document')
-            # sentences_sorted = [self.document_instruction + sentence for sentence in sentences_sorted]
+            sentences_sorted = [self.document_instruction + sentence for sentence in sentences_sorted]
 
         for start_index in trange(0, len(sentences), batch_size, desc="Batches", disable=not show_progress_bar):
             sentences_batch = sentences_sorted[start_index : start_index + batch_size]
