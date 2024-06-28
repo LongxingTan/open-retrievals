@@ -37,7 +37,7 @@
 | 实验              | 模型                     | 尺寸  | 原分数  | 微调分数      | Demo代码                                                                                                                           |
 |------------------|-------------------------|-----|-------|-----------|-------------------------------------------------------------------------------------------------------------------------------------|
 | 向量pairwise微调   | bge-base-zh-v1.5        | -   | 0.657 | **0.703** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/17KXe2lnNRID-HiVvMtzQnONiO74oGs91?usp=sharing) |
-| 向量大模型LoRA微调  | Qwen2-1.5B-Instruct     | -   | 0.541 | **0.690** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1jj1kBQWFcuQ3a7P9ttnl1hgX7H8WA_Za?usp=sharing) |
+| 向量大模型LoRA微调  | Qwen2-1.5B-Instruct     | -   | 0.541 | **0.691** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1jj1kBQWFcuQ3a7P9ttnl1hgX7H8WA_Za?usp=sharing) |
 | cross encoder重排 | bge-reranker-base       | -   | 0.666 | **0.706** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1QvbUkZtG56SXomGYidwI4RQzwODQrWNm?usp=sharing) |
 | colbert重排       | chinese-roberta-wwm-ext | -   | 0.643 | **0.687** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1QVtqhQ080ZMltXoJyODMmvEQYI6oo5kO?usp=sharing) |
 

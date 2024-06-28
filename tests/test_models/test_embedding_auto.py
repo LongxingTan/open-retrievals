@@ -110,7 +110,6 @@ class AutoModelForEmbeddingTest(TestCase, ModelTesterMixin):
     def setUp(self) -> None:
         self.output_dir = tempfile.mkdtemp()
         self.model_tester = AutoModelForEmbeddingTester(self)
-        # self.config_tester = ConfigTester()
         model_name_or_path = "sentence-transformers/all-MiniLM-L6-v2"
         self.model = AutoModelForEmbedding.from_pretrained(model_name_or_path, pooling_method="cls")
 

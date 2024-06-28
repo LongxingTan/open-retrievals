@@ -70,8 +70,8 @@ torchrun --nproc_per_node 1 \
   --positive_key positive \
   --negative_key negative \
   --use_lora True \
-  --query_instruction "Query: " \
-  --document_instruction "" \
+  --query_instruction "Retrieve the possible answer for query.\nQuery: " \
+  --document_instruction 'Document: ' \
   --learning_rate 2e-4 \
   --bf16 \
   --num_train_epochs 3 \
@@ -83,7 +83,8 @@ torchrun --nproc_per_node 1 \
   --train_group_size 4 \
   --logging_steps 100 \
   --temperature 0.02 \
-  --use_inbatch_negative false
+  --use_inbatch_negative false \
+  --save_total_limit 1
 ```
 
 
