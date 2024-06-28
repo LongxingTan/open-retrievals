@@ -590,10 +590,11 @@ class LLMRanker(AutoModelForRanking):
     def __init__(self, task_prompt: Optional[str] = None, token='Yes', **kwargs):
         super(LLMRanker, self).__init__(**kwargs)
         if task_prompt is None:
-            self.task_prompt = (
+            task_prompt = (
                 "Given a query A and a passage B, determine whether the passage contains an answer to the query"
                 "by providing a prediction of either 'Yes' or 'No'."
             )
+        self.task_prompt = task_prompt
         self.prompt_inputs = self.tokenizer(self.task_prompt, return_tensors=None, add_special_tokens=False)[
             'input_ids'
         ]
@@ -617,10 +618,14 @@ class LLMRanker(AutoModelForRanking):
         return outputs_dict
 
     def preprocess(self, batch_sentence_pair: List[List[str]], max_length: int, **kwargs):
-        collator = LLMRerankCollator(tokenizer=self.tokenizer, prompt=self.prompt, max_length=max_length)
+        collator = LLMRerankCollator(tokenizer=self.tokenizer, prompt=self.task_prompt, max_length=max_length)
         batch_inputs = collator(batch_sentence_pair)
 
-        return {'input_ids': batch_inputs['input_ids'], 'attention_mask': batch_inputs['attention_mask']}
+        batch_inputs = {
+            'input_ids': batch_inputs['input_ids'].to(self.device),
+            'attention_mask': batch_inputs['attention_mask'].to(self.device),
+        }
+        return batch_inputs
 
     @torch.no_grad()
     def compute_score(

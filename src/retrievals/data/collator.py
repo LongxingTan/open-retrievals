@@ -310,6 +310,8 @@ class LLMRerankCollator(DataCollatorForSeq2Seq):
                 examples.append((features[i][self.query_key], features[i][self.positive_key]))
                 for neg in features[i][self.negative_key]:
                     examples.append((features[i][self.query_key], neg))
+        else:
+            examples = features
 
         batch = self.tokenizer(
             [i[0] for i in examples],
