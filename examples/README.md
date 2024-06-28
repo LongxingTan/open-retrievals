@@ -185,6 +185,6 @@ torchrun --nproc_per_node 1 \
 ```
 
 
-## Common question
+## Common questions
 - If grad_norm during training is always zero, consider to change fp16 or bf16
-- If the fine-tuned embedding performance during inference is worse, check whether the pooling_method is correct, the prompt is the same
+- If the fine-tuned embedding performance during inference is worse, check whether the pooling_method is correct, and the prompt is the same as training
