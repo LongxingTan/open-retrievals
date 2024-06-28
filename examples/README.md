@@ -134,15 +134,15 @@ torchrun --nproc_per_node 1 \
   --train_data $TRAIN_DATA \
   --positive_key positive \
   --negative_key negative \
-  --learning_rate 1e-5 \
+  --learning_rate 1e-4 \
   --bf16 \
-  --num_train_epochs 5 \
-  --per_device_train_batch_size 8 \
+  --num_train_epochs 3 \
+  --per_device_train_batch_size 64 \
   --dataloader_drop_last True \
-  --max_length 512 \
+  --max_length 256 \
   --train_group_size 4 \
   --unfold_each_positive false \
-  --save_total_limit 2 \
+  --save_total_limit 1 \
   --logging_steps 100 \
   --use_inbatch_negative false
 ```
