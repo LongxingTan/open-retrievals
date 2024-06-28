@@ -14,7 +14,7 @@
 [coverage-url]: https://codecov.io/github/longxingtan/open-retrievals?branch=master
 
 <h1 align="center">
-<img src="./docs/source/_static/logo.svg" width="420" align=center/>
+<img src="./docs/source/_static/structure.png" align=center/>
 </h1>
 
 [![LICENSE][license-image]][license-url]
@@ -26,8 +26,6 @@
 
 
 **[Documentation](https://open-retrievals.readthedocs.io)** | **[中文](https://github.com/LongxingTan/open-retrievals/blob/master/README_zh-CN.md)** | **[日本語](https://github.com/LongxingTan/open-retrievals/blob/master/README_ja-JP.md)**
-
-![structure](./docs/source/_static/structure.png)
 
 **Open-retrievals** simplifies text embeddings, retrievals, ranking, and RAG using PyTorch and Transformers. This user-friendly framework is designed for information retrieval and LLM generation.
 - Embeddings, retrieval and rerank all-in-one: `AutoModelForEmbedding`

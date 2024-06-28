@@ -14,7 +14,7 @@
 [coverage-url]: https://codecov.io/github/longxingtan/open-retrievals?branch=master
 
 <h1 align="center">
-<img src="./docs/source/_static/logo.svg" width="420" align=center/>
+<img src="./docs/source/_static/structure.png" align=center/>
 </h1>
 
 [![LICENSE][license-image]][license-url]
@@ -26,8 +26,6 @@
 
 
 **[中文wiki](https://github.com/LongxingTan/open-retrievals/wiki)** | **[英文文档](https://open-retrievals.readthedocs.io)** | **[Release Notes](https://open-retrievals.readthedocs.io/en/latest/CHANGELOG.html)**
-
-![structure](./docs/source/_static/structure.png)
 
 **Open-Retrievals** 帮助开发者在信息检索、大语言模型等领域便捷地应用文本向量，快速搭建检索、排序、RAG等应用。
 - `AutoModelForEmbedding`一统向量、检索、重排
