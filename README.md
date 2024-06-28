@@ -14,7 +14,7 @@
 [coverage-url]: https://codecov.io/github/longxingtan/open-retrievals?branch=master
 
 <h1 align="center">
-<img src="./docs/source/_static/structure.png" align=center/>
+<img src="./docs/source/_static/logo.svg" width="420" align=center/>
 </h1>
 
 [![LICENSE][license-image]][license-url]
@@ -27,11 +27,13 @@
 
 **[Documentation](https://open-retrievals.readthedocs.io)** | **[中文](https://github.com/LongxingTan/open-retrievals/blob/master/README_zh-CN.md)** | **[日本語](https://github.com/LongxingTan/open-retrievals/blob/master/README_ja-JP.md)**
 
-**Open-retrievals** simplifies text embeddings, retrievals, ranking, and RAG using PyTorch and Transformers. This user-friendly framework is designed for information retrieval and LLM generation.
-- Embeddings, retrieval and rerank all-in-one: `AutoModelForEmbedding`
-- Contrastive learning/LLM enhanced embeddings, with point-wise, pairwise and listwise fine-tuning
-- Cross-encoder, ColBERT and LLM reranker
-- Fast RAG easily integrated with Langchain and LlamaIndex
+![structure](./docs/source/_static/structure.png)
+
+**Open-retrievals** enhances text embeddings, retrievals, ranking, and RAG.
+- All-in-one embeddings, retrieval and rerank : `AutoModelForEmbedding`
+- Embedding fine-tuned by point-wise, pairwise, listwise, contrastive learning and LLM
+- Reranking fine-tuned by Cross Encoder, ColBERT and LLM
+- Build enhanced RAG easily, integrated with transformers, Langchain and LlamaIndex
 
 | Exp                        | Model                   | Original | Finetune  | Demo                                                                                                                                                                |
 |----------------------------|-------------------------|----------|-----------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------|

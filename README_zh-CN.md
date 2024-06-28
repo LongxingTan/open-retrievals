@@ -14,7 +14,7 @@
 [coverage-url]: https://codecov.io/github/longxingtan/open-retrievals?branch=master
 
 <h1 align="center">
-<img src="./docs/source/_static/structure.png" align=center/>
+<img src="./docs/source/_static/logo.svg" width="420" align=center/>
 </h1>
 
 [![LICENSE][license-image]][license-url]
@@ -27,10 +27,13 @@
 
 **[中文wiki](https://github.com/LongxingTan/open-retrievals/wiki)** | **[英文文档](https://open-retrievals.readthedocs.io)** | **[Release Notes](https://open-retrievals.readthedocs.io/en/latest/CHANGELOG.html)**
 
-**Open-Retrievals** 帮助开发者在信息检索、大语言模型等领域便捷地应用文本向量，快速搭建检索、排序、RAG等应用。
+![structure](./docs/source/_static/structure.png)
+
+**Open-Retrievals** 帮助开发者在信息检索、大语言模型RAG等领域便捷地增强向量、检索、排序性能。
 - `AutoModelForEmbedding`一统向量、检索、重排
-- 支持向量与重排模型多种微调方式，对比学习、大模型、point-wise、pairwise、listwise
-- 定制化RAG框架，也支持在Langchain、LlamaIndex中便捷使用微调后的模型
+- 支持多种向量微调，对比学习、大模型、point-wise、pairwise、listwise
+- 支持多种重排微调，cross encoder、ColBERT、LLM
+- 支持定制化RAG框架，支持在Transformers、Langchain、LlamaIndex中便捷使用微调后的模型
 
 | 实验              | 模型                     | 尺寸  | 原分数   | 微调分数      | Demo代码                                                                                                                           |
 |------------------|-------------------------|-----|-------|-----------|-------------------------------------------------------------------------------------------------------------------------------------|
