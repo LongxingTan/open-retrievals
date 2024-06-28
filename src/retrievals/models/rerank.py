@@ -626,7 +626,7 @@ class LLMRanker(AutoModelForRanking):
     def compute_score(
         self,
         sentence_pairs: Union[List[Tuple[str]], Tuple[str]],
-        batch_size: int = 128,
+        batch_size: int = 16,
         max_length: int = 256,
         normalize: bool = False,
         show_progress_bar: bool = None,
