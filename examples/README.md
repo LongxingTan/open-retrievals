@@ -72,15 +72,15 @@ torchrun --nproc_per_node 1 \
   --use_lora True \
   --query_instruction "Query: " \
   --document_instruction "" \
-  --learning_rate 5e-5 \
+  --learning_rate 2e-4 \
   --bf16 \
-  --num_train_epochs 5 \
-  --per_device_train_batch_size 8 \
+  --num_train_epochs 3 \
+  --per_device_train_batch_size 4 \
   --gradient_accumulation_steps 16 \
   --dataloader_drop_last True \
-  --query_max_length 256 \
+  --query_max_length 64 \
   --document_max_length 256 \
-  --train_group_size 2 \
+  --train_group_size 4 \
   --logging_steps 100 \
   --temperature 0.02 \
   --use_inbatch_negative false

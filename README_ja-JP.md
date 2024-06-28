@@ -187,8 +187,6 @@ print(response)
 
 **コントラスト学習による transformers のウェイトのファインチューニング**
 
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/17KXe2lnNRID-HiVvMtzQnONiO74oGs91?usp=sharing)
-
 ```python
 import torch.nn as nn
 from datasets import load_dataset
@@ -239,8 +237,6 @@ model = AutoModelForEmbedding.from_pretrained(
 ```
 
 **リランク**
-
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1QvbUkZtG56SXomGYidwI4RQzwODQrWNm?usp=sharing)
 
 ```python
 from transformers import AutoTokenizer, TrainingArguments, get_cosine_schedule_with_warmup, AdamW
