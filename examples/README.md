@@ -112,7 +112,6 @@ torchrun --nproc_per_node 1 \
   --per_device_train_batch_size 32 \
   --dataloader_drop_last True \
   --max_length 512 \
-  --train_group_size 3 \
   --logging_steps 100
 ```
 
