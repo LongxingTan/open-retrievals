@@ -304,10 +304,12 @@ class LLMRerankCollator(DataCollatorForSeq2Seq):
 
     def __call__(self, features: List[Dict[str, Any]], return_tensors='pt'):
         examples = []
-        for i in range(len(features)):
-            examples.append((features[i][self.query_key], features[i][self.positive_key]))
-            for neg in features[i][self.negative_key]:
-                examples.append((features[i][self.query_key], neg))
+
+        if isinstance(features[0], dict):
+            for i in range(len(features)):
+                examples.append((features[i][self.query_key], features[i][self.positive_key]))
+                for neg in features[i][self.negative_key]:
+                    examples.append((features[i][self.query_key], neg))
 
         batch = self.tokenizer(
             [i[0] for i in examples],

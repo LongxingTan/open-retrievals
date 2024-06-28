@@ -1,7 +1,7 @@
 import logging
 from abc import ABC, abstractmethod
 from contextlib import nullcontext
-from typing import List, Optional, Union
+from typing import List, Optional, Tuple, Union
 
 import numpy as np
 import torch
@@ -63,26 +63,6 @@ class Base(ABC, torch.nn.Module):
             all_embeddings = torch.concat(all_embeddings)
         return all_embeddings
 
-    def preprocess(self, batch_sentence_pair, query_max_length, document_max_length):
-        query_list = [item[0] for item in batch_sentence_pair]
-        document_list = [item[1] for item in batch_sentence_pair]
-
-        query_batch_tokens = self.tokenizer(
-            query_list, padding='max_length', truncation=True, max_length=query_max_length, return_tensors='pt'
-        )
-        query_batch_tokens_on_device = {k: v.to(self.device) for k, v in query_batch_tokens.items()}
-        document_batch_tokens = self.tokenizer(
-            document_list, padding='max_length', truncation=True, max_length=document_max_length, return_tensors='pt'
-        )
-        document_batch_tokens_on_device = {k: v.to(self.device) for k, v in document_batch_tokens.items()}
-
-        return {
-            "query_input_ids": query_batch_tokens_on_device['input_ids'],
-            "query_attention_mask": query_batch_tokens_on_device['attention_mask'],
-            "doc_input_ids": document_batch_tokens_on_device['input_ids'],
-            "doc_attention_mask": document_batch_tokens_on_device['attention_mask'],
-        }
-
     def save_pretrained(self, path: str, safe_serialization: bool = True):
         """
         Saves all model and tokenizer to path
@@ -118,3 +98,19 @@ class Base(ABC, torch.nn.Module):
         all_tensors = torch.cat(all_tensors, dim=0)
 
         return all_tensors
+
+    def _text_length(self, text: Union[List[int], List[List[int]]]):
+        """
+        Help function to get the length for the input text. Text can be either
+        a list of ints (which means a single text as input), or a tuple of list of ints
+        (representing several text inputs to the model).
+        """
+
+        if isinstance(text, dict):  # {key: value} case
+            return len(next(iter(text.values())))
+        elif not hasattr(text, "__len__"):  # Object has no len() method
+            return 1
+        elif len(text) == 0 or isinstance(text[0], int):  # Empty string or list of ints
+            return len(text)
+        else:
+            return sum([len(t) for t in text])  # Sum of length of individual strings

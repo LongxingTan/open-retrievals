@@ -20,7 +20,7 @@ from transformers.modeling_outputs import (
     SequenceClassifierOutput,
 )
 
-from ..data.collator import RerankCollator
+from ..data.collator import LLMRerankCollator, RerankCollator
 from ..losses.colbert_loss import ColbertLoss
 from .base import Base
 from .pooling import AutoPooling
@@ -109,6 +109,7 @@ class AutoModelForRanking(Base):
     def encode(
         self, input_ids: torch.Tensor, attention_mask: torch.Tensor
     ) -> Union[torch.Tensor, SequenceClassifierOutput]:
+        # input_ids -> embedding
         model_output: SequenceClassifierOutput = self.model(input_ids, attention_mask, output_hidden_states=True)
 
         if not self.pooling_method:
@@ -188,56 +189,75 @@ class AutoModelForRanking(Base):
         return model_class(
             model=self.model,
             tokenizer=self.tokenizer,
-            pooling_method=self.pooling_method,
             loss_fn=self.loss_fn,
-            loss_type=self.loss_type,
             **kwargs,
         )
+
+    def preprocess(
+        self,
+        batch_sentence_pair: List[List[str]],
+        max_length: int,
+        padding: Union[str, bool] = 'max_length',
+    ):
+        if isinstance(batch_sentence_pair[0][0], str):
+            batch = self.tokenizer(
+                batch_sentence_pair,
+                padding=True,
+                truncation=True,
+                max_length=max_length,
+                return_tensors="pt",
+            )
+        else:
+            batch = self.tokenizer.pad(
+                batch_sentence_pair,
+                padding=True,
+                max_length=None,
+                pad_to_multiple_of=None,
+                return_tensors='pt',
+            )
+        batch_on_device = {k: v.to(self.device) for k, v in batch.items()}
+        return batch_on_device
 
     @torch.no_grad()
     def compute_score(
         self,
-        text_pairs: Union[List[Tuple[str, str]], Tuple[str, str]],
-        batch_size: int = 128,
-        max_length: int = 512,
+        sentence_pairs: Union[List[Tuple[str, str]], Tuple[str, str]],
+        batch_size: int = 16,
+        max_length: int = 256,
         normalize: bool = False,
         show_progress_bar: bool = None,
         **kwargs,
     ):
+        """
+        preprocess -> score -> output
+        """
         self.model.eval()
-        if isinstance(text_pairs[0], str):
-            text_pairs = [text_pairs]
+        if isinstance(sentence_pairs[0], str):
+            sentence_pairs = [sentence_pairs]
 
-        batch_size = min(batch_size, len(text_pairs))
+        length_sorted_idx = np.argsort([-self._text_length(q) - self._text_length(p) for q, p in sentence_pairs])
+        sentences_sorted = [sentence_pairs[idx] for idx in length_sorted_idx]
 
-        scores_list: List[float] = []
-        for i in tqdm(range(0, len(text_pairs), batch_size), desc="Scoring", disable=not show_progress_bar):
-            if isinstance(text_pairs[0][0], str):
-                batch = self.tokenizer(
-                    text_pairs[i : i + batch_size],
-                    padding=True,
-                    truncation=True,
-                    max_length=max_length,
-                    return_tensors="pt",
-                )
-            else:
-                batch = self.tokenizer.pad(
-                    text_pairs[i : i + batch_size],
-                    padding=True,
-                    max_length=None,
-                    pad_to_multiple_of=None,
-                    return_tensors='pt',
-                )
+        all_scores: List[float] = []
+        for batch_start in tqdm(
+            range(0, len(sentences_sorted), batch_size), desc='Scoring', disable=not show_progress_bar
+        ):
+            batch_sentences = sentences_sorted[batch_start : batch_start + batch_size]
 
-            batch_on_device = {k: v.to(self.device) for k, v in batch.items()}
+            batch_on_device = self.preprocess(batch_sentences, max_length=max_length)
+
             scores = self.model(**batch_on_device, return_dict=True).logits.view(-1).float()
+
             if normalize:
                 scores = torch.sigmoid(scores)
-            scores_list.extend(scores.cpu().numpy().tolist())
+            all_scores.extend(scores.cpu().float().tolist())
 
-        if len(scores_list) == 1:
-            return scores_list[0]
-        return scores_list
+        all_scores = [all_scores[idx] for idx in np.argsort(length_sorted_idx)]
+
+        if len(all_scores) == 1:
+            return all_scores[0]
+
+        return all_scores
 
     @torch.no_grad()
     def rerank(
@@ -245,9 +265,9 @@ class AutoModelForRanking(Base):
         query: str,
         documents: List[str],
         data_collator: Optional[RerankCollator] = None,
-        batch_size: int = 32,
-        chunk_max_length: int = 512,
-        chunk_overlap: int = 50,
+        batch_size: int = 16,
+        chunk_max_length: int = 256,
+        chunk_overlap: int = 48,
         max_chunks_per_doc: int = 100,
         normalize: bool = False,
         show_progress_bar: bool = None,
@@ -388,7 +408,7 @@ class ColBERT(Base):
             input_ids, attention_mask=attention_mask, output_hidden_states=True
         )
         if hasattr(outputs, 'last_hidden_state'):
-            # [batch, seq_len, attention_dim]
+            # shape: [batch, seq_len, attention_dim]
             hidden_state = outputs.last_hidden_state
         else:
             hidden_state = outputs.hidden_states[1]
@@ -431,11 +451,37 @@ class ColBERT(Base):
         scores = self.score(query_embedding, positive_embedding)
         return scores
 
+    def preprocess(
+        self,
+        batch_sentence_pair: List[List[str]],
+        query_max_length: int,
+        document_max_length: int,
+        padding='max_length',
+    ):
+        query_list = [item[0] for item in batch_sentence_pair]
+        document_list = [item[1] for item in batch_sentence_pair]
+
+        query_batch_tokens = self.tokenizer(
+            query_list, padding=padding, truncation=True, max_length=query_max_length, return_tensors='pt'
+        )
+        query_batch_tokens_on_device = {k: v.to(self.device) for k, v in query_batch_tokens.items()}
+        document_batch_tokens = self.tokenizer(
+            document_list, padding=padding, truncation=True, max_length=document_max_length, return_tensors='pt'
+        )
+        document_batch_tokens_on_device = {k: v.to(self.device) for k, v in document_batch_tokens.items()}
+
+        return {
+            "query_input_ids": query_batch_tokens_on_device['input_ids'],
+            "query_attention_mask": query_batch_tokens_on_device['attention_mask'],
+            "doc_input_ids": document_batch_tokens_on_device['input_ids'],
+            "doc_attention_mask": document_batch_tokens_on_device['attention_mask'],
+        }
+
     @torch.no_grad()
     def compute_score(
         self,
         text_pairs: Union[List[Tuple[str, str]], Tuple[str, str]],
-        batch_size: int = 128,
+        batch_size: int = 16,
         max_length: int = 256,
         normalize: bool = False,
         show_progress_bar: bool = None,
@@ -445,7 +491,6 @@ class ColBERT(Base):
         if isinstance(text_pairs[0], str):
             text_pairs = [text_pairs]
 
-        batch_size = min(batch_size, len(text_pairs))
         scores_list: List[float] = []
         for i in tqdm(range(0, len(text_pairs), batch_size), desc="Scoring", disable=not show_progress_bar):
             batch_on_device = self.preprocess(
@@ -471,6 +516,7 @@ class ColBERT(Base):
         query_embeddings: torch.Tensor,
         document_embeddings: torch.Tensor,
     ):
+        # pair embedding -> score
         late_interactions = torch.einsum(
             "bsh,bth->bst",
             query_embeddings,
@@ -527,9 +573,18 @@ class ColBERT(Base):
         return ranker
 
 
-class LLMRanker(Base):
-    def __init__(self):
+class LLMRanker(AutoModelForRanking):
+    def __init__(self, prompt: Optional[str] = None, token='Yes'):
         super(LLMRanker, self).__init__()
+        if prompt is None:
+            self.prompt = (
+                "Given a query A and a passage B, determine whether the passage contains an answer to the query"
+                "by providing a prediction of either 'Yes' or 'No'."
+            )
+        self.prompt_inputs = self.tokenizer(prompt, return_tensors=None, add_special_tokens=False)['input_ids']
+        sep = "\n"
+        self.sep_inputs = self.tokenizer(sep, return_tensors=None, add_special_tokens=False)['input_ids']
+        self.token_loc = self.tokenizer(token, add_special_tokens=False)['input_ids'][0]
 
     def forward(
         self,
@@ -545,6 +600,55 @@ class LLMRanker(Base):
         outputs_dict['logits'] = model_output.logits
         outputs_dict['loss'] = loss
         return outputs_dict
+
+    def preprocess(self, batch_sentence_pair: List[List[str]], max_length: int, **kwargs):
+        collator = LLMRerankCollator(tokenizer=self.tokenizer, prompt=self.prompt, max_length=max_length)
+        batch_inputs = collator(batch_sentence_pair)
+
+        return {'input_ids': batch_inputs['input_ids'], 'attention_mask': batch_inputs['attention_mask']}
+
+    @torch.no_grad()
+    def compute_score(
+        self,
+        sentence_pairs: Union[List[Tuple[str]], Tuple[str]],
+        batch_size: int = 128,
+        max_length: int = 256,
+        normalize: bool = False,
+        show_progress_bar: bool = None,
+        **kwargs,
+    ):
+        self.model.eval()
+
+        if isinstance(sentence_pairs[0], str):
+            sentence_pairs = [sentence_pairs]
+
+        length_sorted_idx = np.argsort([-self._text_length(q) - self._text_length(p) for q, p in sentence_pairs])
+        sentences_sorted = [sentence_pairs[idx] for idx in length_sorted_idx]
+
+        all_scores: List[float] = []
+        for batch_start in tqdm(
+            range(0, len(sentences_sorted), batch_size), desc='Scoring', disable=not show_progress_bar
+        ):
+            batch_sentences = sentences_sorted[batch_start : batch_start + batch_size]
+            batch_on_device = self.preprocess(batch_sentences, max_length=max_length)
+            outputs = self.model(**batch_on_device, output_hidden_states=True)
+            scores = self.score(outputs.logits, batch_on_device['attention_mask'])
+
+            if normalize:
+                scores = torch.sigmoid(scores)
+            all_scores.extend(scores.cpu().float().tolist())
+
+        all_scores = [all_scores[idx] for idx in np.argsort(length_sorted_idx)]
+
+        if len(all_scores) == 1:
+            return all_scores[0]
+
+        return all_scores
+
+    def score(self, logits, attention_mask: torch.Tensor):
+        scores = AutoPooling('last')(logits, attention_mask)
+        scores = scores[:, self.token_loc]
+        return scores
 
 
 class DocumentSplitter(object):
