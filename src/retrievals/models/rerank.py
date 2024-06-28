@@ -45,6 +45,7 @@ class AutoModelForRanking(Base):
         loss_type: Literal['classification', 'regression'] = 'classification',
         max_length: Optional[int] = None,
         causal_lm: bool = False,
+        task_prompt: Optional[str] = None,
         temperature: Optional[float] = None,
         device: Optional[str] = None,
         **kwargs,
@@ -63,6 +64,7 @@ class AutoModelForRanking(Base):
         self.loss_fn = loss_fn
         self.loss_type = loss_type
         self.causal_lm = causal_lm
+        self.task_prompt = task_prompt
 
         if max_length is None:
             if (
@@ -327,8 +329,10 @@ class AutoModelForRanking(Base):
         use_fp16: bool = False,
         use_lora: bool = False,
         lora_config=None,
-        device: Optional[str] = None,
+        lora_path: Optional[str] = None,
         quantization_config=None,
+        task_prompt: Optional[str] = None,
+        device: Optional[str] = None,
         temperature: Optional[float] = None,
         **kwargs,
     ):
@@ -348,6 +352,7 @@ class AutoModelForRanking(Base):
             )
 
         if use_fp16:
+            logger.info('Set model to fp16, please note that if you want fp16 during training, set training_args fp16')
             model.half()
 
         if use_lora:
@@ -369,6 +374,13 @@ class AutoModelForRanking(Base):
             model = get_peft_model(model, lora_config)
             model.print_trainable_parameters()
 
+        if lora_path is not None:
+            logger.info('Load pretrained with LoRA adapter')
+            from peft import LoraConfig, PeftModel
+
+            model = PeftModel.from_pretrained(model, lora_path)
+            model = model.merge_and_unload()
+
         reranker = cls(
             model=model,
             tokenizer=tokenizer,
@@ -378,6 +390,7 @@ class AutoModelForRanking(Base):
             loss_type=loss_type,
             temperature=temperature,
             causal_lm=causal_lm,
+            task_prompt=task_prompt,
         )
         return reranker
 
@@ -574,14 +587,16 @@ class ColBERT(Base):
 
 
 class LLMRanker(AutoModelForRanking):
-    def __init__(self, prompt: Optional[str] = None, token='Yes'):
+    def __init__(self, task_prompt: Optional[str] = None, token='Yes'):
         super(LLMRanker, self).__init__()
-        if prompt is None:
-            self.prompt = (
+        if task_prompt is None:
+            self.task_prompt = (
                 "Given a query A and a passage B, determine whether the passage contains an answer to the query"
                 "by providing a prediction of either 'Yes' or 'No'."
             )
-        self.prompt_inputs = self.tokenizer(prompt, return_tensors=None, add_special_tokens=False)['input_ids']
+        self.prompt_inputs = self.tokenizer(self.task_prompt, return_tensors=None, add_special_tokens=False)[
+            'input_ids'
+        ]
         sep = "\n"
         self.sep_inputs = self.tokenizer(sep, return_tensors=None, add_special_tokens=False)['input_ids']
         self.token_loc = self.tokenizer(token, add_special_tokens=False)['input_ids'][0]

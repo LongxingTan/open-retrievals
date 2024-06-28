@@ -399,7 +399,6 @@ class AutoModelForEmbedding(Base):
         pretrained: bool = True,
         config_path: Optional[str] = None,
         trust_remote_code: bool = True,
-        causal_lm: bool = False,
         custom_config_dict: Optional[Dict] = None,
         use_fp16: bool = False,
         use_lora: bool = False,
@@ -465,6 +464,7 @@ class AutoModelForEmbedding(Base):
 
             model = get_peft_model(model, lora_config)
             model.print_trainable_parameters()
+
         if lora_path is not None:
             logger.info('Load pretrained with LoRA adapter')
             from peft import LoraConfig, PeftModel
