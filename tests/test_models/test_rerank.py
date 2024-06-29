@@ -41,17 +41,15 @@ class AutoModelForRankingTest(TestCase, ModelTesterMixin):
         text_list = ['李萍进了中等技术学校', '我在百货公司当售货员', '我们都有光明的前途']
         text_pairs = [[text, i] for i in text_list]
 
-        batch = self.model.preprocess(text_pairs, query_max_length=9, document_max_length=11)
-        self.assertEqual(batch['query_input_ids'].shape, torch.Size([3, 9]))
-        self.assertEqual(batch['query_attention_mask'].shape, torch.Size([3, 9]))
-        self.assertEqual(batch['doc_input_ids'].shape, torch.Size([3, 11]))
-        self.assertEqual(batch['doc_attention_mask'].shape, torch.Size([3, 11]))
+        batch = self.model.preprocess(text_pairs, max_length=9)
+        self.assertEqual(batch['input_ids'].shape, torch.Size([3, 9]))
+        self.assertEqual(batch['attention_mask'].shape, torch.Size([3, 9]))
 
     def test_compute_score(self):
         text = '张华考上了北京大学'
         text_list = ['李萍进了中等技术学校', '我在百货公司当售货员', '我们都有光明的前途']
         text_pairs = [[text, i] for i in text_list]
-        scores = self.model.compute_score(text_pairs=text_pairs, data_collator=self.data_collator)
+        scores = self.model.compute_score(sentence_pairs=text_pairs, data_collator=self.data_collator)
         document_ranked = self.model.rerank(query=text, documents=text_list, data_collator=self.data_collator)
 
         print(scores)
