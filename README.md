@@ -29,10 +29,10 @@
 
 ![structure](./docs/source/_static/structure.png)
 
-**Open-retrievals** enhance text embedding, retrieval, reranking and RAG. All-in-one `AutoModelForEmbedding`
-- Embedding fine-tuned by point-wise, pairwise, listwise, contrastive learning and LLM
-- Reranking fine-tuned by Cross Encoder, ColBERT and LLM
-- Build enhanced RAG easily, integrated with transformers, Langchain and LlamaIndex
+**Open-retrievals** improve and unify text embedding, retrieval, reranking and RAG.
+- Embeddings fine-tuned through point-wise, pairwise, listwise, contrastive learning, and LLM.
+- Reranking fine-tuned with Cross Encoder, ColBERT, and LLM.
+- Easily build enhanced RAG, integrated with Transformers, Langchain, and LlamaIndex.
 
 | Exp                       | Model                   | Original | Finetune  | Demo                                                                                                                                                                |
 |---------------------------|-------------------------|----------|-----------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------|
