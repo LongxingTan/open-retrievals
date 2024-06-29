@@ -6,7 +6,6 @@ import torch
 import torch.distributed as dist
 import torch.nn as nn
 from transformers import Trainer
-from transformers.deepspeed import is_deepspeed_zero3_enabled
 
 logger = logging.getLogger(__name__)
 

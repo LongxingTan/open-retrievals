@@ -10,9 +10,40 @@ Pretrained
 we can use `AutoModelForEmbedding` to get the sentence embedding from pretrained transformer or large language model.
 
 
+Fine-tune
+------------------
+
+point-wise
+
+- `{(query, label), (document, label)}`
+
+
+pairwise
+
+- `{(query, positive, label), (query, negative, label)}`
+
+- `{(query, positive, negative), {query, positive, negative}}`
+
+- `{(query, positive, negative1, negative2, negative3...)}`
+
+listwise
+
+- `{(query+positive)}`
+
+
+Loss function
+~~~~~~~~~~~~~~~~~~~~~~
+
+- binary classification:
+    - similarity(query, positive) > similarity(query, negative)
+    - hinge loss: max(0, similarity(query, positive) - similarity(query, negative) + margin)
+    - logistic loss: logistic(similarity(query, positive) - similarity(query, negative))
+- multi-label classification:
+    - similarity(query, positive), similarity(query, negative1), similarity(query, negative2)
+
 
 Pair wise
-----------------------
+~~~~~~~~~~~~~
 
 .. code-block:: python
 
@@ -54,7 +85,7 @@ Pair wise
 
 
 Point wise
--------------------
+~~~~~~~~~~~~~
 
 If the positive and negative examples have some noise in label, the directly point-wise cross-entropy maybe not the best. The pair wise just compare relatively, or the hinge loss with margin could be better.
 
@@ -67,9 +98,20 @@ arcface
 
 
 List wise
--------------------
+~~~~~~~~~~~~~~
 
+
+Enhance the performance
+--------------------------------------
+
+* Pretrain
+* In batch negative
+* Hard negative, multiple rounds negative
+* Cross batch negative
+* knowledge distill from cross encoder
+* maxsim (multi vector)
+* Matryoshka
 
 
 Hard negative
---------------------
+~~~~~~~~~~~~~~~~

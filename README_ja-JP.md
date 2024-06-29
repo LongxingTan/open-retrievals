@@ -34,6 +34,13 @@
 - 対照学習エンベッディング, LLM エンベッディング
 - 高速 RAG デモ
 
+| Exp                       | Model                   | Size | Original | Finetune  | Demo                                                                                                                                                                |
+|---------------------------|-------------------------|------|----------|-----------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| embed pairwise finetune   | bge-base-zh-v1.5        | 0    | 0.657    | **0.703** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/17KXe2lnNRID-HiVvMtzQnONiO74oGs91?usp=sharing) |
+| embed LLM finetune (LoRA) | Qwen2-1.5B-Instruct     | 0    | 0.546    | **0.694** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1jj1kBQWFcuQ3a7P9ttnl1hgX7H8WA_Za?usp=sharing) |
+| rerank cross encoder      | bge-reranker-base       | 0    | 0.666    | **0.706** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1QvbUkZtG56SXomGYidwI4RQzwODQrWNm?usp=sharing) |
+| rerank colbert            | chinese-roberta-wwm-ext | 0    | 0.643    | **0.687** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1QVtqhQ080ZMltXoJyODMmvEQYI6oo5kO?usp=sharing) |
+
 
 ## インストール
 
@@ -48,14 +55,6 @@ pip install peft  # 必要な場合
 ```shell
 pip install open-retrievals
 ```
-
-[//]: # (**With conda**)
-
-[//]: # (```shell)
-
-[//]: # (conda install open-retrievals -c conda-forge)
-
-[//]: # (```)
 
 
 ## クイックスタート
@@ -180,8 +179,6 @@ print(response)
 
 **コントラスト学習による transformers のウェイトのファインチューニング**
 
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/17KXe2lnNRID-HiVvMtzQnONiO74oGs91?usp=sharing)
-
 ```python
 import torch.nn as nn
 from datasets import load_dataset
@@ -226,14 +223,12 @@ from retrievals import AutoModelForEmbedding
 
 model = AutoModelForEmbedding.from_pretrained(
     "mistralai/Mistral-7B-v0.1",
-    pooling_method='cls',
+    pooling_method='last',
     query_instruction=f'Instruct: Retrieve semantically similar text\nQuery: '
 )
 ```
 
 **リランク**
-
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1QvbUkZtG56SXomGYidwI4RQzwODQrWNm?usp=sharing)
 
 ```python
 from transformers import AutoTokenizer, TrainingArguments, get_cosine_schedule_with_warmup, AdamW
@@ -256,14 +251,14 @@ training_args = TrainingArguments(
     learning_rate=learning_rate,
     per_device_train_batch_size=batch_size,
     num_train_epochs=epochs,
-    output_dir = './checkpoints',
+    output_dir='./checkpoints',
     remove_unused_columns=False,
 )
 trainer = RerankTrainer(
     model=model,
     args=training_args,
     train_dataset=train_dataset,
-    data_collator=RerankCollator(tokenizer, query_max_length=max_length, document_max_length=128),
+    data_collator=RerankCollator(tokenizer, max_length=max_length),
 )
 trainer.optimizer = optimizer
 trainer.scheduler = scheduler

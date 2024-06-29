@@ -40,7 +40,7 @@ torchrun --nproc_per_node 1 \
   --dataloader_drop_last True \
   --query_max_length 64 \
   --document_max_length 512 \
-  --train_group_size 2 \
+  --train_group_size 4 \
   --logging_steps 100 \
   --temperature 0.02 \
   --use_inbatch_negative false
@@ -70,20 +70,21 @@ torchrun --nproc_per_node 1 \
   --positive_key positive \
   --negative_key negative \
   --use_lora True \
-  --query_instruction "Query: " \
-  --document_instruction "" \
-  --learning_rate 5e-5 \
+  --query_instruction "Retrieve the possible answer for query.\nQuery: " \
+  --document_instruction 'Document: ' \
+  --learning_rate 2e-4 \
   --bf16 \
-  --num_train_epochs 5 \
-  --per_device_train_batch_size 2 \
-  --gradient_accumulation_steps 1 \
+  --num_train_epochs 3 \
+  --per_device_train_batch_size 4 \
+  --gradient_accumulation_steps 16 \
   --dataloader_drop_last True \
-  --query_max_length 256 \
+  --query_max_length 64 \
   --document_max_length 256 \
-  --train_group_size 2 \
+  --train_group_size 4 \
   --logging_steps 100 \
   --temperature 0.02 \
-  --use_inbatch_negative false
+  --use_inbatch_negative false \
+  --save_total_limit 1
 ```
 
 
@@ -106,13 +107,13 @@ torchrun --nproc_per_node 1 \
   --train_data $TRAIN_DATA \
   --positive_key positive \
   --negative_key negative \
-  --learning_rate 3e-5 \
+  --learning_rate 2e-5 \
   --fp16 \
   --num_train_epochs 3 \
-  --per_device_train_batch_size 32 \
+  --per_device_train_batch_size 64 \
   --dataloader_drop_last True \
   --max_length 512 \
-  --train_group_size 3 \
+  --save_total_limit 1 \
   --logging_steps 100
 ```
 
@@ -134,15 +135,15 @@ torchrun --nproc_per_node 1 \
   --train_data $TRAIN_DATA \
   --positive_key positive \
   --negative_key negative \
-  --learning_rate 1e-5 \
+  --learning_rate 1e-4 \
   --bf16 \
-  --num_train_epochs 5 \
-  --per_device_train_batch_size 8 \
+  --num_train_epochs 3 \
+  --per_device_train_batch_size 64 \
   --dataloader_drop_last True \
-  --max_length 512 \
-  --train_group_size 2 \
+  --max_length 256 \
+  --train_group_size 4 \
   --unfold_each_positive false \
-  --save_total_limit 2 \
+  --save_total_limit 1 \
   --logging_steps 100 \
   --use_inbatch_negative false
 ```
@@ -184,6 +185,6 @@ torchrun --nproc_per_node 1 \
 ```
 
 
-## Common question
+## Common questions
 - If grad_norm during training is always zero, consider to change fp16 or bf16
-- If the fine-tuned embedding performance during inference is worse, check whether the pooling_method is correct
+- If the fine-tuned embedding performance during inference is worse, check whether the pooling_method is correct, and the prompt is the same as training

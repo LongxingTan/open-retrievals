@@ -29,18 +29,17 @@
 
 ![structure](./docs/source/_static/structure.png)
 
-**Open-retrievals** simplifies text embeddings, retrievals, ranking, and RAG using PyTorch and Transformers. This user-friendly framework is designed for information retrieval and LLM generation.
-- Embeddings, retrieval and rerank all-in-one: `AutoModelForEmbedding`
-- Contrastive learning/LLM enhanced embeddings, with point-wise, pairwise and listwise fine-tuning
-- Cross-encoder, ColBERT and LLM reranker
-- Fast RAG easily integrated with Langchain and LlamaIndex
+**Open-retrievals** improve and unify text embedding, retrieval, reranking and RAG.
+- Embeddings fine-tuned through point-wise, pairwise, listwise, contrastive learning, and LLM.
+- Reranking fine-tuned with Cross Encoder, ColBERT, and LLM.
+- Easily build enhanced RAG, integrated with Transformers, Langchain, and LlamaIndex.
 
-| Exp                        | Model                   | Original | Finetune  | Demo                                                                                                                                                                |
-|----------------------------|-------------------------|----------|-----------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| embed pairwise finetune    | bge-base-zh-v1.5        | 0.657    | **0.701** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/17KXe2lnNRID-HiVvMtzQnONiO74oGs91?usp=sharing) |
-| embed llm finetune (LoRA)  | Qwen2-1.5B-Instruct     | 0.541    | **0.690** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1jj1kBQWFcuQ3a7P9ttnl1hgX7H8WA_Za?usp=sharing) |
-| rerank cross encoder       | bge-reranker-base       | 0.666    | **0.691** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1QvbUkZtG56SXomGYidwI4RQzwODQrWNm?usp=sharing) |
-| rerank colbert             | chinese-roberta-wwm-ext | 0.643    | **0.683** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1QVtqhQ080ZMltXoJyODMmvEQYI6oo5kO?usp=sharing) |
+| Exp                       | Model                   | Original | Finetune  | Demo                                                                                                                                                                |
+|---------------------------|-------------------------|----------|-----------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| embed pairwise finetune   | bge-base-zh-v1.5        | 0.657    | **0.703** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/17KXe2lnNRID-HiVvMtzQnONiO74oGs91?usp=sharing) |
+| embed LLM finetune (LoRA) | Qwen2-1.5B-Instruct     | 0.546    | **0.694** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1jj1kBQWFcuQ3a7P9ttnl1hgX7H8WA_Za?usp=sharing) |
+| rerank cross encoder      | bge-reranker-base       | 0.666    | **0.706** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1QvbUkZtG56SXomGYidwI4RQzwODQrWNm?usp=sharing) |
+| rerank colbert            | chinese-roberta-wwm-ext | 0.643    | **0.687** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1QVtqhQ080ZMltXoJyODMmvEQYI6oo5kO?usp=sharing) |
 
 * The metrics is MAP in [t2-reranking data](https://huggingface.co/datasets/C-MTEB/T2Reranking). Original score of LLM and colbert original is Zero-shot
 
@@ -186,8 +185,6 @@ print(response)
 
 **Embedding fine-tuning**
 
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/17KXe2lnNRID-HiVvMtzQnONiO74oGs91?usp=sharing)
-
 ```python
 import torch.nn as nn
 from datasets import load_dataset
@@ -228,8 +225,6 @@ trainer.train()
 
 **Rerank Fine-tuning**
 
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1QvbUkZtG56SXomGYidwI4RQzwODQrWNm?usp=sharing)
-
 ```python
 from transformers import AutoTokenizer, TrainingArguments, get_cosine_schedule_with_warmup, AdamW
 from retrievals import RerankCollator, AutoModelForRanking, RerankTrainer, RerankDataset
@@ -251,14 +246,14 @@ training_args = TrainingArguments(
     learning_rate=learning_rate,
     per_device_train_batch_size=batch_size,
     num_train_epochs=epochs,
-    output_dir = './checkpoints',
+    output_dir='./checkpoints',
     remove_unused_columns=False,
 )
 trainer = RerankTrainer(
     model=model,
     args=training_args,
     train_dataset=train_dataset,
-    data_collator=RerankCollator(tokenizer, query_max_length=max_length, document_max_length=max_length),
+    data_collator=RerankCollator(tokenizer, max_length=max_length),
 )
 trainer.optimizer = optimizer
 trainer.scheduler = scheduler

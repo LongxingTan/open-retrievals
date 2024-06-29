@@ -110,7 +110,6 @@ class AutoModelForEmbeddingTest(TestCase, ModelTesterMixin):
     def setUp(self) -> None:
         self.output_dir = tempfile.mkdtemp()
         self.model_tester = AutoModelForEmbeddingTester(self)
-        # self.config_tester = ConfigTester()
         model_name_or_path = "sentence-transformers/all-MiniLM-L6-v2"
         self.model = AutoModelForEmbedding.from_pretrained(model_name_or_path, pooling_method="cls")
 
@@ -133,18 +132,17 @@ class AutoModelForEmbeddingTest(TestCase, ModelTesterMixin):
     #     self.model_tester.create_and_check_for_pretraining(*config_and_inputs)
 
     def test_encode_from_text(self):
-        emb = self.model.encode([("Hello Word, a test sentence", "Second input for model")])
-        assert emb.shape == (1, 384)
-        # assert abs(np.sum(emb) - 9.503508) < 0.001
-
-        emb = self.model.encode(
+        query_emb = self.model.encode(
             [
-                ("Hello Word, a test sentence", "Second input for model"),
-                ("My second tuple", "With two inputs"),
-                ("Final tuple", "final test Oh"),
-            ]
+                "Hello Word, a test sentence",
+                "My second tuple",
+                "Final tuple",
+            ],
+            is_query=True,
         )
-        assert emb.shape == (3, 384)
+        document_emb = self.model.encode(["Second input for model", "With two inputs", "final test Oh"])
+        assert query_emb.shape == (3, 384)
+        assert document_emb.shape == (3, 384)
         # assert abs(np.sum(emb) - 32.14627) < 0.001
 
     def test_forward_from_text(self):

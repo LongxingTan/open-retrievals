@@ -119,7 +119,7 @@ def main():
         )
 
     logging.basicConfig(
-        format="%(asctime)s - %(levelname)s - %(name)s -   %(message)s",
+        format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",
         datefmt="%m/%d/%Y %H:%M:%S",
         level=logging.INFO if training_args.local_rank in [-1, 0] else logging.WARN,
     )
@@ -161,6 +161,7 @@ def main():
         train_dataset = RetrievalDataset(
             args=data_args,
             tokenizer=tokenizer,
+            train_group_size=data_args.train_group_size,
             unfold_each_positive=data_args.unfold_each_positive,
             positive_key=data_args.positive_key,
             negative_key=data_args.negative_key,
@@ -193,6 +194,7 @@ def main():
             args=data_args,
             tokenizer=tokenizer,
             unfold_each_positive=data_args.unfold_each_positive,
+            train_group_size=data_args.train_group_size,
             positive_key=data_args.positive_key,
             negative_key=data_args.negative_key,
         )

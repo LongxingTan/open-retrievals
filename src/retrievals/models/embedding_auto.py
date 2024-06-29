@@ -161,7 +161,7 @@ class AutoModelForEmbedding(Base):
         self,
         inputs: Union[DataLoader, Dict, List, str],
         is_query: bool = False,
-        batch_size: int = 128,
+        batch_size: int = 16,
         show_progress_bar: bool = None,
         output_value: str = "sentence_embedding",
         convert_to_numpy: bool = True,
@@ -198,7 +198,7 @@ class AutoModelForEmbedding(Base):
         self,
         sentences: Union[str, List[str], Tuple[str], 'pd.Series', np.ndarray],
         is_query: bool = False,
-        batch_size: int = 128,
+        batch_size: int = 16,
         show_progress_bar: bool = None,
         output_value: str = "sentence_embedding",
         convert_to_numpy: bool = False,
@@ -251,10 +251,10 @@ class AutoModelForEmbedding(Base):
         sentences_sorted = [sentences[idx] for idx in length_sorted_idx]
         if is_query:
             logger.info("Encoding query")
-            # sentences_sorted = [self.query_instruction + sentence for sentence in sentences_sorted]
+            sentences_sorted = [self.query_instruction + sentence for sentence in sentences_sorted]
         else:
             logger.info('Encoding document')
-            # sentences_sorted = [self.document_instruction + sentence for sentence in sentences_sorted]
+            sentences_sorted = [self.document_instruction + sentence for sentence in sentences_sorted]
 
         for start_index in trange(0, len(sentences), batch_size, desc="Batches", disable=not show_progress_bar):
             sentences_batch = sentences_sorted[start_index : start_index + batch_size]
@@ -318,7 +318,7 @@ class AutoModelForEmbedding(Base):
         index_path: Optional[str] = None,
         max_document_length: int = 512,
         split_documents: bool = False,
-        batch_size: int = 128,
+        batch_size: int = 16,
         show_progress_bar: bool = None,
         use_gpu: bool = False,
     ):
@@ -399,7 +399,6 @@ class AutoModelForEmbedding(Base):
         pretrained: bool = True,
         config_path: Optional[str] = None,
         trust_remote_code: bool = True,
-        causal_lm: bool = False,
         custom_config_dict: Optional[Dict] = None,
         use_fp16: bool = False,
         use_lora: bool = False,
@@ -465,6 +464,7 @@ class AutoModelForEmbedding(Base):
 
             model = get_peft_model(model, lora_config)
             model.print_trainable_parameters()
+
         if lora_path is not None:
             logger.info('Load pretrained with LoRA adapter')
             from peft import LoraConfig, PeftModel
@@ -483,22 +483,6 @@ class AutoModelForEmbedding(Base):
             max_length=max_length,
             **kwargs,
         )
-
-    def _text_length(self, text: Union[List[int], List[List[int]]]):
-        """
-        Help function to get the length for the input text. Text can be either
-        a list of ints (which means a single text as input), or a tuple of list of ints
-        (representing several text inputs to the model).
-        """
-
-        if isinstance(text, dict):  # {key: value} case
-            return len(next(iter(text.values())))
-        elif not hasattr(text, "__len__"):  # Object has no len() method
-            return 1
-        elif len(text) == 0 or isinstance(text[0], int):  # Empty string or list of ints
-            return len(text)
-        else:
-            return sum([len(t) for t in text])  # Sum of length of individual strings
 
 
 class PairwiseModel(AutoModelForEmbedding):

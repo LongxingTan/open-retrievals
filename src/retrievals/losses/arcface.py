@@ -24,7 +24,7 @@ class ArcFaceAdaptiveMarginLoss(nn.Module):
         scale: float = 30.0,
         margin: float = 0.50,
         easy_margin: bool = False,
-        ls_eps: float = 0.0,
+        eps: float = 0.0,
     ) -> None:
         super().__init__()
         self.in_features = in_features
@@ -32,7 +32,7 @@ class ArcFaceAdaptiveMarginLoss(nn.Module):
         self.criterion = criterion
         self.scale = scale
 
-        self.ls_eps = ls_eps
+        self.eps = eps
         self.arc_weight = nn.Parameter(torch.FloatTensor(out_features, in_features))
         self.init_parameters()
 
@@ -73,8 +73,8 @@ class ArcFaceAdaptiveMarginLoss(nn.Module):
             one_hot = torch.zeros(cosine.size(), device=device)
             one_hot.scatter_(1, labels.view(-1, 1).long(), 1)
 
-        if self.ls_eps > 0:
-            one_hot = (1 - self.ls_eps) * one_hot + self.ls_eps / self.out_features
+        if self.eps > 0:
+            one_hot = (1 - self.eps) * one_hot + self.eps / self.out_features
 
         output = (one_hot * phi) + ((1.0 - one_hot) * cosine)
         output *= self.scale

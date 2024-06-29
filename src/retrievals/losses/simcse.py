@@ -14,6 +14,8 @@ logger = logging.getLogger(__name__)
 
 
 class SimCSE(nn.Module):
+    """Cosine similarity = normalize + inner product"""
+
     def __init__(
         self,
         criterion: Union[nn.Module, Callable] = nn.CrossEntropyLoss(label_smoothing=0.0, reduction='mean'),
