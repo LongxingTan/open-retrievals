@@ -46,6 +46,8 @@ class AutoModelForRanking(Base):
         max_length: Optional[int] = None,
         causal_lm: bool = False,
         task_prompt: Optional[str] = None,
+        query_instruction: Optional[str] = None,
+        document_instruction: Optional[str] = None,
         temperature: Optional[float] = None,
         device: Optional[str] = None,
         **kwargs,
@@ -65,6 +67,8 @@ class AutoModelForRanking(Base):
         self.loss_type = loss_type
         self.causal_lm = causal_lm
         self.task_prompt = task_prompt
+        self.query_instruction = query_instruction if query_instruction else ""
+        self.document_instruction = document_instruction if document_instruction else ""
 
         if max_length is None:
             if (
@@ -332,6 +336,8 @@ class AutoModelForRanking(Base):
         lora_path: Optional[str] = None,
         quantization_config=None,
         task_prompt: Optional[str] = None,
+        query_instruction: Optional[str] = None,
+        document_instruction: Optional[str] = None,
         device: Optional[str] = None,
         temperature: Optional[float] = None,
         **kwargs,
@@ -391,6 +397,8 @@ class AutoModelForRanking(Base):
             temperature=temperature,
             causal_lm=causal_lm,
             task_prompt=task_prompt,
+            query_instruction=query_instruction,
+            document_instruction=document_instruction,
         )
         return reranker
 
@@ -644,6 +652,11 @@ class LLMRanker(AutoModelForRanking):
 
         length_sorted_idx = np.argsort([-self._text_length(q) - self._text_length(p) for q, p in sentence_pairs])
         sentences_sorted = [sentence_pairs[idx] for idx in length_sorted_idx]
+
+        if self.query_instruction or self.document_instruction:
+            sentences_sorted = [
+                (self.query_instruction + pair[0], self.document_instruction + pair[1]) for pair in sentences_sorted
+            ]
 
         all_scores: List[float] = []
         for batch_start in tqdm(
