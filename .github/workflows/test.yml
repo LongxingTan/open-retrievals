@@ -36,8 +36,7 @@ jobs:
       - name: Install dependencies
         shell: bash
         run: |
-          python -m pip cache purge
-          pip install -r requirements.txt
+          pip install -r --no-cache-dir requirements.txt
           pip install --extra-index-url https://pypi.org/simple --no-cache-dir coverage pytest codecov-cli>=0.4.1
 
       - name: Run unittest
