@@ -293,7 +293,7 @@ class AutoModelForRanking(Base):
         )
 
         tot_scores = self.compute_score(
-            text_pairs=text_pairs,
+            sentence_pairs=text_pairs,
             data_collator=data_collator,
             batch_size=batch_size,
             normalize=normalize,
@@ -501,7 +501,7 @@ class ColBERT(Base):
     @torch.no_grad()
     def compute_score(
         self,
-        text_pairs: Union[List[Tuple[str, str]], Tuple[str, str]],
+        sentence_pairs: Union[List[Tuple[str, str]], Tuple[str, str]],
         batch_size: int = 16,
         max_length: int = 256,
         normalize: bool = False,
@@ -509,13 +509,13 @@ class ColBERT(Base):
         **kwargs,
     ):
         self.model.eval()
-        if isinstance(text_pairs[0], str):
-            text_pairs = [text_pairs]
+        if isinstance(sentence_pairs[0], str):
+            sentence_pairs = [sentence_pairs]
 
         scores_list: List[float] = []
-        for i in tqdm(range(0, len(text_pairs), batch_size), desc="Scoring", disable=not show_progress_bar):
+        for i in tqdm(range(0, len(sentence_pairs), batch_size), desc="Scoring", disable=not show_progress_bar):
             batch_on_device = self.preprocess(
-                text_pairs[i : i + batch_size], query_max_length=max_length, document_max_length=max_length
+                sentence_pairs[i : i + batch_size], query_max_length=max_length, document_max_length=max_length
             )
             query_embedding = self.encode(
                 batch_on_device['query_input_ids'], batch_on_device['query_attention_mask'], normalize=True
