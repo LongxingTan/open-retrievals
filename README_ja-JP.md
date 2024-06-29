@@ -56,14 +56,6 @@ pip install peft  # 必要な場合
 pip install open-retrievals
 ```
 
-[//]: # (**With conda**)
-
-[//]: # (```shell)
-
-[//]: # (conda install open-retrievals -c conda-forge)
-
-[//]: # (```)
-
 
 ## クイックスタート
 
@@ -231,7 +223,7 @@ from retrievals import AutoModelForEmbedding
 
 model = AutoModelForEmbedding.from_pretrained(
     "mistralai/Mistral-7B-v0.1",
-    pooling_method='cls',
+    pooling_method='last',
     query_instruction=f'Instruct: Retrieve semantically similar text\nQuery: '
 )
 ```
