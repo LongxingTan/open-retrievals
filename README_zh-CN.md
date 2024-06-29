@@ -41,7 +41,7 @@
 | cross encoder重排 | bge-reranker-base       | -   | 0.666 | **0.706** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1QvbUkZtG56SXomGYidwI4RQzwODQrWNm?usp=sharing) |
 | colbert重排       | chinese-roberta-wwm-ext | -   | 0.643 | **0.687** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1QVtqhQ080ZMltXoJyODMmvEQYI6oo5kO?usp=sharing) |
 
-* 指标为[t2-reranking数据](https://huggingface.co/datasets/C-MTEB/T2Reranking)的MAP. 其中大模型与ColBERT原分数为Zero-shot
+* 指标为10% [t2-reranking数据](https://huggingface.co/datasets/C-MTEB/T2Reranking)的MAP. 其中大模型与ColBERT原分数为Zero-shot
 
 
 ## 安装
