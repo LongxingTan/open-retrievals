@@ -29,10 +29,9 @@
 
 ![structure](./docs/source/_static/structure.png)
 
-**Open-Retrievals** 帮助开发者在信息检索、大语言模型RAG等领域便捷地增强向量、检索、排序性能。
-- `AutoModelForEmbedding`一统向量、检索、重排
-- 支持多种向量微调，对比学习、大模型、point-wise、pairwise、listwise
-- 支持多种重排微调，cross encoder、ColBERT、LLM
+**Open-Retrievals** 一统向量、检索、重排，帮助开发者在信息检索、大语言模型RAG等领域便捷优化
+- 支持全套向量微调，对比学习、大模型、point-wise、pairwise、listwise
+- 支持全套重排微调，cross encoder、ColBERT、LLM
 - 支持定制化RAG框架，支持在Transformers、Langchain、LlamaIndex中便捷使用微调后的模型
 
 | 实验              | 模型                     | 尺寸  | 原分数   | 微调分数      | Demo代码                                                                                                                           |

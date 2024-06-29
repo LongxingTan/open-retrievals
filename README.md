@@ -29,8 +29,7 @@
 
 ![structure](./docs/source/_static/structure.png)
 
-**Open-retrievals** enhances text embeddings, retrievals, ranking, and RAG.
-- All-in-one embeddings, retrieval and rerank : `AutoModelForEmbedding`
+**Open-retrievals** enhance text embedding, retrieval, reranking and RAG. All-in-one `AutoModelForEmbedding`
 - Embedding fine-tuned by point-wise, pairwise, listwise, contrastive learning and LLM
 - Reranking fine-tuned by Cross Encoder, ColBERT and LLM
 - Build enhanced RAG easily, integrated with transformers, Langchain and LlamaIndex
