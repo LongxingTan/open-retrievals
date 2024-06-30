@@ -17,15 +17,18 @@
 <img src="./docs/source/_static/logo.svg" width="420" align=center/>
 </h1>
 
-[![LICENSE][license-image]][license-url]
-[![PyPI Version][pypi-image]][pypi-url]
-[![Build Status][build-image]][build-url]
-[![Lint Status][lint-image]][lint-url]
-[![Docs Status][docs-image]][docs-url]
-[![Code Coverage][coverage-image]][coverage-url]
+<div align="center">
 
+  [![LICENSE][license-image]][license-url]
+  [![PyPI Version][pypi-image]][pypi-url]
+  [![Build Status][build-image]][build-url]
+  [![Lint Status][lint-image]][lint-url]
+  [![Docs Status][docs-image]][docs-url]
+  [![Code Coverage][coverage-image]][coverage-url]
 
-**[Documentation](https://open-retrievals.readthedocs.io)** | **[中文](https://github.com/LongxingTan/open-retrievals/blob/master/README_zh-CN.md)** | **[日本語](https://github.com/LongxingTan/open-retrievals/blob/master/README_ja-JP.md)**
+  **[Documentation](https://open-retrievals.readthedocs.io)** | **[中文](https://github.com/LongxingTan/open-retrievals/blob/master/README_zh-CN.md)** | **[日本語](https://github.com/LongxingTan/open-retrievals/blob/master/README_ja-JP.md)**
+
+</div>
 
 ![structure](./docs/source/_static/structure.png)
 

@@ -17,6 +17,8 @@
 <img src="./docs/source/_static/logo.svg" width="420" align=center/>
 </h1>
 
+<div align="center">
+
 [![LICENSE][license-image]][license-url]
 [![PyPI Version][pypi-image]][pypi-url]
 [![Build Status][build-image]][build-url]
@@ -24,8 +26,8 @@
 [![Docs Status][docs-image]][docs-url]
 [![Code Coverage][coverage-image]][coverage-url]
 
-
-**[中文wiki](https://github.com/LongxingTan/open-retrievals/wiki)** | **[英文文档](https://open-retrievals.readthedocs.io)** | **[Release Notes](https://open-retrievals.readthedocs.io/en/latest/CHANGELOG.html)**
+**[中文wiki](https://github.com/LongxingTan/open-retrievals/wiki)** | **[英文文档](https://open-retrievals.readthedocs.io)**
+</div>
 
 ![structure](./docs/source/_static/structure.png)
 
