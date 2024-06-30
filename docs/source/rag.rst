@@ -16,6 +16,10 @@ The basic RAG process is document indexing, query embedding, retrieval, optional
 Integrated with Langchain
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+.. image:: https://colab.research.google.com/assets/colab-badge.svg
+    :target: https://colab.research.google.com/drive/1fJC-8er-a4NRkdJkwWr4On7lGt9rAO4P?usp=sharing
+    :alt: Open In Colab
+
 
 .. code-block:: python
 
