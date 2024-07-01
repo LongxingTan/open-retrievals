@@ -1,3 +1,6 @@
+"""
+Token loss for LLM generative token compared with the expected token
+"""
 from typing import Callable, Literal, Optional, Union
 
 import torch

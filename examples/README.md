@@ -172,15 +172,15 @@ torchrun --nproc_per_node 1 \
     --positive_key positive \
     --negative_key negative \
     --learning_rate 2e-4 \
-    --num_train_epochs 1 \
-    --per_device_train_batch_size 1 \
+    --num_train_epochs 3 \
+    --per_device_train_batch_size 4 \
     --gradient_accumulation_steps 16 \
     --dataloader_drop_last True \
     --max_len 256 \
     --train_group_size 4 \
-    --logging_steps 1 \
-    --save_steps 2000 \
-    --save_total_limit 2 \
+    --logging_steps 10 \
+    --save_steps 20000 \
+    --save_total_limit 1 \
     --bf16
 ```
 
