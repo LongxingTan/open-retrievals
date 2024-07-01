@@ -1,6 +1,8 @@
 # T2_ranking
 
-## Performance
+An end-to-end example for text retrieval
+
+## Experiment
 
 bge-base-zh-v1.5
 - "map": 0.6569549236524207, "mrr": 0.7683207806932297
@@ -17,23 +19,30 @@ python prepare_t2ranking_data.py
 ```
 
 ## Train
-```shell
 
+```shell
+sh pairwise_embed_train.sh
 ```
 
-## Encode corpus
+## Indexing
+Encode corpus
 ```shell
-
+sh encode_corpus.sh
 ```
 
-## Encode Query
+Encode Query
 ```shell
-
+sh encode_query.sh
 ```
 
-## Search
+## Retrieve
 ```shell
+sh retrieve.sh
+```
 
+## Rerank
+```shell
+sh rerank.sh
 ```
 
 ## Evaluate

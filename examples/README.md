@@ -6,7 +6,7 @@
 - [embedding-llm pairwise finetune](./embedding_llm_finetune.py)
 - [rerank-cross encoder](./rerank_cross_encoder.py)
 - [rerank-colbert](./rerank_colbert.py)
-- [rerank-llm finetune](../reference/rerank_llm_finetune.py)
+- [rerank-llm finetune](rerank_llm_finetune.py)
 - [RAG with Langchain](./rag_langchain_demo.py)
 
 

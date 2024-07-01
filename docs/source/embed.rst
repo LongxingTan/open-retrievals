@@ -114,7 +114,10 @@ Enhance the performance
 
 
 Hard mining
-~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~
+offline hard mining
+
+online hard mining
 
 
 Ensemble embedding
