@@ -192,4 +192,4 @@ The grad_norm during training is always zero?
 
 The fine-tuned embedding performance during inference is worse than original?
 - check whether the pooling_method is correct
-- check whether the prompt is the same as training for LLM
+- check whether the prompt is the same as training for LLM model

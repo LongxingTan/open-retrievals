@@ -1,6 +1,6 @@
 # T2_ranking
 
-An end-to-end example for text retrieval
+An end-to-end example with [t2-reranking data](https://huggingface.co/datasets/C-MTEB/T2Reranking)
 
 ## Experiment
 
@@ -13,12 +13,12 @@ bge-reranker-base
 - rerank/cross-encoder: "map": 0.6906494118852755, "mrr": 0.8064902548320916
 
 
-## Prepare dataset
+## 1. Prepare dataset
 ```shell
 python prepare_t2ranking_data.py
 ```
 
-## Train
+## 2. Finetune embedding
 
 ```shell
 sh pairwise_embed_train.sh
