@@ -37,7 +37,7 @@
 - Reranking fine-tuned with Cross Encoder, ColBERT, and LLM.
 - Easily build enhanced RAG, integrated with Transformers, Langchain, and LlamaIndex.
 
-| Exp                       | Model                   | Original | Finetune  | Demo                                                                                                                                                                |
+| Exp                       | Model                   | Original | Finetuned | Demo                                                                                                                                                                |
 |---------------------------|-------------------------|----------|-----------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | embed pairwise finetune   | bge-base-zh-v1.5        | 0.657    | **0.703** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/17KXe2lnNRID-HiVvMtzQnONiO74oGs91?usp=sharing) |
 | embed LLM finetune (LoRA) | Qwen2-1.5B-Instruct     | 0.546    | **0.694** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1jj1kBQWFcuQ3a7P9ttnl1hgX7H8WA_Za?usp=sharing) |
