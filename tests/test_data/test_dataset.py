@@ -1,15 +1,17 @@
 import json
+import os
 import tempfile
-import unittest
 from unittest import TestCase
 
-from src.retrievals.data.dataset import RerankDataset, RetrievalDataset
+from transformers import BertTokenizer
+
+from src.retrievals.data.dataset import EncodeDataset, RerankDataset, RetrievalDataset
 
 
 class RetrievalDatasetTest(TestCase):
     def setUp(self):
         # Sample data to be written to the temp file
-        self.data = {
+        data = {
             "query": "A man pulls two women down a city street in a rickshaw.",
             "pos": ["A man is in a city."],
             "neg": [
@@ -23,17 +25,22 @@ class RetrievalDatasetTest(TestCase):
             ],
         }
 
-    def test_retrieval_dataset(self):
         with tempfile.NamedTemporaryFile(suffix='.json', mode='w+', delete=False) as temp_file:
-            temp_file_name = temp_file.name
-            json.dump(self.data, temp_file)
+            self.temp_file_name = temp_file.name
+            json.dump(data, temp_file)
             temp_file.flush()
 
-        dataset = RetrievalDataset(temp_file_name, positive_key='pos', negative_key='neg')
-        print(dataset[0])
+        tmpdirname = tempfile.mkdtemp()
+        vocab_tokens = ["[UNK]", "[CLS]", "[SEP]", "[PAD]", "[MASK]"]
+        vocab_file = os.path.join(tmpdirname, "vocab.txt")
+        with open(vocab_file, "w", encoding="utf-8") as vocab_writer:
+            vocab_writer.write("".join([x + "\n" for x in vocab_tokens]))
+        self.tokenizer = BertTokenizer(vocab_file)
+
+    def test_retrieval_dataset(self):
 
         dataset = RetrievalDataset(
-            temp_file_name,
+            self.temp_file_name,
             positive_key='pos',
             negative_key='neg',
             query_instruction='query: ',
@@ -41,7 +48,8 @@ class RetrievalDatasetTest(TestCase):
         )
         print(dataset[0])
 
+        dataset = RerankDataset(self.temp_file_name, positive_key='pos', negative_key='neg')
+        print(dataset[0])
 
-class RerankDatasetTest(TestCase):
-    def test_rerank_dataset(self):
-        pass
+        dataset = EncodeDataset(self.temp_file_name, id_key=None, text_key='query', tokenizer=self.tokenizer)
+        print(dataset[0])

@@ -321,6 +321,7 @@ class AutoModelForEmbedding(Base):
         batch_size: int = 16,
         show_progress_bar: bool = None,
         use_gpu: bool = False,
+        save_id: bool = False,
     ):
         import faiss
 
@@ -333,13 +334,22 @@ class AutoModelForEmbedding(Base):
         embeddings = np.asarray(embeddings, dtype=np.float32)
 
         index = faiss.IndexFlatL2(len(embeddings[0]))
+        if save_id:
+            # id_index = faiss.IndexFlatL2(len(embeddings[0]))
+            index = faiss.IndexIDMap2(index)
+            ids = inputs['ids']
+
         if use_gpu and self.device == 'cuda':
             logger.info('Build index use faiss-gpu')
             co = faiss.GpuMultipleClonerOptions()
             co.shard = True
             co.useFloat16 = True
             index = faiss.index_cpu_to_all_gpus(index, co=co)
-        index.add(embeddings)
+
+        if save_id:
+            index.add_with_ids(embeddings, ids)
+        else:
+            index.add(embeddings)
 
         if index_path:
             logger.info(f'Save faiss index to: {index_path}')
