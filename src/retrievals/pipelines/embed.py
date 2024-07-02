@@ -2,15 +2,24 @@
 
 import logging
 import os
+from contextlib import nullcontext
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
 
 import torch
 from torch import nn
+from torch.utils.data import DataLoader
+from tqdm.auto import tqdm
 from transformers import AutoTokenizer, HfArgumentParser, TrainingArguments, set_seed
 
-from ..data import PairCollator, RetrievalDataset, TripletCollator
+from ..data import (
+    EncodeCollator,
+    EncodeDataset,
+    PairCollator,
+    RetrievalDataset,
+    TripletCollator,
+)
 from ..losses import InfoNCE, SimCSE, TripletLoss
 from ..models.embedding_auto import AutoModelForEmbedding
 from ..trainer import RetrievalTrainer
@@ -195,7 +204,38 @@ def main():
 
     if training_args.do_encode:
         max_length = data_args.query_max_length if data_args.is_query else data_args.document_max_length
-        print(max_length)
+
+        encode_dataset = EncodeDataset(args=data_args, tokenizer=tokenizer)
+
+        encode_loader = DataLoader(
+            encode_dataset,
+            batch_size=training_args.per_device_eval_batch_size,
+            collate_fn=EncodeCollator(tokenizer, max_length=max_length, padding='max_length'),
+            shuffle=False,
+            drop_last=False,
+            num_workers=training_args.dataloader_num_workers,
+        )
+
+        encoded = []
+        lookup_indices = []
+        model = model.to(training_args.device)
+        model.eval()
+
+        for batch_ids, batch in tqdm(encode_loader):
+            lookup_indices.extend(batch_ids)
+            with torch.cuda.amp.autocast() if training_args.fp16 else nullcontext():
+                with torch.no_grad():
+                    for k, v in batch.items():
+                        batch[k] = v.to(training_args.device)
+                    if data_args.is_query:
+                        model_output = model(query=batch)
+                        encoded.append(model_output.q_reps.cpu())
+                    else:
+                        model_output = model(passage=batch)
+                        encoded.append(model_output.p_reps.cpu())
+
+        encoded = torch.cat(encoded)
+        print(encoded)
 
 
 if __name__ == "__main__":
