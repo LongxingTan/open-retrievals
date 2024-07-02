@@ -1,3 +1,5 @@
+"""Retrieve pipeline"""
+
 import glob
 import logging
 from argparse import ArgumentParser

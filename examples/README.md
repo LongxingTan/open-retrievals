@@ -185,7 +185,7 @@ torchrun --nproc_per_node 1 \
 ```
 
 
-## Common questions
+## FAQ
 
 The grad_norm during training is always zero?
 - consider to change fp16 or bf16
