@@ -9,7 +9,7 @@ class OcrCFG:
 
 
 class OCRecognizor(object):
-    def __init__(self, use_ocr='ppocr'):
+    def __init__(self, use_ocr='ppocr', use_table=True):
         if use_ocr == 'ppocr':
             self.ocr_model = PPRecognizor()
 
@@ -58,7 +58,17 @@ class PostProcessor(ABC):
 
 
 class PPRecognizor:
-    def __init__(self):
+    """A class to encapsulate PaddleOCR functionality for text recognition in images."""
+
+    def __init__(self, use_angle_cls=False, lang="ch"):
         from paddleocr import PaddleOCR, PPStructure
 
-        self.ocr_model = PaddleOCR(use_angle_cls=False, lang="ch")
+        self.ocr_model = PaddleOCR(use_angle_cls=use_angle_cls, lang=lang)
+
+    def recognize(self, img):
+        try:
+            result = self.ocr_model.ocr(img, cls=False)
+            return result
+        except Exception as e:
+            print(f"An error occurred during OCR: {e}")
+            return None
