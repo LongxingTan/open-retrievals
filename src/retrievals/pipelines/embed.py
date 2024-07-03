@@ -206,6 +206,7 @@ def main():
         max_length = data_args.query_max_length if data_args.is_query else data_args.document_max_length
 
         encode_dataset = EncodeDataset(args=data_args, tokenizer=tokenizer)
+        logger.info(f"Number of train samples: {len(encode_dataset)}")
 
         encode_loader = DataLoader(
             encode_dataset,
@@ -215,27 +216,9 @@ def main():
             drop_last=False,
             num_workers=training_args.dataloader_num_workers,
         )
+        embed = model.encode(encode_loader)
 
-        encoded = []
-        lookup_indices = []
-        model = model.to(training_args.device)
-        model.eval()
-
-        for batch_ids, batch in tqdm(encode_loader):
-            lookup_indices.extend(batch_ids)
-            with torch.cuda.amp.autocast() if training_args.fp16 else nullcontext():
-                with torch.no_grad():
-                    for k, v in batch.items():
-                        batch[k] = v.to(training_args.device)
-                    if data_args.is_query:
-                        model_output = model(query=batch)
-                        encoded.append(model_output.q_reps.cpu())
-                    else:
-                        model_output = model(passage=batch)
-                        encoded.append(model_output.p_reps.cpu())
-
-        encoded = torch.cat(encoded)
-        print(encoded)
+        print(embed)
 
 
 if __name__ == "__main__":
