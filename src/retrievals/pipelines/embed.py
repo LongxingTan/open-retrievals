@@ -2,7 +2,6 @@
 
 import logging
 import os
-from contextlib import nullcontext
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
@@ -10,7 +9,6 @@ from typing import Optional
 import torch
 from torch import nn
 from torch.utils.data import DataLoader
-from tqdm.auto import tqdm
 from transformers import AutoTokenizer, HfArgumentParser, TrainingArguments, set_seed
 
 from ..data import (
