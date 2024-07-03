@@ -353,8 +353,8 @@ class LLMRerankCollator(DataCollatorForSeq2Seq):
 
 
 class EncodeCollator(DataCollatorWithPadding):
-    def __init__(self, id_key: Optional[str] = None, **kwargs):
-        super.__init__(**kwargs)
+    def __init__(self, tokenizer: PreTrainedTokenizer, id_key: Optional[str] = None, **kwargs):
+        self.tokenizer = tokenizer
         self.id_key = id_key
 
     def __call__(self, features):
