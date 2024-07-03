@@ -1,4 +1,5 @@
 import logging
+import time
 from abc import ABC, abstractmethod
 
 logger = logging.getLogger(__name__)
@@ -14,6 +15,11 @@ class OCRecognizor(object):
             self.ocr_model = PPRecognizor()
 
     def recognize(self, file):
+        logging.info('START TO OCR')
+        start_time = time.time()
+
+        elapsed_time = time.time() - start_time
+        logging.info(f'FINISH OCR, Elapsed time: {elapsed_time:.3f}s')
         return
 
     def apply_preprocess(self, data, preprocessors):
