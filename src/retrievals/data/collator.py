@@ -352,6 +352,23 @@ class LLMRerankCollator(DataCollatorForSeq2Seq):
         return batch
 
 
+class EncodeCollator(DataCollatorWithPadding):
+    def __init__(self, tokenizer: PreTrainedTokenizer, id_key: Optional[str] = None, **kwargs):
+        self.tokenizer = tokenizer
+        self.id_key = id_key
+
+    def __call__(self, features):
+        if self.id_key is not None:
+            text_ids = [x[0] for x in features]
+            text_features = [x[1] for x in features]
+            collated_features = super().__call__(text_features)
+            return text_ids, collated_features
+        else:
+            text_features = features
+            collated_features = super().__call__(text_features)
+            return collated_features
+
+
 def mask_pad_token(q: Dict[str, torch.Tensor], prob=0.9):
     if random.random() > prob:
         tensor = q['input_ids'].float()

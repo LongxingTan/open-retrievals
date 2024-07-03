@@ -6,11 +6,11 @@
 - [embedding-llm pairwise finetune](./embedding_llm_finetune.py)
 - [rerank-cross encoder](./rerank_cross_encoder.py)
 - [rerank-colbert](./rerank_colbert.py)
-- [rerank-llm finetune](../reference/rerank_llm_finetune.py)
+- [rerank-llm finetune](rerank_llm_finetune.py)
 - [RAG with Langchain](./rag_langchain_demo.py)
 
 
-## Retrieval
+## Embedding
 
 **Data Format**
 ```
@@ -85,6 +85,26 @@ torchrun --nproc_per_node 1 \
   --temperature 0.02 \
   --use_inbatch_negative false \
   --save_total_limit 1
+```
+
+
+## Retrieval
+
+```shell
+QUERY_ENCODE_DIR=nq-queries
+OUT_DIR=temp
+MODEL_DIR="BAAI/bge-base-zh-v1.5"
+QUERY=nq-test-queries.json
+mkdir $QUERY_ENCODE_DIR
+
+python -m retrievals.pipelines.embed \
+    --model_name_or_path $MODEL_DIR \
+    --output_dir $OUT_DIR \
+    --do_encode \
+    --fp16 \
+    --per_device_eval_batch_size 256 \
+    --train_data $QUERY \
+    --is_query true
 ```
 
 
@@ -172,19 +192,24 @@ torchrun --nproc_per_node 1 \
     --positive_key positive \
     --negative_key negative \
     --learning_rate 2e-4 \
-    --num_train_epochs 1 \
-    --per_device_train_batch_size 1 \
+    --num_train_epochs 3 \
+    --per_device_train_batch_size 4 \
     --gradient_accumulation_steps 16 \
     --dataloader_drop_last True \
     --max_len 256 \
     --train_group_size 4 \
-    --logging_steps 1 \
-    --save_steps 2000 \
-    --save_total_limit 2 \
+    --logging_steps 10 \
+    --save_steps 20000 \
+    --save_total_limit 1 \
     --bf16
 ```
 
 
-## Common questions
-- If grad_norm during training is always zero, consider to change fp16 or bf16
-- If the fine-tuned embedding performance during inference is worse, check whether the pooling_method is correct, and the prompt is the same as training
+## FAQ
+
+The grad_norm during training is always zero?
+- consider to change fp16 or bf16
+
+The fine-tuned embedding performance during inference is worse than original?
+- check whether the pooling_method is correct
+- check whether the prompt is the same as training for LLM model

@@ -12,10 +12,14 @@
 [docs-url]: https://open-retrievals.readthedocs.io/en/latest/?version=latest
 [coverage-image]: https://codecov.io/gh/longxingtan/open-retrievals/branch/master/graph/badge.svg
 [coverage-url]: https://codecov.io/github/longxingtan/open-retrievals?branch=master
+[contributing-image]: https://img.shields.io/badge/contributions-welcome-brightgreen.svg?style=flat
+[contributing-url]: https://github.com/longxingtan/open-retrievals/blob/master/CONTRIBUTING.md
 
 <h1 align="center">
 <img src="./docs/source/_static/logo.svg" width="420" align=center/>
 </h1>
+
+<div align="center">
 
 [![LICENSE][license-image]][license-url]
 [![PyPI Version][pypi-image]][pypi-url]
@@ -23,9 +27,10 @@
 [![Lint Status][lint-image]][lint-url]
 [![Docs Status][docs-image]][docs-url]
 [![Code Coverage][coverage-image]][coverage-url]
-
+[![Contributing][contributing-image]][contributing-url]
 
 **[ドキュメント](https://open-retrievals.readthedocs.io)** | **[英語](https://github.com/LongxingTan/open-retrievals/blob/master/README.md)** | **[中文](https://github.com/LongxingTan/open-retrievals/blob/master/README_zh-CN.md)**
+</div>
 
 ![structure](./docs/source/_static/structure.png)
 
@@ -34,12 +39,13 @@
 - 対照学習エンベッディング, LLM エンベッディング
 - 高速 RAG デモ
 
-| Exp                       | Model                   | Size | Original | Finetune  | Demo                                                                                                                                                                |
-|---------------------------|-------------------------|------|----------|-----------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| embed pairwise finetune   | bge-base-zh-v1.5        | 0    | 0.657    | **0.703** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/17KXe2lnNRID-HiVvMtzQnONiO74oGs91?usp=sharing) |
-| embed LLM finetune (LoRA) | Qwen2-1.5B-Instruct     | 0    | 0.546    | **0.694** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1jj1kBQWFcuQ3a7P9ttnl1hgX7H8WA_Za?usp=sharing) |
-| rerank cross encoder      | bge-reranker-base       | 0    | 0.666    | **0.706** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1QvbUkZtG56SXomGYidwI4RQzwODQrWNm?usp=sharing) |
-| rerank colbert            | chinese-roberta-wwm-ext | 0    | 0.643    | **0.687** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1QVtqhQ080ZMltXoJyODMmvEQYI6oo5kO?usp=sharing) |
+| Exp                           | Model                   | Size | Original | Finetuned | Demo                                                                                                                                                                |
+|-------------------------------|-------------------------|------|----------|-----------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **embed** pairwise finetune   | bge-base-zh-v1.5        | -    | 0.657    | **0.703** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/17KXe2lnNRID-HiVvMtzQnONiO74oGs91?usp=sharing) |
+| **embed** LLM finetune (LoRA) | Qwen2-1.5B-Instruct     | -    | 0.546    | **0.694** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1jj1kBQWFcuQ3a7P9ttnl1hgX7H8WA_Za?usp=sharing) |
+| **rerank** cross encoder      | bge-reranker-base       | -    | 0.666    | **0.706** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1QvbUkZtG56SXomGYidwI4RQzwODQrWNm?usp=sharing) |
+| **rerank** colbert            | chinese-roberta-wwm-ext | -    | 0.643    | **0.687** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1QVtqhQ080ZMltXoJyODMmvEQYI6oo5kO?usp=sharing) |
+| **rerank** LLM (LoRA)         | Qwen2-1.5B-Instruct     | -    | 0.531    | **0.699** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1fzq1iV7-f8hNKFnjMmpVhVxadqPb9IXk?usp=sharing) |
 
 
 ## インストール

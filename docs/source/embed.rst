@@ -113,5 +113,12 @@ Enhance the performance
 * Matryoshka
 
 
-Hard negative
-~~~~~~~~~~~~~~~~
+Hard mining
+~~~~~~~~~~~~~~~~~~~~~~
+offline hard mining
+
+online hard mining
+
+
+Ensemble embedding
+~~~~~~~~~~~~~~~~~~~~~~

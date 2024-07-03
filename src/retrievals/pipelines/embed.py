@@ -1,14 +1,25 @@
+"""Embedding fine tune pipeline"""
+
 import logging
 import os
+from contextlib import nullcontext
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
 
 import torch
 from torch import nn
+from torch.utils.data import DataLoader
+from tqdm.auto import tqdm
 from transformers import AutoTokenizer, HfArgumentParser, TrainingArguments, set_seed
 
-from ..data import PairCollator, RetrievalDataset, TripletCollator
+from ..data import (
+    EncodeCollator,
+    EncodeDataset,
+    PairCollator,
+    RetrievalDataset,
+    TripletCollator,
+)
 from ..losses import InfoNCE, SimCSE, TripletLoss
 from ..models.embedding_auto import AutoModelForEmbedding
 from ..trainer import RetrievalTrainer
@@ -138,7 +149,6 @@ def main():
     model = AutoModelForEmbedding.from_pretrained(
         model_name_or_path=model_args.model_name_or_path,
         pooling_method=training_args.pooling_method,
-        causal_lm=False,
         use_lora=training_args.use_lora,
         quantization_config=quantization_config,
     )
@@ -193,7 +203,21 @@ def main():
 
     if training_args.do_encode:
         max_length = data_args.query_max_length if data_args.is_query else data_args.document_max_length
-        print(max_length)
+
+        encode_dataset = EncodeDataset(args=data_args, tokenizer=tokenizer, max_length=max_length, text_key='text')
+        logger.info(f"Number of train samples: {len(encode_dataset)}")
+
+        encode_loader = DataLoader(
+            encode_dataset,
+            batch_size=training_args.per_device_eval_batch_size,
+            collate_fn=EncodeCollator(tokenizer, max_length=max_length, padding='max_length'),
+            shuffle=False,
+            drop_last=False,
+            num_workers=training_args.dataloader_num_workers,
+        )
+        embed = model.encode(encode_loader)
+
+        print(embed)
 
 
 if __name__ == "__main__":

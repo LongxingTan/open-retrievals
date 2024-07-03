@@ -1,6 +1,8 @@
 # T2_ranking
 
-## Performance
+An end-to-end example with [t2-reranking data](https://huggingface.co/datasets/C-MTEB/T2Reranking)
+
+## Experiment
 
 bge-base-zh-v1.5
 - "map": 0.6569549236524207, "mrr": 0.7683207806932297
@@ -11,29 +13,36 @@ bge-reranker-base
 - rerank/cross-encoder: "map": 0.6906494118852755, "mrr": 0.8064902548320916
 
 
-## Prepare dataset
+## 1. Prepare dataset
 ```shell
 python prepare_t2ranking_data.py
 ```
 
-## Train
-```shell
+## 2. Finetune embedding
 
+```shell
+sh pairwise_embed_train.sh
 ```
 
-## Encode corpus
+## Indexing
+Encode corpus
 ```shell
-
+sh encode_corpus.sh
 ```
 
-## Encode Query
+Encode Query
 ```shell
-
+sh encode_query.sh
 ```
 
-## Search
+## Retrieve
 ```shell
+sh retrieve.sh
+```
 
+## Rerank
+```shell
+sh rerank.sh
 ```
 
 ## Evaluate

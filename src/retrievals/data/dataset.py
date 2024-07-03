@@ -27,6 +27,9 @@ class RetrievalDataset(Dataset):
     ):
         if not data_name_or_path and args:
             data_name_or_path = args.train_data
+        if data_name_or_path is None:
+            raise ValueError
+
         if args and 'train_group_size' in args.__dataclass_fields__:
             self.train_group_size = args.train_group_size
         else:
@@ -152,6 +155,9 @@ class RerankDataset(Dataset):
         """
         if not data_name_or_path and args:
             data_name_or_path = args.train_data
+        if data_name_or_path is None:
+            raise ValueError
+
         if args and 'train_group_size' in args.__dataclass_fields__:
             self.train_group_size = args.train_group_size
         else:
@@ -230,3 +236,59 @@ class RerankDataset(Dataset):
             for neg_text in negative_samples:
                 samples.append([data[self.query_key], neg_text, 0])
         return samples
+
+
+class EncodeDataset(Dataset):
+    def __init__(
+        self,
+        data_name_or_path: Union[str, datasets.Dataset, None] = None,
+        max_length: int = 128,
+        id_key: Optional[str] = None,
+        text_key: str = 'query',
+        instruction: str = '',
+        args: Optional = None,
+        tokenizer: PreTrainedTokenizer = None,
+    ):
+        if not data_name_or_path and args:
+            data_name_or_path = args.train_data
+        if data_name_or_path is None:
+            raise ValueError
+
+        if isinstance(data_name_or_path, datasets.Dataset):
+            self.encode_data = data_name_or_path
+        else:
+            self.encode_data = datasets.load_dataset(
+                'json',
+                data_files=data_name_or_path,
+            )['train']
+        self.tokenizer = tokenizer
+        self.max_length = max_length
+        self.id_key = id_key
+        self.text_key = text_key
+        self.instruction = instruction
+        self.args = args
+
+    def __len__(self):
+        return len(self.encode_data)
+
+    def __getitem__(self, item) -> [str, BatchEncoding]:
+        if self.id_key is not None:
+            text_id, text = (self.encode_data[item][f] for f in [self.id_key, self.text_key])
+            encoded_text = self.tokenizer.encode_plus(
+                text,
+                max_length=self.max_length,
+                truncation='only_first',
+                padding=False,
+                return_token_type_ids=False,
+            )
+            return text_id, encoded_text
+        else:
+            text = self.encode_data[item][self.text_key]
+            encoded_text = self.tokenizer.encode_plus(
+                text,
+                max_length=self.max_length,
+                truncation='only_first',
+                padding=False,
+                return_token_type_ids=False,
+            )
+            return encoded_text
