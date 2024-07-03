@@ -149,7 +149,6 @@ def main():
     model = AutoModelForEmbedding.from_pretrained(
         model_name_or_path=model_args.model_name_or_path,
         pooling_method=training_args.pooling_method,
-        causal_lm=False,
         use_lora=training_args.use_lora,
         quantization_config=quantization_config,
     )
@@ -205,7 +204,7 @@ def main():
     if training_args.do_encode:
         max_length = data_args.query_max_length if data_args.is_query else data_args.document_max_length
 
-        encode_dataset = EncodeDataset(args=data_args, tokenizer=tokenizer)
+        encode_dataset = EncodeDataset(args=data_args, tokenizer=tokenizer, max_length=max_length, text_key='text')
         logger.info(f"Number of train samples: {len(encode_dataset)}")
 
         encode_loader = DataLoader(

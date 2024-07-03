@@ -27,6 +27,9 @@ class RetrievalDataset(Dataset):
     ):
         if not data_name_or_path and args:
             data_name_or_path = args.train_data
+        if data_name_or_path is None:
+            raise ValueError
+
         if args and 'train_group_size' in args.__dataclass_fields__:
             self.train_group_size = args.train_group_size
         else:
@@ -152,6 +155,9 @@ class RerankDataset(Dataset):
         """
         if not data_name_or_path and args:
             data_name_or_path = args.train_data
+        if data_name_or_path is None:
+            raise ValueError
+
         if args and 'train_group_size' in args.__dataclass_fields__:
             self.train_group_size = args.train_group_size
         else:
@@ -243,6 +249,10 @@ class EncodeDataset(Dataset):
         args: Optional = None,
         tokenizer: PreTrainedTokenizer = None,
     ):
+        if not data_name_or_path and args:
+            data_name_or_path = args.train_data
+        if data_name_or_path is None:
+            raise ValueError
 
         if isinstance(data_name_or_path, datasets.Dataset):
             self.encode_data = data_name_or_path
