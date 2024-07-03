@@ -12,6 +12,8 @@
 [docs-url]: https://open-retrievals.readthedocs.io/en/latest/?version=latest
 [coverage-image]: https://codecov.io/gh/longxingtan/open-retrievals/branch/master/graph/badge.svg
 [coverage-url]: https://codecov.io/github/longxingtan/open-retrievals?branch=master
+[contributing-image]: https://img.shields.io/badge/contributions-welcome-brightgreen.svg?style=flat
+[contributing-url]: https://github.com/longxingtan/open-retrievals/blob/master/CONTRIBUTING.md
 
 <h1 align="center">
 <img src="./docs/source/_static/logo.svg" width="420" align=center/>
@@ -25,6 +27,7 @@
 [![Lint Status][lint-image]][lint-url]
 [![Docs Status][docs-image]][docs-url]
 [![Code Coverage][coverage-image]][coverage-url]
+[![Contributing][contributing-image]][contributing-url]
 
 **[中文wiki](https://github.com/LongxingTan/open-retrievals/wiki)** | **[英文文档](https://open-retrievals.readthedocs.io)**
 </div>
