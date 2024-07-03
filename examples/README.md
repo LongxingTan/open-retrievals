@@ -10,7 +10,7 @@
 - [RAG with Langchain](./rag_langchain_demo.py)
 
 
-## Retrieval
+## Embedding
 
 **Data Format**
 ```
@@ -85,6 +85,26 @@ torchrun --nproc_per_node 1 \
   --temperature 0.02 \
   --use_inbatch_negative false \
   --save_total_limit 1
+```
+
+
+## Retrieval
+
+```shell
+QUERY_ENCODE_DIR=nq-queries
+OUT_DIR=temp
+MODEL_DIR="BAAI/bge-base-zh-v1.5"
+QUERY=nq-test-queries.json
+mkdir $QUERY_ENCODE_DIR
+
+python -m retrievals.pipelines.embed \
+    --model_name_or_path $MODEL_DIR \
+    --output_dir $OUT_DIR \
+    --do_encode \
+    --fp16 \
+    --per_device_eval_batch_size 256 \
+    --train_data $QUERY \
+    --is_query true
 ```
 
 
