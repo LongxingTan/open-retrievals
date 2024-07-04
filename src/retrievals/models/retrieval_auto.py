@@ -119,7 +119,7 @@ class AutoModelForRetrieval(object):
 
     def save_ranking(self, query_ids, dists, indices, ranking_file):
         """
-        save format: qid, docid, score
+        save format: query_id, doc_id, score
         """
         with open(ranking_file, 'w') as f:
             for qid, score, index in zip(query_ids, dists, indices):

@@ -1,4 +1,6 @@
-"""Retrieve pipeline"""
+"""Retrieve pipeline
+retrieve: one query match with top_k document: [{'id': 'doc_id', 'similarity': 0.8}, {'id': 'doc_id', "similarity': 0.8]
+"""
 
 import glob
 import logging
@@ -20,9 +22,9 @@ def retrieve():
     parser = ArgumentParser()
     parser.add_argument("--query_reps", required=True)
     parser.add_argument("--passage_reps", required=True)
-    parser.add_argument("--batch_size", type=int, default=128)
     parser.add_argument("--top_k", type=int, default=100)
-    parser.add_argument("--save_ranking_to", required=True)
+    parser.add_argument("--batch_size", type=int, default=128)
+    parser.add_argument("--save_ranking_file", required=True)
     parser.add_argument("--save_text", action="store_true")
 
     args = parser.parse_args()
@@ -37,7 +39,8 @@ def retrieve():
     dists, indices = retriever.similarity_search(query_embed=query_embed, index_path=index_files[0], top_k=args.top_k)
     print(indices.shape)
 
-    retriever.save_ranking(dists, indices, args.save_ranking_to)
+    query_ids = torch.load()
+    retriever.save_ranking(query_ids, dists, indices, args.save_ranking_file)
 
 
 if __name__ == "__main__":
