@@ -36,7 +36,7 @@
 ![structure](./docs/source/_static/structure.png)
 
 **Open-retrievals** improve and unify text embedding, retrieval, reranking and RAG.
-- Embeddings fine-tuned through point-wise, pairwise, listwise, contrastive learning, and LLM.
+- Embedding fine-tuned through point-wise, pairwise, listwise, contrastive learning, and LLM.
 - Reranking fine-tuned with Cross Encoder, ColBERT, and LLM.
 - Easily build enhanced RAG, integrated with Transformers, Langchain, and LlamaIndex.
 
@@ -230,7 +230,7 @@ trainer.scheduler = scheduler
 trainer.train()
 ```
 
-**Rerank Fine-tuning**
+**Reranking Fine-tuning**
 
 ```python
 from transformers import AutoTokenizer, TrainingArguments, get_cosine_schedule_with_warmup, AdamW

@@ -6,16 +6,16 @@ logger = logging.getLogger(__name__)
 
 
 class OcrCFG:
-    pass
+    ocr_model = 'ppocr'
 
 
 class OCRecognizor(object):
-    def __init__(self, use_ocr='ppocr', use_table=True):
-        if use_ocr == 'ppocr':
-            self.ocr_model = PPRecognizor()
+    def __init__(self, ocr_model='ppocr'):
+        if ocr_model == 'ppocr':
+            self.ocr_model = PPRecognizer()
 
     def recognize(self, file):
-        logging.info('START TO OCR')
+        logging.info('START OCR')
         start_time = time.time()
 
         elapsed_time = time.time() - start_time
@@ -63,7 +63,7 @@ class PostProcessor(ABC):
         raise NotImplementedError("Subclasses should implement this method")
 
 
-class PPRecognizor:
+class PPRecognizer:
     """A class to encapsulate PaddleOCR functionality for text recognition in images."""
 
     def __init__(self, use_angle_cls=False, lang="ch"):
