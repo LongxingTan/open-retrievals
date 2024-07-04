@@ -4,7 +4,7 @@
 ```shell
 pip install datasets mteb[beir]
 pip install C_MTEB
-pip install open-retrievals
+pip install open-retrievals[eval]
 ```
 
 
@@ -16,7 +16,7 @@ from retrievals import AutoModelForEmbedding
 
 class AutoModelForEmbeddingEval(AutoModelForEmbedding):
     def __init__(self, **kwargs):
-        super(AutoModelForEmbeddingEval, self).__init__()
+        super(AutoModelForEmbeddingEval, self).__init__(**kwargs)
 
     def encode_queries(self, queries: List[str], **kwargs) -> np.ndarray:
         """For MTEB eval
@@ -40,3 +40,9 @@ class AutoModelForEmbeddingEval(AutoModelForEmbedding):
             input_texts = corpus
         return self.encode_from_text(input_texts, batch_size=4)
 ```
+
+
+## Reference
+
+- https://github.com/beir-cellar/beir
+- https://github.com/AmenRa/ranx
