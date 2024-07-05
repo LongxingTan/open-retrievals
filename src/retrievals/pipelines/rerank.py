@@ -85,6 +85,7 @@ class RerankerTrainingArguments(TrainingArguments):
     num_train_epochs: int = field(default=3)
     use_lora: bool = field(default=False)
     use_bnb_config: bool = field(default=False)
+    do_rerank: bool = field(default=False, metadata={"help": "run the reranking loop"})
 
 
 def get_optimizer(model, learning_rate, weight_decay=0.0):

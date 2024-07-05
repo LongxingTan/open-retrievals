@@ -289,6 +289,7 @@ dists, indices = matcher.search(query_embeddings, document_embeddings, top_k=1)
 
 ## 参考資料と謝辞
 - [sentence-transformers](https://github.com/UKPLab/sentence-transformers)
+- [Dense](https://github.com/luyug/Dense)
 - [FlagEmbedding](https://github.com/FlagOpen/FlagEmbedding)
 - [uniem](https://github.com/wangyuxinwhy/uniem)
 - [BCEmbedding](https://github.com/netease-youdao/BCEmbedding)
