@@ -47,7 +47,7 @@ class ModelArguments:
 
 @dataclass
 class DataArguments:
-    train_data: str = field(default=None, metadata={"help": "Path to train data"})
+    data_name_or_path: str = field(default=None, metadata={"help": "Path to train data"})
     train_group_size: int = field(default=2)
 
     query_max_length: int = field(
@@ -74,6 +74,10 @@ class DataArguments:
     is_query: bool = field(default=False)
     encoding_in_path: List[str] = field(default=None, metadata={"help": "Path to data to encode"})
     encoding_save_path: str = field(default=None, metadata={"help": "where to save the encode"})
+
+    def __post_init__(self):
+        if self.data_name_or_path is not None:
+            pass
 
 
 @dataclass

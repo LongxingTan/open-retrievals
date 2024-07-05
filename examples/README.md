@@ -30,7 +30,7 @@ torchrun --nproc_per_node 1 \
   --overwrite_output_dir \
   --model_name_or_path $MODEL_NAME \
   --do_train \
-  --train_data $TRAIN_DATA \
+  --data_name_or_path $TRAIN_DATA \
   --positive_key positive \
   --negative_key negative \
   --learning_rate 3e-5 \
@@ -66,7 +66,7 @@ torchrun --nproc_per_node 1 \
   --model_name_or_path $MODEL_NAME \
   --pooling_method last \
   --do_train \
-  --train_data $TRAIN_DATA \
+  --data_name_or_path $TRAIN_DATA \
   --positive_key positive \
   --negative_key negative \
   --use_lora True \
@@ -103,7 +103,7 @@ python -m retrievals.pipelines.embed \
     --do_encode \
     --fp16 \
     --per_device_eval_batch_size 256 \
-    --train_data $QUERY \
+    --data_name_or_path $QUERY \
     --is_query true
 ```
 
@@ -124,7 +124,7 @@ torchrun --nproc_per_node 1 \
   --model_name_or_path $MODEL_NAME \
   --model_type cross-encoder \
   --do_train \
-  --train_data $TRAIN_DATA \
+  --data_name_or_path $TRAIN_DATA \
   --positive_key positive \
   --negative_key negative \
   --learning_rate 2e-5 \
@@ -152,7 +152,7 @@ torchrun --nproc_per_node 1 \
   --tokenizer_name $MODEL_NAME \
   --model_type colbert \
   --do_train \
-  --train_data $TRAIN_DATA \
+  --data_name_or_path $TRAIN_DATA \
   --positive_key positive \
   --negative_key negative \
   --learning_rate 1e-4 \
@@ -185,7 +185,7 @@ torchrun --nproc_per_node 1 \
     --model_type llm \
     --causal_lm True \
     --use_lora True \
-    --train_data $TRAIN_DATA \
+    --data_name_or_path $TRAIN_DATA \
     --task_prompt "Given a query A and a passage B, determine whether the passage contains an answer to the query by providing a prediction of either 'Yes' or 'No'." \
     --query_instruction "A: " \
     --document_instruction 'B: ' \

@@ -26,7 +26,7 @@ class RetrievalDataset(Dataset):
         tokenizer: PreTrainedTokenizer = None,
     ):
         if not data_name_or_path and args:
-            data_name_or_path = args.train_data
+            data_name_or_path = args.data_name_or_path
         if data_name_or_path is None:
             raise ValueError
 
@@ -154,7 +154,7 @@ class RerankDataset(Dataset):
         train_group_size = 1(positive) + max_negative_samples
         """
         if not data_name_or_path and args:
-            data_name_or_path = args.train_data
+            data_name_or_path = args.data_name_or_path
         if data_name_or_path is None:
             raise ValueError
 
@@ -250,7 +250,7 @@ class EncodeDataset(Dataset):
         tokenizer: PreTrainedTokenizer = None,
     ):
         if not data_name_or_path and args:
-            data_name_or_path = args.train_data
+            data_name_or_path = args.data_name_or_path
         if data_name_or_path is None:
             raise ValueError
 

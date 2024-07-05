@@ -51,7 +51,7 @@ class ModelArguments:
 
 @dataclass
 class DataArguments:
-    train_data: str = field(default=None, metadata={"help": "Path to corpus"})
+    data_name_or_path: str = field(default=None, metadata={"help": "Path to corpus"})
     train_group_size: int = field(default=8)
     unfold_each_positive: bool = field(default=False)
     max_length: int = field(
