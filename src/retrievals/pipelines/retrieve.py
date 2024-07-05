@@ -1,14 +1,16 @@
 """Retrieve pipeline
-retrieve: one query match with top_k document: [{'id': 'doc_id', 'similarity': 0.8}, {'id': 'doc_id', "similarity': 0.8]
+retrieve: one query match with top_k document: [{'id': 'doc_id', 'similarity': 0.8}, {'id': 'doc_id', "similarity': 0.9]
 """
 
 import glob
 import logging
+import pickle
 from argparse import ArgumentParser
 
+import numpy as np
 import torch
 
-from ..models.retrieval_auto import AutoModelForRetrieval
+from ..models.retrieval_auto import AutoModelForRetrieval, FaissRetrieval
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(
@@ -16,6 +18,12 @@ logging.basicConfig(
     datefmt="%m/%d/%Y %H:%M:%S",
     level=logging.INFO,
 )
+
+
+def load_pickle(path):
+    with open(path, 'rb') as f:
+        reps, lookup = pickle.load(f)
+    return np.array(reps), lookup
 
 
 def retrieve():
@@ -32,11 +40,11 @@ def retrieve():
     index_files = glob.glob(args.passage_reps)
     logger.info(f"Pattern match found {len(index_files)} files; loading them into index.")
 
-    retriever = AutoModelForRetrieval()
+    retriever = FaissRetrieval
 
     query_embed = torch.load(args.query_reps)
 
-    dists, indices = retriever.similarity_search(query_embed=query_embed, index_path=index_files[0], top_k=args.top_k)
+    dists, indices = retriever.search(query_embed=query_embed, index_path=index_files[0], top_k=args.top_k)
     print(indices.shape)
 
     query_ids = torch.load()

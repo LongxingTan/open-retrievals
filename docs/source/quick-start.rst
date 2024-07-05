@@ -86,7 +86,7 @@ Save the document embedding offline.
 
     query_embed = model.encode("He plays guitar.")
     matcher = AutoModelForRetrieval()
-    dists, indices = matcher.similarity_search(query_embed, index_path=index_path)
+    dists, indices = matcher.search(query_embed, index_path=index_path)
     print(indices)
 
 

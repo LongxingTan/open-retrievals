@@ -112,6 +112,10 @@ Enhance the performance
 * maxsim (multi vector)
 * Matryoshka
 
+tuning the important parameters:
+
+* temperature
+
 
 Hard mining
 ~~~~~~~~~~~~~~~~~~~~~~

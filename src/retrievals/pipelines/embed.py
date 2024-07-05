@@ -2,13 +2,16 @@
 
 import logging
 import os
+import pickle
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Optional
+from typing import List, Optional
 
+import numpy as np
 import torch
 from torch import nn
 from torch.utils.data import DataLoader
+from tqdm.auto import tqdm
 from transformers import AutoTokenizer, HfArgumentParser, TrainingArguments, set_seed
 
 from ..data import (
@@ -69,6 +72,8 @@ class DataArguments:
     positive_key: str = field(default='positive')
     negative_key: str = field(default='negative')
     is_query: bool = field(default=False)
+    encoding_in_path: List[str] = field(default=None, metadata={"help": "Path to data to encode"})
+    encoding_save_path: str = field(default=None, metadata={"help": "where to save the encode"})
 
 
 @dataclass
@@ -213,9 +218,17 @@ def main():
             drop_last=False,
             num_workers=training_args.dataloader_num_workers,
         )
-        embed = model.encode(encode_loader)
 
-        print(embed)
+        embeddings = []
+        lookup_indices = []
+        for batch_ids, batch in tqdm(encode_loader):
+            lookup_indices.extend(batch_ids)
+            embed = model.encode(batch)
+            embeddings.append(embed)
+
+        embeddings = np.concatenate(embeddings)
+        with open(data_args.encoding_save_path, 'wb') as f:
+            pickle.dump((embeddings, lookup_indices), f)
 
 
 if __name__ == "__main__":

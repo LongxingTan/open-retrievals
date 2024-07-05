@@ -40,7 +40,7 @@ class AutoModelForRetrieval(object):
         self.reranker_model = reranker_model
         self.method = method
 
-    def similarity_search(
+    def search(
         self,
         query_embed: Union[torch.Tensor, np.ndarray],
         document_embed: Optional[torch.Tensor] = None,
@@ -49,7 +49,10 @@ class AutoModelForRetrieval(object):
         batch_size: int = -1,
         convert_to_numpy: bool = True,
         **kwargs,
-    ) -> Tuple[np.ndarray, np.ndarray]:
+    ) -> Optional[Tuple[np.ndarray, np.ndarray]]:
+        """
+        index_path: it can be an index file, or a folder with more index files
+        """
         if len(query_embed.shape) == 1:
             if isinstance(query_embed, np.ndarray):
                 query_embed = query_embed.reshape(1, -1)
@@ -68,7 +71,7 @@ class AutoModelForRetrieval(object):
             if not isinstance(index_path, (list, tuple)) and os.path.isfile(index_path):
                 faiss_index = faiss.read_index(index_path)
                 logger.info(f'Loading faiss index successfully, elapsed time: {time.time()-start_time:.2}s')
-                faiss_retrieval = FaissSearcher(faiss_index)
+                faiss_retrieval = FaissRetrieval(faiss_index)
             else:
                 if isinstance(index_path, (list, tuple)) and os.path.isfile(index_path[0]):
                     index_files = index_path
@@ -78,8 +81,9 @@ class AutoModelForRetrieval(object):
                 logger.info(
                     f'Loading index successfully, files: {len(index_files)}, elapsed: {time.time() - start_time:.2}s'
                 )
+                # TODO: not so good to generalize using only torch.load
                 first_file = torch.load(index_files[0])
-                faiss_retrieval = FaissSearcher(first_file)
+                faiss_retrieval = FaissRetrieval(first_file)
                 for i in range(1, len(index_files)):
                     faiss_retrieval.add(index_files[i])
 
@@ -108,16 +112,13 @@ class AutoModelForRetrieval(object):
 
         return dists, indices
 
-    def search(self, query: str, top_k: int):
-        return
-
     def similarity(self, queries: Union[str, List[str]], keys: Union[str, List[str], np.ndarray]):
         return
 
     def get_relevant_documents(self, query: str):
         return
 
-    def save_ranking(self, query_ids, dists, indices, ranking_file):
+    def save_ranking(self, dists, indices, ranking_file, query_ids):
         """
         save format: query_id, doc_id, score
         """
@@ -237,7 +238,7 @@ def cosine_similarity_search(
     return dists, indices
 
 
-class FaissSearcher(BaseRetriever):
+class FaissRetrieval(BaseRetriever):
     def __init__(self, corpus_index: Union[np.ndarray, torch.Tensor]):
         import faiss
 
@@ -300,7 +301,7 @@ class FaissSearcher(BaseRetriever):
         return corpus_scores, corpus_indices
 
 
-class BM25Searcher(BaseRetriever):
+class BM25Retrieval(BaseRetriever):
     def __init__(
         self, documents, chunk_size=None, chunk_overlap=None, splitter=None, stop_words_dir: Optional[str] = None
     ):
