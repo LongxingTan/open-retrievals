@@ -49,7 +49,7 @@ class ModelArguments:
 class DataArguments:
     data_name_or_path: str = field(default=None, metadata={"help": "Path to train data"})
     train_group_size: int = field(default=2)
-
+    unfold_each_positive: bool = field(default=False)
     query_max_length: int = field(
         default=32,
         metadata={
@@ -57,7 +57,6 @@ class DataArguments:
             "than this will be truncated, sequences shorter will be padded."
         },
     )
-
     document_max_length: int = field(
         default=128,
         metadata={
@@ -65,7 +64,6 @@ class DataArguments:
             "than this will be truncated, sequences shorter will be padded."
         },
     )
-
     query_instruction: str = field(default=None, metadata={"help": "instruction for query"})
     document_instruction: str = field(default=None, metadata={"help": "instruction for document"})
     query_key: str = field(default=None)

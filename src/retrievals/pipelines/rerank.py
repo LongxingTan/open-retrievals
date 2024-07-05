@@ -64,7 +64,6 @@ class DataArguments:
     query_key: str = field(default=None)
     positive_key: str = field(default=None)
     negative_key: str = field(default=None)
-
     query_instruction: str = field(default=None, metadata={"help": "instruction for query"})
     document_instruction: str = field(default=None, metadata={"help": "instruction for document"})
     task_prompt: str = field(

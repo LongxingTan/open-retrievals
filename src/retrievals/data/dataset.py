@@ -32,6 +32,11 @@ class RetrievalDataset(Dataset):
                 args.train_group_size if 'train_group_size' in args.__dataclass_fields__ else train_group_size
             )
             self.dataset_split = args.dataset_split if 'dataset_split' in args.__dataclass_fields__ else dataset_split
+            self.unfold_each_positive = (
+                args.unfold_each_positive
+                if 'unfold_each_positive' in args.__dataclass_fields__
+                else unfold_each_positive
+            )
             self.query_instruction = args.query_instruction if args.query_instruction is not None else query_instruction
             self.document_instruction = (
                 args.document_instruction if args.document_instruction is not None else document_instruction
@@ -39,7 +44,7 @@ class RetrievalDataset(Dataset):
             self.query_key = args.query_key or query_key
             self.positive_key = args.positive_key or positive_key
             self.negative_key = args.negative_key or negative_key
-            self.unfold_each_positive = args.unfold_each_positive or unfold_each_positive
+
         else:
             self.train_group_size = train_group_size
             self.dataset_split = dataset_split
@@ -165,10 +170,14 @@ class RerankDataset(Dataset):
                 args.train_group_size if 'train_group_size' in args.__dataclass_fields__ else train_group_size
             )
             self.dataset_split = args.dataset_split if 'dataset_split' in args.__dataclass_fields__ else dataset_split
+            self.unfold_each_positive = (
+                args.unfold_each_positive
+                if 'unfold_each_positive' in args.__dataclass_fields__
+                else unfold_each_positive
+            )
             self.query_key = args.query_key or query_key
             self.positive_key = args.positive_key or positive_key
             self.negative_key = args.negative_key or negative_key
-            self.unfold_each_positive = args.unfold_each_positive or unfold_each_positive
         else:
             self.train_group_size = train_group_size
             self.dataset_split = dataset_split
