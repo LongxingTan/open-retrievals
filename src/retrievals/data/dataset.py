@@ -19,7 +19,7 @@ class RetrievalDataset(Dataset):
         unfold_each_positive: bool = False,
         query_key: str = 'query',
         positive_key: str = 'positive',
-        negative_key='negative',
+        negative_key: str = 'negative',
         query_instruction: str = '',
         document_instruction: str = '',
         args: Optional = None,
