@@ -152,8 +152,8 @@ class RerankDataset(Dataset):
     def __init__(
         self,
         data_name_or_path: Optional[str] = None,
-        unfold_each_positive: bool = False,
         train_group_size: int = 2,
+        unfold_each_positive: bool = False,
         query_key: str = 'query',
         positive_key: Optional[str] = 'document',
         negative_key: Optional[str] = 'negative',
