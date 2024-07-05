@@ -77,7 +77,16 @@ class DataArguments:
 
     def __post_init__(self):
         if self.data_name_or_path is not None:
-            pass
+            info = self.data_name_or_path.split('/')
+            self.dataset_split = info[-1] if len(info) == 3 else 'train'
+            self.data_name_or_path = "/".join(info[:-1]) if len(info) == 3 else '/'.join(info)
+            self.dataset_language = 'default'
+            if ':' in self.data_name_or_path:
+                self.data_name_or_path, self.dataset_language = self.data_name_or_path.split(':')
+        else:
+            self.data_name_or_path = 'json'
+            self.dataset_split = 'train'
+            self.dataset_language = 'default'
 
 
 @dataclass

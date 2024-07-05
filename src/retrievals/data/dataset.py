@@ -24,16 +24,31 @@ class RetrievalDataset(Dataset):
         document_instruction: str = '',
         args: Optional = None,
         tokenizer: PreTrainedTokenizer = None,
+        dataset_split: str = 'train',
     ):
-        if not data_name_or_path and args:
+        if args:
             data_name_or_path = args.data_name_or_path
-        if data_name_or_path is None:
-            raise ValueError
-
-        if args and 'train_group_size' in args.__dataclass_fields__:
-            self.train_group_size = args.train_group_size
+            self.train_group_size = (
+                args.train_group_size if 'train_group_size' in args.__dataclass_fields__ else train_group_size
+            )
+            self.dataset_split = args.dataset_split if 'dataset_split' in args.__dataclass_fields__ else dataset_split
+            self.query_instruction = args.query_instruction if args.query_instruction is not None else query_instruction
+            self.document_instruction = (
+                args.document_instruction if args.document_instruction is not None else document_instruction
+            )
+            self.query_key = args.query_key or query_key
+            self.positive_key = args.positive_key or positive_key
+            self.negative_key = args.negative_key or negative_key
+            self.unfold_each_positive = args.unfold_each_positive or unfold_each_positive
         else:
             self.train_group_size = train_group_size
+            self.dataset_split = dataset_split
+            self.query_instruction = query_instruction
+            self.document_instruction = document_instruction
+            self.query_key = query_key
+            self.positive_key = positive_key
+            self.negative_key = negative_key
+            self.unfold_each_positive = unfold_each_positive
 
         if isinstance(data_name_or_path, datasets.Dataset):
             dataset = data_name_or_path
@@ -44,14 +59,13 @@ class RetrievalDataset(Dataset):
                     "json",
                     data_files=os.path.join(data_name_or_path, file),
                 )
-
                 train_datasets.append(temp_dataset)
             dataset = datasets.concatenate_datasets(train_datasets)
         else:
             dataset = datasets.load_dataset("json", data_files=data_name_or_path)
 
-        if 'train' in dataset:
-            dataset = dataset['train']
+        if self.dataset_split in dataset:  # train or dev
+            dataset = dataset[dataset_split]
 
         self.unfold_each_positive = unfold_each_positive
         self.tokenizer = tokenizer
@@ -59,16 +73,7 @@ class RetrievalDataset(Dataset):
         self.query_key = query_key
         self.positive_key = positive_key
         self.negative_key = negative_key
-        args_query_instruction = None
-        if self.args and self.args.query_instruction is not None:
-            args_query_instruction = self.args.query_instruction
-        self.query_instruction = query_instruction if args_query_instruction is None else args_query_instruction
-        args_document_instruction = None
-        if self.args and self.args.document_instruction is not None:
-            args_document_instruction = self.args.document_instruction
-        self.document_instruction = (
-            document_instruction if args_document_instruction is None else args_document_instruction
-        )
+
         logger.info("Load original {} retrieval data.".format(len(dataset)))
 
         if self.unfold_each_positive:
@@ -149,26 +154,24 @@ class RerankDataset(Dataset):
         negative_key: Optional[str] = 'negative',
         args: Optional = None,
         tokenizer: PreTrainedTokenizer = None,
+        dataset_split: str = 'train',
     ):
         """
         train_group_size = 1(positive) + max_negative_samples
         """
-        if not data_name_or_path and args:
-            data_name_or_path = args.data_name_or_path
-        if data_name_or_path is None:
-            raise ValueError
-
-        if args and 'train_group_size' in args.__dataclass_fields__:
-            self.train_group_size = args.train_group_size
-        else:
-            self.train_group_size = train_group_size
-
         if args:
+            data_name_or_path = args.data_name_or_path
+            self.train_group_size = (
+                args.train_group_size if 'train_group_size' in args.__dataclass_fields__ else train_group_size
+            )
+            self.dataset_split = args.dataset_split if 'dataset_split' in args.__dataclass_fields__ else dataset_split
             self.query_key = args.query_key or query_key
             self.positive_key = args.positive_key or positive_key
             self.negative_key = args.negative_key or negative_key
             self.unfold_each_positive = args.unfold_each_positive or unfold_each_positive
         else:
+            self.train_group_size = train_group_size
+            self.dataset_split = dataset_split
             self.query_key = query_key
             self.positive_key = positive_key
             self.negative_key = negative_key
@@ -190,8 +193,8 @@ class RerankDataset(Dataset):
         else:
             dataset = datasets.load_dataset("json", data_files=data_name_or_path)
 
-        if 'train' in dataset:
-            dataset = dataset['train']
+        if dataset_split in dataset:
+            dataset = dataset[dataset_split]
 
         logger.info("Load original {} rerank data.".format(len(dataset)))
         if positive_key:
@@ -248,11 +251,10 @@ class EncodeDataset(Dataset):
         instruction: str = '',
         args: Optional = None,
         tokenizer: PreTrainedTokenizer = None,
+        dataset_split: str = 'train',
     ):
-        if not data_name_or_path and args:
+        if args:
             data_name_or_path = args.data_name_or_path
-        if data_name_or_path is None:
-            raise ValueError
 
         if isinstance(data_name_or_path, datasets.Dataset):
             self.encode_data = data_name_or_path
@@ -260,7 +262,10 @@ class EncodeDataset(Dataset):
             self.encode_data = datasets.load_dataset(
                 'json',
                 data_files=data_name_or_path,
-            )['train']
+            )
+            if dataset_split in self.encode_data:
+                self.encode_data = self.encode_data[dataset_split]
+
         self.tokenizer = tokenizer
         self.max_length = max_length
         self.id_key = id_key
