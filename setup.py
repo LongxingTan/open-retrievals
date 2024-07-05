@@ -9,13 +9,26 @@ def get_version():
     return locals()['__version__']
 
 
-base_packages = ["tqdm >= 4.66", "transformers >= 4.34.0", "accelerate>=0.20.0", "peft", "tokenizers>=0.14", "datasets"]
+base_packages = [
+    "torch>=1.6.0",
+    "transformers >= 4.0.0",
+    "tokenizers>=0.14",
+    "datasets>=1.1.3",
+    "tqdm >= 4.66",
+]
 
 
-eval = ["ranx >= 0.3.16", "beir >= 2.0.0", "mteb", "C-MTEB>=1.1.0"]
+eval = ["beir >= 2.0.0", "mteb", "C-MTEB>=1.1.0"]
 
 
-dev = ["mkdocs-material == 9.2.8", "mkdocs-awesome-pages-plugin == 2.9.2", "mkdocs-jupyter == 0.24.7", "faiss-gpu"]
+dev = [
+    "mkdocs-material == 9.2.8",
+    "mkdocs-awesome-pages-plugin == 2.9.2",
+    "mkdocs-jupyter == 0.24.7",
+    "faiss-gpu",
+    "peft",
+    "accelerate>=0.20.0",
+]
 
 
 setup(

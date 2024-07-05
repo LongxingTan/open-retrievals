@@ -3,7 +3,6 @@
 **Prerequisites**
 ```shell
 pip install datasets mteb[beir]
-pip install C_MTEB
 pip install open-retrievals[eval]
 ```
 
