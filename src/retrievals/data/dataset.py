@@ -73,7 +73,7 @@ class RetrievalDataset(Dataset):
                 train_datasets.append(temp_dataset)
             dataset = datasets.concatenate_datasets(train_datasets)
         else:
-            if data_name_or_path.endswith('jsonl'):
+            if data_name_or_path.endswith('jsonl') or data_name_or_path.endswith('json'):
                 dataset = datasets.load_dataset("json", data_files=data_name_or_path)
             else:
                 dataset = datasets.load_dataset(data_name_or_path, self.dataset_language)
