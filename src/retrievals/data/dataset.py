@@ -112,7 +112,7 @@ class RetrievalDataset(Dataset):
         query = self.query_instruction + data[self.query_key]
 
         if isinstance(data[self.positive_key], (list, tuple)):
-            if isinstance(data[self.positive_key], dict):
+            if isinstance(data[self.positive_key][0], dict):
                 pos = random.choice(data[self.positive_key])
                 pos_text = pos['title'] + self.separator + pos['text'] if 'title' in pos else pos['text']
                 pos = self.document_instruction + pos_text
@@ -280,17 +280,21 @@ class EncodeDataset(Dataset):
         args: Optional = None,
         tokenizer: PreTrainedTokenizer = None,
         dataset_split: str = 'train',
+        dataset_language: str = 'default',
     ):
         if args:
             data_name_or_path = args.data_name_or_path
+            dataset_language = args.dataset_language
+            dataset_split = args.dataset_split
 
         if isinstance(data_name_or_path, datasets.Dataset):
             self.encode_data = data_name_or_path
         else:
-            self.encode_data = datasets.load_dataset(
-                'json',
-                data_files=data_name_or_path,
-            )
+            try:
+                self.encode_data = datasets.load_dataset(data_name_or_path, dataset_language)
+            except ValueError:
+                self.encode_data = datasets.load_dataset("json", data_files=data_name_or_path)
+
             if dataset_split in self.encode_data:
                 self.encode_data = self.encode_data[dataset_split]
 

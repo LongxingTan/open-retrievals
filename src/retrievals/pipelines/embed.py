@@ -70,8 +70,6 @@ class DataArguments:
     positive_key: str = field(default='positive')
     negative_key: str = field(default='negative')
     is_query: bool = field(default=False)
-    encoding_in_path: List[str] = field(default=None, metadata={"help": "Path to data to encode"})
-    encoding_save_path: str = field(default=None, metadata={"help": "where to save the encode"})
 
     def __post_init__(self):
         if self.data_name_or_path is not None:
@@ -217,6 +215,7 @@ def main():
 
     if training_args.do_encode:
         max_length = data_args.query_max_length if data_args.is_query else data_args.document_max_length
+        logger.info(f'Encoding will be saved in {training_args.output_dir}')
 
         encode_dataset = EncodeDataset(args=data_args, tokenizer=tokenizer, max_length=max_length, text_key='text')
         logger.info(f"Number of train samples: {len(encode_dataset)}")
@@ -238,7 +237,7 @@ def main():
             embeddings.append(embed)
 
         embeddings = np.concatenate(embeddings)
-        with open(data_args.encoding_save_path, 'wb') as f:
+        with open(training_args.output_dir, 'wb') as f:
             pickle.dump((embeddings, lookup_indices), f)
 
 
