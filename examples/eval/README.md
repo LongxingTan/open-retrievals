@@ -45,3 +45,4 @@ class AutoModelForEmbeddingEval(AutoModelForEmbedding):
 
 - https://github.com/beir-cellar/beir
 - https://github.com/AmenRa/ranx
+- [MTEB leaderboard](https://huggingface.co/spaces/mteb/leaderboard)

@@ -67,7 +67,10 @@ class RetrievalDataset(Dataset):
                 train_datasets.append(temp_dataset)
             dataset = datasets.concatenate_datasets(train_datasets)
         else:
-            dataset = datasets.load_dataset("json", data_files=data_name_or_path)
+            try:
+                dataset = datasets.load_dataset(data_name_or_path)
+            except ValueError:
+                dataset = datasets.load_dataset("json", data_files=data_name_or_path)
 
         if self.dataset_split in dataset:  # train or dev
             dataset = dataset[dataset_split]
