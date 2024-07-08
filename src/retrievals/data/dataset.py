@@ -25,6 +25,7 @@ class RetrievalDataset(Dataset):
         args: Optional = None,
         tokenizer: PreTrainedTokenizer = None,
         dataset_split: str = 'train',
+        dataset_language: str = 'default',
     ):
         if args:
             data_name_or_path = args.data_name_or_path
@@ -32,6 +33,9 @@ class RetrievalDataset(Dataset):
                 args.train_group_size if 'train_group_size' in args.__dataclass_fields__ else train_group_size
             )
             self.dataset_split = args.dataset_split if 'dataset_split' in args.__dataclass_fields__ else dataset_split
+            self.dataset_language = (
+                args.dataset_language if 'dataset_language' in args.__dataclass_fields__ else 'default'
+            )
             self.unfold_each_positive = (
                 args.unfold_each_positive
                 if 'unfold_each_positive' in args.__dataclass_fields__
@@ -48,6 +52,7 @@ class RetrievalDataset(Dataset):
         else:
             self.train_group_size = train_group_size
             self.dataset_split = dataset_split
+            self.dataset_language = dataset_language
             self.query_instruction = query_instruction
             self.document_instruction = document_instruction
             self.query_key = query_key
