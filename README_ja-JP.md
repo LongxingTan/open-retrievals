@@ -96,7 +96,7 @@ model.build_index(sentences, index_path=index_path)
 
 query_embed = model.encode("He plays guitar.")
 matcher = AutoModelForRetrieval()
-dists, indices = matcher.similarity_search(query_embed, index_path=index_path)
+dists, indices = matcher.search(query_embed, index_path=index_path)
 print(indices)
 ```
 
@@ -283,12 +283,13 @@ query_embeddings = model.encode(query_texts, convert_to_tensor=True)
 document_embeddings = model.encode(document_texts, convert_to_tensor=True)
 
 matcher = AutoModelForRetrieval(method='cosine')
-dists, indices = matcher.similarity_search(query_embeddings, document_embeddings, top_k=1)
+dists, indices = matcher.search(query_embeddings, document_embeddings, top_k=1)
 ```
 
 
 ## 参考資料と謝辞
 - [sentence-transformers](https://github.com/UKPLab/sentence-transformers)
+- [Dense](https://github.com/luyug/Dense)
 - [FlagEmbedding](https://github.com/FlagOpen/FlagEmbedding)
 - [uniem](https://github.com/wangyuxinwhy/uniem)
 - [BCEmbedding](https://github.com/netease-youdao/BCEmbedding)

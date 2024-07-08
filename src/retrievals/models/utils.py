@@ -100,3 +100,17 @@ def save_swa_weights(model: nn.Module, model_path_list: List[str], save_file: st
     model.half()
     torch.save(model.state_dict(), save_file)
     print(f"Checkpoint saved at: {save_file}")
+
+
+def freeze_layers(model, n_layers: int = 6):
+    """Freeze layers before the last n_layers."""
+    trainable_layers = 0
+    for name, param in model.named_parameters():
+        if param.requires_grad:
+            trainable_layers += 1
+
+    for index, (name, param) in enumerate(iterable=model.named_parameters()):
+        if index < (trainable_layers - n_layers):
+            param.requires_grad = False
+
+    return model

@@ -39,10 +39,10 @@
 - 支持全套重排微调，cross encoder、ColBERT、LLM
 - 支持定制化RAG框架，支持在Transformers、Langchain、LlamaIndex中便捷使用微调后的模型
 
-| 实验                  | 模型                     | 尺寸| 原分数 | 微调分数   | Demo代码                                                                                                                           |
-|---------------------|-------------------------|----|-------|-----------|-------------------------------------------------------------------------------------------------------------------------------------|
-| **向量**pairwise微调   | bge-base-zh-v1.5        | -  | 0.657 | **0.703** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/17KXe2lnNRID-HiVvMtzQnONiO74oGs91?usp=sharing) |
-| **向量**大模型LoRA微调  | Qwen2-1.5B-Instruct     | -  | 0.546 | **0.694** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1jj1kBQWFcuQ3a7P9ttnl1hgX7H8WA_Za?usp=sharing) |
+| 实验                  | 模型                      | 尺寸| 原分数 | 微调分数   | Demo代码                                                                                                                           |
+|-----------------------|-------------------------|----|-------|-----------|-------------------------------------------------------------------------------------------------------------------------------------|
+| pairwise微调**向量**   | bge-base-zh-v1.5        | -  | 0.657 | **0.703** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/17KXe2lnNRID-HiVvMtzQnONiO74oGs91?usp=sharing) |
+| 大模型LoRA微调**向量**  | Qwen2-1.5B-Instruct     | -  | 0.546 | **0.694** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1jj1kBQWFcuQ3a7P9ttnl1hgX7H8WA_Za?usp=sharing) |
 | cross encoder**重排** | bge-reranker-base       | -  | 0.666 | **0.706** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1QvbUkZtG56SXomGYidwI4RQzwODQrWNm?usp=sharing) |
 | colbert**重排**       | chinese-roberta-wwm-ext | -  | 0.643 | **0.687** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1QVtqhQ080ZMltXoJyODMmvEQYI6oo5kO?usp=sharing) |
 | LLM**重排**           | Qwen2-1.5B-Instruct     | -  | 0.531 | **0.699** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1fzq1iV7-f8hNKFnjMmpVhVxadqPb9IXk?usp=sharing) |
@@ -104,7 +104,7 @@ model.build_index(sentences, index_path=index_path)
 
 query_embed = model.encode("He plays guitar.")
 matcher = AutoModelForRetrieval()
-dists, indices = matcher.similarity_search(query_embed, index_path=index_path)
+dists, indices = matcher.search(query_embed, index_path=index_path)
 print(indices)
 ```
 
@@ -326,6 +326,7 @@ torchrun --nproc_per_node 1 \
 
 ## 参考与致谢
 - [sentence-transformers](https://github.com/UKPLab/sentence-transformers)
+- [Dense](https://github.com/luyug/Dense)
 - [FlagEmbedding](https://github.com/FlagOpen/FlagEmbedding)
 - [uniem](https://github.com/wangyuxinwhy/uniem)
 - [BCEmbedding](https://github.com/netease-youdao/BCEmbedding)

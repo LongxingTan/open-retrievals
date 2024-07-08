@@ -2,11 +2,12 @@
 
 import logging
 import os
-from contextlib import nullcontext
+import pickle
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Optional
+from typing import List, Optional
 
+import numpy as np
 import torch
 from torch import nn
 from torch.utils.data import DataLoader
@@ -46,9 +47,9 @@ class ModelArguments:
 
 @dataclass
 class DataArguments:
-    train_data: str = field(default=None, metadata={"help": "Path to train data"})
+    data_name_or_path: str = field(default=None, metadata={"help": "Path to train data"})
     train_group_size: int = field(default=2)
-
+    unfold_each_positive: bool = field(default=False)
     query_max_length: int = field(
         default=32,
         metadata={
@@ -56,7 +57,6 @@ class DataArguments:
             "than this will be truncated, sequences shorter will be padded."
         },
     )
-
     document_max_length: int = field(
         default=128,
         metadata={
@@ -64,13 +64,25 @@ class DataArguments:
             "than this will be truncated, sequences shorter will be padded."
         },
     )
-
     query_instruction: str = field(default=None, metadata={"help": "instruction for query"})
     document_instruction: str = field(default=None, metadata={"help": "instruction for document"})
     query_key: str = field(default=None)
     positive_key: str = field(default='positive')
     negative_key: str = field(default='negative')
     is_query: bool = field(default=False)
+
+    def __post_init__(self):
+        if self.data_name_or_path is not None:
+            info = self.data_name_or_path.split('/')
+            self.dataset_split = info[-1] if len(info) == 3 else 'train'
+            self.data_name_or_path = "/".join(info[:-1]) if len(info) == 3 else '/'.join(info)
+            self.dataset_language = 'default'
+            if ':' in self.data_name_or_path:
+                self.data_name_or_path, self.dataset_language = self.data_name_or_path.split(':')
+        else:
+            self.data_name_or_path = 'json'
+            self.dataset_split = 'train'
+            self.dataset_language = 'default'
 
 
 @dataclass
@@ -203,6 +215,7 @@ def main():
 
     if training_args.do_encode:
         max_length = data_args.query_max_length if data_args.is_query else data_args.document_max_length
+        logger.info(f'Encoding will be saved in {training_args.output_dir}')
 
         encode_dataset = EncodeDataset(args=data_args, tokenizer=tokenizer, max_length=max_length, text_key='text')
         logger.info(f"Number of train samples: {len(encode_dataset)}")
@@ -215,9 +228,17 @@ def main():
             drop_last=False,
             num_workers=training_args.dataloader_num_workers,
         )
-        embed = model.encode(encode_loader)
 
-        print(embed)
+        embeddings = []
+        lookup_indices = []
+        for batch_ids, batch in tqdm(encode_loader):
+            lookup_indices.extend(batch_ids)
+            embed = model.encode(batch)
+            embeddings.append(embed)
+
+        embeddings = np.concatenate(embeddings)
+        with open(training_args.output_dir, 'wb') as f:
+            pickle.dump((embeddings, lookup_indices), f)
 
 
 if __name__ == "__main__":

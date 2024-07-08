@@ -51,7 +51,7 @@ class ModelArguments:
 
 @dataclass
 class DataArguments:
-    train_data: str = field(default=None, metadata={"help": "Path to corpus"})
+    data_name_or_path: str = field(default=None, metadata={"help": "Path to corpus"})
     train_group_size: int = field(default=8)
     unfold_each_positive: bool = field(default=False)
     max_length: int = field(
@@ -64,7 +64,6 @@ class DataArguments:
     query_key: str = field(default=None)
     positive_key: str = field(default=None)
     negative_key: str = field(default=None)
-
     query_instruction: str = field(default=None, metadata={"help": "instruction for query"})
     document_instruction: str = field(default=None, metadata={"help": "instruction for document"})
     task_prompt: str = field(
@@ -85,6 +84,7 @@ class RerankerTrainingArguments(TrainingArguments):
     num_train_epochs: int = field(default=3)
     use_lora: bool = field(default=False)
     use_bnb_config: bool = field(default=False)
+    do_rerank: bool = field(default=False, metadata={"help": "run the reranking loop"})
 
 
 def get_optimizer(model, learning_rate, weight_decay=0.0):

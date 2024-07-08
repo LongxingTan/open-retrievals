@@ -66,7 +66,9 @@ class ModelArguments:
 
 @dataclass
 class DataArguments:
-    train_data: str = field(default="intfloat/personalized_passkey_retrieval", metadata={"help": "Path to train data"})
+    data_name_or_path: str = field(
+        default="intfloat/personalized_passkey_retrieval", metadata={"help": "Path to train data"}
+    )
     train_group_size: int = field(default=8)
     query_max_length: int = field(
         default=32,
@@ -92,8 +94,8 @@ class DataArguments:
     document_instruction: str = field(default=None, metadata={"help": "instruction for document"})
 
     def __post_init__(self):
-        if not os.path.exists(self.train_data):
-            raise FileNotFoundError(f"cannot find file: {self.train_data}, please set a true path")
+        if not os.path.exists(self.data_name_or_path):
+            raise FileNotFoundError(f"cannot find file: {self.data_name_or_path}, please set a true path")
 
 
 @dataclass
@@ -131,12 +133,12 @@ class TrainDatasetForEmbedding(Dataset):
         self.args = args
         self.tokenizer = tokenizer
 
-        if os.path.isdir(args.train_data):
+        if os.path.isdir(args.data_name_or_path):
             train_datasets = []
-            for file in os.listdir(args.train_data):
+            for file in os.listdir(args.data_name_or_path):
                 temp_dataset = datasets.load_dataset(
                     "json",
-                    data_files=os.path.join(args.train_data, file),
+                    data_files=os.path.join(args.data_name_or_path, file),
                     split="train",
                 )
                 if len(temp_dataset) > args.max_example_num_per_dataset:
@@ -149,8 +151,8 @@ class TrainDatasetForEmbedding(Dataset):
                 train_datasets.append(temp_dataset)
             self.dataset = datasets.concatenate_datasets(train_datasets)
         else:
-            # self.dataset = datasets.load_dataset("json", data_files=args.train_data, split="train")
-            self.dataset = datasets.load_dataset(args.train_data)
+            # self.dataset = datasets.load_dataset("json", data_files=args.data_name_or_path, split="train")
+            self.dataset = datasets.load_dataset(args.data_name_or_path)
 
     def __len__(self):
         return len(self.dataset)

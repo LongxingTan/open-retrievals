@@ -4,7 +4,6 @@ import logging
 import os
 from argparse import ArgumentParser
 from multiprocessing import Pool
-from pathlib import Path
 from typing import Any, Callable, Dict, List, Literal, Optional, Tuple, TypeVar, Union
 
 from transformers import AutoModel

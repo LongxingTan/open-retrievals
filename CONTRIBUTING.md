@@ -8,7 +8,7 @@ If you are interested in contributing to open-retrievals,
 Once you finish implementing a feature a bug-fix, please send a Pull Request to https://github.com/LongxingTan/open-retrievals
 
 
-## Developing TFTS
+## Developing open-retrievals
 
 To develop tfts on your machine, here are some tips:
 

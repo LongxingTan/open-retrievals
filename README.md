@@ -36,7 +36,7 @@
 ![structure](./docs/source/_static/structure.png)
 
 **Open-retrievals** improve and unify text embedding, retrieval, reranking and RAG.
-- Embeddings fine-tuned through point-wise, pairwise, listwise, contrastive learning, and LLM.
+- Embedding fine-tuned through point-wise, pairwise, listwise, contrastive learning, and LLM.
 - Reranking fine-tuned with Cross Encoder, ColBERT, and LLM.
 - Easily build enhanced RAG, integrated with Transformers, Langchain, and LlamaIndex.
 
@@ -104,7 +104,7 @@ model.build_index(sentences, index_path=index_path)
 
 query_embed = model.encode("He plays guitar.")
 matcher = AutoModelForRetrieval()
-dists, indices = matcher.similarity_search(query_embed, index_path=index_path)
+dists, indices = matcher.search(query_embed, index_path=index_path)
 print(indices)
 ```
 
@@ -230,7 +230,7 @@ trainer.scheduler = scheduler
 trainer.train()
 ```
 
-**Rerank Fine-tuning**
+**Reranking Fine-tuning**
 
 ```python
 from transformers import AutoTokenizer, TrainingArguments, get_cosine_schedule_with_warmup, AdamW
@@ -270,6 +270,7 @@ trainer.train()
 
 ## Reference & Acknowledge
 - [sentence-transformers](https://github.com/UKPLab/sentence-transformers)
+- [Dense](https://github.com/luyug/Dense)
 - [FlagEmbedding](https://github.com/FlagOpen/FlagEmbedding)
 - [uniem](https://github.com/wangyuxinwhy/uniem)
 - [BCEmbedding](https://github.com/netease-youdao/BCEmbedding)
