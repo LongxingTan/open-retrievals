@@ -74,9 +74,9 @@ class RetrievalDataset(Dataset):
             dataset = datasets.concatenate_datasets(train_datasets)
         else:
             try:
-                dataset = datasets.load_dataset(data_name_or_path, self.dataset_language)
-            except ValueError:
                 dataset = datasets.load_dataset("json", data_files=data_name_or_path)
+            except FileNotFoundError:
+                dataset = datasets.load_dataset(data_name_or_path, self.dataset_language)
 
         if self.dataset_split in dataset:  # train or dev
             dataset = dataset[dataset_split]
@@ -291,9 +291,9 @@ class EncodeDataset(Dataset):
             self.encode_data = data_name_or_path
         else:
             try:
-                self.encode_data = datasets.load_dataset(data_name_or_path, dataset_language)
-            except ValueError:
                 self.encode_data = datasets.load_dataset("json", data_files=data_name_or_path)
+            except FileNotFoundError:
+                self.encode_data = datasets.load_dataset(data_name_or_path, dataset_language)
 
             if dataset_split in self.encode_data:
                 self.encode_data = self.encode_data[dataset_split]
