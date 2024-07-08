@@ -22,6 +22,7 @@ class RetrievalDataset(Dataset):
         negative_key: str = 'negative',
         query_instruction: str = '',
         document_instruction: str = '',
+        separator: str = ' ',
         args: Optional = None,
         tokenizer: PreTrainedTokenizer = None,
         dataset_split: str = 'train',
@@ -73,9 +74,9 @@ class RetrievalDataset(Dataset):
             dataset = datasets.concatenate_datasets(train_datasets)
         else:
             try:
-                dataset = datasets.load_dataset(data_name_or_path, languages=self.dataset_language)
+                dataset = datasets.load_dataset(data_name_or_path, self.dataset_language)
             except ValueError:
-                dataset = datasets.load_dataset("json", data_files=data_name_or_path, languages=self.dataset_language)
+                dataset = datasets.load_dataset("json", data_files=data_name_or_path)
 
         if self.dataset_split in dataset:  # train or dev
             dataset = dataset[dataset_split]
@@ -86,6 +87,7 @@ class RetrievalDataset(Dataset):
         self.query_key = query_key
         self.positive_key = positive_key
         self.negative_key = negative_key
+        self.separator = separator
 
         logger.info("Load original {} retrieval data.".format(len(dataset)))
 
@@ -110,7 +112,12 @@ class RetrievalDataset(Dataset):
         query = self.query_instruction + data[self.query_key]
 
         if isinstance(data[self.positive_key], (list, tuple)):
-            pos = self.document_instruction + random.choice(data[self.positive_key])
+            if isinstance(data[self.positive_key], dict):
+                pos = random.choice(data[self.positive_key])
+                pos_text = pos['title'] + self.separator + pos['text'] if 'title' in pos else pos['text']
+                pos = self.document_instruction + pos_text
+            else:
+                pos = self.document_instruction + random.choice(data[self.positive_key])
         else:
             pos = self.document_instruction + data[self.positive_key]
 
@@ -124,7 +131,11 @@ class RetrievalDataset(Dataset):
                     negs = random.sample(data[self.negative_key], self.train_group_size - 1)
 
             else:
-                negs = data[self.negative_key][0]
+                negs = [data[self.negative_key]]
+
+            if isinstance(negs[0], dict):
+                negs = [neg['title'] + self.separator + neg['text'] if 'title' in neg else neg['text'] for neg in negs]
+
             sample.update({self.negative_key: [self.document_instruction + neg for neg in negs]})
         return sample
 
