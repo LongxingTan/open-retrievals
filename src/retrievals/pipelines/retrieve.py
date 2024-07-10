@@ -26,6 +26,18 @@ def load_pickle(path):
     return np.array(reps), lookup
 
 
+def save_ranking(dists, indices, ranking_file, query_ids):
+    """
+    save format: query_id, doc_id, score
+    """
+    with open(ranking_file, 'w') as f:
+        for qid, score, index in zip(query_ids, dists, indices):
+            score_list = [(s, idx) for s, idx in zip(score, index)]
+            score_list = sorted(score_list, key=lambda x: x[0], reverse=True)
+            for s, idx in score_list:
+                f.write(f'{qid}\t{idx}\t{s}\n')
+
+
 def retrieve():
     parser = ArgumentParser()
     parser.add_argument("--query_reps", required=True)
@@ -52,10 +64,10 @@ def retrieve():
     # query_embed = torch.load(args.query_reps)
     query_reps, query_lookup = load_pickle(args.query_reps)
 
-    dists, indices = retriever.search(query_embed=query_reps, top_k=args.top_k)
+    dists, indices = retriever.search(query_embeddings=query_reps, top_k=args.top_k)
     print(indices.shape)
 
-    retriever.save_ranking(query_lookup, dists, indices, args.save_ranking_file)
+    save_ranking(dists, indices, args.save_ranking_file, query_lookup)
 
 
 if __name__ == "__main__":
