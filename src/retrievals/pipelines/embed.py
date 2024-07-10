@@ -70,6 +70,7 @@ class DataArguments:
     positive_key: str = field(default='positive')
     negative_key: str = field(default='negative')
     is_query: bool = field(default=False)
+    encode_save_file: str = field(default='embed.pkl')
 
     def __post_init__(self):
         if self.data_name_or_path is not None:
