@@ -13,9 +13,9 @@ from transformers import (
 from retrievals import (
     AutoModelForRanking,
     LLMRerankCollator,
-    RerankDataset,
+    RerankTrainDataset,
     RerankTrainer,
-    RetrievalDataset,
+    RetrievalTrainDataset,
 )
 from retrievals.losses import TokenLoss
 
@@ -106,7 +106,7 @@ tokenizer = AutoTokenizer.from_pretrained(
     use_fast=False,
 )
 
-train_dataset = RetrievalDataset(
+train_dataset = RetrievalTrainDataset(
     args=data_args,
     tokenizer=tokenizer,
     unfold_each_positive=data_args.unfold_each_positive,

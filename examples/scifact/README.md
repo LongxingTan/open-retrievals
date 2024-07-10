@@ -12,7 +12,7 @@ Encoding query
 
 
 Retrieval
-- 
+-
 
 
 Reranking

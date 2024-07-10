@@ -27,6 +27,9 @@ class BaseRetriever(ABC):
         """search the str, return the top list maybe with score"""
         raise NotImplementedError
 
+    def ingest(self, document):
+        return
+
 
 class AutoModelForRetrieval(object):
     def __init__(
@@ -336,6 +339,14 @@ class BM25Retrieval(BaseRetriever):
                 line = line.strip()
                 stop_words.append(line)
         return stop_words
+
+
+class ElasticRetriever(BaseRetriever):
+    def __init__(self):
+        super(ElasticRetriever, self).__init__()
+        from elasticsearch import Elasticsearch
+
+        self.es = Elasticsearch()
 
 
 class EnsembleRetriever(BaseRetriever):

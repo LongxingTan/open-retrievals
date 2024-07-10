@@ -18,7 +18,7 @@ from ..data import (
     EncodeCollator,
     EncodeDataset,
     PairCollator,
-    RetrievalDataset,
+    RetrievalTrainDataset,
     TripletCollator,
 )
 from ..losses import InfoNCE, SimCSE, TripletLoss
@@ -183,7 +183,7 @@ def main():
             loss_fn=loss_fn,
         )
 
-        train_dataset = RetrievalDataset(
+        train_dataset = RetrievalTrainDataset(
             args=data_args,
             tokenizer=tokenizer,
             positive_key=data_args.positive_key,

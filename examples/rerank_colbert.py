@@ -11,7 +11,7 @@ from retrievals import (
     ColBERT,
     ColBertCollator,
     RerankTrainer,
-    RetrievalDataset,
+    RetrievalTrainDataset,
 )
 from retrievals.losses import ColbertLoss
 
@@ -24,7 +24,7 @@ learning_rate: float = 3e-5
 batch_size: int = 32
 epochs: int = 3
 
-train_dataset = RetrievalDataset("t2_ranking.jsonl", positive_key="positive", negative_key="negative")
+train_dataset = RetrievalTrainDataset("t2_ranking.jsonl", positive_key="positive", negative_key="negative")
 tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, use_fast=False)
 data_collator = ColBertCollator(
     tokenizer,

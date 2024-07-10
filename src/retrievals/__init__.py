@@ -5,7 +5,7 @@ from .data.collator import (
     RerankCollator,
     TripletCollator,
 )
-from .data.dataset import RerankDataset, RetrievalDataset
+from .data.dataset import RerankTrainDataset, RetrievalTrainDataset
 from .models.embedding_auto import AutoModelForEmbedding, ListwiseModel, PairwiseModel
 from .models.pooling import AutoPooling
 from .models.rerank import AutoModelForRanking, ColBERT
