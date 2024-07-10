@@ -40,15 +40,22 @@ def retrieve():
     index_files = glob.glob(args.passage_reps)
     logger.info(f"Pattern match found {len(index_files)} files; loading them into index.")
 
-    retriever = FaissRetrieval
+    passage_reps0, passage_lookup0 = load_pickle(index_files[0])
+    retriever = FaissRetrieval(passage_reps0)
 
-    query_embed = torch.load(args.query_reps)
+    lookups = [passage_lookup0]
+    for i in range(1, len(index_files)):
+        passage_reps, passage_lookup = load_pickle(index_files[i])
+        retriever.add(passage_reps)
+        lookups += passage_lookup
 
-    dists, indices = retriever.search(query_embed=query_embed, index_path=index_files[0], top_k=args.top_k)
+    # query_embed = torch.load(args.query_reps)
+    query_reps, query_lookup = load_pickle(args.query_reps)
+
+    dists, indices = retriever.search(query_embed=query_reps, top_k=args.top_k)
     print(indices.shape)
 
-    query_ids = torch.load()
-    retriever.save_ranking(query_ids, dists, indices, args.save_ranking_file)
+    retriever.save_ranking(query_lookup, dists, indices, args.save_ranking_file)
 
 
 if __name__ == "__main__":
