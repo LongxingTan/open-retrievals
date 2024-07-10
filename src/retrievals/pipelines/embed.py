@@ -214,6 +214,7 @@ def main():
             tokenizer.save_pretrained(training_args.output_dir)
 
     if training_args.do_encode:
+        assert os.path.isfile(training_args.output_dir), "The output_dir should be a pickle file while encoding"
         max_length = data_args.query_max_length if data_args.is_query else data_args.document_max_length
         logger.info(f'Encoding will be saved in {training_args.output_dir}')
 
