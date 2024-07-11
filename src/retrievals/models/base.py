@@ -2,7 +2,6 @@ import logging
 from abc import ABC, abstractmethod
 from typing import List, Optional, Tuple, Union
 
-import numpy as np
 import torch
 import torch.distributed as dist
 import torch.nn as nn

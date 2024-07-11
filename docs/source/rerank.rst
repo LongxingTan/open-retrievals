@@ -24,7 +24,7 @@ Fine tuning Cross-encoder
 .. code-block:: python
 
     from transformers import AutoTokenizer, TrainingArguments, get_cosine_schedule_with_warmup, AdamW
-    from retrievals import RerankCollator, AutoModelForRanking, RerankTrainer, RerankDataset
+    from retrievals import RerankCollator, AutoModelForRanking, RerankTrainer, RerankTrainDataset
 
     model_name_or_path: str = "microsoft/deberta-v3-base"
     max_length: int = 128
@@ -32,7 +32,7 @@ Fine tuning Cross-encoder
     batch_size: int = 4
     epochs: int = 3
 
-    train_dataset = RerankDataset('./t2rank.json', positive_key='pos', negative_key='neg')
+    train_dataset = RerankTrainDataset('./t2rank.json', positive_key='pos', negative_key='neg')
     tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, use_fast=False)
     model = AutoModelForRanking.from_pretrained(model_name_or_path, pooling_method="mean")
     optimizer = AdamW(model.parameters(), lr=learning_rate)

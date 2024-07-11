@@ -18,7 +18,7 @@ from ..data import (
     EncodeCollator,
     EncodeDataset,
     PairCollator,
-    RetrievalDataset,
+    RetrievalTrainDataset,
     TripletCollator,
 )
 from ..losses import InfoNCE, SimCSE, TripletLoss
@@ -70,6 +70,7 @@ class DataArguments:
     positive_key: str = field(default='positive')
     negative_key: str = field(default='negative')
     is_query: bool = field(default=False)
+    encode_save_file: str = field(default='embed.pkl')
 
     def __post_init__(self):
         if self.data_name_or_path is not None:
@@ -183,7 +184,7 @@ def main():
             loss_fn=loss_fn,
         )
 
-        train_dataset = RetrievalDataset(
+        train_dataset = RetrievalTrainDataset(
             args=data_args,
             tokenizer=tokenizer,
             positive_key=data_args.positive_key,
@@ -229,15 +230,18 @@ def main():
             num_workers=training_args.dataloader_num_workers,
         )
 
-        embeddings = []
-        lookup_indices = []
-        for batch_ids, batch in tqdm(encode_loader):
-            lookup_indices.extend(batch_ids)
-            embed = model.encode(batch)
-            embeddings.append(embed)
+        # embeddings = []
+        # lookup_indices = []
+        # for batch_ids, batch in tqdm(encode_loader):
+        #     lookup_indices.extend(batch_ids)
+        #     embed = model.encode(batch)
+        #     embeddings.append(embed)
+        # embeddings = np.concatenate(embeddings)
 
-        embeddings = np.concatenate(embeddings)
-        with open(training_args.output_dir, 'wb') as f:
+        embeddings = model.encode(encode_loader)
+        lookup_indices = list(range(len(encode_dataset)))
+
+        with open(os.path.join(training_args.output_dir, data_args.encode_save_file), 'wb') as f:
             pickle.dump((embeddings, lookup_indices), f)
 
 

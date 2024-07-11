@@ -11,7 +11,9 @@ from transformers import BatchEncoding, PreTrainedTokenizer
 logger = logging.getLogger(__name__)
 
 
-class RetrievalDataset(Dataset):
+class RetrievalTrainDataset(Dataset):
+    """Retrieval training dataset"""
+
     def __init__(
         self,
         data_name_or_path: Union[str, datasets.Dataset, None] = None,
@@ -167,7 +169,9 @@ class RetrievalDataset(Dataset):
         return
 
 
-class RerankDataset(Dataset):
+class RerankTrainDataset(Dataset):
+    """Rerank training dataset"""
+
     def __init__(
         self,
         data_name_or_path: Optional[str] = None,
@@ -270,6 +274,8 @@ class RerankDataset(Dataset):
 
 
 class EncodeDataset(Dataset):
+    """Retrieval inference dataset"""
+
     def __init__(
         self,
         data_name_or_path: Union[str, datasets.Dataset, None] = None,
@@ -286,6 +292,7 @@ class EncodeDataset(Dataset):
             data_name_or_path = args.data_name_or_path
             dataset_language = args.dataset_language
             dataset_split = args.dataset_split
+            text_key = args.query_key
 
         if isinstance(data_name_or_path, datasets.Dataset):
             self.encode_data = data_name_or_path
@@ -329,3 +336,10 @@ class EncodeDataset(Dataset):
                 return_token_type_ids=False,
             )
             return encoded_text
+
+
+class RerankDataset(Dataset):
+    """Rerank inference dataset"""
+
+    def __init__(self):
+        pass

@@ -108,7 +108,7 @@ class TrainerTest(TestCase):
         self.assertEqual(sentence_embeddings.shape, torch.Size([2, 384]))
 
 
-class PseudoRerankDataset(Dataset):
+class PseudoRerankTrainDataset(Dataset):
     def __init__(self):
         self.examples = [
             {'query': 'how are you', 'document': 'fine', 'labels': 1},
@@ -128,7 +128,7 @@ class TestRerankTrainer(TestCase):
         self.output_dir = tempfile.mkdtemp()
         model_name_or_path = "distilbert/distilbert-base-uncased"
         self.model = AutoModelForRanking.from_pretrained(model_name_or_path)
-        self.train_dataset = PseudoRerankDataset()
+        self.train_dataset = PseudoRerankTrainDataset()
         self.tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, cache_dir=self.output_dir)
 
     def tearDown(self):

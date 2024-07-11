@@ -5,10 +5,14 @@ from unittest import TestCase
 
 from transformers import BertTokenizer
 
-from src.retrievals.data.dataset import EncodeDataset, RerankDataset, RetrievalDataset
+from src.retrievals.data.dataset import (
+    EncodeDataset,
+    RerankTrainDataset,
+    RetrievalTrainDataset,
+)
 
 
-class RetrievalDatasetTest(TestCase):
+class RetrievalTrainDatasetTest(TestCase):
     def setUp(self):
         # Sample data to be written to the temp file
         data = {
@@ -39,7 +43,7 @@ class RetrievalDatasetTest(TestCase):
 
     def test_retrieval_dataset(self):
 
-        dataset = RetrievalDataset(
+        dataset = RetrievalTrainDataset(
             self.temp_file_name,
             positive_key='pos',
             negative_key='neg',
@@ -48,7 +52,7 @@ class RetrievalDatasetTest(TestCase):
         )
         print(dataset[0])
 
-        dataset = RerankDataset(self.temp_file_name, positive_key='pos', negative_key='neg')
+        dataset = RerankTrainDataset(self.temp_file_name, positive_key='pos', negative_key='neg')
         print(dataset[0])
 
         dataset = EncodeDataset(self.temp_file_name, id_key=None, text_key='query', tokenizer=self.tokenizer)

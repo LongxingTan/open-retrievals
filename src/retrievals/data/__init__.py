@@ -6,5 +6,5 @@ from .collator import (
     RerankCollator,
     TripletCollator,
 )
-from .dataset import EncodeDataset, RerankDataset, RetrievalDataset
+from .dataset import EncodeDataset, RerankTrainDataset, RetrievalTrainDataset
 from .sampler import GroupedBatchSampler, GroupSortedBatchSampler

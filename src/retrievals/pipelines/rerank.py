@@ -18,7 +18,12 @@ from transformers import (
     set_seed,
 )
 
-from ..data import ColBertCollator, RerankCollator, RerankDataset, RetrievalDataset
+from ..data import (
+    ColBertCollator,
+    RerankCollator,
+    RerankTrainDataset,
+    RetrievalTrainDataset,
+)
 from ..data.collator import LLMRerankCollator
 from ..losses import ColbertLoss, TokenLoss
 from ..models.rerank import AutoModelForRanking, ColBERT
@@ -160,7 +165,7 @@ def main():
 
     if training_args.model_type == 'colbert':
         logger.info('Set rank model to ColBERT')
-        train_dataset = RetrievalDataset(
+        train_dataset = RetrievalTrainDataset(
             args=data_args,
             tokenizer=tokenizer,
             train_group_size=data_args.train_group_size,
@@ -182,7 +187,7 @@ def main():
         )
     elif training_args.model_type == 'cross-encoder':
         logger.info('Set rank model to CrossEncoder')
-        train_dataset = RerankDataset(args=data_args, tokenizer=tokenizer)
+        train_dataset = RerankTrainDataset(args=data_args, tokenizer=tokenizer)
         data_collator = RerankCollator(tokenizer, max_length=data_args.max_length)
         model = AutoModelForRanking.from_pretrained(
             model_args.model_name_or_path,
@@ -192,7 +197,7 @@ def main():
         )
     elif training_args.model_type == 'llm':
         logger.info('Set rank model to LLM')
-        train_dataset = RetrievalDataset(
+        train_dataset = RetrievalTrainDataset(
             args=data_args,
             tokenizer=tokenizer,
             unfold_each_positive=data_args.unfold_each_positive,

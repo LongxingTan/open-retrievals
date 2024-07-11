@@ -27,6 +27,9 @@ class BaseRetriever(ABC):
         """search the str, return the top list maybe with score"""
         raise NotImplementedError
 
+    def ingest(self, document):
+        return
+
 
 class AutoModelForRetrieval(object):
     def __init__(
@@ -117,17 +120,6 @@ class AutoModelForRetrieval(object):
 
     def get_relevant_documents(self, query: str):
         return
-
-    def save_ranking(self, dists, indices, ranking_file, query_ids):
-        """
-        save format: query_id, doc_id, score
-        """
-        with open(ranking_file, 'w') as f:
-            for qid, score, index in zip(query_ids, dists, indices):
-                score_list = [(s, idx) for s, idx in zip(score, index)]
-                score_list = sorted(score_list, key=lambda x: x[0], reverse=True)
-                for s, idx in score_list:
-                    f.write(f'{qid}\t{idx}\t{s}\n')
 
     def get_pandas_candidate(
         self,
@@ -256,7 +248,7 @@ class FaissRetrieval(BaseRetriever):
 
     def search(
         self,
-        query_embed: Union[torch.Tensor, np.ndarray],
+        query_embeddings: Union[torch.Tensor, np.ndarray],
         top_k: int = 100,
         batch_size: int = 128,
         document_lookup: Optional[np.ndarray] = None,
@@ -265,7 +257,7 @@ class FaissRetrieval(BaseRetriever):
         1. Encode queries into dense embeddings
         2. Search through faiss index
         """
-        query_size = len(query_embed)
+        query_size = len(query_embeddings)
         assert query_size > 0, 'Please make sure the query_embeddings is not empty'
 
         all_scores = []
@@ -273,8 +265,8 @@ class FaissRetrieval(BaseRetriever):
 
         for i in tqdm(range(0, query_size, batch_size), desc="Searching"):
             j = min(i + batch_size, query_size)
-            query_embedding = query_embed[i:j]
-            score, index = self.index.search(query_embedding.astype(np.float32), k=top_k)
+            query_embed = query_embeddings[i:j]
+            score, index = self.index.search(query_embed.astype(np.float32), k=top_k)
             all_scores.append(score)
             all_indices.append(index)
 
@@ -336,6 +328,14 @@ class BM25Retrieval(BaseRetriever):
                 line = line.strip()
                 stop_words.append(line)
         return stop_words
+
+
+class ElasticRetriever(BaseRetriever):
+    def __init__(self):
+        super(ElasticRetriever, self).__init__()
+        from elasticsearch import Elasticsearch
+
+        self.es = Elasticsearch()
 
 
 class EnsembleRetriever(BaseRetriever):
