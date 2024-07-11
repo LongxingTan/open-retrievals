@@ -224,7 +224,7 @@ def main():
         encode_loader = DataLoader(
             encode_dataset,
             batch_size=training_args.per_device_eval_batch_size,
-            collate_fn=EncodeCollator(tokenizer, max_length=max_length, padding='max_length', id_key='id'),
+            collate_fn=EncodeCollator(tokenizer, max_length=max_length, padding='max_length'),
             shuffle=False,
             drop_last=False,
             num_workers=training_args.dataloader_num_workers,

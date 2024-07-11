@@ -1,12 +1,11 @@
-ENCODE_QUERY_DIR=embeddings-nq-queries
-ENCODE_DIR=embeddings-nq-corpus
-SAVE_RANKING_PATH=retrieval.txt
-TOP_K=100
+ENCODE_QUERY_DIR=./scifact/query-embeddings
+ENCODE_CORPUS_DIR=./scifact/corpus-embeddings
+SAVE_RANKING_PATH=./scifact/recall_out/retrieval.txt
+TOP_K=10
 
-python -m retrive \
-    --query_reps=$ENCODE_QUERY_DIR/query.pt \
-    --passage_reps $ENCODE_DIR/'*.index' \
-    --batch_size -1 \
+python -m retrievals.pipelines.retrieve \
+    --query_reps=$ENCODE_QUERY_DIR/query.pkl \
+    --passage_reps $ENCODE_CORPUS_DIR/'*.pkl' \
+    --batch_size 128 \
     --top_k $TOP_K \
-    --save_text \
-    --save_ranking_to $SAVE_RANKING_PATH
+    --save_ranking_file $SAVE_RANKING_PATH

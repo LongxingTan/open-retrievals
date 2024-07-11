@@ -1,20 +1,16 @@
-# Tevatron/scifact-corpus
+ENCODE_CORPUS_DIR=./scifact/corpus-embeddings
+MODEL_DIR="./scifact/ft_out"
+CORPUS=Tevatron/scifact-corpus
+mkdir $ENCODE_CORPUS_DIR
 
-ENCODE_DIR=embeddings-nq-corpus
-OUT_DIR=temp
-MODEL_DIR=model-nq
-CORPUS_DIR=wikipedia-corpus
 
-mkdir $ENCODE_DIR
-for s in $(seq -f "%02g" 0 21)
-do
-python -m run \
+python -m retrievals.pipelines.embed \
     --model_name_or_path $MODEL_DIR \
-    --output_dir $OUT_DIR \
+    --output_dir $ENCODE_CORPUS_DIR \
+    --encode_save_file corpus.pkl \
     --do_encode \
     --fp16 \
     --per_device_eval_batch_size 256 \
-    --encode_in_path $CORPUS_DIR/docs$s.json \
-    --encode_save_path $ENCODE_DIR/$s.index \
+    --data_name_or_path $CORPUS \
+    --query_key text \
     --is_query false
-done
