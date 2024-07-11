@@ -335,7 +335,7 @@ class EncodeDataset(Dataset):
                 padding=False,
                 return_token_type_ids=False,
             )
-            return encoded_text
+            return item, encoded_text
 
 
 class RerankDataset(Dataset):
