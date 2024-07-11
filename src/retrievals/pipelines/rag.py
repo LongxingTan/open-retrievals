@@ -18,6 +18,11 @@ parser.add_argument('--tokenizer_name', required=False)
 args = parser.parse_args()
 
 
+class RAGConfig(object):
+    def __init__(self):
+        pass
+
+
 class ChatCenter(object):
     """Model inference"""
 

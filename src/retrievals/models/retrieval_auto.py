@@ -9,7 +9,7 @@ import logging
 import os.path
 import time
 from abc import ABC, abstractmethod
-from typing import Iterable, List, Literal, Optional, Tuple, Union
+from typing import Any, Iterable, List, Literal, Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -29,6 +29,14 @@ class BaseRetriever(ABC):
 
     def ingest(self, document):
         return
+
+    def similarity_search_by_vector(self, query_embedding: list[float], k: int = 10, **kwargs: Any):
+        """Perform ANN search by vector."""
+        pass
+
+    def similarity_search_by_text(self, text: str, text_embedder, k: int = 10, **kwargs: Any):
+        """Perform ANN search by text."""
+        pass
 
 
 class AutoModelForRetrieval(object):
