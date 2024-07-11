@@ -230,14 +230,17 @@ def main():
             num_workers=training_args.dataloader_num_workers,
         )
 
-        embeddings = []
-        lookup_indices = []
-        for batch_ids, batch in tqdm(encode_loader):
-            lookup_indices.extend(batch_ids)
-            embed = model.encode(batch)
-            embeddings.append(embed)
+        # embeddings = []
+        # lookup_indices = []
+        # for batch_ids, batch in tqdm(encode_loader):
+        #     lookup_indices.extend(batch_ids)
+        #     embed = model.encode(batch)
+        #     embeddings.append(embed)
+        # embeddings = np.concatenate(embeddings)
 
-        embeddings = np.concatenate(embeddings)
+        embeddings = model.encode(encode_loader)
+        lookup_indices = list(range(len(encode_dataset)))
+
         with open(os.path.join(training_args.output_dir, data_args.encode_save_file), 'wb') as f:
             pickle.dump((embeddings, lookup_indices), f)
 
