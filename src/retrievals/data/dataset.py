@@ -292,6 +292,7 @@ class EncodeDataset(Dataset):
             data_name_or_path = args.data_name_or_path
             dataset_language = args.dataset_language
             dataset_split = args.dataset_split
+            text_key = args.query_key
 
         if isinstance(data_name_or_path, datasets.Dataset):
             self.encode_data = data_name_or_path
