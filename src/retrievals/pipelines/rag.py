@@ -1,21 +1,30 @@
 """RAG pipeline"""
 
+import argparse
 import logging
-import os
-from argparse import ArgumentParser
 from multiprocessing import Pool
 from typing import Any, Callable, Dict, List, Literal, Optional, Tuple, TypeVar, Union
 
 from transformers import AutoModel
 
 from ..tools.file_parser import FileParser
+from ..tools.generator import BaseLLM
+from ..tools.prompts import Prompt
 
 logger = logging.getLogger(__name__)
+logging.basicConfig(
+    format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",
+    datefmt="%m/%d/%Y %H:%M:%S",
+    level=logging.INFO,
+)
+
+llm = BaseLLM()
 
 
-parser = ArgumentParser()
-parser.add_argument('--tokenizer_name', required=False)
-args = parser.parse_args()
+def parse_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--tokenizer_name', required=False)
+    return parser.parse_args()
 
 
 class RAGConfig(object):
@@ -23,51 +32,22 @@ class RAGConfig(object):
         pass
 
 
-class ChatCenter(object):
-    """Model inference"""
+def rag_process(prompt, history, top_k: int = 3):
+    context = retrieval_process(prompt, top_k=top_k)
 
-    def __init__(self):
-        pass
+    prompt_with_context = Prompt.RAG_PROMPT.format(question=prompt, context="\n".join(context))
 
-    def chat(self, query: str, chat_history):
-        return
+    response, history = chat_process(prompt_with_context, history)
+    return
 
 
-class KnowledgeCenter(object):
-    """Knowledge parse, store"""
+def retrieval_process(query, top_k: int = 3):
+    return
 
-    def __init__(self, knowledge_path, loader, spliter, embedder):
-        self.knowledge_path = knowledge_path
-        self.loader = loader
-        self.splitter = spliter
-        self.embedder = embedder
-        self.file_parser = FileParser()
 
-    def init_vector_db(self, file_path: str):
-        for doc in os.listdir(file_path):
-            logger.info(f'Init knowledge center to {self.knowledge_path}, load file: {doc}')
-            document = self.loader(doc)
-            texts = self.splitter.split_documents(document)
-            self.embedder.build_index(texts, path=self.knowledge_path)
-
-    def add_document(self, file_path: str):
-        doc = self.loader.read(file_path)
-        print(doc)
-
-    def _preprocess(self, files: List[str]):
-        pool = Pool(processes=16)
-
-        for idx, file in enumerate(files):
-            if file._type in ['pdf', 'word', 'excel', 'ppt', 'html']:
-                md5 = self.file_parser.md5(file.origin)
-                print(md5)
-                pool.apply_async(self._read_and_save, file)
-        pass
-
-    def _read_and_save(self, file):
-        content, error = self.file_parser.read(file.origin)
-        with open(file.copypath, 'w') as f:
-            f.write(content)
+def chat_process(prompt, history):
+    response, history = llm.chat(prompt, history)
+    return response, history
 
 
 class Session(object):
@@ -76,24 +56,9 @@ class Session(object):
         self.history = history
 
 
-class SimpleRAG(object):
-    def __init__(self):
-        self.knowledge_center = KnowledgeCenter()
-        self.chat_center = ChatCenter
-
-        self.retrieval = None
-
-    def load_knowledge(self):
-        pass
-
-    def add_knowledge(self, file_path: Union[str]):
-        pass
-
-    def chat(self, question: str):
-        pass
-
-
 def main():
+    args = parse_args()
+    print(args)
     return
 
 

@@ -15,6 +15,8 @@ from transformers import (
     Trainer,
 )
 
+from ..models.utils import find_all_linear_names
+
 logger = logging.getLogger(__name__)
 
 PROMPT = (
@@ -160,18 +162,7 @@ def build_model(
 
         lora_alpha = 128
         LORA_DROPOUT = 0.05
-        TARGET_MODULES = [
-            "wqkv",
-            "wo",
-            "gate_up_proj",
-            "w2",
-        ]
-        # TARGET_MODULES = [
-        #     "q_proj",
-        #     "k_proj",
-        #     "v_proj",
-        #     "o_proj",
-        # ]
+        TARGET_MODULES = find_all_linear_names(model)
 
         config = LoraConfig(
             lora_alpha=lora_alpha,

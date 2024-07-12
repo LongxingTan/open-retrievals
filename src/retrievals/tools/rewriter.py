@@ -1,12 +1,15 @@
+import logging
 from abc import ABC, abstractmethod
 
-import numpy as np
+from .generator import BaseLLM
+
+logger = logging.getLogger(__name__)
 
 
 class BaseRewriter(ABC):
     @abstractmethod
     def rewrite(self, query: str) -> str:
-        """rewrite the query"""
+        """Rewrite the query"""
 
 
 class HyDE(BaseRewriter):
@@ -14,11 +17,9 @@ class HyDE(BaseRewriter):
     https://github.com/texttron/hyde/blob/main/src/hyde/hyde.py
     """
 
-    def __init__(self, promptor, generator, encoder, searcher):
-        self.promptor = promptor
-        self.generator = generator
-        self.encoder = encoder
-        self.searcher = searcher
+    def __init__(self, llm: BaseLLM, prompt: str):
+        self.llm = llm
+        self.prompt = prompt
 
     def rewrite(self, query: str):
-        return
+        return self.llm.generate(self.prompt)
