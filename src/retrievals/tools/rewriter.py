@@ -7,7 +7,6 @@ class BaseRewriter(ABC):
     @abstractmethod
     def rewrite(self, query: str) -> str:
         """rewrite the query"""
-        raise NotImplementedError
 
 
 class HyDE(BaseRewriter):

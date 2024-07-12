@@ -1,9 +1,3 @@
-"""
-- support bm25 retrieval
-- dense retrieval
-- web retrieval
-"""
-
 import glob
 import logging
 import os.path
@@ -22,10 +16,11 @@ logger = logging.getLogger(__name__)
 
 
 class BaseRetriever(ABC):
+    """Base class for retrieval."""
+
     @abstractmethod
     def search(self, query: str, top_k: int, batch_size: int = -1) -> str:
         """search the str, return the top list maybe with score"""
-        raise NotImplementedError
 
     def ingest(self, document):
         return
@@ -363,3 +358,17 @@ class EnsembleRetriever(BaseRetriever):
         unique_results.sort()
 
         return unique_results[:top_k]
+
+
+class GraphRetrieval(BaseRetriever):
+    def __init__(self, index_name):
+        super(GraphRetrieval, self).__init__()
+
+    def search(self, query: str, top_k: int, batch_size: int = -1) -> str:
+        pass
+
+    def global_search(self):
+        pass
+
+    def local_search(self):
+        pass

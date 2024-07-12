@@ -1,4 +1,5 @@
 """
+file parser for RAG
 https://github.com/InternLM/HuixiangDou
 """
 
@@ -154,6 +155,8 @@ def process_epub(file_path: str):
 
 
 class FileParser:
+    """File parser class RAG upload file"""
+
     def __init__(self):
         self.image_suffix = ['.jpg', '.jpeg', '.png', '.bmp']
         self.md_suffix = ['.md']

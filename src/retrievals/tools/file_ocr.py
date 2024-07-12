@@ -9,7 +9,9 @@ class OcrCFG:
     ocr_model = 'ppocr'
 
 
-class OCRecognizor(object):
+class OCRecognizer(object):
+    """OCR class for recognize the scanned document"""
+
     def __init__(self, ocr_model='ppocr'):
         if ocr_model == 'ppocr':
             self.ocr_model = PPRecognizer()
@@ -54,7 +56,7 @@ class PreProcessor(ABC):
 
 
 class PostProcessor(ABC):
-    """base post-process"""
+    """Base class for OCR post-processing"""
 
     def __init__(self) -> None:
         pass
