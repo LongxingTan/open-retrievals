@@ -2,6 +2,7 @@
 
 import argparse
 import logging
+import re
 from multiprocessing import Pool
 from typing import Any, Callable, Dict, List, Literal, Optional, Tuple, TypeVar, Union
 
@@ -17,8 +18,6 @@ logging.basicConfig(
     datefmt="%m/%d/%Y %H:%M:%S",
     level=logging.INFO,
 )
-
-llm = BaseLLM()
 
 
 def parse_args():
@@ -45,7 +44,7 @@ def retrieval_process(query, top_k: int = 3):
     return
 
 
-def chat_process(prompt, history):
+def chat_process(llm, prompt, history):
     response, history = llm.chat(prompt, history)
     return response, history
 
@@ -54,6 +53,15 @@ class Session(object):
     def __init__(self, query: str, history: list):
         self.query = query
         self.history = history
+
+
+def extract_citations(bullet):
+    # matches digits or commas
+    matches = re.findall(r"\[([\d, ]+)\]", bullet)
+    ref_ids = []
+    for match in matches:
+        ref_ids += [int(m.strip()) for m in match.split(",") if len(m.strip()) > 0]
+    return ref_ids
 
 
 def main():
