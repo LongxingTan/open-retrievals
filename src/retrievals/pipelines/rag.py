@@ -10,7 +10,7 @@ from transformers import AutoModel
 
 from ..tools.file_parser import FileParser
 from ..tools.generator import BaseLLM
-from ..tools.prompts import Prompt
+from ..tools.prompts import RAG_PROMPT
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(
@@ -30,13 +30,14 @@ class RAGConfig(object):
     def __init__(self):
         pass
 
+    @classmethod
+    def from_dict(
+        cls,
+    ):
+        return RAGConfig()
 
-def rag_process(prompt, history, top_k: int = 3):
-    context = retrieval_process(prompt, top_k=top_k)
 
-    prompt_with_context = Prompt.RAG_PROMPT.format(question=prompt, context="\n".join(context))
-
-    response, history = chat_process(prompt_with_context, history)
+def index_process():
     return
 
 
@@ -44,9 +45,22 @@ def retrieval_process(query, top_k: int = 3):
     return
 
 
+def rerank_process():
+    return
+
+
 def chat_process(llm, prompt, history):
     response, history = llm.chat(prompt, history)
     return response, history
+
+
+def rag_process(prompt, history, top_k: int = 3):
+    context = retrieval_process(prompt, top_k=top_k)
+
+    prompt_with_context = RAG_PROMPT.format(question=prompt, context="\n".join(context))
+
+    response, history = chat_process(prompt_with_context, history)
+    return
 
 
 class Session(object):

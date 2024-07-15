@@ -1,6 +1,7 @@
 """LLM generator"""
 
 from abc import ABC, abstractmethod
+from typing import Generic, Protocol, TypeVar
 
 
 class BaseLLM(ABC):

@@ -1,44 +1,15 @@
-import json
-import logging
-import os
-from typing import Union
-
-logger = logging.getLogger(__name__)
+RAG_PROMPT = """
+"""
 
 
-class Prompt(object):
-    __slots__ = ("template", "_verbose")
+SUMMARIZE_PROMPT = """
+Generating a comprehensive summary of the data provided below.
+Given one or two entities, and a list of descriptions, all related to the same entity or group of entities.
+Please concatenate all of these into a single, comprehensive description.
 
-    def __init__(self, template_name: str = "", verbose: bool = False):
-        self._verbose = verbose
-        if not template_name:
-            # Enforce the default here, so the constructor can be called with '' and will not break.
-            template_name = "alpaca"
-        file_name = os.path.join("templates", f"{template_name}.json")
-        if not os.path.exists(file_name):
-            raise ValueError(f"Can't read {file_name}")
-        with open(file_name) as fp:
-            self.template = json.load(fp)
-        if self._verbose:
-            print(f"Using prompt template {template_name}: {self.template['description']}")
-
-    def generate_prompt(
-        self,
-        instruction: str,
-        input: Union[None, str] = None,
-        label: Union[None, str] = None,
-    ) -> str:
-        # returns the full prompt from instruction and optional input
-        # if a label (=response, =output) is provided, it's also appended.
-        if input:
-            res = self.template["prompt_input"].format(instruction=instruction, input=input)
-        else:
-            res = self.template["prompt_no_input"].format(instruction=instruction)
-        if label:
-            res = f"{res}{label}"
-        if self._verbose:
-            print(res)
-        return res
-
-    def get_response(self, output: str) -> str:
-        return output.split(self.template["response_split"])[1].strip()
+#####
+Entities: {entity_name}
+Description List: {description_list}
+#####
+Output:
+"""

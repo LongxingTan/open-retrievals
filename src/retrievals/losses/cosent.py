@@ -4,8 +4,9 @@ import torch.nn.functional as F
 
 
 class CoSentLoss(nn.Module):
-    def __init__(self):
+    def __init__(self, temperature: float = 0.05):
         super().__init__()
+        self.temperature = temperature
 
     def forward(self, y_true, y_pred):
         # https://github.com/bojone/CoSENT/blob/124c368efc8a4b179469be99cb6e62e1f2949d39/cosent.py
