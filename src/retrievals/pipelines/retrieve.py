@@ -8,7 +8,6 @@ import pickle
 from argparse import ArgumentParser
 
 import numpy as np
-import torch
 
 from ..models.retrieval_auto import AutoModelForRetrieval, FaissRetrieval
 
