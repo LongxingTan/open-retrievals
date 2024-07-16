@@ -28,14 +28,14 @@ def load_pickle(path):
 
 def save_ranking(dists, indices, ranking_file, query_ids):
     """
-    save format: query_id, doc_id, score
+    save format: query_id, doc_id, score, rank
     """
     with open(ranking_file, 'w') as f:
         for qid, score, index in zip(query_ids, dists, indices):
             score_list = [(s, idx) for s, idx in zip(score, index)]
             score_list = sorted(score_list, key=lambda x: x[0], reverse=True)
-            for s, idx in score_list:
-                f.write(f'{qid}\t{idx}\t{s}\n')
+            for rank, (s, idx) in enumerate(score_list, start=1):
+                f.write(f'{qid}\t{idx}\t{s}\t{rank}\n')
 
 
 def retrieve():

@@ -2,30 +2,20 @@ import logging
 from typing import Dict, List, Tuple, Union
 
 
-def mrr(
-    qrels: Dict[str, Dict[str, int]], results: Dict[str, Dict[str, float]], k_values: List[int]
-) -> Dict[str, float]:
-    MRR = {}
+def get_mrr(qid2positive: Dict[str, List[str]], qid2ranking: Dict[str, List[str]], cutoff_rank: int = 10):
+    """
+    qid2positive: {qid: [pos1, pos2]}
+    qid2ranking: {qid: [rank1, rank2, rank3]}
+    """
+    qid2mrr = dict()
 
-    for k in k_values:
-        MRR[f"MRR@{k}"] = 0.0
+    for qid in qid2positive:
+        positives = qid2positive[qid]
+        ranked_doc_ids = qid2ranking[qid]
 
-    k_max, top_hits = max(k_values), {}
-    logging.info("\n")
-
-    for query_id, doc_scores in results.items():
-        top_hits[query_id] = sorted(doc_scores.items(), key=lambda item: item[1], reverse=True)[0:k_max]
-
-    for query_id in top_hits:
-        query_relevant_docs = set([doc_id for doc_id in qrels[query_id] if qrels[query_id][doc_id] > 0])
-        for k in k_values:
-            for rank, hit in enumerate(top_hits[query_id][0:k]):
-                if hit[0] in query_relevant_docs:
-                    MRR[f"MRR@{k}"] += 1.0 / (rank + 1)
-                    break
-
-    for k in k_values:
-        MRR[f"MRR@{k}"] = round(MRR[f"MRR@{k}"] / len(qrels), 5)
-        logging.info("MRR@{}: {:.4f}".format(k, MRR[f"MRR@{k}"]))
-
-    return MRR
+        for rank, doc_id in enumerate(ranked_doc_ids, start=1):
+            if doc_id in positives:
+                if rank <= cutoff_rank:
+                    qid2mrr[qid] = 1.0 / rank
+                break
+    return {f"mrr@{cutoff_rank}": sum(qid2mrr.values()) / len(qid2ranking.keys())}
