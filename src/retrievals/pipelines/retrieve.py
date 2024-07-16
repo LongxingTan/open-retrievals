@@ -54,9 +54,13 @@ def retrieve():
     passage_reps0, passage_lookup0 = load_pickle(index_files[0])
     retriever = FaissRetrieval(passage_reps0)
 
-    lookups = [passage_lookup0]
+    shards = [(passage_reps0, passage_lookup0)]
     for i in range(1, len(index_files)):
         passage_reps, passage_lookup = load_pickle(index_files[i])
+        shards.append((passage_reps, passage_lookup))
+
+    lookups = []
+    for passage_reps, passage_lookup in shards:
         retriever.add(passage_reps)
         lookups += passage_lookup
 
@@ -64,9 +68,10 @@ def retrieve():
     query_reps, query_lookup = load_pickle(args.query_reps)
 
     dists, indices = retriever.search(query_embeddings=query_reps, top_k=args.top_k)
+    doc_ids = np.array([[int(lookups[idx]) for idx in indices] for indices in indices])
     print(indices.shape)
 
-    save_ranking(dists, indices, args.save_ranking_file, query_lookup)
+    save_ranking(dists, doc_ids, args.save_ranking_file, query_lookup)
 
 
 if __name__ == "__main__":

@@ -243,11 +243,11 @@ class FaissRetrieval(BaseRetriever):
         else:
             self.index = corpus_index
 
-    def add(self, corpus_index: Union[np.ndarray, str]):
-        if isinstance(corpus_index, str):
-            logging.info(f'load vector from local: {corpus_index}')
-            corpus_index = torch.load(corpus_index)
-        self.index.add(corpus_index)
+    def add(self, corpus_embed, corpus_ids=None):
+        if corpus_ids:
+            self.index.add_with_ids(corpus_embed, np.array(corpus_ids))
+        else:
+            self.index.add(corpus_embed)
 
     def search(
         self,
