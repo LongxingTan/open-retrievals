@@ -8,11 +8,11 @@ class BaseLLM(ABC):
     """Base class for LLM chat"""
 
     @abstractmethod
-    def generate(self, prompt: str) -> str:
+    def generate(self, prompt: str, max_length: int) -> str:
         """Generate LLM response"""
 
     @abstractmethod
-    async def agenerate(self, prompt: str):
+    async def agenerate(self, prompt: str, max_length: int):
         """Generate LLM response async"""
 
 

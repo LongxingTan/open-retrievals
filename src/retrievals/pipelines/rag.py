@@ -54,8 +54,12 @@ def chat_process(llm, prompt, history):
     return response, history
 
 
-def rag_process(prompt, history, top_k: int = 3):
+def rag_process(prompt, corpus_path, top_k: int = 3):
+    global llm, history
+
     context = retrieval_process(prompt, top_k=top_k)
+
+    context = rerank_process(prompt, context)
 
     prompt_with_context = RAG_PROMPT.format(question=prompt, context="\n".join(context))
 

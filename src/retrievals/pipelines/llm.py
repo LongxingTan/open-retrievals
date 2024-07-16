@@ -210,6 +210,10 @@ def train():
     model = build_model(model_args, training_args)
     data_collator = DataCollatorForSeq2Seq(tokenizer=tokenizer, model=model, label_pad_token_id=IGNORE_INDEX)
 
+    checkpoint = None
+    if training_args.resume_from_checkpoint is not None:
+        checkpoint = training_args.resume_from_checkpoint
+
     trainer = Trainer(
         model=model,
         tokenizer=tokenizer,
@@ -218,7 +222,7 @@ def train():
         eval_dataset=None,
         data_collator=data_collator,
     )
-    trainer.train()
+    trainer.train(resume_from_checkpoint=checkpoint)
     trainer.save_state()
     trainer.save_model(output_dir=training_args.output_dir)
 
