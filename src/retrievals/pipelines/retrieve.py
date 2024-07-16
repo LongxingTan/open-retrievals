@@ -64,12 +64,10 @@ def retrieve():
         retriever.add(passage_reps)
         lookups += passage_lookup
 
-    # query_embed = torch.load(args.query_reps)
     query_reps, query_lookup = load_pickle(args.query_reps)
 
     dists, indices = retriever.search(query_embeddings=query_reps, top_k=args.top_k)
     doc_ids = np.array([[int(lookups[idx]) for idx in indices] for indices in indices])
-    print(indices.shape)
 
     save_ranking(dists, doc_ids, args.save_ranking_file, query_lookup)
 
