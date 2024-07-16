@@ -254,11 +254,12 @@ class FaissRetrieval(BaseRetriever):
         query_embeddings: Union[torch.Tensor, np.ndarray],
         top_k: int = 100,
         batch_size: int = 128,
-        document_lookup: Optional[np.ndarray] = None,
     ) -> Tuple[np.ndarray, np.ndarray]:
         """
         1. Encode queries into dense embeddings
         2. Search through faiss index
+
+        To get document_id: np.array([[int(document_lookup[idx]) for idx in indices] for indices in all_indices])
         """
         query_size = len(query_embeddings)
         assert query_size > 0, 'Please make sure the query_embeddings is not empty'
@@ -275,11 +276,8 @@ class FaissRetrieval(BaseRetriever):
 
         all_scores = np.concatenate(all_scores, axis=0)
         all_indices = np.concatenate(all_indices, axis=0)
-        if not document_lookup:
-            return all_scores, all_indices
-        else:
-            document_ids = np.array([[int(document_lookup[idx]) for idx in indices] for indices in all_indices])
-            return all_scores, document_ids
+
+        return all_scores, all_indices
 
     def combine(self, results: Iterable[Tuple[np.ndarray, np.ndarray]]):
         import faiss
