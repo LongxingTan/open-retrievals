@@ -24,7 +24,7 @@ torchrun --nproc_per_node 1 \
   --dataloader_drop_last True \
   --query_max_length 64 \
   --document_max_length 512 \
-  --train_group_size 4 \
+  --train_group_size 2 \
   --logging_steps 100 \
   --temperature 0.02 \
   --save_total_limit 1 \

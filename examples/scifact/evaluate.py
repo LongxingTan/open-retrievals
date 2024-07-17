@@ -57,5 +57,6 @@ if __name__ == "__main__":
 
     results = get_mrr(qid2positives, qid2ranking, cutoff_rank=10)
     results.update(get_recall(qid2positives, qid2ranking, cutoff_ranks=[10]))
+    results.update(get_ndcg(qid2positives, qid2ranking, cutoff_rank=10))
 
     print(json.dumps(results, indent=4))
