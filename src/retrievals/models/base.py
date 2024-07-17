@@ -11,6 +11,8 @@ logger = logging.getLogger(__name__)
 
 
 class Base(ABC, torch.nn.Module):
+    """Base class for embedding and reranking model"""
+
     def __init__(
         self,
         model: Optional[nn.Module] = None,
@@ -26,7 +28,6 @@ class Base(ABC, torch.nn.Module):
     @abstractmethod
     def forward(self, *args, **kwargs):
         """Pytorch forward method."""
-        raise NotImplementedError
 
     def save_pretrained(self, path: str, safe_serialization: bool = True):
         """

@@ -4,6 +4,8 @@ import torch.nn.functional as F
 
 
 class AutoPooling(nn.Module):
+    """Pooling class to transfer input to 1D embedding"""
+
     def __init__(self, pooling_method: str, **kwargs) -> None:
         super().__init__()
         if pooling_method in ["mean", 'avg', 'average']:

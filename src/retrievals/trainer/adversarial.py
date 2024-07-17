@@ -148,7 +148,7 @@ class AWP:
         adv_param: str = "weight",
         adv_lr: float = 0.0001,
         adv_eps: float = 0.001,
-        start_epoch: int = 0,
+        adv_start_epoch: int = 0,
         adv_step: int = 1,
         scaler=None,
     ):
@@ -157,16 +157,17 @@ class AWP:
         self.adv_param = adv_param
         self.adv_lr = adv_lr
         self.adv_eps = adv_eps
-        self.start_epoch = start_epoch
+        self.adv_start_epoch = adv_start_epoch
         self.adv_step = adv_step
         self.backup = dict()
         self.backup_eps = dict()
         self.scaler = scaler
 
     def attack_backward(self, inputs, criterion, labels, epoch: int):
-        if self.adv_lr == 0 or epoch < self.start_epoch:
-            return None
+        if self.adv_lr == 0 or epoch < self.adv_start_epoch:
+            return
 
+        logger.info('[AWP] start')
         self._save()
         for i in range(self.adv_step):
             self._attack_step()

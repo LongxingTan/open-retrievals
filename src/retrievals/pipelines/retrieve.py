@@ -8,7 +8,6 @@ import pickle
 from argparse import ArgumentParser
 
 import numpy as np
-import torch
 
 from ..models.retrieval_auto import AutoModelForRetrieval, FaissRetrieval
 
@@ -28,14 +27,14 @@ def load_pickle(path):
 
 def save_ranking(dists, indices, ranking_file, query_ids):
     """
-    save format: query_id, doc_id, score
+    save format: query_id, doc_id, score, rank
     """
     with open(ranking_file, 'w') as f:
         for qid, score, index in zip(query_ids, dists, indices):
             score_list = [(s, idx) for s, idx in zip(score, index)]
             score_list = sorted(score_list, key=lambda x: x[0], reverse=True)
-            for s, idx in score_list:
-                f.write(f'{qid}\t{idx}\t{s}\n')
+            for rank, (s, idx) in enumerate(score_list, start=1):
+                f.write(f'{qid}\t{idx}\t{s}\t{rank}\n')
 
 
 def retrieve():
@@ -55,19 +54,22 @@ def retrieve():
     passage_reps0, passage_lookup0 = load_pickle(index_files[0])
     retriever = FaissRetrieval(passage_reps0)
 
-    lookups = [passage_lookup0]
+    shards = [(passage_reps0, passage_lookup0)]
     for i in range(1, len(index_files)):
         passage_reps, passage_lookup = load_pickle(index_files[i])
+        shards.append((passage_reps, passage_lookup))
+
+    lookups = []
+    for passage_reps, passage_lookup in shards:
         retriever.add(passage_reps)
         lookups += passage_lookup
 
-    # query_embed = torch.load(args.query_reps)
     query_reps, query_lookup = load_pickle(args.query_reps)
 
     dists, indices = retriever.search(query_embeddings=query_reps, top_k=args.top_k)
-    print(indices.shape)
+    doc_ids = np.array([[int(lookups[idx]) for idx in indices] for indices in indices])
 
-    save_ranking(dists, indices, args.save_ranking_file, query_lookup)
+    save_ranking(dists, doc_ids, args.save_ranking_file, query_lookup)
 
 
 if __name__ == "__main__":

@@ -633,7 +633,7 @@ class PairwiseModel(AutoModelForEmbedding):
 
 class ListwiseModel(AutoModelForEmbedding):
     """
-    segment_id
+    Listwise model by segment_id
     """
 
     def __init__(

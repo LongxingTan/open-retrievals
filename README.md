@@ -38,7 +38,7 @@
 **Open-retrievals** improve and unify text embedding, retrieval, reranking and RAG.
 - Embedding fine-tuned through point-wise, pairwise, listwise, contrastive learning, and LLM.
 - Reranking fine-tuned with Cross Encoder, ColBERT, and LLM.
-- Easily build enhanced RAG, integrated with Transformers, Langchain, and LlamaIndex.
+- Easily build enhanced modular RAG, integrated with Transformers, Langchain, and LlamaIndex.
 
 | Exp                           | Model                   | Original | Finetuned | Demo                                                                                                                                                                |
 |-------------------------------|-------------------------|----------|-----------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------|

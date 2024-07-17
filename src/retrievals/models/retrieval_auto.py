@@ -1,15 +1,9 @@
-"""
-- support bm25 retrieval
-- dense retrieval
-- web retrieval
-"""
-
 import glob
 import logging
 import os.path
 import time
 from abc import ABC, abstractmethod
-from typing import Iterable, List, Literal, Optional, Tuple, Union
+from typing import Any, Iterable, List, Literal, Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -22,13 +16,22 @@ logger = logging.getLogger(__name__)
 
 
 class BaseRetriever(ABC):
+    """Base class for retrieval."""
+
     @abstractmethod
     def search(self, query: str, top_k: int, batch_size: int = -1) -> str:
         """search the str, return the top list maybe with score"""
-        raise NotImplementedError
 
     def ingest(self, document):
         return
+
+    def similarity_search_by_vector(self, query_embedding: List[float], k: int = 10, **kwargs: Any):
+        """Perform ANN search by vector."""
+        pass
+
+    def similarity_search_by_text(self, text: str, text_embedder, k: int = 10, **kwargs: Any):
+        """Perform ANN search by text."""
+        pass
 
 
 class AutoModelForRetrieval(object):
@@ -240,22 +243,23 @@ class FaissRetrieval(BaseRetriever):
         else:
             self.index = corpus_index
 
-    def add(self, corpus_index: Union[np.ndarray, str]):
-        if isinstance(corpus_index, str):
-            logging.info(f'load vector from local: {corpus_index}')
-            corpus_index = torch.load(corpus_index)
-        self.index.add(corpus_index)
+    def add(self, corpus_embed, corpus_ids=None):
+        if corpus_ids:
+            self.index.add_with_ids(corpus_embed, np.array(corpus_ids))
+        else:
+            self.index.add(corpus_embed)
 
     def search(
         self,
         query_embeddings: Union[torch.Tensor, np.ndarray],
         top_k: int = 100,
         batch_size: int = 128,
-        document_lookup: Optional[np.ndarray] = None,
     ) -> Tuple[np.ndarray, np.ndarray]:
         """
         1. Encode queries into dense embeddings
         2. Search through faiss index
+
+        To get document_id: np.array([[int(document_lookup[idx]) for idx in indices] for indices in all_indices])
         """
         query_size = len(query_embeddings)
         assert query_size > 0, 'Please make sure the query_embeddings is not empty'
@@ -272,11 +276,8 @@ class FaissRetrieval(BaseRetriever):
 
         all_scores = np.concatenate(all_scores, axis=0)
         all_indices = np.concatenate(all_indices, axis=0)
-        if not document_lookup:
-            return all_scores, all_indices
-        else:
-            document_ids = np.array([[int(document_lookup[idx]) for idx in indices] for indices in all_indices])
-            return all_scores, document_ids
+
+        return all_scores, all_indices
 
     def combine(self, results: Iterable[Tuple[np.ndarray, np.ndarray]]):
         import faiss
@@ -355,3 +356,17 @@ class EnsembleRetriever(BaseRetriever):
         unique_results.sort()
 
         return unique_results[:top_k]
+
+
+class GraphRetrieval(BaseRetriever):
+    def __init__(self, index_name):
+        super(GraphRetrieval, self).__init__()
+
+    def search(self, query: str, top_k: int, batch_size: int = -1) -> str:
+        pass
+
+    def global_search(self):
+        pass
+
+    def local_search(self):
+        pass

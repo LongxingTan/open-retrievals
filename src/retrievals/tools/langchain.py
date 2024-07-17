@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 
 class LangchainEmbedding(AutoModelForEmbedding, Embeddings):
-    """
+    """Embedding integrated with Langchain
     Example:
         .. code-block:: python
 
