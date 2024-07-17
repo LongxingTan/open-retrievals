@@ -7,14 +7,12 @@
 sh embed_pairwuse_train.sh
 ```
 
-
 ## Encoding corpus
 - save the pair of `(embedding vector, id)` for each corpus example, support for multiple files
 
 ```shell
 sh encode_corpus.sh
 ```
-
 
 ## Encoding query
 - save the pair of `(embedding vector, id)` for each query example
@@ -29,8 +27,12 @@ sh encode_query.sh
 sh retrieve.sh
 ```
 
-
-Reranking
+## Reranking
 ```shell
 sh rerank.sh
+```
+
+## Evaluation
+```shell
+python evaluate.py
 ```

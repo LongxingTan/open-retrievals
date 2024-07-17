@@ -12,4 +12,5 @@ python -m retrievals.pipelines.embed \
     --per_device_eval_batch_size 256 \
     --data_name_or_path $QUERY \
     --query_key query \
+    --query_max_length 64 \
     --is_query true

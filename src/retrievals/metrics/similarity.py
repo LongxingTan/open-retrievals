@@ -1,8 +1,4 @@
-import logging
-
 import torch
-
-logger = logging.getLogger(__name__)
 
 
 def get_cos_sim(a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:

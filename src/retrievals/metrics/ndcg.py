@@ -4,8 +4,8 @@ from typing import Dict, List
 
 def get_ndcg(qid2positive: Dict[str, List[str]], qid2ranking: Dict[str, List[str]], cutoff_rank: int = 10):
     """
-    qid2positive: {qid: [pos1, pos2]}
-    qid2ranking: {qid: [rank1, rank2, rank3]}
+    qid2positive: {qid: [pos1_doc_id, pos2_doc_id]}
+    qid2ranking: {qid: [rank1_doc_id, rank2_doc_id, rank3_doc_id]}
     """
 
     def dcg(relevance_scores: List[int], cutoff: int) -> float:

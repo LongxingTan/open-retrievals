@@ -37,6 +37,25 @@ class RAGConfig(object):
         return RAGConfig()
 
 
+class SimpleRAG(object):
+    def __init__(self, embedder, retriever, generator, reranker=None):
+        self.embedder = embedder
+        self.retriever = retriever
+        self.reranker = reranker
+        self.generator = generator
+
+    def generate(self, query: str, context: Optional[str] = None):
+        prompt_kwargs = {'context': context, 'query': query}
+        response = self.generator(prompt_kwargs)
+        return response
+
+    @classmethod
+    def from_dict(cls):
+        """Create an instance from previously serialized data"""
+        obj = cls.__new__(cls)
+        return obj
+
+
 def index_process():
     return
 
