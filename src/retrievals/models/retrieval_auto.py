@@ -25,7 +25,7 @@ class BaseRetriever(ABC):
     def ingest(self, document):
         return
 
-    def similarity_search_by_vector(self, query_embedding: list[float], k: int = 10, **kwargs: Any):
+    def similarity_search_by_vector(self, query_embedding: List[float], k: int = 10, **kwargs: Any):
         """Perform ANN search by vector."""
         pass
 
