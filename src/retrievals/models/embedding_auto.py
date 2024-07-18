@@ -689,9 +689,38 @@ class ListwiseModel(AutoModelForEmbedding):
 
     def _unsorted_segment_mean(self, data: torch.Tensor, segment_ids: torch.Tensor, num_segments: int) -> torch.Tensor:
         result_shape = (num_segments, data.size(1))
-        segment_ids = segment_ids.unsqueeze(-1).expand(-1, data.size(1))
+        segment_ids = segment_ids.unsqueeze(-1).expand(-1, data.size(1))  # (batch, num_embedding)
         result = data.new_full(result_shape, 0)  # init empty result tensor
         count = data.new_full(result_shape, 0)
-        result.scatter_add_(0, segment_ids, data)
+        result.scatter_add_(0, segment_ids, data)  # fill the result from data to organized segment result
         count.scatter_add_(0, segment_ids, torch.ones_like(data))
         return result / count.clamp(min=1)
+
+    def _sorted_segment_mean(self, data: torch.Tensor, segment_ids: torch.Tensor, num_segments: int) -> torch.Tensor:
+        """
+        Compute the mean of each segment in data based on sorted segment_ids.
+
+        Args:
+            data (torch.Tensor): Input data tensor of shape (batch_size, num_embedding).
+            segment_ids (torch.Tensor): Sorted segment IDs tensor of shape (batch_size,).
+            num_segments (int): Number of unique segments.
+
+        Returns:
+            torch.Tensor: Tensor of shape (num_segments, num_embedding) containing the mean of each segment.
+        """
+        result = torch.zeros((num_segments, data.size(1)), dtype=data.dtype, device=data.device)
+        count = torch.zeros((num_segments,), dtype=torch.int32, device=data.device)
+
+        start_idx = 0
+        for i in range(num_segments):
+            # Find the range of indices corresponding to the current segment
+            while start_idx < segment_ids.size(0) and segment_ids[start_idx] == i:
+                start_idx += 1
+
+            if start_idx > 0 and segment_ids[start_idx - 1] == i:
+                segment_slice = slice(start_idx - (start_idx - segment_ids[start_idx:].tolist().count(i)), start_idx)
+                result[i] = data[segment_slice].sum(dim=0)
+                count[i] = segment_slice.stop - segment_slice.start
+
+        result /= count.clamp(min=1).unsqueeze(-1)
+        return result

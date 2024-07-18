@@ -553,7 +553,7 @@ class ColBERT(Base):
         self.model.save_pretrained(
             save_directory, state_dict=state_dict_fn(state_dict), safe_serialization=safe_serialization
         )
-        torch.save(state_dict_fn(self.linear.state_dict()), os.path.join(save_directory, 'colbert_linear.pt'))
+        torch.save(state_dict_fn(self.linear.state_dict()), os.path.join(save_directory, 'linear.pt'))
         self.tokenizer.save_pretrained(save_directory)
 
     @classmethod
@@ -570,9 +570,9 @@ class ColBERT(Base):
         model = AutoModel.from_pretrained(model_name_or_path, trust_remote_code=trust_remote_code, **kwargs)
 
         linear_layer = nn.Linear(model.config.hidden_size, colbert_dim, dtype=torch.float32, bias=False)
-        if os.path.exists(path=os.path.join(model_name_or_path, 'colbert_linear.pt')):
+        if os.path.exists(path=os.path.join(model_name_or_path, 'linear.pt')):
             logger.info(f'Loading colbert_linear weight from {model_name_or_path}')
-            colbert_state_dict = torch.load(os.path.join(model_name_or_path, 'colbert_linear.pt'), map_location='cpu')
+            colbert_state_dict = torch.load(os.path.join(model_name_or_path, 'linear.pt'), map_location='cpu')
             linear_layer.load_state_dict(colbert_state_dict)
         else:
             logger.info('Xavier uniform random colbert linear layer')
