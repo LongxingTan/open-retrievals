@@ -510,7 +510,7 @@ class AutoModelForEmbedding(Base):
             model.print_trainable_parameters()
 
         if lora_path is not None:
-            logger.info('Load pretrained with LoRA adapter')
+            logger.info(f'Load pretrained with LoRA adapter {lora_path}')
             from peft import LoraConfig, PeftModel
 
             model = PeftModel.from_pretrained(model, lora_path)

@@ -311,7 +311,8 @@ class EncodeDataset(Dataset):
         self.id_key = id_key
         self.text_key = text_key
         self.instruction = instruction
-        self.args = args
+        if len(instruction) > 0:
+            logger.info(f'Add prefix instruction {instruction}')
 
     def __len__(self):
         return len(self.encode_data)
