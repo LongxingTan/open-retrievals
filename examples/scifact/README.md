@@ -1,6 +1,5 @@
 # scifact
 
-
 | Model                  | mrr@10 | recall@10 | ndcg@10 |
 |------------------------|--------|-----------|---------|
 | bge-base-en-v1.5       | 0.703  | 0.862     | 0.744   |
@@ -9,7 +8,7 @@
 | + **fine-tuning**      | 0.763  | 0.940     | 0.806   |
 
 
-## Fine-tuning Embedding
+## Fine-tuning embedding
 - [scifact data](https://huggingface.co/datasets/Tevatron/scifact)
 - [scifact corpus](https://huggingface.co/datasets/Tevatron/scifact-corpus)
 
