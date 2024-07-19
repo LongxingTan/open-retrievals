@@ -1,5 +1,5 @@
 ENCODE_QUERY_DIR=./query-embeddings
-MODEL_NAME="Qwen/Qwen2-1.5B-Instruct"
+MODEL_NAME="intfloat/e5-mistral-7b-instruct"
 LORA_DIR=./ft_llm_out
 QUERY=Tevatron/scifact/dev
 mkdir -p $ENCODE_QUERY_DIR

@@ -1,5 +1,5 @@
 ENCODE_CORPUS_DIR=./scifact/corpus-embeddings
-MODEL_NAME="Qwen/Qwen2-1.5B-Instruct"
+MODEL_NAME="intfloat/e5-mistral-7b-instruct"
 LORA_DIR=./ft_llm_out
 CORPUS=Tevatron/scifact-corpus
 mkdir -p $ENCODE_CORPUS_DIR
@@ -16,5 +16,5 @@ python -m retrievals.pipelines.embed \
     --data_name_or_path $CORPUS \
     --query_key text \
     --document_instruction "Document: " \
-    --document_max_length 512 \
+    --document_max_length 256 \
     --is_query false

@@ -1,4 +1,4 @@
-MODEL_NAME="Qwen/Qwen2-1.5B-Instruct"
+MODEL_NAME="intfloat/e5-mistral-7b-instruct"
 TRAIN_DATA="Tevatron/scifact"
 OUTPUT_DIR="./scifact/ft_llm_out"
 
@@ -15,14 +15,14 @@ torchrun --nproc_per_node 1 \
   --use_lora True \
   --query_instruction "Retrieve the possible answer for query.\nQuery: " \
   --document_instruction 'Document: ' \
-  --learning_rate 1e-4 \
+  --learning_rate 3e-5 \
   --bf16 \
-  --num_train_epochs 5 \
-  --per_device_train_batch_size 4 \
+  --num_train_epochs 4 \
+  --per_device_train_batch_size 2 \
   --gradient_accumulation_steps 16 \
   --dataloader_drop_last True \
   --query_max_length 64 \
-  --document_max_length 512 \
+  --document_max_length 256 \
   --train_group_size 2 \
   --logging_strategy steps \
   --logging_steps 100 \

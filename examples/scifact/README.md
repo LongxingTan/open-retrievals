@@ -1,10 +1,10 @@
 # scifact
 
 
-| Model                        | mrr@10 | recall@10 | ndcg@10 |
-|------------------------------|--------|-----------|---------|
-| bge-base-en-v1.5 pairwise    | 0.756  | 0.900     | 0.792   |
-| Qwen2-1.5B-Instruct pairwise ||||
+| Model                     | mrr@10 | recall@10 | ndcg@10 |
+|---------------------------|--------|-----------|---------|
+| bge-base-en-v1.5 pairwise | 0.757  | 0.900     | 0.793   |
+| e5-mistral-7b-instruct    | 0.763  | 0.940     | 0.806   |
 
 
 ## Fine-tuning Embedding
@@ -15,6 +15,7 @@
 sh embed_pairwuse_train.sh
 ```
 
+Optional: llm embedding
 ```shell
 sh embed_llm_train.sh
 ```
@@ -27,6 +28,7 @@ sh embed_llm_train.sh
 sh encode_corpus.sh
 ```
 
+Optional: llm encoding
 ```shell
 sh encode_llm_corpus.sh
 ```
@@ -37,6 +39,11 @@ sh encode_llm_corpus.sh
 
 ```shell
 sh encode_query.sh
+```
+
+Optional: llm encoding
+```shell
+sh encode_llm_query.sh
 ```
 
 ## Retrieval
