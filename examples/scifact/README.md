@@ -15,11 +15,20 @@
 sh embed_pairwuse_train.sh
 ```
 
+```shell
+sh embed_llm_train.sh
+```
+
 ## Encoding corpus
 - save the pair of `(embedding vector, id)` for each corpus example, support for multiple files
+- for llm embed encoding, remember to use the same instruction
 
 ```shell
 sh encode_corpus.sh
+```
+
+```shell
+sh encode_llm_corpus.sh
 ```
 
 ## Encoding query

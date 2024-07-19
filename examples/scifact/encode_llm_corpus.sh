@@ -1,16 +1,20 @@
 ENCODE_CORPUS_DIR=./scifact/corpus-embeddings
-MODEL_DIR="./scifact/ft_out"
+MODEL_NAME="Qwen/Qwen2-1.5B-Instruct"
+LORA_DIR=./ft_llm_out
 CORPUS=Tevatron/scifact-corpus
-mkdir $ENCODE_CORPUS_DIR
+mkdir -p $ENCODE_CORPUS_DIR
 
 python -m retrievals.pipelines.embed \
-    --model_name_or_path $MODEL_DIR \
+    --model_name_or_path $MODEL_NAME \
+    --lora_path $LORA_DIR \
+    --pooling_method last \
     --output_dir $ENCODE_CORPUS_DIR \
     --encoding_save_file corpus.pkl \
     --do_encode \
-    --fp16 \
-    --per_device_eval_batch_size 256 \
+    --bf16 \
+    --per_device_eval_batch_size 128 \
     --data_name_or_path $CORPUS \
     --query_key text \
+    --document_instruction "Document: " \
     --document_max_length 512 \
     --is_query false
