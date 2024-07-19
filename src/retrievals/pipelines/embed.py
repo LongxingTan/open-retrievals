@@ -41,6 +41,7 @@ class ModelArguments:
         default=None, metadata={"help": "Where do you want to store the pretrained models downloaded from s3"}
     )
     causal_lm: bool = field(default=False, metadata={'help': "Whether the model is a causal lm or not"})
+    lora_path: Optional[str] = field(default=None, metadata={'help': "Lora adapter save path"})
 
 
 @dataclass
@@ -219,7 +220,7 @@ def main():
             pooling_method=training_args.pooling_method,
             use_lora=training_args.use_lora,
             quantization_config=quantization_config,
-            lora_path=training_args.output_dir,
+            lora_path=model_args.lora_path,
         )
 
         max_length = data_args.query_max_length if data_args.is_query else data_args.document_max_length
@@ -248,7 +249,7 @@ def main():
         embeddings = model.encode(encode_loader)
         lookup_indices = list(range(len(encode_dataset)))
 
-        with open(data_args.encoding_save_file, 'wb') as f:
+        with open(os.path.join(training_args.output_dir, data_args.encoding_save_file), 'wb') as f:
             pickle.dump((embeddings, lookup_indices), f)
 
 
