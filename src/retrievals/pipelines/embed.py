@@ -219,7 +219,7 @@ def main():
             pooling_method=training_args.pooling_method,
             use_lora=training_args.use_lora,
             quantization_config=quantization_config,
-            lora_path=model_args.output_dir,
+            lora_path=training_args.output_dir,
         )
 
         max_length = data_args.query_max_length if data_args.is_query else data_args.document_max_length
