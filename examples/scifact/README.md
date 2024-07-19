@@ -1,8 +1,16 @@
 # scifact
+
+
+| Model                        | mrr@10 | recall@10 | ndcg@10 |
+|------------------------------|--------|-----------|---------|
+| bge-base-en-v1.5 pairwise    | 0.756  | 0.900     | 0.792   |
+| Qwen2-1.5B-Instruct pairwise ||||
+
+
+## Fine-tuning Embedding
 - [scifact data](https://huggingface.co/datasets/Tevatron/scifact)
 - [scifact corpus](https://huggingface.co/datasets/Tevatron/scifact-corpus)
 
-## Fine-tuning Embedding
 ```shell
 sh embed_pairwuse_train.sh
 ```
@@ -36,12 +44,4 @@ sh rerank.sh
 - download the `dev_qrels.txt` from [dropbox](https://www.dropbox.com/s/lpq8mfynqzsuyy5/dev_qrels.txt)
 ```shell
 python evaluate.py
-```
-
-```
-{
-    "mrr@10": 0.7567949735449735,
-    "recall@10": 0.9002222222222223,
-    "ndcg@10": 0.7927846698591741
-}
 ```

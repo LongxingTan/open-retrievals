@@ -40,7 +40,7 @@
 - 支持定制化RAG，支持在Transformers、Langchain、LlamaIndex中便捷使用微调后的模型
 
 | 实验                  | 模型                      | 尺寸| 原分数 | 微调分数   | Demo代码                                                                                                                           |
-|-----------------------|-------------------------|----|-------|-----------|-------------------------------------------------------------------------------------------------------------------------------------|
+|----------------------|-------------------------|----|-------|-----------|-------------------------------------------------------------------------------------------------------------------------------------|
 | pairwise微调**向量**   | bge-base-zh-v1.5        | -  | 0.657 | **0.703** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/17KXe2lnNRID-HiVvMtzQnONiO74oGs91?usp=sharing) |
 | 大模型LoRA微调**向量**  | Qwen2-1.5B-Instruct     | -  | 0.546 | **0.694** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1jj1kBQWFcuQ3a7P9ttnl1hgX7H8WA_Za?usp=sharing) |
 | cross encoder**重排** | bge-reranker-base       | -  | 0.666 | **0.706** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1QvbUkZtG56SXomGYidwI4RQzwODQrWNm?usp=sharing) |
