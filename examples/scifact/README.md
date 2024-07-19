@@ -1,10 +1,12 @@
 # scifact
 
 
-| Model                     | mrr@10 | recall@10 | ndcg@10 |
-|---------------------------|--------|-----------|---------|
-| bge-base-en-v1.5 pairwise | 0.757  | 0.900     | 0.793   |
-| e5-mistral-7b-instruct    | 0.763  | 0.940     | 0.806   |
+| Model                  | mrr@10 | recall@10 | ndcg@10 |
+|------------------------|--------|-----------|---------|
+| bge-base-en-v1.5       | 0.703  | 0.862     | 0.744   |
+| + **fine-tuning**      | 0.757  | 0.900     | 0.793   |
+| e5-mistral-7b-instruct | 0.589  | 0.748     | 0.630   |
+| + **fine-tuning**      | 0.763  | 0.940     | 0.806   |
 
 
 ## Fine-tuning Embedding
