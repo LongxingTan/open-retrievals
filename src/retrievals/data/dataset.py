@@ -312,7 +312,7 @@ class EncodeDataset(Dataset):
         self.text_key = text_key
         self.instruction = instruction
         if len(instruction) > 0:
-            logger.info(f'Add prefix instruction {instruction}')
+            logger.info(f'Add prefix instruction: {self.instruction}')
 
     def __len__(self):
         return len(self.encode_data)
