@@ -293,6 +293,7 @@ class EncodeDataset(Dataset):
             dataset_language = args.dataset_language
             dataset_split = args.dataset_split
             text_key = args.query_key
+            instruction = args.query_instruction or args.document_instruction or instruction
 
         if isinstance(data_name_or_path, datasets.Dataset):
             self.encode_data = data_name_or_path
@@ -310,7 +311,8 @@ class EncodeDataset(Dataset):
         self.id_key = id_key
         self.text_key = text_key
         self.instruction = instruction
-        self.args = args
+        if len(instruction) > 0:
+            logger.info(f'Add prefix instruction: {self.instruction}')
 
     def __len__(self):
         return len(self.encode_data)
@@ -318,6 +320,7 @@ class EncodeDataset(Dataset):
     def __getitem__(self, item) -> [str, BatchEncoding]:
         if self.id_key is not None:
             text_id, text = (self.encode_data[item][f] for f in [self.id_key, self.text_key])
+            text = self.instruction + text
             encoded_text = self.tokenizer.encode_plus(
                 text,
                 max_length=self.max_length,
@@ -328,6 +331,7 @@ class EncodeDataset(Dataset):
             return text_id, encoded_text
         else:
             text = self.encode_data[item][self.text_key]
+            text = self.instruction + text
             encoded_text = self.tokenizer.encode_plus(
                 text,
                 max_length=self.max_length,

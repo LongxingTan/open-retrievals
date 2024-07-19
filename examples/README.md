@@ -1,13 +1,15 @@
 # Open-Retrievals examples
 
-## Basic Usage
-
 - [embedding-pairwise finetune](./embedding_pairwise_finetune.py)
 - [embedding-llm pairwise finetune](./embedding_llm_finetune.py)
 - [rerank-cross encoder](./rerank_cross_encoder.py)
 - [rerank-colbert](./rerank_colbert.py)
 - [rerank-llm finetune](rerank_llm_finetune.py)
 - [RAG with Langchain](./rag_langchain_demo.py)
+
+Check the whole pipeline
+- [t2-ranking dataset](./t2_ranking/README.md)
+- [scifact dataset](./scifact/README.md)
 
 
 ## Embedding

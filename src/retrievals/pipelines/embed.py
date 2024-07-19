@@ -41,6 +41,7 @@ class ModelArguments:
         default=None, metadata={"help": "Where do you want to store the pretrained models downloaded from s3"}
     )
     causal_lm: bool = field(default=False, metadata={'help': "Whether the model is a causal lm or not"})
+    lora_path: Optional[str] = field(default=None, metadata={'help': "Lora adapter save path"})
 
 
 @dataclass
@@ -68,7 +69,7 @@ class DataArguments:
     positive_key: str = field(default='positive')
     negative_key: str = field(default='negative')
     is_query: bool = field(default=False)
-    encode_save_file: str = field(default='embed.pkl')
+    encoding_save_file: str = field(default='embed.pkl')
 
     def __post_init__(self):
         if self.data_name_or_path is not None:
@@ -157,13 +158,14 @@ def main():
     else:
         quantization_config = None
 
-    model = AutoModelForEmbedding.from_pretrained(
-        model_name_or_path=model_args.model_name_or_path,
-        pooling_method=training_args.pooling_method,
-        use_lora=training_args.use_lora,
-        quantization_config=quantization_config,
-    )
     if training_args.do_train:
+        model = AutoModelForEmbedding.from_pretrained(
+            model_name_or_path=model_args.model_name_or_path,
+            pooling_method=training_args.pooling_method,
+            use_lora=training_args.use_lora,
+            quantization_config=quantization_config,
+        )
+
         if training_args.loss_fn == 'infonce':
             loss_fn = InfoNCE(
                 nn.CrossEntropyLoss(label_smoothing=0.0),
@@ -213,6 +215,14 @@ def main():
             tokenizer.save_pretrained(training_args.output_dir)
 
     if training_args.do_encode:
+        model = AutoModelForEmbedding.from_pretrained(
+            model_name_or_path=model_args.model_name_or_path,
+            pooling_method=training_args.pooling_method,
+            use_lora=training_args.use_lora,
+            quantization_config=quantization_config,
+            lora_path=model_args.lora_path,
+        )
+
         max_length = data_args.query_max_length if data_args.is_query else data_args.document_max_length
         logger.info(f'Encoding will be saved in {training_args.output_dir}')
 
@@ -239,7 +249,7 @@ def main():
         embeddings = model.encode(encode_loader)
         lookup_indices = list(range(len(encode_dataset)))
 
-        with open(os.path.join(training_args.output_dir, data_args.encode_save_file), 'wb') as f:
+        with open(os.path.join(training_args.output_dir, data_args.encoding_save_file), 'wb') as f:
             pickle.dump((embeddings, lookup_indices), f)
 
 

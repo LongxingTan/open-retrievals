@@ -4,6 +4,7 @@ retrieve: one query match with top_k document: [{'id': 'doc_id', 'similarity': 0
 
 import glob
 import logging
+import os
 import pickle
 from argparse import ArgumentParser
 
@@ -29,6 +30,8 @@ def save_ranking(dists, indices, ranking_file, query_ids):
     """
     save format: query_id, doc_id, score, rank
     """
+    os.makedirs(os.path.dirname(ranking_file), exist_ok=True)
+
     with open(ranking_file, 'w') as f:
         for qid, score, index in zip(query_ids, dists, indices):
             score_list = [(s, idx) for s, idx in zip(score, index)]

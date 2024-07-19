@@ -2,7 +2,6 @@ MODEL_NAME="BAAI/bge-base-en-v1.5"
 TRAIN_DATA="Tevatron/scifact"
 OUTPUT_DIR="./scifact/ft_out"
 
-
 torchrun --nproc_per_node 1 \
   -m retrievals.pipelines.embed \
   --output_dir $OUTPUT_DIR \
