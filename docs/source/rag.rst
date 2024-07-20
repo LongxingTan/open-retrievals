@@ -105,6 +105,9 @@ Enhance RAG Performance
 * Meta data of documents
 
 
+Graph RAG
+-------------------
+
 
 pdf parse
 --------------

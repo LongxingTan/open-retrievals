@@ -124,5 +124,5 @@ offline hard mining
 online hard mining
 
 
-Ensemble embedding
-~~~~~~~~~~~~~~~~~~~~~~
+Matryoshka Representation Learning
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
