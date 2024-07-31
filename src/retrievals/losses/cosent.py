@@ -14,7 +14,7 @@ class CoSentLoss(nn.Module):
         y_true = (y_true[:, None] < y_true[None, :]).float()
         y_pred = F.normalize(y_pred, p=2, dim=1)
         y_pred = torch.sum(y_pred[::2] * y_pred[1::2], dim=1) * 20
-        y_pred = y_pred[:, None] - y_pred[None, :]
+        y_pred = y_pred[:, None] - y_pred[None, :]  # 所有位置两两之间余弦的差值
         y_pred = y_pred - (1 - y_true) * 1e12
         y_pred = y_pred.view(-1)
         y_pred = torch.cat([torch.tensor([0.0]), y_pred], dim=0)

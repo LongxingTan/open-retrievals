@@ -1,3 +1,7 @@
+"""
+https://arxiv.org/abs/2002.10857
+"""
+
 from typing import Optional
 
 import torch

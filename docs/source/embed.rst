@@ -126,3 +126,10 @@ online hard mining
 
 Matryoshka Representation Learning
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+Contrastive loss
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+cosent loss
+- similar to circle loss, but with cosine
