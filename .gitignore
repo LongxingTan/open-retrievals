@@ -82,7 +82,7 @@ coverage.xml
 .hypothesis/
 .pytest_cache/
 
-# yuetan
+# specific
 **/nohup.out
 /reference/*
 /examples/data/*
@@ -92,12 +92,7 @@ coverage.xml
 /data/*.zip
 /data/raw/*
 /data/web/*
-/weights/scaler.pkl
-/weights/saved_model.pb
-/weights/variables/*
-/weights/checkpoint
-/weights/checkpoint.data-00000-of-00001
-/weights/checkpoint.index
+/weights/*
 /conda/*
 **/.pdf
 /encode.py
