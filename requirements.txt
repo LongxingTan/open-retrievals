@@ -2,6 +2,7 @@ numpy<=1.26.0
 torch
 transformers
 accelerator
+peft
 datasets
 faiss-cpu<=1.8.0
 scikit-learn
