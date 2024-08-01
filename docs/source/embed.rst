@@ -124,5 +124,12 @@ offline hard mining
 online hard mining
 
 
-Ensemble embedding
-~~~~~~~~~~~~~~~~~~~~~~
+Matryoshka Representation Learning
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+Contrastive loss
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+cosent loss
+- similar to circle loss, but with cosine

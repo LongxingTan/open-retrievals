@@ -42,6 +42,10 @@ class Base(ABC, torch.nn.Module):
     def gradient_checkpointing_enable(self, gradient_checkpointing_kwargs=None):
         self.model.gradient_checkpointing_enable(gradient_checkpointing_kwargs=gradient_checkpointing_kwargs)
 
+    def resize_token_embeddings(self, new_num_tokens: Optional = None, pad_to_multiple_of: Optional = None):
+        # add new, random embeddings for the new tokens
+        self.model.resize_token_embeddings(new_num_tokens, pad_to_multiple_of)
+
     def push_to_hub(self, hub_model_id: str, private: bool = True, **kwargs):
         """push model to hub
 

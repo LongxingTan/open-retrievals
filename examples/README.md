@@ -7,7 +7,7 @@
 - [rerank-llm finetune](rerank_llm_finetune.py)
 - [RAG with Langchain](./rag_langchain_demo.py)
 
-Check the whole pipeline
+Check the whole pipeline examples
 - [t2-ranking dataset](./t2_ranking/README.md)
 - [scifact dataset](./scifact/README.md)
 
