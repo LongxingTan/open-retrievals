@@ -1,4 +1,4 @@
-"""eval for embedding model"""
+"""Evaluation of embedding model"""
 
 import argparse
 import functools

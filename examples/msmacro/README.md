@@ -7,6 +7,10 @@
 sh download_data.sh
 ```
 
+## Prepare data
+```shell
+python prepare_data.py
+```
 
 
 ## Evaluation

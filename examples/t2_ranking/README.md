@@ -18,28 +18,25 @@ python prepare_t2ranking_data.py
 ## 2. Finetune embedding
 
 ```shell
-sh pairwise_embed_train.sh
+sh embed_pairwise_train.sh
 ```
 
-## Indexing
-Encode corpus
 ```shell
-sh encode_corpus.sh
+sh embed_llm_train.sg
 ```
 
-Encode Query
-```shell
-sh encode_query.sh
-```
-
-## Retrieve
-```shell
-sh retrieve.sh
-```
 
 ## Rerank
 ```shell
-sh rerank.sh
+sh rerank_cross_encoder.sh
+```
+
+```shell
+sh rerank_colbert.sh
+```
+
+```shell
+sh rerank_llm.sh
 ```
 
 ## Evaluate
