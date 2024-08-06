@@ -1,0 +1,1 @@
+from optimum.onnxruntime import ORTModelForFeatureExtraction
