@@ -6,13 +6,7 @@ from transformers import (
     get_cosine_schedule_with_warmup,
 )
 
-from retrievals import (
-    AutoModelForRanking,
-    ColBERT,
-    ColBertCollator,
-    RerankTrainer,
-    RetrievalTrainDataset,
-)
+from retrievals import ColBERT, ColBertCollator, RerankTrainer, RetrievalTrainDataset
 from retrievals.losses import ColbertLoss
 
 transformers.logging.set_verbosity_error()

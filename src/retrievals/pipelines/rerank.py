@@ -59,8 +59,9 @@ class DataArguments:
     data_name_or_path: str = field(default=None, metadata={"help": "Path to corpus"})
     train_group_size: int = field(default=8)
     unfold_each_positive: bool = field(default=False)
+    query_max_length: int = field(default=64)
     max_length: int = field(
-        default=512,
+        default=256,
         metadata={
             "help": "The maximum total input sequence length after tokenization for input text. Sequences longer "
             "than this will be truncated, sequences shorter will be padded."
@@ -175,7 +176,7 @@ def main():
         )
         data_collator = ColBertCollator(
             tokenizer,
-            query_max_length=128,
+            query_max_length=data_args.query_max_length,
             document_max_length=data_args.max_length,
             positive_key=data_args.positive_key,
             negative_key=data_args.negative_key,
