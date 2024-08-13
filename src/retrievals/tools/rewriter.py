@@ -1,3 +1,5 @@
+"""Rewriter of query"""
+
 import logging
 from abc import ABC, abstractmethod
 

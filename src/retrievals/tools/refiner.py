@@ -1,4 +1,5 @@
-import json
+"""Refiner to summarize the query"""
+
 import logging
 from abc import ABC, abstractmethod
 from typing import Optional, Union

@@ -1,3 +1,5 @@
+"""Some default prompts"""
+
 RAG_PROMPT = """
 """
 
