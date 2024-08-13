@@ -7,8 +7,11 @@ from src.retrievals.losses.cosent import CoSentLoss
 
 class CoSentLossTest(TestCase):
     def test_forward(self):
-        y_true = torch.randint(0, 2, (8, 1)).float()
-        y_pred = torch.randn(8, 10)
+        embed1 = torch.rand(2, 11)
+        embed2 = torch.rand(2, 11)
+        labels = torch.tensor([[1, 0], [0, 1]], dtype=torch.float32)
+
         loss_fn = CoSentLoss()
-        loss = loss_fn(y_true, y_pred)
+        loss = loss_fn(embed1, embed2, labels)
         print(loss)
+        self.assertTrue(loss.item() >= 0, "Loss should be non-negative")
