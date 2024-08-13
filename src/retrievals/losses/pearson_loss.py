@@ -3,7 +3,7 @@ import torch.nn as nn
 
 
 class PearsonLoss(nn.Module):
-    def __init__(self):
+    def __init__(self, **kwargs):
         super(PearsonLoss, self).__init__()
 
     def forward(self, x: torch.Tensor, y: torch.Tensor):

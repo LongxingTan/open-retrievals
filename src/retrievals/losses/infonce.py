@@ -25,6 +25,7 @@ class InfoNCE(nn.Module):
         temperature: float = 0.05,
         use_inbatch_negative: bool = True,
         negative_mode: Literal['paired', 'unpaired'] = "unpaired",
+        **kwargs
     ):
         """
         if not normalized: temperature = 1.0, reset temperature = 1.0 due to using inner product to compute similarity

@@ -22,6 +22,7 @@ class TripletLoss(nn.Module):
         margin: float = 0.0,
         negatives_cross_device: bool = False,
         batch_hard: bool = False,
+        **kwargs
     ):
         super().__init__()
         self.temperature = temperature

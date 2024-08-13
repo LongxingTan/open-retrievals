@@ -4,7 +4,7 @@ import torch.nn.functional as F
 
 
 class CoSentLoss(nn.Module):
-    def __init__(self, temperature: float = 0.05):
+    def __init__(self, temperature: float = 0.05, **kwargs):
         super().__init__()
         self.temperature = temperature
 

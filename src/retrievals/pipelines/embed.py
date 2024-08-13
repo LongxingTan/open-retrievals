@@ -19,7 +19,7 @@ from ..data import (
     RetrievalTrainDataset,
     TripletCollator,
 )
-from ..losses import InfoNCE, SimCSE, TripletLoss
+from ..losses import AutoLoss, InfoNCE, SimCSE, TripletLoss
 from ..models.embedding_auto import AutoModelForEmbedding
 from ..trainer import RetrievalTrainer
 
@@ -166,18 +166,13 @@ def main():
             quantization_config=quantization_config,
         )
 
-        if training_args.loss_fn == 'infonce':
-            loss_fn = InfoNCE(
-                nn.CrossEntropyLoss(label_smoothing=0.0),
-                use_inbatch_negative=training_args.use_inbatch_negative,
-                temperature=training_args.temperature,
-            )
-        elif training_args.loss_fn == 'simcse':
-            loss_fn = SimCSE(temperature=training_args.temperature)
-        elif training_args.loss_fn == 'triplet':
-            loss_fn = (TripletLoss(training_args.temperature),)
-        else:
-            raise ValueError
+        loss_fn = AutoLoss(
+            loss_name=training_args.loss_fn,
+            loss_kwargs={
+                'use_inbatch_negative': training_args.use_inbatch_negative,
+                'temperature': training_args.temperature,
+            },
+        )
 
         model = model.set_train_type(
             "pairwise",

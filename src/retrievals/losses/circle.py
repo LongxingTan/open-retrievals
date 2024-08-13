@@ -9,7 +9,7 @@ import torch.nn as nn
 
 
 class MultiLabelCircleLoss(nn.Module):
-    def __init__(self, reduction='mean'):
+    def __init__(self, reduction='mean', **kwargs):
         super().__init__()
         self.reduction = reduction
         self.inf = 1e12
