@@ -28,5 +28,5 @@ class AutoLoss(nn.Module):
         elif loss_name == 'pearson':
             self.loss_fn = PearsonLoss(**loss_kwargs)
 
-    def forward(self, **kwargs):
-        return self.loss_fn(**kwargs)
+    def forward(self, *args, **kwargs):
+        return self.loss_fn(*args, **kwargs)
