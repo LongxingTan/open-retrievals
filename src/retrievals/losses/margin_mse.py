@@ -1,7 +1,7 @@
-from typing import Dict, Iterable, List, Optional, Tuple, Union
+from typing import Dict, Iterable, List, Optional
 
 import torch
-from torch import Tensor, nn
+from torch import nn
 
 
 class MarginMSELoss(nn.Module):

@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 class CosineSimilarity(nn.Module):
     def __init__(self, temperature: float = 0.05, dynamic_temperature=False, **kwargs):
         """
-        Temperature should be smaller than 1.0 when use cosine similarity (normlized=True). Recommend to set it 0.01-0.1
+        Temperature should be smaller than 1 when use cosine similarity (normalized=True). Recommend to set it 0.01-0.1
         """
         super().__init__()
         self.temperature = temperature
