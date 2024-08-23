@@ -111,7 +111,9 @@ class RetrievalTrainDataset(Dataset):
             return self.samples[item]
 
         data = self.dataset[item]
-        query = self.query_instruction + data[self.query_key]
+        query = data[self.query_key]
+        if self.query_instruction:
+            query = self.query_instruction + query
 
         if isinstance(data[self.positive_key], (list, tuple)):
             if isinstance(data[self.positive_key][0], dict):
