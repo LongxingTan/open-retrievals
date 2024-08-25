@@ -16,6 +16,11 @@ python prepare_retrieve_data.py --input ./biencoder-nq-train.json --output ./nq-
 sh embed_pairwise_train.sh
 ```
 
+If with nohup
+```shell
+nohup sh embed_pairwise_train.sh > output.log 2>&1 &
+```
+
 ## 4. Retrieval
 
 Download data

@@ -72,6 +72,10 @@ class DataArguments:
     encoding_save_file: str = field(default='embed.pkl')
 
     def __post_init__(self):
+        # self.data_name_or_path = 'json'
+        self.dataset_split = 'train'
+        self.dataset_language = 'default'
+
         if self.data_name_or_path is not None:
             if not os.path.isfile(self.data_name_or_path) and not os.path.isdir(self.data_name_or_path):
                 info = self.data_name_or_path.split('/')
@@ -80,10 +84,6 @@ class DataArguments:
                 self.dataset_language = 'default'
                 if ':' in self.data_name_or_path:
                     self.data_name_or_path, self.dataset_language = self.data_name_or_path.split(':')
-        else:
-            self.data_name_or_path = 'json'
-            self.dataset_split = 'train'
-            self.dataset_language = 'default'
 
 
 @dataclass

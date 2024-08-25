@@ -292,8 +292,8 @@ class EncodeDataset(Dataset):
     ):
         if args:
             data_name_or_path = args.data_name_or_path
-            dataset_language = args.dataset_language
-            dataset_split = args.dataset_split
+            dataset_language = args.dataset_language if 'dataset_language' in args else 'default'
+            dataset_split = args.dataset_split if 'dataset_split' in args else 'train'
             text_key = args.query_key
             instruction = args.query_instruction or args.document_instruction or instruction
 

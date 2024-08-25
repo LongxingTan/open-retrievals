@@ -1,4 +1,4 @@
-ENCODE_CORPUS_DIR=./scifact/corpus-embeddings
+ENCODE_CORPUS_DIR="./scifact/corpus-embeddings"
 MODEL_DIR="./scifact/ft_out"
 CORPUS=Tevatron/scifact-corpus
 mkdir $ENCODE_CORPUS_DIR

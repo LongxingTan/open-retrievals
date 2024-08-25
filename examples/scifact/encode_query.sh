@@ -1,4 +1,4 @@
-ENCODE_QUERY_DIR=./scifact/query-embeddings
+ENCODE_QUERY_DIR="./scifact/query-embeddings"
 MODEL_DIR="./scifact/ft_out"
 QUERY=Tevatron/scifact/dev
 mkdir $ENCODE_QUERY_DIR
