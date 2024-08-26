@@ -223,7 +223,7 @@ def main():
         logger.info(f'Encoding will be saved in {training_args.output_dir}')
 
         encode_dataset = EncodeDataset(args=data_args, tokenizer=tokenizer, max_length=max_length, text_key='text')
-        logger.info(f"Number of train samples: {len(encode_dataset)}")
+        logger.info(f"Number of train samples: {len(encode_dataset)}, max_length: {max_length}")
 
         encode_loader = DataLoader(
             encode_dataset,
@@ -242,7 +242,7 @@ def main():
         #     embeddings.append(embed)
         # embeddings = np.concatenate(embeddings)
 
-        embeddings = model.encode(encode_loader)
+        embeddings = model.encode(encode_loader, show_progress_bar=True, convert_to_numpy=True)
         lookup_indices = list(range(len(encode_dataset)))
 
         with open(os.path.join(training_args.output_dir, data_args.encoding_save_file), 'wb') as f:
