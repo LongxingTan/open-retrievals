@@ -52,9 +52,10 @@ def retrieve():
     args = parser.parse_args()
 
     index_files = glob.glob(args.passage_reps)
-    logger.info(f"Pattern match found {len(index_files)} files; loading them into index.")
+    logger.info(f"Pattern match found {len(index_files)} files for corpus; loading them into index.")
 
     passage_reps0, passage_lookup0 = load_pickle(index_files[0])
+    logger.info(f"Loaded info vector embedding of shape {passage_reps0.shape[1]}")
     retriever = FaissRetrieval(passage_reps0)
 
     shards = [(passage_reps0, passage_lookup0)]
