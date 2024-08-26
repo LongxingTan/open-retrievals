@@ -229,7 +229,7 @@ class AutoModelForEmbedding(Base):
         if convert_to_numpy:
             all_embeddings = np.concatenate([emb.numpy() for emb in all_embeddings], axis=0)
         else:
-            all_embeddings = torch.concat(all_embeddings)
+            all_embeddings = torch.concat(all_embeddings, dim=0)
         return all_embeddings
 
     def encode_from_text(
