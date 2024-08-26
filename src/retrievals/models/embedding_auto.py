@@ -221,9 +221,13 @@ class AutoModelForEmbedding(Base):
                     embeddings = embeddings.detach()
                     if normalize_embeddings:
                         embeddings = torch.nn.functional.normalize(embeddings, p=2, dim=1)
-                    all_embeddings.append(embeddings)
+
+                    # to avoid oom problems on gpu with large datasets
+                    if convert_to_numpy:
+                        embeddings = embeddings.cpu()
+                    all_embeddings.extend(embeddings)
         if convert_to_numpy:
-            all_embeddings = np.concatenate([emb.cpu().numpy() for emb in all_embeddings], axis=0)
+            all_embeddings = np.concatenate([emb.numpy() for emb in all_embeddings], axis=0)
         else:
             all_embeddings = torch.concat(all_embeddings)
         return all_embeddings
@@ -234,9 +238,9 @@ class AutoModelForEmbedding(Base):
         is_query: bool = False,
         batch_size: int = 16,
         show_progress_bar: bool = None,
-        output_value: str = "sentence_embedding",
-        convert_to_numpy: bool = False,
-        convert_to_tensor: bool = True,
+        output_value: Literal["sentence_embedding", "token_embeddings", None] = "sentence_embedding",
+        convert_to_numpy: bool = True,
+        convert_to_tensor: bool = False,
         device: str = None,
         normalize_embeddings: bool = False,
     ) -> Union[List[torch.Tensor], np.ndarray, torch.Tensor]:
