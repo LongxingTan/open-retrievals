@@ -36,18 +36,18 @@ tar -xvf wikipedia-corpus.tar.gz
 
 Build corpus index
 ```shell
-
+sh encode_corpus.sh
 ```
 
 Build query index
 ```shell
-
+sh encode_query.sh
 ```
 
 Search
 
-```python
-
+```shell
+sh retrieve.sh
 ```
 
 ## 5. Evaluation
