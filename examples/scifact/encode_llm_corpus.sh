@@ -1,6 +1,6 @@
-ENCODE_CORPUS_DIR=./scifact/corpus-embeddings
+ENCODE_CORPUS_DIR="./scifact/corpus-embeddings"
 MODEL_NAME="intfloat/e5-mistral-7b-instruct"
-LORA_DIR=./ft_llm_out
+LORA_DIR="./ft_llm_out"
 CORPUS=Tevatron/scifact-corpus
 mkdir -p $ENCODE_CORPUS_DIR
 

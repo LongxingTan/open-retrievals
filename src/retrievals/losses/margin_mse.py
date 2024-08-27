@@ -1,14 +1,11 @@
-from typing import Dict, Iterable, List, Optional, Tuple, Union
+from typing import Dict, Iterable, List, Optional
 
 import torch
-from torch import Tensor, nn
+from torch import nn
 
 
 class MarginMSELoss(nn.Module):
-    def __init__(
-        self,
-        scale: float = 1.0,
-    ):
+    def __init__(self, scale: float = 1.0, **kwargs):
         super(MarginMSELoss, self).__init__()
         self.scale = scale
         self.criterion = nn.MSELoss()

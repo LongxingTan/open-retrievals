@@ -25,6 +25,7 @@ class ArcFaceAdaptiveMarginLoss(nn.Module):
         margin: float = 0.50,
         easy_margin: bool = False,
         eps: float = 0.0,
+        **kwargs
     ) -> None:
         super().__init__()
         self.in_features = in_features

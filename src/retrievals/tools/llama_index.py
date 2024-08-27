@@ -1,3 +1,5 @@
+"""Integration with LlamaIndex"""
+
 from typing import Any, Dict, List, Optional
 
 from llama_index.bridge.pydantic import Field, PrivateAttr

@@ -19,7 +19,7 @@ from ..data import (
     RetrievalTrainDataset,
     TripletCollator,
 )
-from ..losses import InfoNCE, SimCSE, TripletLoss
+from ..losses import AutoLoss, InfoNCE, SimCSE, TripletLoss
 from ..models.embedding_auto import AutoModelForEmbedding
 from ..trainer import RetrievalTrainer
 
@@ -72,17 +72,18 @@ class DataArguments:
     encoding_save_file: str = field(default='embed.pkl')
 
     def __post_init__(self):
+        # self.data_name_or_path = 'json'
+        self.dataset_split = 'train'
+        self.dataset_language = 'default'
+
         if self.data_name_or_path is not None:
-            info = self.data_name_or_path.split('/')
-            self.dataset_split = info[-1] if len(info) == 3 else 'train'
-            self.data_name_or_path = "/".join(info[:-1]) if len(info) == 3 else '/'.join(info)
-            self.dataset_language = 'default'
-            if ':' in self.data_name_or_path:
-                self.data_name_or_path, self.dataset_language = self.data_name_or_path.split(':')
-        else:
-            self.data_name_or_path = 'json'
-            self.dataset_split = 'train'
-            self.dataset_language = 'default'
+            if not os.path.isfile(self.data_name_or_path) and not os.path.isdir(self.data_name_or_path):
+                info = self.data_name_or_path.split('/')
+                self.dataset_split = info[-1] if len(info) == 3 else 'train'
+                self.data_name_or_path = "/".join(info[:-1]) if len(info) == 3 else '/'.join(info)
+                self.dataset_language = 'default'
+                if ':' in self.data_name_or_path:
+                    self.data_name_or_path, self.dataset_language = self.data_name_or_path.split(':')
 
 
 @dataclass
@@ -166,18 +167,13 @@ def main():
             quantization_config=quantization_config,
         )
 
-        if training_args.loss_fn == 'infonce':
-            loss_fn = InfoNCE(
-                nn.CrossEntropyLoss(label_smoothing=0.0),
-                use_inbatch_negative=training_args.use_inbatch_negative,
-                temperature=training_args.temperature,
-            )
-        elif training_args.loss_fn == 'simcse':
-            loss_fn = SimCSE(temperature=training_args.temperature)
-        elif training_args.loss_fn == 'triplet':
-            loss_fn = (TripletLoss(training_args.temperature),)
-        else:
-            raise ValueError
+        loss_fn = AutoLoss(
+            loss_name=training_args.loss_fn,
+            loss_kwargs={
+                'use_inbatch_negative': training_args.use_inbatch_negative,
+                'temperature': training_args.temperature,
+            },
+        )
 
         model = model.set_train_type(
             "pairwise",
@@ -227,7 +223,7 @@ def main():
         logger.info(f'Encoding will be saved in {training_args.output_dir}')
 
         encode_dataset = EncodeDataset(args=data_args, tokenizer=tokenizer, max_length=max_length, text_key='text')
-        logger.info(f"Number of train samples: {len(encode_dataset)}")
+        logger.info(f"Number of train samples: {len(encode_dataset)}, max_length: {max_length}")
 
         encode_loader = DataLoader(
             encode_dataset,
@@ -246,7 +242,7 @@ def main():
         #     embeddings.append(embed)
         # embeddings = np.concatenate(embeddings)
 
-        embeddings = model.encode(encode_loader)
+        embeddings = model.encode(encode_loader, show_progress_bar=True, convert_to_numpy=True)
         lookup_indices = list(range(len(encode_dataset)))
 
         with open(os.path.join(training_args.output_dir, data_args.encoding_save_file), 'wb') as f:

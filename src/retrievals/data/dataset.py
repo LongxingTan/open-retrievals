@@ -111,7 +111,9 @@ class RetrievalTrainDataset(Dataset):
             return self.samples[item]
 
         data = self.dataset[item]
-        query = self.query_instruction + data[self.query_key]
+        query = data[self.query_key]
+        if self.query_instruction:
+            query = self.query_instruction + query
 
         if isinstance(data[self.positive_key], (list, tuple)):
             if isinstance(data[self.positive_key][0], dict):
@@ -290,8 +292,8 @@ class EncodeDataset(Dataset):
     ):
         if args:
             data_name_or_path = args.data_name_or_path
-            dataset_language = args.dataset_language
-            dataset_split = args.dataset_split
+            dataset_language = args.dataset_language if 'dataset_language' in args.__dataclass_fields__ else 'default'
+            dataset_split = args.dataset_split if 'dataset_split' in args.__dataclass_fields__ else 'train'
             text_key = args.query_key
             instruction = args.query_instruction or args.document_instruction or instruction
 

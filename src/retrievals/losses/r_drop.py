@@ -8,7 +8,7 @@ from torch import nn
 
 
 class RDropLoss(nn.Module):
-    def __init__(self, alpha: float = 4, reduction: str = "mean"):
+    def __init__(self, alpha: float = 4, reduction: str = "mean", **kwargs):
         super(RDropLoss, self).__init__()
         self.reduction = reduction
         self.alpha = alpha

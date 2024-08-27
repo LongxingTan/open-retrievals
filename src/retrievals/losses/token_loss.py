@@ -15,6 +15,7 @@ class TokenLoss(nn.Module):
         token_index: int,
         train_group_size: int = 2,
         criterion: Union[nn.Module, Callable, None] = nn.CrossEntropyLoss(label_smoothing=0.0, reduction='mean'),
+        **kwargs
     ):
         super().__init__()
         self.token_index = token_index

@@ -52,6 +52,7 @@ class ModelArguments:
         default=None, metadata={"help": "Where do you want to store the pretrained models downloaded from s3"}
     )
     causal_lm: bool = field(default=False, metadata={'help': "Whether the model is a causal lm or not"})
+    embed_dim: int = field(default=128)
 
 
 @dataclass
@@ -59,8 +60,9 @@ class DataArguments:
     data_name_or_path: str = field(default=None, metadata={"help": "Path to corpus"})
     train_group_size: int = field(default=8)
     unfold_each_positive: bool = field(default=False)
+    query_max_length: int = field(default=64)
     max_length: int = field(
-        default=512,
+        default=256,
         metadata={
             "help": "The maximum total input sequence length after tokenization for input text. Sequences longer "
             "than this will be truncated, sequences shorter will be padded."
@@ -172,17 +174,19 @@ def main():
             unfold_each_positive=data_args.unfold_each_positive,
             positive_key=data_args.positive_key,
             negative_key=data_args.negative_key,
+            query_instruction=data_args.query_instruction,
+            document_instruction=data_args.document_instruction,
         )
         data_collator = ColBertCollator(
             tokenizer,
-            query_max_length=128,
+            query_max_length=data_args.query_max_length,
             document_max_length=data_args.max_length,
             positive_key=data_args.positive_key,
             negative_key=data_args.negative_key,
         )
         model = ColBERT.from_pretrained(
             model_args.model_name_or_path,
-            colbert_dim=512,
+            colbert_dim=model_args.embed_dim,
             loss_fn=ColbertLoss(use_inbatch_negative=training_args.use_inbatch_negative),
         )
     elif training_args.model_type == 'cross-encoder':

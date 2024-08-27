@@ -9,7 +9,7 @@ accelerate launch \
     llm_finetune_for_embed.py \
     --model_name_or_path mistralai/Mistral-7B-v0.1 \
     --train_data  \
-    --output_dir modeloutput \
+    --output_dir output \
 
 """
 
@@ -18,15 +18,13 @@ import os
 import random
 import sys
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Sequence, Tuple
+from typing import Dict, List, Optional, Sequence
 
 import datasets
 import torch
 import transformers
-from peft import LoraConfig
 from torch.utils.data import DataLoader, Dataset
 from transformers import (
-    AutoConfig,
     AutoTokenizer,
     HfArgumentParser,
     get_cosine_schedule_with_warmup,

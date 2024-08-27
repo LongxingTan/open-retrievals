@@ -13,7 +13,6 @@ from transformers import (
 from retrievals import (
     AutoModelForRanking,
     LLMRerankCollator,
-    RerankTrainDataset,
     RerankTrainer,
     RetrievalTrainDataset,
 )

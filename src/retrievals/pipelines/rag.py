@@ -3,14 +3,12 @@
 import argparse
 import logging
 import re
-from multiprocessing import Pool
 from typing import Any, Callable, Dict, List, Literal, Optional, Tuple, TypeVar, Union
-
-from transformers import AutoModel
 
 from ..tools.file_parser import FileParser
 from ..tools.generator import BaseLLM
 from ..tools.prompts import RAG_PROMPT
+from ..tools.router import Router
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(

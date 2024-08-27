@@ -9,6 +9,7 @@ class PairKL(nn.Module):
         self,
         criterion: Union[nn.Module, Callable, None] = nn.KLDivLoss(reduction="batchmean"),
         temperature: float = 0.05,
+        **kwargs
     ):
         super().__init__()
         self.criterion = criterion
