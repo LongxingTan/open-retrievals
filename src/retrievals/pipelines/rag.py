@@ -3,6 +3,7 @@
 import argparse
 import logging
 import re
+from dataclasses import dataclass
 from typing import Any, Callable, Dict, List, Literal, Optional, Tuple, TypeVar, Union
 
 from ..tools.file_parser import FileParser
@@ -25,8 +26,8 @@ def parse_args():
 
 
 class RAGConfig(object):
-    def __init__(self):
-        pass
+    def __init__(self, top_n: int = 3):
+        self.top_n = top_n
 
     @classmethod
     def from_dict(
@@ -42,7 +43,20 @@ class SimpleRAG(object):
         self.reranker = reranker
         self.generator = generator
 
+    def build(self):
+        pass
+
+    def add(self):
+        pass
+
+    def load(self):
+        pass
+
+    def search(self):
+        pass
+
     def generate(self, query: str, context: Optional[str] = None):
+        """LLM response"""
         prompt_kwargs = {'context': context, 'query': query}
         response = self.generator(prompt_kwargs)
         return response

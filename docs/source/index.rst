@@ -28,13 +28,11 @@ Now you are ready, proceed with
 
 .. code-block:: shell
 
-    $ pip install open-retrievals
+    # install with basic module
+    pip install open-retrievals
 
-To run evaluation
-
-.. code-block:: shell
-
-    $ pip install open-retrievals[eval]
+    # install with support of evaluation
+    pip install open-retrievals[eval]
 
 
 Examples
@@ -49,15 +47,13 @@ Examples
 
 Run a simple example
 
+.. code-block:: python
+
+    import retrievals
 
 
 
-.. toctree::
-   :maxdepth: 1
-   :caption: Contents:
+Contributing
+---------------------
 
-   quick-start
-   embed.rst
-   retrieval.rst
-   rerank.rst
-   rag.rst
+If you wish to contribute to the project, please refer to our `contribution guidelines <https://github.com/LongxingTan/Time-series-prediction/blob/master/CONTRIBUTING.md>`_.

@@ -244,6 +244,11 @@ class FaissRetrieval(BaseRetriever):
             self.index = corpus_index
 
     def add(self, corpus_embed, corpus_ids=None):
+        """incremental add embed"""
+        corpus_embed = np.array(corpus_embed, dtype=np.float32)
+        if corpus_embed.ndim == 1:
+            corpus_embed = np.expand_dims(corpus_embed, axis=0)
+
         if corpus_ids:
             self.index.add_with_ids(corpus_embed, np.array(corpus_ids))
         else:
