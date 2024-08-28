@@ -3,8 +3,8 @@ Rerank
 
 .. _rerank:
 
-Rerank by pretrained
--------------------------
+Use Rerank from open-retrievals
+------------------------------------
 
 .. code-block:: python
 

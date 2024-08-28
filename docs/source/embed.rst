@@ -3,11 +3,15 @@ Embedding
 
 .. _embed:
 
-
-Pretrained
----------------------
+Use embedding from open-retrievals
+---------------------------------------
 
 we can use `AutoModelForEmbedding` to get the sentence embedding from pretrained transformer or large language model.
+
+The Transformer model could get the representation vector from a sentence.
+
+.. image:: https://github.com/LongxingTan/open-retrievals/blob/master/docs/source/_static/structure.png
+   :alt: transformer embedding Image
 
 
 Fine-tune
