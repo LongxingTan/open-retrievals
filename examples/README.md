@@ -10,6 +10,7 @@
 Check the whole pipeline examples
 - [t2-ranking dataset](./t2_ranking/README.md)
 - [scifact dataset](./scifact/README.md)
+- [wikipedia-nq dataset](./wikipedia-nq/README.md)
 
 
 ## Embedding
