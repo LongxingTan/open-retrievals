@@ -115,6 +115,8 @@ Use knowledge graph
 * Graph augmentation
 * Community summarization
 
+- https://github.com/microsoft/graphrag
+
 
 pdf parse
 --------------
@@ -152,3 +154,9 @@ Layout
 * llama_index parse (support table and figure)
 * ppsturcture
 * unstructured
+
+
+OCR
+~~~~~~~~~~~~~~
+
+.. code-block:: python

@@ -104,6 +104,15 @@ arcface
 List wise
 ~~~~~~~~~~~~~~
 
+Training skills
+---------------------
+
+multiple gpus
+
+
+multiple precisions: int4, int8, float16, bfloat16
+
+
 
 Enhance the performance
 --------------------------------------
