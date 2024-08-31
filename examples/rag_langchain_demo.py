@@ -1,4 +1,5 @@
-import json
+"""Langchain integration demo"""
+
 import os
 import tempfile
 

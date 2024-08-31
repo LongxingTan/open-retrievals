@@ -1,3 +1,5 @@
+"""ColBERT reranker fine-tuning"""
+
 import transformers
 from transformers import (
     AdamW,

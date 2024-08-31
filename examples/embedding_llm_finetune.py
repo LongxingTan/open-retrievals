@@ -1,4 +1,6 @@
 """
+LLM sentence embedding fine-tuning
+
 # torchrun --nnodes 1 --nproc-per-node 4
 # deepspeed --include localhost:0,1,2,3
 # CUDA_VISIBLE_DEVICES=1,2,3 python
@@ -10,7 +12,6 @@ accelerate launch \
     --model_name_or_path mistralai/Mistral-7B-v0.1 \
     --train_data  \
     --output_dir output \
-
 """
 
 import logging
