@@ -12,8 +12,8 @@ from retrievals.losses import ColbertLoss
 transformers.logging.set_verbosity_error()
 
 
-model_name_or_path: str = "microsoft/deberta-v3-base"
-learning_rate: float = 3e-5
+model_name_or_path: str = "hfl/chinese-roberta-wwm-ext"
+learning_rate: float = 5e-5
 batch_size: int = 32
 epochs: int = 3
 colbert_dim: int = 128
@@ -25,8 +25,8 @@ def train():
     tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, use_fast=False)
     data_collator = ColBertCollator(
         tokenizer,
-        query_max_length=32,
-        document_max_length=128,
+        query_max_length=64,
+        document_max_length=256,
         positive_key='positive',
         negative_key='negative',
     )
@@ -63,11 +63,13 @@ def train():
 
 def predict():
     model = ColBERT.from_pretrained(model_name_or_path=output_dir, colbert_dim=colbert_dim)
+
     examples = [
         [
-            "In 1974, I won the championship in Southeast Asia in my first kickboxing match",
-            "In 1982, I defeated the heavy hitter Ryu Long.",
-        ]
+            "在1974年，第一次在东南亚打自由搏击就得了冠军",
+            "1982年打赢了日本重炮手雷龙，接着连续三年打败所有日本空手道高手",
+        ],
+        ["铁砂掌，源于泗水铁掌帮，三日练成，收费六百", "铁布衫，源于福建省以北70公里，五日练成，收费八百"],
     ]
     scores = model.compute_score(examples)
     print(scores)
