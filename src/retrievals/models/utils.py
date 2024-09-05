@@ -55,7 +55,7 @@ def find_all_linear_names(model: PreTrainedModel, linear_type: Optional[object] 
     Find all linear layer names
 
     :param model: PreTrainedModel
-    :param linear_type: Optional[object] = None, linear type, such as nn.Linear and bnb.nn.Linear4bit.
+    :param linear_type: Optional[object] = None, linear type, such as nn.Linear, bnb.nn.Linear4bit, bnb.nn.Linear8bitLt
 
     :return: List[str], linear layer names
     """
@@ -67,7 +67,7 @@ def find_all_linear_names(model: PreTrainedModel, linear_type: Optional[object] 
             names = name.split('.')
             lora_module_names.add(names[0] if len(names) == 1 else names[-1])
 
-    if 'lm_head' in lora_module_names:
+    if 'lm_head' in lora_module_names:  # needed for 16-bit
         lora_module_names.remove('lm_head')
     return list(lora_module_names)
 

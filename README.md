@@ -39,6 +39,7 @@
 - Embedding fine-tuned through point-wise, pairwise, listwise, contrastive learning, and LLM.
 - Reranking fine-tuned with Cross Encoder, ColBERT, and LLM.
 - Easily build enhanced modular RAG, integrated with Transformers, Langchain, and LlamaIndex.
+- Term matching and semantic matching.
 
 | Exp                           | Model                   | Original | Finetuned | Demo                                                                                                                                                                |
 |-------------------------------|-------------------------|----------|-----------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------|

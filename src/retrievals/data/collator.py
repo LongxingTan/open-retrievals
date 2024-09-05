@@ -11,6 +11,11 @@ from transformers import (
 )
 
 
+class AutoCollator(DataCollatorWithPadding):
+    def __init__(self):
+        pass
+
+
 class PairCollator(DataCollatorWithPadding):
     def __init__(
         self,
