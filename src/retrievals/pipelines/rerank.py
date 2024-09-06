@@ -80,6 +80,19 @@ class DataArguments:
         )
     )
 
+    def __post_init__(self):
+        self.dataset_split = 'train'
+        self.dataset_language = 'default'
+
+        if self.data_name_or_path is not None:
+            if not os.path.isfile(self.data_name_or_path) and not os.path.isdir(self.data_name_or_path):
+                info = self.data_name_or_path.split('/')
+                self.dataset_split = info[-1] if len(info) == 3 else 'train'
+                self.data_name_or_path = "/".join(info[:-1]) if len(info) == 3 else '/'.join(info)
+                self.dataset_language = 'default'
+                if ':' in self.data_name_or_path:
+                    self.data_name_or_path, self.dataset_language = self.data_name_or_path.split(':')
+
 
 @dataclass
 class RerankerTrainingArguments(TrainingArguments):
