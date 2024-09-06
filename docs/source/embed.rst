@@ -13,6 +13,11 @@ The Transformer model could get the representation vector from a sentence.
 .. image:: https://github.com/LongxingTan/open-retrievals/blob/master/docs/source/_static/structure.png
    :alt: transformer embedding Image
 
+.. epigraph::
+    :align: left
+
+    Choose the right `pooling_method` when use the pretrained embedding, check in `huggingface <https://huggingface.co/models>`_
+
 
 Fine-tune
 ------------------
@@ -145,4 +150,5 @@ Contrastive loss
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 cosent loss
+
 - similar to circle loss, but with cosine

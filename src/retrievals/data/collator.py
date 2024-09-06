@@ -12,6 +12,8 @@ from transformers import (
 
 
 class AutoCollator(DataCollatorWithPadding):
+    """Choose the collator based on data/task"""
+
     def __init__(self):
         pass
 
