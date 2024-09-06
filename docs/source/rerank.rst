@@ -20,6 +20,10 @@ Use Rerank from open-retrievals
 Fine tuning Cross-encoder
 ----------------------------
 
+.. image:: https://colab.research.google.com/assets/colab-badge.svg
+    :target: https://colab.research.google.com/drive/1QvbUkZtG56SXomGYidwI4RQzwODQrWNm?usp=sharing
+    :alt: Open In Colab
+
 
 .. code-block:: python
 

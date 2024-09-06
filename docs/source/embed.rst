@@ -52,6 +52,11 @@ Loss function
 Pair wise
 ~~~~~~~~~~~~~
 
+.. image:: https://colab.research.google.com/assets/colab-badge.svg
+    :target: https://colab.research.google.com/drive/17KXe2lnNRID-HiVvMtzQnONiO74oGs91?usp=sharing
+    :alt: Open In Colab
+
+
 .. code-block:: python
 
     import torch.nn as nn
@@ -92,7 +97,7 @@ Pair wise
 
 
 Point wise
-~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~
 
 If the positive and negative examples have some noise in label, the directly point-wise cross-entropy maybe not the best. The pair wise just compare relatively, or the hinge loss with margin could be better.
 
