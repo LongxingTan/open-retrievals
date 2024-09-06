@@ -38,19 +38,29 @@ Now you are ready, proceed with
 Examples
 ------------------
 
-* `T2 ranking dataset <https://github.com/LongxingTan/open-retrievals/tree/master/examples/t2_ranking>`_
-* `scifact dataset <https://github.com/LongxingTan/open-retrievals/tree/master/examples/scifact>`_
-* `msmacro dataset <https://github.com/LongxingTan/open-retrievals/tree/master/examples/msmacro>`_
-* `wikipedia nq dataset <https://github.com/LongxingTan/open-retrievals/tree/master/examples/wikipedia-nq>`_
-* `rag example <https://github.com/LongxingTan/open-retrievals/tree/master/examples/rag>`_
-* `graph rag example <URL>`_
-
 Run a simple example
 
 .. code-block:: python
 
     import retrievals
 
+
+
+* `Pairwise embedding fine-tuning <https://github.com/LongxingTan/open-retrievals/blob/master/examples/embedding_pairwise_finetune.py>`_
+* `Pairwise LLM embedding fine-tuning <https://github.com/LongxingTan/open-retrievals/blob/master/examples/embedding_llm_finetune.py>`_
+* `ColBERT fine-tuning <https://github.com/LongxingTan/open-retrievals/blob/master/examples/rerank_colbert.py>`_
+* `Cross-encoder reranking fine-tuning <https://github.com/LongxingTan/open-retrievals/blob/master/examples/rerank_cross_encoder.py>`_
+* `LLM reranking fine-tuning <https://github.com/LongxingTan/open-retrievals/blob/master/examples/rerank_llm_finetune.py>`_
+
+
+More datasets
+
+* `T2 ranking dataset <https://github.com/LongxingTan/open-retrievals/tree/master/examples/t2_ranking>`_
+* `scifact dataset <https://github.com/LongxingTan/open-retrievals/tree/master/examples/scifact>`_
+* `msmacro dataset <https://github.com/LongxingTan/open-retrievals/tree/master/examples/msmacro>`_
+* `wikipedia nq dataset <https://github.com/LongxingTan/open-retrievals/tree/master/examples/wikipedia-nq>`_
+* `rag example <https://github.com/LongxingTan/open-retrievals/tree/master/examples/rag>`_
+* `graph rag example <URL>`_
 
 
 Contributing

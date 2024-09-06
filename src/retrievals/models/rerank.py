@@ -560,7 +560,8 @@ class ColBERT(Base):
     def from_pretrained(
         cls,
         model_name_or_path: str,
-        colbert_dim: int = 768,
+        colbert_dim: int = 1024,
+        pretrained_colbert_linear_name: str = 'colbert_linear.pt',
         loss_fn: Union[nn.Module, Callable] = ColbertLoss(),
         trust_remote_code: bool = True,
         device: Optional[str] = None,
@@ -570,9 +571,11 @@ class ColBERT(Base):
         model = AutoModel.from_pretrained(model_name_or_path, trust_remote_code=trust_remote_code, **kwargs)
 
         linear_layer = nn.Linear(model.config.hidden_size, colbert_dim, dtype=torch.float32, bias=False)
-        if os.path.exists(path=os.path.join(model_name_or_path, 'linear.pt')):
+        if os.path.exists(path=os.path.join(model_name_or_path, pretrained_colbert_linear_name)):
             logger.info(f'Loading colbert_linear weight from {model_name_or_path}')
-            colbert_state_dict = torch.load(os.path.join(model_name_or_path, 'linear.pt'), map_location='cpu')
+            colbert_state_dict = torch.load(
+                os.path.join(model_name_or_path, pretrained_colbert_linear_name), map_location='cpu'
+            )
             linear_layer.load_state_dict(colbert_state_dict)
         else:
             logger.info('Xavier uniform random colbert linear layer')
