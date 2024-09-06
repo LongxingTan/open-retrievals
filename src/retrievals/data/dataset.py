@@ -85,7 +85,7 @@ class RetrievalTrainDataset(Dataset):
         if self.dataset_split in dataset:  # train or dev
             dataset = dataset[dataset_split]
         dataset = dataset.filter(lambda x: len(x[self.positive_key]) > 0)
-        if self.negative_key in dataset:
+        if self.negative_key in dataset[0]:
             dataset = dataset.filter(lambda x: len(x[self.negative_key]) > 0)
 
         self.unfold_each_positive = unfold_each_positive
