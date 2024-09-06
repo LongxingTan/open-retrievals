@@ -1,5 +1,5 @@
 Embedding
-==============================
+======================================
 
 .. _embed:
 
@@ -10,8 +10,6 @@ we can use `AutoModelForEmbedding` to get the sentence embedding from pretrained
 
 The Transformer model could get the representation vector from a sentence.
 
-.. image:: https://github.com/LongxingTan/open-retrievals/blob/master/docs/source/_static/structure.png
-   :alt: transformer embedding Image
 
 .. epigraph::
     :align: left
@@ -110,7 +108,7 @@ List wise
 ~~~~~~~~~~~~~~
 
 Training skills
----------------------
+-----------------------------------
 
 multiple gpus
 

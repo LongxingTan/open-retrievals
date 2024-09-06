@@ -34,18 +34,18 @@
 
 ![structure](./docs/source/_static/structure.png)
 
-**Open-Retrievals** 一统向量、检索、重排，帮助开发者在信息检索、大语言模型RAG等领域便捷优化
+**Open-Retrievals** 是一个统一文本向量、检索、重排的工具，使信息检索、RAG等更加便捷
 - 支持全套向量微调，对比学习、大模型、point-wise、pairwise、listwise
 - 支持全套重排微调，cross encoder、ColBERT、LLM
 - 支持定制化、模块化RAG，支持在Transformers、Langchain、LlamaIndex中便捷使用微调后的模型
 
-| 实验                  | 模型                      | 尺寸| 原分数 | 微调分数      | Demo代码                                                                                                                           |
-|----------------------|-------------------------|----|-------|-----------|-------------------------------------------------------------------------------------------------------------------------------------|
-| pairwise微调**向量**   | bge-base-zh-v1.5        | -  | 0.657 | **0.703** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/17KXe2lnNRID-HiVvMtzQnONiO74oGs91?usp=sharing) |
-| 大模型LoRA微调**向量**  | Qwen2-1.5B-Instruct     | -  | 0.546 | **0.695** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1jj1kBQWFcuQ3a7P9ttnl1hgX7H8WA_Za?usp=sharing) |
-| cross encoder**重排** | bge-reranker-base       | -  | 0.666 | **0.706** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1QvbUkZtG56SXomGYidwI4RQzwODQrWNm?usp=sharing) |
-| colbert**重排**       | chinese-roberta-wwm-ext | -  | 0.643 | **0.687** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1QVtqhQ080ZMltXoJyODMmvEQYI6oo5kO?usp=sharing) |
-| LLM**重排**           | Qwen2-1.5B-Instruct     | -  | 0.531 | **0.699** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1fzq1iV7-f8hNKFnjMmpVhVxadqPb9IXk?usp=sharing) |
+| 实验                  | 模型                      | 参数 | 原分数 | 微调分数      | Demo代码                                                                                                                           |
+|----------------------|-------------------------|------|-------|-----------|-------------------------------------------------------------------------------------------------------------------------------------|
+| pairwise微调**向量**   | bge-base-zh-v1.5        | -    | 0.657 | **0.703** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/17KXe2lnNRID-HiVvMtzQnONiO74oGs91?usp=sharing) |
+| 大模型LoRA微调**向量**  | Qwen2-1.5B-Instruct     | -    | 0.546 | **0.695** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1jj1kBQWFcuQ3a7P9ttnl1hgX7H8WA_Za?usp=sharing) |
+| cross encoder**重排** | bge-reranker-base       | -    | 0.666 | **0.706** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1QvbUkZtG56SXomGYidwI4RQzwODQrWNm?usp=sharing) |
+| colbert**重排**       | chinese-roberta-wwm-ext | -    | 0.643 | **0.687** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1QVtqhQ080ZMltXoJyODMmvEQYI6oo5kO?usp=sharing) |
+| LLM**重排**           | Qwen2-1.5B-Instruct     | -    | 0.531 | **0.699** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1fzq1iV7-f8hNKFnjMmpVhVxadqPb9IXk?usp=sharing) |
 
 * 指标为10% [t2-reranking数据](https://huggingface.co/datasets/C-MTEB/T2Reranking)的MAP. 其中大模型与ColBERT原分数为Zero-shot
 

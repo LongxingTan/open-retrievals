@@ -10,10 +10,6 @@ Retrievals is an easy, flexible, scalable framework supporting state-of-the-art 
 * Embeddings from LLM model
 
 
-.. image:: https://github.com/LongxingTan/open-retrievals/blob/master/docs/source/_static/structure.png
-   :alt: retrievals Image
-
-
 Installation
 ------------------
 
@@ -67,3 +63,14 @@ Contributing
 ---------------------
 
 If you wish to contribute to the project, please refer to our `contribution guidelines <https://github.com/LongxingTan/Time-series-prediction/blob/master/CONTRIBUTING.md>`_.
+
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Contents:
+
+   quick-start
+   embed.rst
+   retrieval.rst
+   rerank.rst
+   rag.rst
