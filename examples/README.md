@@ -50,12 +50,12 @@ torchrun --nproc_per_node 1 \
 ```
 
 **Pairwise LLM embedding finetune**
-- add query_instruction
+- set `query_instruction`
   - "Given a query and a relevant document, retrieve the document that are pertinent to the query\nQuery: "
-- use the appropriate pooling_method
+- use the appropriate `pooling_method`
   - `last`
 - maybe we need to reduce the batch_size due to large model size
-- set `use_lora` to True if you want to use lora
+- set `use_lora` to `True` if you want to use lora to reduce training memory
 
 ```shell
 MODEL_NAME="intfloat/e5-mistral-7b-instruct"

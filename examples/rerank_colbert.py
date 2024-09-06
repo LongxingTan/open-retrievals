@@ -1,5 +1,7 @@
 """ColBERT reranker fine-tuning"""
 
+import os
+
 import transformers
 from transformers import (
     AdamW,
@@ -12,7 +14,7 @@ from retrievals import ColBERT, ColBertCollator, RerankTrainer, RetrievalTrainDa
 from retrievals.losses import ColbertLoss
 
 transformers.logging.set_verbosity_error()
-
+os.environ["WANDB_DISABLED"] = "true"
 
 model_name_or_path: str = "hfl/chinese-roberta-wwm-ext"
 learning_rate: float = 5e-5
@@ -50,6 +52,7 @@ def train():
         num_train_epochs=epochs,
         output_dir=output_dir,
         remove_unused_columns=False,
+        logging_steps=100,
     )
     trainer = RerankTrainer(
         model=model,
