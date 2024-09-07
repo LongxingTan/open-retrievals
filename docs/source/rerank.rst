@@ -1,10 +1,10 @@
 Rerank
-============
+===============================
 
 .. _rerank:
 
-Rerank by pretrained
--------------------------
+Use Rerank from open-retrievals
+------------------------------------
 
 .. code-block:: python
 
@@ -19,6 +19,10 @@ Rerank by pretrained
 
 Fine tuning Cross-encoder
 ----------------------------
+
+.. image:: https://colab.research.google.com/assets/colab-badge.svg
+    :target: https://colab.research.google.com/drive/1QvbUkZtG56SXomGYidwI4RQzwODQrWNm?usp=sharing
+    :alt: Open In Colab
 
 
 .. code-block:: python

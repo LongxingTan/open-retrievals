@@ -1,4 +1,4 @@
-"""Refiner to summarize the query"""
+"""Refiner to summarize the query/community"""
 
 import logging
 from abc import ABC, abstractmethod

@@ -8,7 +8,6 @@ from pathlib import Path
 from typing import List, Optional
 
 import torch
-from torch import nn
 from torch.utils.data import DataLoader
 from transformers import AutoTokenizer, HfArgumentParser, TrainingArguments, set_seed
 
@@ -233,14 +232,6 @@ def main():
             drop_last=False,
             num_workers=training_args.dataloader_num_workers,
         )
-
-        # embeddings = []
-        # lookup_indices = []
-        # for batch_ids, batch in tqdm(encode_loader):
-        #     lookup_indices.extend(batch_ids)
-        #     embed = model.encode(batch)
-        #     embeddings.append(embed)
-        # embeddings = np.concatenate(embeddings)
 
         embeddings = model.encode(encode_loader, show_progress_bar=True, convert_to_numpy=True)
         lookup_indices = list(range(len(encode_dataset)))

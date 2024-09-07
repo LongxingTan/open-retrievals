@@ -11,6 +11,13 @@ from transformers import (
 )
 
 
+class AutoCollator(DataCollatorWithPadding):
+    """Choose the collator based on data/task"""
+
+    def __init__(self):
+        pass
+
+
 class PairCollator(DataCollatorWithPadding):
     def __init__(
         self,
@@ -176,7 +183,7 @@ class RerankCollator(DataCollatorWithPadding):
         if isinstance(features[0], dict):
             assert (
                 self.query_key in features[0] and self.document_key in features[0]
-            ), f"RerankCollator should have {self.query_key} and {self.document_key} keys in features, maybe labels"
+            ), f"RerankCollator should have '{self.query_key}' and '{self.document_key}' keys in features, maybe labels"
             query_texts = [feature[self.query_key] for feature in features]
             document_texts = [feature[self.document_key] for feature in features]
         else:
@@ -233,7 +240,7 @@ class ColBertCollator(DataCollatorWithPadding):
         assert len(features) > 0
         assert (
             self.query_key in features[0] and self.positive_key in features[0]
-        ), f"PairCollator should have {self.query_key} and {self.positive_key} in features, while get {features[0]}"
+        ), f"PairCollator should have '{self.query_key}' and '{self.positive_key}' in features, while get {features[0]}"
 
         query_texts = [feature[self.query_key] for feature in features]
         pos_texts = [feature[self.positive_key] for feature in features]

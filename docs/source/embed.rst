@@ -1,13 +1,20 @@
 Embedding
-==============================
+======================================
 
 .. _embed:
 
-
-Pretrained
----------------------
+Use embedding from open-retrievals
+---------------------------------------
 
 we can use `AutoModelForEmbedding` to get the sentence embedding from pretrained transformer or large language model.
+
+The Transformer model could get the representation vector from a sentence.
+
+
+.. epigraph::
+    :align: left
+
+    Choose the right `pooling_method` when use the pretrained embedding, check in `huggingface <https://huggingface.co/models>`_
 
 
 Fine-tune
@@ -44,6 +51,11 @@ Loss function
 
 Pair wise
 ~~~~~~~~~~~~~
+
+.. image:: https://colab.research.google.com/assets/colab-badge.svg
+    :target: https://colab.research.google.com/drive/17KXe2lnNRID-HiVvMtzQnONiO74oGs91?usp=sharing
+    :alt: Open In Colab
+
 
 .. code-block:: python
 
@@ -85,7 +97,7 @@ Pair wise
 
 
 Point wise
-~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~
 
 If the positive and negative examples have some noise in label, the directly point-wise cross-entropy maybe not the best. The pair wise just compare relatively, or the hinge loss with margin could be better.
 
@@ -99,6 +111,15 @@ arcface
 
 List wise
 ~~~~~~~~~~~~~~
+
+Training skills
+-----------------------------------
+
+multiple gpus
+
+
+multiple precisions: int4, int8, float16, bfloat16
+
 
 
 Enhance the performance
@@ -132,4 +153,5 @@ Contrastive loss
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 cosent loss
+
 - similar to circle loss, but with cosine

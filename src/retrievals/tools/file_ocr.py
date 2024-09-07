@@ -7,7 +7,7 @@ from abc import ABC, abstractmethod
 logger = logging.getLogger(__name__)
 
 
-class OcrCFG:
+class OcrConfig:
     ocr_model = 'ppocr'
 
 

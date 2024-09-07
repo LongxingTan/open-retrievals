@@ -6,11 +6,22 @@ https://github.com/InternLM/HuixiangDou
 import hashlib
 import io
 import logging
+from typing import Dict, List
 
 import pandas as pd
 import requests
 
 logger = logging.getLogger(__name__)
+
+
+class BaseParser:
+    def parse(self, file_path) -> List[Dict]:
+        raise NotImplementedError()
+
+
+class PdfParser(BaseParser):
+    def __init__(self, parser: str):
+        self.parser = parser
 
 
 def process_pdf_plumber(file_path):

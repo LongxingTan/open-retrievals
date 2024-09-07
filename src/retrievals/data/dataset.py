@@ -44,10 +44,12 @@ class RetrievalTrainDataset(Dataset):
                 if 'unfold_each_positive' in args.__dataclass_fields__
                 else unfold_each_positive
             )
-            self.query_instruction = args.query_instruction if args.query_instruction is not None else query_instruction
-            self.document_instruction = (
-                args.document_instruction if args.document_instruction is not None else document_instruction
-            )
+            self.query_instruction = args.query_instruction if args.query_instruction else query_instruction
+            if self.query_instruction is None:
+                self.query_instruction = ''
+            self.document_instruction = args.document_instruction if args.document_instruction else document_instruction
+            if self.document_instruction is None:
+                self.document_instruction = ''
             self.query_key = args.query_key or query_key
             self.positive_key = args.positive_key or positive_key
             self.negative_key = args.negative_key or negative_key
@@ -82,6 +84,9 @@ class RetrievalTrainDataset(Dataset):
 
         if self.dataset_split in dataset:  # train or dev
             dataset = dataset[dataset_split]
+        dataset = dataset.filter(lambda x: len(x[self.positive_key]) > 0)
+        if self.negative_key in dataset[0]:
+            dataset = dataset.filter(lambda x: len(x[self.negative_key]) > 0)
 
         self.unfold_each_positive = unfold_each_positive
         self.tokenizer = tokenizer

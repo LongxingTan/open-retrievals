@@ -4,10 +4,10 @@ Open-Retrievals Documentation
 
    <a class="github-button" href="https://github.com/LongxingTan/open-retrievals" data-icon="octicon-star" data-size="large" data-show-count="true" aria-label="Star LongxingTan/open-retrievals on GitHub">GitHub</a>
 
-Retrievals is an easy-to-use python framework supporting state-of-the-art embeddings, especially for information retrieval and rerank in NLP/LLM, based on PyTorch and Transformers.
+Retrievals is an easy, flexible, scalable framework supporting state-of-the-art embeddings, retrieval and reranking for information retrieval or RAG, based on PyTorch and Transformers.
 
-* Contrastive learning enhanced embeddings
-* LLM embeddings
+* Embeddings fine-tuned by Contrastive learning
+* Embeddings from LLM model
 
 
 Installation
@@ -24,17 +24,45 @@ Now you are ready, proceed with
 
 .. code-block:: shell
 
-    $ pip install open-retrievals
+    # install with basic module
+    pip install open-retrievals
 
-To run evaluation
-
-.. code-block:: shell
-
-    $ pip install open-retrievals[eval]
+    # install with support of evaluation
+    pip install open-retrievals[eval]
 
 
 Examples
 ------------------
+
+Run a simple example
+
+.. code-block:: python
+
+    import retrievals
+
+
+
+* `Pairwise embedding fine-tuning <https://github.com/LongxingTan/open-retrievals/blob/master/examples/embedding_pairwise_finetune.py>`_
+* `Pairwise LLM embedding fine-tuning <https://github.com/LongxingTan/open-retrievals/blob/master/examples/embedding_llm_finetune.py>`_
+* `ColBERT fine-tuning <https://github.com/LongxingTan/open-retrievals/blob/master/examples/rerank_colbert.py>`_
+* `Cross-encoder reranking fine-tuning <https://github.com/LongxingTan/open-retrievals/blob/master/examples/rerank_cross_encoder.py>`_
+* `LLM reranking fine-tuning <https://github.com/LongxingTan/open-retrievals/blob/master/examples/rerank_llm_finetune.py>`_
+
+
+More datasets
+
+* `T2 ranking dataset <https://github.com/LongxingTan/open-retrievals/tree/master/examples/t2_ranking>`_
+* `scifact dataset <https://github.com/LongxingTan/open-retrievals/tree/master/examples/scifact>`_
+* `msmacro dataset <https://github.com/LongxingTan/open-retrievals/tree/master/examples/msmacro>`_
+* `wikipedia nq dataset <https://github.com/LongxingTan/open-retrievals/tree/master/examples/wikipedia-nq>`_
+* `rag example <https://github.com/LongxingTan/open-retrievals/tree/master/examples/rag>`_
+* `graph rag example <URL>`_
+
+
+Contributing
+---------------------
+
+If you wish to contribute to the project, please refer to our `contribution guidelines <https://github.com/LongxingTan/Time-series-prediction/blob/master/CONTRIBUTING.md>`_.
 
 
 .. toctree::

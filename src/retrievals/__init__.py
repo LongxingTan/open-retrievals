@@ -12,3 +12,4 @@ from .models.rerank import AutoModelForRanking, ColBERT
 from .models.retrieval_auto import AutoModelForRetrieval
 from .trainer.custom_trainer import CustomTrainer
 from .trainer.trainer import RerankTrainer, RetrievalTrainer
+from .trainer.tuner import AutoTuner

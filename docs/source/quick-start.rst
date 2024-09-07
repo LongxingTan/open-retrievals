@@ -3,7 +3,7 @@ Quick start
 
 .. _quick-start:
 
-Open-retrievals is designed to simplify the information retrieval and RAG application, especially for retrieval, rerank.
+We can easily use Open-retrievals to fine-tune the model easily for information retrieval and RAG application.
 
 
 1. Embedding
