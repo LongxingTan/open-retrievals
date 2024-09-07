@@ -2,7 +2,7 @@
 
 
 class AutoTuner(object):
-    """Given the data and model, assign the tuning type, then fine-tune"""
+    """Given the data and model, assign the tuning type, then fine-tune for embedding, ranking and llm"""
 
     def __init__(self):
         pass
