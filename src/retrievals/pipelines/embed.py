@@ -23,6 +23,7 @@ from ..models.embedding_auto import AutoModelForEmbedding
 from ..trainer import RetrievalTrainer
 
 logger = logging.getLogger(__name__)
+os.environ["WANDB_DISABLED"] = "true"
 
 
 @dataclass
