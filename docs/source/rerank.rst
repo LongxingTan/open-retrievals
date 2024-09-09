@@ -3,7 +3,7 @@ Rerank
 
 .. _rerank:
 
-Use Rerank from open-retrievals
+Use reranking from open-retrievals
 ------------------------------------
 
 .. code-block:: python
@@ -16,8 +16,8 @@ Use Rerank from open-retrievals
     print(scores_list)
 
 
-Fine tuning Cross-encoder
-----------------------------
+Fine-tune cross-encoder reranking model
+-------------------------------------------
 
 .. image:: https://colab.research.google.com/assets/colab-badge.svg
     :target: https://colab.research.google.com/drive/1QvbUkZtG56SXomGYidwI4RQzwODQrWNm?usp=sharing
@@ -60,12 +60,21 @@ Fine tuning Cross-encoder
     trainer.train()
 
 
-Fine tuning ColBERT
-----------------------------
+Fine-tune ColBERT reranking model
+------------------------------------
+
+.. image:: https://colab.research.google.com/assets/colab-badge.svg
+    :target: https://colab.research.google.com/drive/1QVtqhQ080ZMltXoJyODMmvEQYI6oo5kO?usp=sharing
+    :alt: Open In Colab
 
 
 Fine tuning LLM ranker
-----------------------------
+-------------------------------------
+
+.. image:: https://colab.research.google.com/assets/colab-badge.svg
+    :target: https://colab.research.google.com/drive/1fzq1iV7-f8hNKFnjMmpVhVxadqPb9IXk?usp=sharing
+    :alt: Open In Colab
+
 
 - Point-wise style prompt:
 

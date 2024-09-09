@@ -26,7 +26,9 @@ We can use the pretrained embedding easily from transformers or sentence-transfo
         "passage: Definition of summit for English Language Learners. : 1  the highest point of a mountain : the top of a mountain. : 2  the highest level."
     ]
     model_name_or_path = 'intfloat/e5-base-v2'
+    # sentence embedding mode
     model = AutoModelForEmbedding.from_pretrained(model_name_or_path, pooling_method="mean")
+    # encode the sentence to embedding vector
     embeddings = model.encode(sentences, normalize_embeddings=True, convert_to_tensor=True)
     scores = (embeddings[:2] @ embeddings[2:].T) * 100
     print(scores.tolist())
