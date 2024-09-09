@@ -16,7 +16,6 @@ Use Rerank from open-retrievals
     print(scores_list)
 
 
-
 Fine tuning Cross-encoder
 ----------------------------
 

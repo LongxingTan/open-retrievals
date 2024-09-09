@@ -16,10 +16,19 @@ Check the whole pipeline examples
 ## Embedding
 
 **Data Format**
+
+- In-batch negative fine-tuning
+```
+{'query': TEXT_TYPE, 'positive': List[TEXT_TYPE]}
+...
+```
+
+- Hard negative (+ In-batch negative) fine-tuning
 ```
 {'query': TEXT_TYPE, 'positive': List[TEXT_TYPE], 'negative': List[TEXT_TYPE]}
 ...
 ```
+
 
 **Pairwise embedding finetune**
 ```shell
