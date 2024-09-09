@@ -23,7 +23,6 @@ from ..models.embedding_auto import AutoModelForEmbedding
 from ..trainer import RetrievalTrainer
 
 logger = logging.getLogger(__name__)
-os.environ["WANDB_DISABLED"] = "true"
 
 
 @dataclass
@@ -102,6 +101,9 @@ class RetrieverTrainingArguments(TrainingArguments):
     use_lora: bool = field(default=False)
     use_bnb_config: bool = field(default=False)
     do_encode: bool = field(default=False, metadata={"help": "run the encoding loop"})
+    report_to: Optional[List[str]] = field(
+        default=None, metadata={"help": "The list of integrations to report the results and logs to."}
+    )
 
 
 def main():

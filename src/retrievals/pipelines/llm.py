@@ -83,7 +83,6 @@ def build_sft_data(data_args):
 
 
 def build_prompt(examples, prompt_input, tokenizer, data_args):
-
     if "instruction" in examples:
         ins_data = examples["instruction"]
         input_data = examples["input"]
