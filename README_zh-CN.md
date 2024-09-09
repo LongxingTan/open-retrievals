@@ -9,7 +9,7 @@
 [lint-image]: https://github.com/LongxingTan/open-retrievals/actions/workflows/lint.yml/badge.svg?branch=master
 [lint-url]: https://github.com/LongxingTan/open-retrievals/actions/workflows/lint.yml?query=branch%3Amaster
 [docs-image]: https://readthedocs.org/projects/open-retrievals/badge/?version=latest
-[docs-url]: https://open-retrievals.readthedocs.io/en/latest/?version=latest
+[docs-url]: https://open-retrievals.readthedocs.io/en/master/
 [coverage-image]: https://codecov.io/gh/longxingtan/open-retrievals/branch/master/graph/badge.svg
 [coverage-url]: https://codecov.io/github/longxingtan/open-retrievals?branch=master
 [contributing-image]: https://img.shields.io/badge/contributions-welcome-brightgreen.svg?style=flat
@@ -29,7 +29,7 @@
 [![Code Coverage][coverage-image]][coverage-url]
 [![Contributing][contributing-image]][contributing-url]
 
-**[中文wiki](https://github.com/LongxingTan/open-retrievals/wiki)** | **[英文文档](https://open-retrievals.readthedocs.io)**
+**[中文wiki](https://github.com/LongxingTan/open-retrievals/wiki)** | **[英文文档](https://open-retrievals.readthedocs.io/en/master/)**
 </div>
 
 ![structure](./docs/source/_static/structure.png)
