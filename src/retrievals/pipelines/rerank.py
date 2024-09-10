@@ -4,7 +4,7 @@ import logging
 import os
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Optional
+from typing import List, Optional
 
 import torch
 import transformers
@@ -105,6 +105,9 @@ class RerankerTrainingArguments(TrainingArguments):
     use_lora: bool = field(default=False)
     use_bnb_config: bool = field(default=False)
     do_rerank: bool = field(default=False, metadata={"help": "run the reranking loop"})
+    report_to: Optional[List[str]] = field(
+        default=None, metadata={"help": "The list of integrations to report the results and logs to."}
+    )
 
 
 def get_optimizer(model, learning_rate, weight_decay=0.0):
