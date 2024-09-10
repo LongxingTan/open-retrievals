@@ -3,22 +3,30 @@ Rerank
 
 .. _rerank:
 
-Use Rerank from open-retrievals
-------------------------------------
+1. Use reranking from open-retrievals
+-------------------------------------------
 
 .. code-block:: python
 
     from retrievals import AutoModelForRanking
 
+    sentences = [
+        ["In 1974, I won the championship in Southeast Asia in my first kickboxing match", "In 1982, I defeated the heavy hitter Ryu Long."],
+        ['A dog is chasing car.', 'A man is playing a guitar.'],
+    ]
+
     model_name_or_path: str = "BAAI/bge-reranker-base"
     rerank_model = AutoModelForRanking.from_pretrained(model_name_or_path)
-    scores_list = rerank_model.compute_score(["In 1974, I won the championship in Southeast Asia in my first kickboxing match", "In 1982, I defeated the heavy hitter Ryu Long."])
+    scores_list = rerank_model.compute_score(sentences)
     print(scores_list)
 
+.. code::
+
+    [-5.075257778167725, -10.194067001342773]
 
 
-Fine tuning Cross-encoder
-----------------------------
+2. Fine-tune cross-encoder reranking model
+-----------------------------------------------
 
 .. image:: https://colab.research.google.com/assets/colab-badge.svg
     :target: https://colab.research.google.com/drive/1QvbUkZtG56SXomGYidwI4RQzwODQrWNm?usp=sharing
@@ -61,12 +69,21 @@ Fine tuning Cross-encoder
     trainer.train()
 
 
-Fine tuning ColBERT
-----------------------------
+3. Fine-tune ColBERT reranking model
+----------------------------------------
+
+.. image:: https://colab.research.google.com/assets/colab-badge.svg
+    :target: https://colab.research.google.com/drive/1QVtqhQ080ZMltXoJyODMmvEQYI6oo5kO?usp=sharing
+    :alt: Open In Colab
 
 
-Fine tuning LLM ranker
-----------------------------
+4. Fine-tune LLM reranker
+-------------------------------------
+
+.. image:: https://colab.research.google.com/assets/colab-badge.svg
+    :target: https://colab.research.google.com/drive/1fzq1iV7-f8hNKFnjMmpVhVxadqPb9IXk?usp=sharing
+    :alt: Open In Colab
+
 
 - Point-wise style prompt:
 

@@ -41,7 +41,7 @@ class AutoModelForRankingTest(TestCase, ModelTesterMixin):
         text_list = ['李萍进了中等技术学校', '我在百货公司当售货员', '我们都有光明的前途']
         text_pairs = [[text, i] for i in text_list]
 
-        batch = self.model.preprocess(text_pairs, max_length=9)
+        batch = self.model.preprocess_pair(text_pairs, max_length=9)
         self.assertEqual(batch['input_ids'].shape, torch.Size([3, 9]))
         self.assertEqual(batch['attention_mask'].shape, torch.Size([3, 9]))
 

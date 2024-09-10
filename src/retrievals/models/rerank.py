@@ -2,12 +2,12 @@ import json
 import logging
 import os
 from copy import deepcopy
-from typing import Callable, Dict, List, Literal, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Callable, Dict, List, Literal, Optional, Tuple, Union
 
 import numpy as np
 import torch
 import torch.nn as nn
-from tqdm.auto import tqdm
+from tqdm.auto import tqdm, trange
 from transformers import (
     AutoModel,
     AutoModelForCausalLM,
@@ -30,6 +30,9 @@ from .utils import (
     find_all_linear_names,
     get_device_name,
 )
+
+if TYPE_CHECKING:
+    import pandas as pd
 
 logger = logging.getLogger(__name__)
 
@@ -199,7 +202,7 @@ class AutoModelForRanking(Base):
             **kwargs,
         )
 
-    def preprocess(
+    def preprocess_pair(
         self,
         batch_sentence_pair: List[List[str]],
         max_length: int,
@@ -250,7 +253,7 @@ class AutoModelForRanking(Base):
         ):
             batch_sentences = sentences_sorted[batch_start : batch_start + batch_size]
 
-            batch_on_device = self.preprocess(batch_sentences, max_length=max_length)
+            batch_on_device = self.preprocess_pair(batch_sentences, max_length=max_length)
 
             scores = self.model(**batch_on_device, return_dict=True).logits.view(-1).float()
 
@@ -424,24 +427,6 @@ class ColBERT(Base):
         self.device = device or get_device_name()
         self.to(self.device)
 
-    def encode(self, input_ids: torch.Tensor, attention_mask: torch.Tensor, normalize: bool = True) -> torch.Tensor:
-        outputs: SequenceClassifierOutput = self.model(
-            input_ids, attention_mask=attention_mask, output_hidden_states=True
-        )
-        if hasattr(outputs, 'last_hidden_state'):
-            # shape: [batch, seq_len, attention_dim]
-            hidden_state = outputs.last_hidden_state
-        else:
-            hidden_state = outputs.hidden_states[1]
-
-        embeddings = hidden_state * attention_mask.unsqueeze(-1)
-        if self.linear is not None:
-            embeddings = self.linear(embeddings)
-
-        if normalize:
-            embeddings = torch.nn.functional.normalize(embeddings, p=2, dim=2)
-        return embeddings
-
     def forward(
         self,
         query_input_ids: Optional[torch.Tensor],
@@ -453,13 +438,13 @@ class ColBERT(Base):
         return_dict: Optional[bool] = True,
         **kwargs,
     ):
-        query_embedding = self.encode(query_input_ids, attention_mask=query_attention_mask, normalize=True)
-        positive_embedding = self.encode(pos_input_ids, attention_mask=pos_attention_mask, normalize=True)
+        query_embedding = self._encode(query_input_ids, attention_mask=query_attention_mask, normalize=True)
+        positive_embedding = self._encode(pos_input_ids, attention_mask=pos_attention_mask, normalize=True)
 
         if self.training:
             negative_embedding = None
             if neg_input_ids is not None:
-                negative_embedding = self.encode(neg_input_ids, attention_mask=neg_attention_mask, normalize=True)
+                negative_embedding = self._encode(neg_input_ids, attention_mask=neg_attention_mask, normalize=True)
 
             loss = self.loss_fn(query_embedding, positive_embedding, negative_embedding)
 
@@ -472,7 +457,7 @@ class ColBERT(Base):
         scores = self.score(query_embedding, positive_embedding)
         return scores
 
-    def preprocess(
+    def preprocess_pair(
         self,
         batch_sentence_pair: List[List[str]],
         query_max_length: int,
@@ -498,6 +483,97 @@ class ColBERT(Base):
             "doc_attention_mask": document_batch_tokens_on_device['attention_mask'],
         }
 
+    def _encode(self, input_ids: torch.Tensor, attention_mask: torch.Tensor, normalize: bool = True) -> torch.Tensor:
+        outputs: SequenceClassifierOutput = self.model(
+            input_ids,
+            attention_mask=attention_mask,
+            output_hidden_states=True,
+            return_dict=True,
+        )
+        if hasattr(outputs, 'last_hidden_state'):
+            # shape: [batch, seq_len, attention_dim]
+            hidden_state = outputs.last_hidden_state
+        else:
+            hidden_state = outputs.hidden_states[1]
+
+        embeddings = self.linear(hidden_state[:, 1:])
+        embeddings = embeddings * attention_mask[:, 1:][:, :, None].float()
+
+        if normalize:
+            embeddings = torch.nn.functional.normalize(embeddings, p=2, dim=-1)
+        return embeddings
+
+    def encode(
+        self,
+        sentences: Union[str, List[str], Tuple[str], 'pd.Series', np.ndarray],
+        batch_size: int = 16,
+        show_progress_bar: bool = None,
+        output_value: str = "sentence_embedding",
+        convert_to_numpy: bool = True,
+        convert_to_tensor: bool = False,
+        device: str = None,
+        normalize_embeddings: bool = False,
+    ):
+        device = device or self.device
+        self.model.eval()
+        self.model.to(device)
+
+        if show_progress_bar is None:
+            show_progress_bar = (
+                logger.getEffectiveLevel() == logging.INFO or logger.getEffectiveLevel() == logging.DEBUG
+            )
+
+        if convert_to_tensor:
+            convert_to_numpy = False
+
+        if output_value != "sentence_embedding":
+            convert_to_tensor = False
+            convert_to_numpy = False
+
+        input_was_string = False
+        if isinstance(sentences, str) or not hasattr(sentences, "__len__"):
+            sentences = [sentences]
+            input_was_string = True
+
+        all_embeddings = []
+        length_sorted_idx = np.argsort([-self._text_length(sentence) for sentence in sentences])
+        sentences_sorted = [sentences[idx] for idx in length_sorted_idx]
+
+        for start_index in trange(0, len(sentences), batch_size, desc="Batches", disable=not show_progress_bar):
+            sentences_batch = sentences_sorted[start_index : start_index + batch_size]
+            features = self.tokenizer(
+                sentences_batch,
+                padding=True,
+                truncation=True,
+                return_tensors="pt",
+                max_length=self.max_length,
+            )
+            features = batch_to_device(features, device)
+
+            with torch.no_grad():
+                embeddings = self._encode(**features, normalize=normalize_embeddings)
+                embeddings = embeddings.detach()
+
+                if convert_to_numpy:
+                    embeddings = embeddings.cpu()
+
+                all_embeddings.extend(embeddings)
+
+        all_embeddings = [all_embeddings[idx] for idx in np.argsort(length_sorted_idx)]
+
+        if convert_to_tensor:
+            if len(all_embeddings):
+                all_embeddings = torch.stack(all_embeddings)
+            else:
+                all_embeddings = torch.Tensor()
+        elif convert_to_numpy:
+            all_embeddings = np.asarray([emb.numpy() for emb in all_embeddings])
+
+        if input_was_string:
+            all_embeddings = all_embeddings[0]
+
+        return all_embeddings
+
     @torch.no_grad()
     def compute_score(
         self,
@@ -514,13 +590,13 @@ class ColBERT(Base):
 
         scores_list: List[float] = []
         for i in tqdm(range(0, len(sentence_pairs), batch_size), desc="Scoring", disable=not show_progress_bar):
-            batch_on_device = self.preprocess(
+            batch_on_device = self.preprocess_pair(
                 sentence_pairs[i : i + batch_size], query_max_length=max_length, document_max_length=max_length
             )
-            query_embedding = self.encode(
+            query_embedding = self._encode(
                 batch_on_device['query_input_ids'], batch_on_device['query_attention_mask'], normalize=True
             )
-            doc_embedding = self.encode(
+            doc_embedding = self._encode(
                 batch_on_device['doc_input_ids'], batch_on_device['doc_attention_mask'], normalize=True
             )
             scores = self.score(query_embedding, doc_embedding)
@@ -564,13 +640,25 @@ class ColBERT(Base):
         pretrained_colbert_linear_name: str = 'colbert_linear.pt',
         loss_fn: Union[nn.Module, Callable] = ColbertLoss(),
         trust_remote_code: bool = True,
+        use_fp16: bool = False,
         device: Optional[str] = None,
         **kwargs,
     ):
+        """To load linear layer weight, manually download the model so the model_name_or_path will always be path"""
+        from huggingface_hub import snapshot_download
+
+        if not os.path.exists(model_name_or_path):
+            cache_dir = os.getenv('HF_HUB_CACHE')
+            model_name_or_path = snapshot_download(
+                repo_id=model_name_or_path,
+                cache_dir=cache_dir,
+                ignore_patterns=['flax_model.msgpack', 'rust_model.ot', 'tf_model.h5'],
+            )
+
         tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, trust_remote_code=trust_remote_code)
         model = AutoModel.from_pretrained(model_name_or_path, trust_remote_code=trust_remote_code, **kwargs)
 
-        linear_layer = nn.Linear(model.config.hidden_size, colbert_dim, dtype=torch.float32, bias=False)
+        linear_layer = nn.Linear(model.config.hidden_size, colbert_dim)
         if os.path.exists(path=os.path.join(model_name_or_path, pretrained_colbert_linear_name)):
             logger.info(f'Loading colbert_linear weight from {model_name_or_path}')
             colbert_state_dict = torch.load(
@@ -586,6 +674,11 @@ class ColBERT(Base):
                 metadata = json.load(fp=f)
             max_length = metadata["max_length"]
             print(max_length)
+
+        if use_fp16:
+            logger.info('Set model to fp16, please note that if you want fp16 during training, set training_args fp16')
+            model.half()
+            linear_layer.half()
 
         ranker = cls(
             model=model,
@@ -628,7 +721,7 @@ class LLMRanker(AutoModelForRanking):
         outputs_dict['loss'] = loss
         return outputs_dict
 
-    def preprocess(self, batch_sentence_pair: List[List[str]], max_length: int, **kwargs):
+    def preprocess_pair(self, batch_sentence_pair: List[List[str]], max_length: int, **kwargs):
         collator = LLMRerankCollator(tokenizer=self.tokenizer, prompt=self.task_prompt, max_length=max_length)
         batch_inputs = collator(batch_sentence_pair)
 
@@ -666,7 +759,7 @@ class LLMRanker(AutoModelForRanking):
             range(0, len(sentences_sorted), batch_size), desc='Scoring', disable=not show_progress_bar
         ):
             batch_sentences = sentences_sorted[batch_start : batch_start + batch_size]
-            batch_on_device = self.preprocess(batch_sentences, max_length=max_length)
+            batch_on_device = self.preprocess_pair(batch_sentences, max_length=max_length)
             outputs = self.model(**batch_on_device, output_hidden_states=True)
             scores = self.score(outputs.logits, batch_on_device['attention_mask'])
 

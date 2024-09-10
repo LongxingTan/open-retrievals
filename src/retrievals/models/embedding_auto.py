@@ -9,8 +9,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
-from tqdm.auto import tqdm
-from tqdm.autonotebook import trange
+from tqdm.auto import tqdm, trange
 from transformers import (
     AutoConfig,
     AutoModel,

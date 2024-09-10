@@ -38,9 +38,15 @@ Run a simple example
 
 .. code-block:: python
 
-    import retrievals
+    from retrievals import AutoModelForEmbedding
 
+    sentences = ["Hello NLP", "Open-retrievals is designed for retrieval, rerank and RAG"]
+    model_name_or_path = "sentence-transformers/all-MiniLM-L6-v2"
+    model = AutoModelForEmbedding.from_pretrained(model_name_or_path, pooling_method="mean")
+    sentence_embeddings = model.encode(sentences, normalize_embeddings=True, convert_to_tensor=True)
+    print(sentence_embeddings)
 
+Open-retrievals support to fine-tune the embedding model, reranking model, llm easily for custom usage.
 
 * `Pairwise embedding fine-tuning <https://github.com/LongxingTan/open-retrievals/blob/master/examples/embedding_pairwise_finetune.py>`_
 * `Pairwise LLM embedding fine-tuning <https://github.com/LongxingTan/open-retrievals/blob/master/examples/embedding_llm_finetune.py>`_
@@ -49,7 +55,7 @@ Run a simple example
 * `LLM reranking fine-tuning <https://github.com/LongxingTan/open-retrievals/blob/master/examples/rerank_llm_finetune.py>`_
 
 
-More datasets
+More datasets examples
 
 * `T2 ranking dataset <https://github.com/LongxingTan/open-retrievals/tree/master/examples/t2_ranking>`_
 * `scifact dataset <https://github.com/LongxingTan/open-retrievals/tree/master/examples/scifact>`_

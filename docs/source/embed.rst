@@ -3,50 +3,45 @@ Embedding
 
 .. _embed:
 
-Use embedding from open-retrievals
+1. Use embedding from open-retrievals
 ---------------------------------------
 
 we can use `AutoModelForEmbedding` to get the sentence embedding from pretrained transformer or large language model.
 
 The Transformer model could get the representation vector from a sentence.
 
-
-.. epigraph::
-    :align: left
-
     Choose the right `pooling_method` when use the pretrained embedding, check in `huggingface <https://huggingface.co/models>`_
 
 
-Fine-tune
+2. Fine-tune
 ------------------
 
-point-wise
+- point-wise
 
-- `{(query, label), (document, label)}`
+    `{(query, label), (document, label), ...}`
 
 
-pairwise
+- pairwise
 
-- `{(query, positive, label), (query, negative, label)}`
+    `{(query, positive, negative), {query, positive, negative}, ...}`
 
-- `{(query, positive, negative), {query, positive, negative}}`
+    `{(query, positive, negative1, negative2, negative3), (query, positive, negative1, negative2, negative3), ...}`
 
-- `{(query, positive, negative1, negative2, negative3...)}`
+    `{(query, positive, label), (query, negative, label), ...}`
 
-listwise
-
-- `{(query+positive)}`
+- listwise
 
 
 Loss function
 ~~~~~~~~~~~~~~~~~~~~~~
 
-- binary classification:
-    - similarity(query, positive) > similarity(query, negative)
-    - hinge loss: max(0, similarity(query, positive) - similarity(query, negative) + margin)
-    - logistic loss: logistic(similarity(query, positive) - similarity(query, negative))
-- multi-label classification:
-    - similarity(query, positive), similarity(query, negative1), similarity(query, negative2)
+binary classification:
+- similarity(query, positive) > similarity(query, negative)
+- hinge loss: max(0, similarity(query, positive) - similarity(query, negative) + margin)
+- logistic loss: logistic(similarity(query, positive) - similarity(query, negative))
+
+multi-label classification:
+- similarity(query, positive), similarity(query, negative1), similarity(query, negative2)
 
 
 Pair wise
@@ -112,7 +107,7 @@ arcface
 List wise
 ~~~~~~~~~~~~~~
 
-Training skills
+3. Training skills
 -----------------------------------
 
 multiple gpus
