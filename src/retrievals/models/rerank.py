@@ -485,7 +485,10 @@ class ColBERT(Base):
 
     def _encode(self, input_ids: torch.Tensor, attention_mask: torch.Tensor, normalize: bool = True) -> torch.Tensor:
         outputs: SequenceClassifierOutput = self.model(
-            input_ids, attention_mask=attention_mask, output_hidden_states=True
+            input_ids,
+            attention_mask=attention_mask,
+            output_hidden_states=True,
+            return_dict=True,
         )
         if hasattr(outputs, 'last_hidden_state'):
             # shape: [batch, seq_len, attention_dim]
@@ -493,12 +496,11 @@ class ColBERT(Base):
         else:
             hidden_state = outputs.hidden_states[1]
 
-        embeddings = hidden_state * attention_mask.unsqueeze(-1)
-        if self.linear is not None:
-            embeddings = self.linear(embeddings)
+        embeddings = self.linear(hidden_state[:, 1:])
+        embeddings = embeddings * attention_mask[:, 1:][:, :, None].float()
 
         if normalize:
-            embeddings = torch.nn.functional.normalize(embeddings, p=2, dim=2)
+            embeddings = torch.nn.functional.normalize(embeddings, p=2, dim=-1)
         return embeddings
 
     def encode(
@@ -550,7 +552,6 @@ class ColBERT(Base):
 
             with torch.no_grad():
                 embeddings = self._encode(**features, normalize=normalize_embeddings)
-
                 embeddings = embeddings.detach()
 
                 if convert_to_numpy:
