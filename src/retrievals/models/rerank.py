@@ -667,6 +667,7 @@ class ColBERT(Base):
         if use_fp16:
             logger.info('Set model to fp16, please note that if you want fp16 during training, set training_args fp16')
             model.half()
+            linear_layer.half()
 
         ranker = cls(
             model=model,
