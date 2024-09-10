@@ -640,6 +640,7 @@ class ColBERT(Base):
         pretrained_colbert_linear_name: str = 'colbert_linear.pt',
         loss_fn: Union[nn.Module, Callable] = ColbertLoss(),
         trust_remote_code: bool = True,
+        use_fp16: bool = False,
         device: Optional[str] = None,
         **kwargs,
     ):
@@ -662,6 +663,10 @@ class ColBERT(Base):
                 metadata = json.load(fp=f)
             max_length = metadata["max_length"]
             print(max_length)
+
+        if use_fp16:
+            logger.info('Set model to fp16, please note that if you want fp16 during training, set training_args fp16')
+            model.half()
 
         ranker = cls(
             model=model,
