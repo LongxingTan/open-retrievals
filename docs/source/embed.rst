@@ -16,6 +16,9 @@ The Transformer model could get the representation vector from a sentence.
 2. Fine-tune
 ------------------
 
+Prepare data
+~~~~~~~~~~~~~~~~~~~
+
 - point-wise
 
     `{(query, label), (document, label), ...}`
@@ -30,18 +33,6 @@ The Transformer model could get the representation vector from a sentence.
     `{(query, positive, label), (query, negative, label), ...}`
 
 - listwise
-
-
-Loss function
-~~~~~~~~~~~~~~~~~~~~~~
-
-binary classification:
-- similarity(query, positive) > similarity(query, negative)
-- hinge loss: max(0, similarity(query, positive) - similarity(query, negative) + margin)
-- logistic loss: logistic(similarity(query, positive) - similarity(query, negative))
-
-multi-label classification:
-- similarity(query, positive), similarity(query, negative1), similarity(query, negative2)
 
 
 Pair wise
@@ -107,18 +98,14 @@ arcface
 List wise
 ~~~~~~~~~~~~~~
 
-3. Training skills
------------------------------------
+
+3. Training skills to enhance the performance
+----------------------------------------------
 
 multiple gpus
 
-
 multiple precisions: int4, int8, float16, bfloat16
 
-
-
-Enhance the performance
---------------------------------------
 
 * Pretrain
 * In batch negative
@@ -146,6 +133,18 @@ Matryoshka Representation Learning
 
 Contrastive loss
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+binary classification:
+
+- similarity(query, positive) > similarity(query, negative)
+- hinge loss: max(0, similarity(query, positive) - similarity(query, negative) + margin)
+- logistic loss: logistic(similarity(query, positive) - similarity(query, negative))
+
+multi-label classification:
+
+- similarity(query, positive), similarity(query, negative1), similarity(query, negative2)
+
 
 cosent loss
 

@@ -6,6 +6,8 @@ Rerank
 1. Use reranking from open-retrievals
 -------------------------------------------
 
+Cross encoder reranking
+
 .. code-block:: python
 
     from retrievals import AutoModelForRanking
@@ -14,15 +16,39 @@ Rerank
         ["In 1974, I won the championship in Southeast Asia in my first kickboxing match", "In 1982, I defeated the heavy hitter Ryu Long."],
         ['A dog is chasing car.', 'A man is playing a guitar.'],
     ]
-
     model_name_or_path: str = "BAAI/bge-reranker-base"
-    rerank_model = AutoModelForRanking.from_pretrained(model_name_or_path)
-    scores_list = rerank_model.compute_score(sentences)
+    model = AutoModelForRanking.from_pretrained(model_name_or_path)
+    scores_list = model.compute_score(sentences)
     print(scores_list)
 
 .. code::
 
     [-5.075257778167725, -10.194067001342773]
+
+
+ColBERT reranking
+
+.. code-block:: python
+
+    from retrievals import ColBERT
+
+    sentences = [
+        ["In 1974, I won the championship in Southeast Asia in my first kickboxing match", "In 1982, I defeated the heavy hitter Ryu Long."],
+        ['A dog is chasing car.', 'A man is playing a guitar.'],
+    ]
+    model_name_or_path: str = 'BAAI/bge-m3'
+    model = ColBERT.from_pretrained(
+        model_name_or_path,
+        colbert_dim=1024,
+        use_fp16=True,
+        # loss_fn=ColbertLoss(use_inbatch_negative=True),
+    )
+    scores_list = model.compute_score(sentences)
+    print(scores_list)
+
+.. code::
+
+    [0.2585, 0.2931]
 
 
 2. Fine-tune cross-encoder reranking model
