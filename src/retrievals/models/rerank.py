@@ -202,7 +202,7 @@ class AutoModelForRanking(Base):
             **kwargs,
         )
 
-    def preprocess(
+    def preprocess_pair(
         self,
         batch_sentence_pair: List[List[str]],
         max_length: int,
@@ -253,7 +253,7 @@ class AutoModelForRanking(Base):
         ):
             batch_sentences = sentences_sorted[batch_start : batch_start + batch_size]
 
-            batch_on_device = self.preprocess(batch_sentences, max_length=max_length)
+            batch_on_device = self.preprocess_pair(batch_sentences, max_length=max_length)
 
             scores = self.model(**batch_on_device, return_dict=True).logits.view(-1).float()
 
@@ -457,7 +457,7 @@ class ColBERT(Base):
         scores = self.score(query_embedding, positive_embedding)
         return scores
 
-    def preprocess(
+    def preprocess_pair(
         self,
         batch_sentence_pair: List[List[str]],
         query_max_length: int,
@@ -590,7 +590,7 @@ class ColBERT(Base):
 
         scores_list: List[float] = []
         for i in tqdm(range(0, len(sentence_pairs), batch_size), desc="Scoring", disable=not show_progress_bar):
-            batch_on_device = self.preprocess(
+            batch_on_device = self.preprocess_pair(
                 sentence_pairs[i : i + batch_size], query_max_length=max_length, document_max_length=max_length
             )
             query_embedding = self._encode(
@@ -644,6 +644,17 @@ class ColBERT(Base):
         device: Optional[str] = None,
         **kwargs,
     ):
+        """To load linear layer weight, manually download the model so the model_name_or_path will always be path"""
+        from huggingface_hub import snapshot_download
+
+        if not os.path.exists(model_name_or_path):
+            cache_dir = os.getenv('HF_HUB_CACHE')
+            model_name_or_path = snapshot_download(
+                repo_id=model_name_or_path,
+                cache_dir=cache_dir,
+                ignore_patterns=['flax_model.msgpack', 'rust_model.ot', 'tf_model.h5'],
+            )
+
         tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, trust_remote_code=trust_remote_code)
         model = AutoModel.from_pretrained(model_name_or_path, trust_remote_code=trust_remote_code, **kwargs)
 
@@ -710,7 +721,7 @@ class LLMRanker(AutoModelForRanking):
         outputs_dict['loss'] = loss
         return outputs_dict
 
-    def preprocess(self, batch_sentence_pair: List[List[str]], max_length: int, **kwargs):
+    def preprocess_pair(self, batch_sentence_pair: List[List[str]], max_length: int, **kwargs):
         collator = LLMRerankCollator(tokenizer=self.tokenizer, prompt=self.task_prompt, max_length=max_length)
         batch_inputs = collator(batch_sentence_pair)
 
@@ -748,7 +759,7 @@ class LLMRanker(AutoModelForRanking):
             range(0, len(sentences_sorted), batch_size), desc='Scoring', disable=not show_progress_bar
         ):
             batch_sentences = sentences_sorted[batch_start : batch_start + batch_size]
-            batch_on_device = self.preprocess(batch_sentences, max_length=max_length)
+            batch_on_device = self.preprocess_pair(batch_sentences, max_length=max_length)
             outputs = self.model(**batch_on_device, output_hidden_states=True)
             scores = self.score(outputs.logits, batch_on_device['attention_mask'])
 
