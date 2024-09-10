@@ -80,8 +80,8 @@ from retrievals import AutoModelForEmbedding
 
 sentences = [
     "在1974年，第一次在东南亚打自由搏击就得了冠军",
-    "1982年打赢了日本重炮手雷龙，接着连续三年打败所有日本空手道高手，赢得全日本自由搏击冠军",
     "中国古拳法唯一传人鬼王达，被喻为空手道的克星，绰号魔鬼筋肉人",
+    "1982年打赢了日本重炮手雷龙，接着连续三年打败所有日本空手道高手，赢得全日本自由搏击冠军",
     "古人有云，有功夫，无懦夫"
 ]
 
@@ -97,12 +97,12 @@ print(scores.tolist())
 from retrievals import AutoModelForEmbedding, AutoModelForRetrieval
 
 index_path = './database/faiss/faiss.index'
-sentences = ['A dog is chasing car.', 'A man is playing a guitar.']
+sentences = ['在中国是中国人', '在美国是美国人', '2000人民币大于3000美元']
 model_name_or_path = "sentence-transformers/all-MiniLM-L6-v2"
 model = AutoModelForEmbedding.from_pretrained(model_name_or_path)
 model.build_index(sentences, index_path=index_path)
 
-query_embed = model.encode("He plays guitar.")
+query_embed = model.encode("在加拿大是加拿大人")
 matcher = AutoModelForRetrieval()
 dists, indices = matcher.search(query_embed, index_path=index_path)
 print(indices)
