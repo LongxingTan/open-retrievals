@@ -38,7 +38,7 @@ We can use the pretrained embedding easily from transformers or sentence-transfo
     [[89.92379760742188, 68.0742416381836], [68.93356323242188, 91.32250213623047]]
 
 
-Embedding fine-tuned
+Fine-tune embedding
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 If we want to further improve the retrieval performance, an optional method is to fine tune the embedding model weights. It will project the vector of query and answer to similar representation space.
@@ -111,17 +111,22 @@ If we have multiple retrieval source or a better sequence, we can add the rerank
 
     from retrievals import AutoModelForRanking
 
+    sentences = [
+        ["In 1974, I won the championship in Southeast Asia in my first kickboxing match", "In 1982, I defeated the heavy hitter Ryu Long."],
+        ['A dog is chasing car.', 'A man is playing a guitar.'],
+    ]
+
     model_name_or_path: str = "BAAI/bge-reranker-base"
     rerank_model = AutoModelForRanking.from_pretrained(model_name_or_path)
-    scores_list = rerank_model.compute_score(["In 1974, I won the championship in Southeast Asia in my first kickboxing match", "In 1982, I defeated the heavy hitter Ryu Long."])
+    scores_list = rerank_model.compute_score(sentences)
     print(scores_list)
 
 .. code::
 
-    -5.075255870819092
+    [-5.075257778167725, -10.194067001342773]
 
 
-Rerank fine-tuned
+Fine-tune reranking
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. code-block:: python
