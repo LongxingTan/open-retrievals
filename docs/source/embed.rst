@@ -3,7 +3,7 @@ Embedding
 
 .. _embed:
 
-Use embedding from open-retrievals
+1. Use embedding from open-retrievals
 ---------------------------------------
 
 we can use `AutoModelForEmbedding` to get the sentence embedding from pretrained transformer or large language model.
@@ -13,7 +13,7 @@ The Transformer model could get the representation vector from a sentence.
     Choose the right `pooling_method` when use the pretrained embedding, check in `huggingface <https://huggingface.co/models>`_
 
 
-Fine-tune
+2. Fine-tune
 ------------------
 
 - point-wise
@@ -107,7 +107,7 @@ arcface
 List wise
 ~~~~~~~~~~~~~~
 
-Training skills
+3. Training skills
 -----------------------------------
 
 multiple gpus

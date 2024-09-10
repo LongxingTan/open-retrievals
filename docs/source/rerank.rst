@@ -3,8 +3,8 @@ Rerank
 
 .. _rerank:
 
-Use reranking from open-retrievals
-------------------------------------
+1. Use reranking from open-retrievals
+-------------------------------------------
 
 .. code-block:: python
 
@@ -25,8 +25,8 @@ Use reranking from open-retrievals
     [-5.075257778167725, -10.194067001342773]
 
 
-Fine-tune cross-encoder reranking model
--------------------------------------------
+2. Fine-tune cross-encoder reranking model
+-----------------------------------------------
 
 .. image:: https://colab.research.google.com/assets/colab-badge.svg
     :target: https://colab.research.google.com/drive/1QvbUkZtG56SXomGYidwI4RQzwODQrWNm?usp=sharing
@@ -69,15 +69,15 @@ Fine-tune cross-encoder reranking model
     trainer.train()
 
 
-Fine-tune ColBERT reranking model
-------------------------------------
+3. Fine-tune ColBERT reranking model
+----------------------------------------
 
 .. image:: https://colab.research.google.com/assets/colab-badge.svg
     :target: https://colab.research.google.com/drive/1QVtqhQ080ZMltXoJyODMmvEQYI6oo5kO?usp=sharing
     :alt: Open In Colab
 
 
-Fine tuning LLM ranker
+4. Fine-tune LLM reranker
 -------------------------------------
 
 .. image:: https://colab.research.google.com/assets/colab-badge.svg
