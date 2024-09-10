@@ -225,3 +225,6 @@ The grad_norm during training is always zero?
 The fine-tuned embedding performance during inference is worse than original?
 - check whether the pooling_method is correct
 - check whether the prompt is the same as training for LLM model
+
+How can we fine-tune the `BAAI/bge-m3` ColBERT model?
+- download the weights first using `snapshot_download` from huggingface_hub to model_dir, then use from_pretrained(model_dir)
