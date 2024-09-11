@@ -632,7 +632,7 @@ class ColBERT(Base):
         late_interactions = late_interactions.max(2).values.sum(1)
         if query_attention_mask is not None:
             late_interactions = late_interactions / query_attention_mask[:, 1:].sum(-1, keepdim=False)
-        else:
+        else:  # Or length of token sequence
             late_interactions = late_interactions / query_embeddings.size(1)
         return late_interactions
 
