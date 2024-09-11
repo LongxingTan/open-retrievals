@@ -601,7 +601,7 @@ class ColBERT(Base):
             doc_embedding = self._encode(
                 batch_on_device['doc_input_ids'], batch_on_device['doc_attention_mask'], normalize_embeddings=True
             )
-            scores = self.score(query_embedding, doc_embedding)
+            scores = self.score(query_embedding, doc_embedding, query_mask=batch_on_device['query_attention_mask'])
             if normalize:
                 scores = torch.sigmoid(scores)
             scores_list.extend(scores.cpu().numpy().tolist())
@@ -614,6 +614,7 @@ class ColBERT(Base):
         self,
         query_embeddings: torch.Tensor,
         document_embeddings: torch.Tensor,
+        query_mask: Optional[torch.Tensor] = None,
     ):
         # pair embedding -> score
         late_interactions = torch.einsum(
@@ -622,7 +623,10 @@ class ColBERT(Base):
             document_embeddings,
         )
         late_interactions = late_interactions.max(2).values.sum(1)
-        late_interactions = late_interactions / query_embeddings.size(0)
+        if query_mask:
+            late_interactions = late_interactions / query_mask[:, 1:].sum(-1, keepdim=True)
+        else:
+            late_interactions = late_interactions / query_embeddings.size(0)
         return late_interactions
 
     def save_pretrained(self, save_directory: Union[str, os.PathLike], safe_serialization: bool = True):
