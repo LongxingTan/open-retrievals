@@ -229,7 +229,7 @@ class AutoModelForRanking(Base):
         self,
         sentence_pairs: Union[List[Tuple[str, str]], Tuple[str, str]],
         batch_size: int = 16,
-        max_length: int = 256,
+        max_length: int = 512,
         normalize: bool = False,
         show_progress_bar: bool = None,
         **kwargs,
@@ -249,9 +249,7 @@ class AutoModelForRanking(Base):
             range(0, len(sentences_sorted), batch_size), desc='Scoring', disable=not show_progress_bar
         ):
             batch_sentences = sentences_sorted[batch_start : batch_start + batch_size]
-
             batch_on_device = self.preprocess_pair(batch_sentences, max_length=max_length)
-
             scores = self.model(**batch_on_device, return_dict=True).logits.view(-1).float()
 
             if normalize:
@@ -357,7 +355,10 @@ class AutoModelForRanking(Base):
                 model_name_or_path, num_labels=num_labels, trust_remote_code=trust_remote_code, **kwargs
             )
 
-        if use_fp16:
+        if device is None:
+            device = get_device_name()
+
+        if use_fp16 and device != 'cpu':
             logger.info('Set model to fp16, please note that if you want fp16 during training, set training_args fp16')
             model.half()
 

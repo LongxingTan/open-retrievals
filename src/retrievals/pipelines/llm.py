@@ -18,7 +18,6 @@ from transformers import (
 
 from ..models.utils import find_all_linear_names
 
-os.environ["WANDB_LOG_MODEL"] = "false"
 logger = logging.getLogger(__name__)
 
 PROMPT = (
