@@ -53,7 +53,7 @@ class ModelArguments:
         default=None, metadata={"help": "Where do you want to store the pretrained models downloaded from s3"}
     )
     causal_lm: bool = field(default=False, metadata={'help': "Whether the model is a causal lm or not"})
-    embed_dim: int = field(default=128)
+    colbert_dim: int = field(default=1024)
 
 
 @dataclass
@@ -203,7 +203,7 @@ def main():
         )
         model = ColBERT.from_pretrained(
             model_args.model_name_or_path,
-            colbert_dim=model_args.embed_dim,
+            colbert_dim=model_args.colbert_dim,
             loss_fn=ColbertLoss(use_inbatch_negative=training_args.use_inbatch_negative),
         )
     elif training_args.model_type == 'cross-encoder':

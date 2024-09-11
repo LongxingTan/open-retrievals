@@ -17,20 +17,20 @@ Check the whole pipeline examples
 
 **Data Format**
 
-- In-batch negative fine-tuning
+- Use in-batch negative fine-tuning
 ```
 {'query': TEXT_TYPE, 'positive': List[TEXT_TYPE]}
 ...
 ```
 
-- Hard negative (+ In-batch negative) fine-tuning
+- Hard negative (or mix In-batch negative) fine-tuning
 ```
 {'query': TEXT_TYPE, 'positive': List[TEXT_TYPE], 'negative': List[TEXT_TYPE]}
 ...
 ```
 
 
-**Pairwise embedding finetune**
+**Pairwise fine-tune embedding model**
 ```shell
 MODEL_NAME="BAAI/bge-base-zh-v1.5"
 TRAIN_DATA="/t2_ranking.jsonl"
@@ -58,7 +58,7 @@ torchrun --nproc_per_node 1 \
   --use_inbatch_negative false
 ```
 
-**Pairwise LLM embedding finetune**
+**Pairwise fine-tune LLM embedding**
 - set `query_instruction`
   - "Given a query and a relevant document, retrieve the document that are pertinent to the query\nQuery: "
 - use the appropriate `pooling_method`
