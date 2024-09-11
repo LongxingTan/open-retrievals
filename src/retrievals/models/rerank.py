@@ -483,7 +483,9 @@ class ColBERT(Base):
             "doc_attention_mask": document_batch_tokens_on_device['attention_mask'],
         }
 
-    def _encode(self, input_ids: torch.Tensor, attention_mask: torch.Tensor, normalize: bool = True) -> torch.Tensor:
+    def _encode(
+        self, input_ids: torch.Tensor, attention_mask: torch.Tensor, normalize_embeddings: bool = True
+    ) -> torch.Tensor:
         outputs: SequenceClassifierOutput = self.model(
             input_ids,
             attention_mask=attention_mask,
@@ -491,7 +493,7 @@ class ColBERT(Base):
             return_dict=True,
         )
         if hasattr(outputs, 'last_hidden_state'):
-            # shape: [batch, seq_len, attention_dim]
+            # hidden_state shape: [batch, seq_len, attention_dim]
             hidden_state = outputs.last_hidden_state
         else:
             hidden_state = outputs.hidden_states[1]
@@ -499,7 +501,7 @@ class ColBERT(Base):
         embeddings = self.linear(hidden_state[:, 1:])
         embeddings = embeddings * attention_mask[:, 1:][:, :, None].float()
 
-        if normalize:
+        if normalize_embeddings:
             embeddings = torch.nn.functional.normalize(embeddings, p=2, dim=-1)
         return embeddings
 
@@ -551,7 +553,7 @@ class ColBERT(Base):
             features = batch_to_device(features, device)
 
             with torch.no_grad():
-                embeddings = self._encode(**features, normalize=normalize_embeddings)
+                embeddings = self._encode(**features, normalize_embeddings=normalize_embeddings)
                 embeddings = embeddings.detach()
 
                 if convert_to_numpy:
@@ -594,10 +596,10 @@ class ColBERT(Base):
                 sentence_pairs[i : i + batch_size], query_max_length=max_length, document_max_length=max_length
             )
             query_embedding = self._encode(
-                batch_on_device['query_input_ids'], batch_on_device['query_attention_mask'], normalize=True
+                batch_on_device['query_input_ids'], batch_on_device['query_attention_mask'], normalize_embeddings=True
             )
             doc_embedding = self._encode(
-                batch_on_device['doc_input_ids'], batch_on_device['doc_attention_mask'], normalize=True
+                batch_on_device['doc_input_ids'], batch_on_device['doc_attention_mask'], normalize_embeddings=True
             )
             scores = self.score(query_embedding, doc_embedding)
             if normalize:
@@ -620,6 +622,7 @@ class ColBERT(Base):
             document_embeddings,
         )
         late_interactions = late_interactions.max(2).values.sum(1)
+        late_interactions = late_interactions / query_embeddings.size(0)
         return late_interactions
 
     def save_pretrained(self, save_directory: Union[str, os.PathLike], safe_serialization: bool = True):
@@ -644,10 +647,10 @@ class ColBERT(Base):
         device: Optional[str] = None,
         **kwargs,
     ):
-        """To load linear layer weight, manually download the model so the model_name_or_path will always be path"""
-        from huggingface_hub import snapshot_download
-
         if not os.path.exists(model_name_or_path):
+            """To load linear layer weight, manually download the model so the model_name_or_path will always be path"""
+            from huggingface_hub import snapshot_download
+
             cache_dir = os.getenv('HF_HUB_CACHE')
             model_name_or_path = snapshot_download(
                 repo_id=model_name_or_path,
