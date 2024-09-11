@@ -8,8 +8,8 @@ class ColbertLoss(nn.Module):
     def __init__(
         self,
         criterion: Union[nn.Module, Callable] = nn.CrossEntropyLoss(reduction='mean'),
-        temperature: float = 0.02,
-        use_inbatch_negative: bool = True,
+        temperature: float = 1.0,
+        use_inbatch_negative: bool = False,
     ):
         super(ColbertLoss, self).__init__()
         self.criterion = criterion
@@ -59,7 +59,11 @@ class ColbertLoss(nn.Module):
         late_interactions = late_interactions.max(-1).values.sum(-1)
 
         if query_attention_mask is not None:
-            late_interactions = late_interactions / query_attention_mask[:, 1:].sum(-1, keepdim=False)
+            query_sequence_length = query_attention_mask[:, 1:].sum(-1, keepdim=False)
+            if late_interactions.dim() == 2:
+                query_sequence_length = query_sequence_length.unsqueeze(1)
+
+            late_interactions = late_interactions / query_sequence_length
         else:
             late_interactions = late_interactions / query_embeddings.size(1)
         return late_interactions
