@@ -623,7 +623,7 @@ class ColBERT(Base):
             document_embeddings,
         )
         late_interactions = late_interactions.max(2).values.sum(1)
-        if query_mask:
+        if query_mask is not None:
             late_interactions = late_interactions / query_mask[:, 1:].sum(-1, keepdim=True)
         else:
             late_interactions = late_interactions / query_embeddings.size(0)
