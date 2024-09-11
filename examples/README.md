@@ -227,5 +227,4 @@ The fine-tuned embedding performance during inference is worse than original?
 - check whether the prompt is the same as training for LLM model
 
 How can we fine-tune the `BAAI/bge-m3` ColBERT model?
-- open-retrievals support to fine-tune the `BAAI/bge-m3 colvert` directly, don't set use_fp16=True while fine-tuning
-- if you want to write your own code, first download the weights using `snapshot_download` from huggingface_hub to model_dir, then ColBERT.from_pretrained(model_dir)
+- open-retrievals support to fine-tune the `BAAI/bge-m3 colbert` directly, just don't set use_fp16=True while fine-tuning

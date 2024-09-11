@@ -107,7 +107,7 @@ class RerankerTrainingArguments(TrainingArguments):
     use_bnb_config: bool = field(default=False)
     do_rerank: bool = field(default=False, metadata={"help": "run the reranking loop"})
     report_to: Optional[List[str]] = field(
-        default=None, metadata={"help": "The list of integrations to report the results and logs to."}
+        default="none", metadata={"help": "The list of integrations to report the results and logs to."}
     )
 
 

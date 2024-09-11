@@ -1,4 +1,4 @@
-"""Cross encoder reranker fine-tuning"""
+"""Cross-encoder reranker fine-tuning"""
 
 import transformers
 from transformers import (
@@ -18,7 +18,7 @@ from retrievals import (
 transformers.logging.set_verbosity_error()
 
 model_name_or_path: str = "BAAI/bge-reranker-base"
-max_length: int = 512
+max_length: int = 256
 learning_rate: float = 2e-5
 batch_size: int = 32
 epochs: int = 3
@@ -26,7 +26,9 @@ output_dir: str = "./checkpoints"
 
 
 def train():
-    train_dataset = RerankTrainDataset("t2_ranking.jsonl", positive_key="positive", negative_key="negative")
+    train_dataset = RerankTrainDataset(
+        "C-MTEB/T2Reranking", positive_key="positive", negative_key="negative", dataset_split='dev'
+    )
     tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, use_fast=False)
     model = AutoModelForRanking.from_pretrained(model_name_or_path)
     optimizer = AdamW(model.parameters(), lr=learning_rate)
@@ -43,6 +45,8 @@ def train():
         num_train_epochs=epochs,
         output_dir=output_dir,
         remove_unused_columns=False,
+        logging_steps=100,
+        report_to="none",
     )
     trainer = RerankTrainer(
         model=model,

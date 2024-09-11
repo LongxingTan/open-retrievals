@@ -25,7 +25,9 @@ output_dir: str = './checkpoints'
 
 
 def train():
-    train_dataset = RetrievalTrainDataset("t2_ranking.jsonl", positive_key="positive", negative_key="negative")
+    train_dataset = RetrievalTrainDataset(
+        'C-MTEB/T2Reranking', positive_key='positive', negative_key='negative', dataset_split='dev'
+    )
     tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, use_fast=False)
     data_collator = ColBertCollator(
         tokenizer,
