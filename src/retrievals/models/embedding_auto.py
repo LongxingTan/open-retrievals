@@ -716,7 +716,7 @@ class ListwiseModel(AutoModelForEmbedding):
 
         start_idx = 0
         for i in range(num_segments):
-            # Find the range of indices corresponding to the current segment
+            """Find the range of indices corresponding to the current segment"""
             while start_idx < segment_ids.size(0) and segment_ids[start_idx] == i:
                 start_idx += 1
 

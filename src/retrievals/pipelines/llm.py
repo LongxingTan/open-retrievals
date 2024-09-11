@@ -2,6 +2,7 @@
 
 import copy
 import logging
+import os
 from dataclasses import dataclass, field
 from functools import partial
 from typing import Dict, List, Optional
@@ -17,6 +18,7 @@ from transformers import (
 
 from ..models.utils import find_all_linear_names
 
+os.environ["WANDB_LOG_MODEL"] = "false"
 logger = logging.getLogger(__name__)
 
 PROMPT = (

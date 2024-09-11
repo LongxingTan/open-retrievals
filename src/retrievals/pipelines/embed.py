@@ -22,6 +22,7 @@ from ..losses import AutoLoss, InfoNCE, SimCSE, TripletLoss
 from ..models.embedding_auto import AutoModelForEmbedding
 from ..trainer import RetrievalTrainer
 
+os.environ["WANDB_LOG_MODEL"] = "false"
 logger = logging.getLogger(__name__)
 
 

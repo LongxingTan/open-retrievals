@@ -15,10 +15,7 @@ from transformers import (
     AutoTokenizer,
     PreTrainedTokenizer,
 )
-from transformers.modeling_outputs import (
-    BaseModelOutputWithPooling,
-    SequenceClassifierOutput,
-)
+from transformers.modeling_outputs import SequenceClassifierOutput
 
 from ..data.collator import LLMRerankCollator, RerankCollator
 from ..losses.colbert_loss import ColbertLoss
