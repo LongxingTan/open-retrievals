@@ -591,7 +591,7 @@ class ColBERT(Base):
         **kwargs,
     ):
         self.model.eval()
-        if isinstance(sentence_pairs[0], str):
+        if isinstance(sentence_pairs[0], str) and len(sentence_pairs) == 2:
             sentence_pairs = [sentence_pairs]
 
         scores_list: List[float] = []
@@ -622,15 +622,16 @@ class ColBERT(Base):
         document_embeddings: torch.Tensor,
         query_attention_mask: Optional[torch.Tensor] = None,
     ):
-        # pair embedding -> score
+        # pair embedding -> score, mask the pad token while calculate similarity score
         late_interactions = torch.einsum(
             "bsh,bth->bst",
             query_embeddings,
             document_embeddings,
         )
+        # sum(1) will sum up in sequence_length dim, later divide the sum of non-pad token
         late_interactions = late_interactions.max(2).values.sum(1)
         if query_attention_mask is not None:
-            late_interactions = late_interactions / query_attention_mask[:, 1:].sum(-1, keepdim=True)
+            late_interactions = late_interactions / query_attention_mask[:, 1:].sum(-1, keepdim=False)
         else:
             late_interactions = late_interactions / query_embeddings.size(1)
         return late_interactions

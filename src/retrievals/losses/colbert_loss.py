@@ -59,7 +59,7 @@ class ColbertLoss(nn.Module):
         late_interactions = late_interactions.max(-1).values.sum(-1)
 
         if query_attention_mask is not None:
-            late_interactions = late_interactions / query_attention_mask[:, 1:].sum(-1, keepdim=True)
+            late_interactions = late_interactions / query_attention_mask[:, 1:].sum(-1, keepdim=False)
         else:
             late_interactions = late_interactions / query_embeddings.size(1)
         return late_interactions
