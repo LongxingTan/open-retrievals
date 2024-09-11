@@ -337,7 +337,7 @@ class EncodeDataset(Dataset):
             encoded_text = self.tokenizer.encode_plus(
                 text,
                 max_length=self.max_length,
-                truncation='only_first',
+                truncation=True,
                 padding=False,
                 return_token_type_ids=False,
             )

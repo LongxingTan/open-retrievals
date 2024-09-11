@@ -412,6 +412,7 @@ class ColBERT(Base):
         linear_layer: Optional[nn.Module] = None,
         max_length: Optional[int] = None,
         loss_fn: Union[nn.Module, Callable] = None,
+        temperature: float = 1.0,
         device: Optional[str] = None,
         **kwargs,
     ):
@@ -420,7 +421,8 @@ class ColBERT(Base):
         self.tokenizer = tokenizer
         self.linear = linear_layer
 
-        self.loss_fn = loss_fn if loss_fn else ColbertLoss()
+        self.loss_fn = loss_fn if loss_fn else ColbertLoss(temperature=temperature)
+        self.temperature = temperature
         self.max_length = max_length
         self.device = device or get_device_name()
         self.to(self.device)
@@ -446,7 +448,9 @@ class ColBERT(Base):
                     neg_input_ids, attention_mask=neg_attention_mask, normalize_embeddings=True
                 )
 
-            loss = self.loss_fn(query_embedding, positive_embedding, negative_embedding)
+            loss = self.loss_fn(
+                query_embedding, positive_embedding, negative_embedding, query_attention_mask=query_attention_mask
+            )
 
             if return_dict:
                 outputs_dict = dict()
@@ -614,7 +618,7 @@ class ColBERT(Base):
         self,
         query_embeddings: torch.Tensor,
         document_embeddings: torch.Tensor,
-        query_mask: Optional[torch.Tensor] = None,
+        query_attention_mask: Optional[torch.Tensor] = None,
     ):
         # pair embedding -> score
         late_interactions = torch.einsum(
@@ -623,10 +627,10 @@ class ColBERT(Base):
             document_embeddings,
         )
         late_interactions = late_interactions.max(2).values.sum(1)
-        if query_mask is not None:
-            late_interactions = late_interactions / query_mask[:, 1:].sum(-1, keepdim=True)
+        if query_attention_mask is not None:
+            late_interactions = late_interactions / query_attention_mask[:, 1:].sum(-1, keepdim=True)
         else:
-            late_interactions = late_interactions / query_embeddings.size(0)
+            late_interactions = late_interactions / query_embeddings.size(1)
         return late_interactions
 
     def save_pretrained(self, save_directory: Union[str, os.PathLike], safe_serialization: bool = True):
@@ -667,13 +671,15 @@ class ColBERT(Base):
 
         linear_layer = nn.Linear(model.config.hidden_size, colbert_dim)
         if os.path.exists(path=os.path.join(model_name_or_path, pretrained_colbert_linear_name)):
-            logger.info(f'Loading colbert_linear weight from {model_name_or_path}')
+            logger.info(
+                f'Loading colbert_linear pretrained weight from {model_name_or_path}, colbert_dim={colbert_dim}'
+            )
             colbert_state_dict = torch.load(
                 os.path.join(model_name_or_path, pretrained_colbert_linear_name), map_location='cpu'
             )
             linear_layer.load_state_dict(colbert_state_dict)
         else:
-            logger.info('Xavier uniform random colbert linear layer')
+            logger.info(f'Xavier uniform random colbert linear layer,  colbert_dim={colbert_dim}')
             torch.nn.init.xavier_uniform_(tensor=linear_layer.weight)
 
         if os.path.exists(path=os.path.join(model_name_or_path, "metadata.json")):

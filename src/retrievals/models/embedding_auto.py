@@ -298,7 +298,7 @@ class AutoModelForEmbedding(Base):
             features = self.tokenizer(
                 sentences_batch,
                 padding=True,
-                truncation="longest_first",
+                truncation=True,
                 return_tensors="pt",
                 max_length=self.max_length,
             )

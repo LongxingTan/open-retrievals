@@ -21,11 +21,14 @@ class ColbertLoss(nn.Module):
         query_embeddings: torch.Tensor,
         positive_embeddings: torch.Tensor,
         negative_embeddings: Optional[torch.Tensor] = None,
+        query_attention_mask: Optional[torch.Tensor] = None,
     ):
         scores = self.similarity(query_embeddings, positive_embeddings)
 
         if negative_embeddings is not None:
-            negative_scores = self.similarity(query_embeddings, negative_embeddings)
+            negative_scores = self.similarity(
+                query_embeddings, negative_embeddings, query_attention_mask=query_attention_mask
+            )
             scores = torch.cat([scores, negative_scores], dim=-1)
 
         if self.temperature is not None:
@@ -36,7 +39,7 @@ class ColbertLoss(nn.Module):
 
         return loss
 
-    def similarity(self, query_embeddings, document_embeddings):
+    def similarity(self, query_embeddings, document_embeddings, query_attention_mask=None):
         if query_embeddings.size(0) != document_embeddings.size(0) and self.use_inbatch_negative:
             late_interactions = torch.einsum(
                 "bsh,cdh->bcsd",
@@ -54,4 +57,9 @@ class ColbertLoss(nn.Module):
                 document_embeddings,
             )
         late_interactions = late_interactions.max(-1).values.sum(-1)
+
+        if query_attention_mask is not None:
+            late_interactions = late_interactions / query_attention_mask[:, 1:].sum(-1, keepdim=True)
+        else:
+            late_interactions = late_interactions / query_embeddings.size(1)
         return late_interactions
