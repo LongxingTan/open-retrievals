@@ -14,10 +14,10 @@ The Transformer model could get the representation vector from a sentence.
 
 
 2. Fine-tune
-------------------
+--------------------
 
 Prepare data
-~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~
 
 - point-wise
 
@@ -96,7 +96,7 @@ arcface
 
 
 List wise
-~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~
 
 
 3. Training skills to enhance the performance
@@ -120,8 +120,8 @@ tuning the important parameters:
 * temperature
 
 
-Hard mining
-~~~~~~~~~~~~~~~~~~~~~~
+Hard negative mining
+~~~~~~~~~~~~~~~~~~~~~~~~
 offline hard mining
 
 online hard mining
@@ -132,7 +132,7 @@ Matryoshka Representation Learning
 
 
 Contrastive loss
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
 binary classification:
@@ -149,3 +149,7 @@ multi-label classification:
 cosent loss
 
 - similar to circle loss, but with cosine
+
+
+Sampling
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
