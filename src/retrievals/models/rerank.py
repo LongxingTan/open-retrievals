@@ -438,13 +438,15 @@ class ColBERT(Base):
         return_dict: Optional[bool] = True,
         **kwargs,
     ):
-        query_embedding = self._encode(query_input_ids, attention_mask=query_attention_mask, normalize=True)
-        positive_embedding = self._encode(pos_input_ids, attention_mask=pos_attention_mask, normalize=True)
+        query_embedding = self._encode(query_input_ids, attention_mask=query_attention_mask, normalize_embeddings=True)
+        positive_embedding = self._encode(pos_input_ids, attention_mask=pos_attention_mask, normalize_embeddings=True)
 
         if self.training:
             negative_embedding = None
             if neg_input_ids is not None:
-                negative_embedding = self._encode(neg_input_ids, attention_mask=neg_attention_mask, normalize=True)
+                negative_embedding = self._encode(
+                    neg_input_ids, attention_mask=neg_attention_mask, normalize_embeddings=True
+                )
 
             loss = self.loss_fn(query_embedding, positive_embedding, negative_embedding)
 
