@@ -643,7 +643,7 @@ class ColBERT(Base):
         self.model.save_pretrained(
             save_directory, state_dict=state_dict_fn(state_dict), safe_serialization=safe_serialization
         )
-        torch.save(state_dict_fn(self.linear.state_dict()), os.path.join(save_directory, 'linear.pt'))
+        torch.save(state_dict_fn(self.linear.state_dict()), os.path.join(save_directory, 'colbert_linear.pt'))
         self.tokenizer.save_pretrained(save_directory)
 
     @classmethod
