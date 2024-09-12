@@ -6,7 +6,7 @@ Rerank
 1. Use reranking from open-retrievals
 -------------------------------------------
 
-Cross encoder reranking
+**Cross encoder reranking**
 
 .. code-block:: python
 
@@ -26,7 +26,7 @@ Cross encoder reranking
     Ranking score: [-5.075257778167725, -10.194067001342773]
 
 
-ColBERT reranking
+**ColBERT reranking**
 
 .. code-block:: python
 
@@ -52,6 +52,13 @@ ColBERT reranking
 
     Embedding shape: (2, 21, 1024)
     Ranking score: [5.445939064025879, 3.0762712955474854]
+
+
+**LLM reranking**
+
+.. code-block:: python
+
+    from retrievals import LLMRanker
 
 
 2. Fine-tune cross-encoder reranking model

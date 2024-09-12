@@ -10,7 +10,21 @@ we can use `AutoModelForEmbedding` to get the sentence embedding from pretrained
 
 The Transformer model could get the representation vector from a sentence.
 
-    Choose the right `pooling_method` when use the pretrained embedding, check in `huggingface <https://huggingface.co/models>`_
+
+**Transformer encoder embedding model**
+
+- Choose the right `pooling_method`, check in `huggingface <https://huggingface.co/models>`_
+
+.. code-block:: python
+
+    from retrievals import AutoModelForEmbedding
+
+
+**LLM decoder embedding model**
+
+.. code-block:: python
+
+    from retrievals import AutoModelForEmbedding
 
 
 2. Fine-tune

@@ -268,6 +268,7 @@ class AutoModelForRanking(Base):
         self,
         query: str,
         documents: List[str],
+        top_n: int = 3,
         data_collator: Optional[RerankCollator] = None,
         batch_size: int = 16,
         chunk_max_length: int = 256,
@@ -276,6 +277,7 @@ class AutoModelForRanking(Base):
         normalize: bool = False,
         show_progress_bar: bool = None,
         return_dict: bool = True,
+        return_documents: bool = True,
         **kwargs,
     ):
         if query is None or len(query) == 0 or len(documents) == 0:

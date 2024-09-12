@@ -3,7 +3,7 @@ Quick start
 
 .. _quick-start:
 
-We can easily use Open-retrievals to fine-tune the model easily for information retrieval and RAG application.
+We can use Open-retrievals to easily fine-tune models of information retrieval and RAG.
 
 .. image:: https://colab.research.google.com/assets/colab-badge.svg
     :target: https://colab.research.google.com/drive/1-WBMisdWLeHUKlzJ2DrREXY_kSV8vjP3?usp=sharing
@@ -13,7 +13,7 @@ We can easily use Open-retrievals to fine-tune the model easily for information 
 1. Embedding
 -----------------------------
 
-We can use the pretrained embedding easily from transformers or sentence-transformers.
+Use the pretrained embedding
 
 .. code-block:: python
 
@@ -41,7 +41,7 @@ We can use the pretrained embedding easily from transformers or sentence-transfo
 Fine-tune embedding
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-If we want to further improve the retrieval performance, an optional method is to fine tune the embedding model weights. It will project the vector of query and answer to similar representation space.
+To further improve the retrieval performance, we can fine tune the embedding model. It can project the vector of query and answer to similar representation space to get better retrieval performance.
 
 .. code-block:: python
 
@@ -81,10 +81,13 @@ If we want to further improve the retrieval performance, an optional method is t
     trainer.train()
 
 
+It's also easy to use multiple gpus for transformers `Trainer`.
+
+
 2. Indexing
 -----------------------------
 
-Save the document embedding offline.
+Save the document embedding offline using the vector database.
 
 .. code-block:: python
 
@@ -129,6 +132,8 @@ If we have multiple retrieval source or a better sequence, we can add the rerank
 Fine-tune reranking
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+Similarly, fine tune the reranking model to get a better performance for the specific task.
+
 .. code-block:: python
 
     from transformers import AutoTokenizer, TrainingArguments, get_cosine_schedule_with_warmup, AdamW
@@ -168,4 +173,4 @@ Fine-tune reranking
 4. RAG
 -----------------------------
 
-We can use open-retrievals easily to build RAG application, or integrated with LangChain or LlamaIndex.
+Use open-retrievals to build RAG easily, or integrated with LangChain or LlamaIndex.
