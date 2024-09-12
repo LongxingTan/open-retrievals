@@ -188,8 +188,8 @@ class AutoModelForRanking(Base):
             return logits
 
     def set_model_type(self, model_type: Literal['cross-encoder', 'colbert'], **kwargs):
-        model_type = model_type.lower().replace('-', '').replace('_', '')
         logger.info(f'Set model type to: {model_type}')
+        model_type = model_type.lower().replace('-', '').replace('_', '')
         model_class = {'crossencoder': self, 'colbert': ColBERT, 'llm': LLMRanker}
         model_class = model_class.get(model_type)
         return model_class(
@@ -382,7 +382,7 @@ class AutoModelForRanking(Base):
             model.print_trainable_parameters()
 
         if lora_path is not None:
-            logger.info('Load pretrained with LoRA adapter')
+            logger.info(f'Load pretrained LoRA adapter from {lora_path}')
             from peft import LoraConfig, PeftModel
 
             model = PeftModel.from_pretrained(model, lora_path)
