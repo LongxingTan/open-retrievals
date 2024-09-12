@@ -712,7 +712,14 @@ class ColBERT(Base):
 
 
 class LLMRanker(AutoModelForRanking):
-    def __init__(self, task_prompt: Optional[str] = None, token='Yes', **kwargs):
+    def __init__(
+        self,
+        task_prompt: Optional[str] = None,
+        target_token='Yes',
+        query_instruction: Optional[str] = 'A: ',
+        document_instruction: Optional[str] = 'B: ',
+        **kwargs,
+    ):
         super(LLMRanker, self).__init__(**kwargs)
         if task_prompt is None:
             task_prompt = (
@@ -725,7 +732,9 @@ class LLMRanker(AutoModelForRanking):
         ]
         sep = "\n"
         self.sep_inputs = self.tokenizer(sep, return_tensors=None, add_special_tokens=False)['input_ids']
-        self.token_loc = self.tokenizer(token, add_special_tokens=False)['input_ids'][0]
+        self.target_token_loc = self.tokenizer(target_token, add_special_tokens=False)['input_ids'][0]
+        self.query_instruction = query_instruction
+        self.document_instruction = document_instruction
 
     def forward(
         self,
@@ -743,7 +752,11 @@ class LLMRanker(AutoModelForRanking):
         return outputs_dict
 
     def preprocess_pair(self, batch_sentence_pair: List[List[str]], max_length: int, **kwargs):
-        collator = LLMRerankCollator(tokenizer=self.tokenizer, prompt=self.task_prompt, max_length=max_length)
+        collator = LLMRerankCollator(
+            tokenizer=self.tokenizer,
+            prompt=self.task_prompt,
+            max_length=max_length,  # query_instruction='A'
+        )
         batch_inputs = collator(batch_sentence_pair)
 
         batch_inputs = {
@@ -797,7 +810,7 @@ class LLMRanker(AutoModelForRanking):
 
     def score(self, logits, attention_mask: torch.Tensor):
         scores = AutoPooling('last')(logits, attention_mask)
-        scores = scores[:, self.token_loc]
+        scores = scores[:, self.target_token_loc]
         return scores
 
 

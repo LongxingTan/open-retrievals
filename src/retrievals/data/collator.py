@@ -301,10 +301,13 @@ class LLMRerankCollator(DataCollatorForSeq2Seq):
     positive_key: str = 'positive'
     negative_key: str = 'negative'
     max_length: int = 128
-    query_instruction: Optional[str] = None
-    document_instruction: Optional[str] = None
 
-    def __init__(self, tokenizer: PreTrainedTokenizer, prompt: str, max_length: int = 128):
+    def __init__(
+        self,
+        tokenizer: PreTrainedTokenizer,
+        prompt: str,
+        max_length: int = 128,
+    ):
         self.tokenizer = tokenizer
         self.prompt = prompt
         self.max_length = max_length
