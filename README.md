@@ -48,7 +48,7 @@
 | **rerank** colbert            | bge-m3              | 0.657    | **0.687** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1QVtqhQ080ZMltXoJyODMmvEQYI6oo5kO?usp=sharing) |
 | **rerank** LLM (LoRA)         | Qwen2-1.5B-Instruct | 0.531    | **0.699** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1fzq1iV7-f8hNKFnjMmpVhVxadqPb9IXk?usp=sharing) |
 
-* The metrics is MAP in 10% eval [t2-reranking data](https://huggingface.co/datasets/C-MTEB/T2Reranking). Original score of LLM is Zero-shot
+* The metrics is MAP in 10% eval [t2-reranking data](https://huggingface.co/datasets/C-MTEB/T2Reranking). Original LLM score is Zero-shot
 * Read [more examples](./examples)
 
 

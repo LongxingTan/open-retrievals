@@ -458,7 +458,7 @@ class ColBERT(Base):
                 return outputs_dict
             return loss
 
-        scores = self.score(query_embedding, positive_embedding)
+        scores = self.score(query_embedding, positive_embedding, query_attention_mask=query_attention_mask)
         return scores
 
     def preprocess_pair(
@@ -518,7 +518,7 @@ class ColBERT(Base):
         convert_to_numpy: bool = True,
         convert_to_tensor: bool = False,
         device: str = None,
-        normalize_embeddings: bool = False,
+        normalize_embeddings: bool = True,
     ):
         device = device or self.device
         self.model.eval()
