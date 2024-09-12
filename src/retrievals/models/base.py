@@ -30,9 +30,7 @@ class Base(ABC, torch.nn.Module):
         """Pytorch forward method."""
 
     def save_pretrained(self, path: str, safe_serialization: bool = True):
-        """
-        Saves all model and tokenizer to path
-        """
+        """Saves all model and tokenizer to path"""
         logger.info("Save model to {}".format(path))
         state_dict = self.model.state_dict()
         state_dict = type(state_dict)({k: v.clone().cpu() for k, v in state_dict.items()})
@@ -66,7 +64,6 @@ class Base(ABC, torch.nn.Module):
 
         all_tensors[self.process_rank] = tensor
         all_tensors = torch.cat(all_tensors, dim=0)
-
         return all_tensors
 
     def _text_length(self, text: Union[List[int], List[List[int]]]):

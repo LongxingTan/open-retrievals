@@ -4,7 +4,8 @@ import tempfile
 from unittest import TestCase
 
 import torch
-from transformers import AutoConfig, AutoTokenizer, BertTokenizer
+from torch import nn
+from transformers import AutoConfig, AutoModel, AutoTokenizer, BertTokenizer
 
 from src.retrievals.data.collator import RerankCollator
 from src.retrievals.models.rerank import AutoModelForRanking, ColBERT
@@ -54,3 +55,42 @@ class AutoModelForRankingTest(TestCase, ModelTesterMixin):
 
         print(scores)
         print(document_ranked)
+
+
+class TestColBERT(TestCase):
+    def setUp(self):
+        # Create mock objects
+        self.model = AutoModel.from_pretrained("bert-base-uncased")
+        self.tokenizer = AutoTokenizer.from_pretrained("bert-base-uncased")
+        self.linear_layer = nn.Linear(768, 256)
+        self.colbert = ColBERT(
+            model=self.model, tokenizer=self.tokenizer, linear_layer=self.linear_layer, max_length=128
+        )
+
+    def test_forward(self):
+        query_input_ids = torch.tensor([[101, 2054, 2003, 1996, 1045, 2572, 102]])
+        query_attention_mask = torch.tensor([[1, 1, 1, 1, 1, 1, 1]])
+        pos_input_ids = torch.tensor([[101, 2054, 2003, 1996, 1045, 2572, 102]])
+        pos_attention_mask = torch.tensor([[1, 1, 1, 1, 1, 1, 1]])
+
+        self.colbert.train()  # Set the model to training mode
+        output = self.colbert(
+            query_input_ids=query_input_ids,
+            query_attention_mask=query_attention_mask,
+            pos_input_ids=pos_input_ids,
+            pos_attention_mask=pos_attention_mask,
+            neg_input_ids=pos_input_ids,
+            neg_attention_mask=pos_attention_mask,
+        )
+        self.assertIn('loss', output)
+        self.assertIsInstance(output['loss'], torch.Tensor)
+
+    def test_preprocess_pair(self):
+        batch_sentence_pair = [["Hello, world!", "Hello there!"]]
+        preprocessed = self.colbert.preprocess_pair(
+            batch_sentence_pair=batch_sentence_pair, query_max_length=128, document_max_length=128
+        )
+        self.assertIn("query_input_ids", preprocessed)
+        self.assertIn("doc_input_ids", preprocessed)
+        self.assertIsInstance(preprocessed["query_input_ids"], torch.Tensor)
+        self.assertIsInstance(preprocessed["doc_input_ids"], torch.Tensor)

@@ -29,6 +29,7 @@ from ..losses import ColbertLoss, TokenLoss
 from ..models.rerank import AutoModelForRanking, ColBERT
 from ..trainer import RerankTrainer
 
+# os.environ["WANDB_LOG_MODEL"] = "false"
 transformers.logging.set_verbosity_error()
 logger = logging.getLogger(__name__)
 
@@ -52,7 +53,7 @@ class ModelArguments:
         default=None, metadata={"help": "Where do you want to store the pretrained models downloaded from s3"}
     )
     causal_lm: bool = field(default=False, metadata={'help': "Whether the model is a causal lm or not"})
-    embed_dim: int = field(default=128)
+    colbert_dim: int = field(default=1024)
 
 
 @dataclass
@@ -106,7 +107,7 @@ class RerankerTrainingArguments(TrainingArguments):
     use_bnb_config: bool = field(default=False)
     do_rerank: bool = field(default=False, metadata={"help": "run the reranking loop"})
     report_to: Optional[List[str]] = field(
-        default=None, metadata={"help": "The list of integrations to report the results and logs to."}
+        default="none", metadata={"help": "The list of integrations to report the results and logs to."}
     )
 
 
@@ -202,11 +203,11 @@ def main():
         )
         model = ColBERT.from_pretrained(
             model_args.model_name_or_path,
-            colbert_dim=model_args.embed_dim,
-            loss_fn=ColbertLoss(use_inbatch_negative=training_args.use_inbatch_negative),
+            colbert_dim=model_args.colbert_dim,
+            loss_fn=ColbertLoss(temperature=0.02, use_inbatch_negative=training_args.use_inbatch_negative),
         )
     elif training_args.model_type == 'cross-encoder':
-        logger.info('Set rank model to CrossEncoder')
+        logger.info('Set rank model to Cross-Encoder')
         train_dataset = RerankTrainDataset(args=data_args, tokenizer=tokenizer)
         data_collator = RerankCollator(tokenizer, max_length=data_args.max_length)
         model = AutoModelForRanking.from_pretrained(
@@ -239,7 +240,7 @@ def main():
         )
     else:
         raise ValueError(
-            f'model_type should be one of colbert, cross-encoder and llm, instead of {training_args.model_type}'
+            f"model_type should be one of 'colbert', 'cross-encoder' and 'llm', instead of {training_args.model_type}"
         )
 
     logger.info(f"Total training examples: {len(train_dataset)}")

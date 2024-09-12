@@ -168,4 +168,4 @@ Fine-tune reranking
 4. RAG
 -----------------------------
 
-We can use open-retrievals easily to build RAG application, or integrated with LangChain and Llamaindex.
+We can use open-retrievals easily to build RAG application, or integrated with LangChain or LlamaIndex.

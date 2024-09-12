@@ -68,7 +68,7 @@ More datasets examples
 Contributing
 ---------------------
 
-If you wish to contribute to the project, please refer to our `contribution guidelines <https://github.com/LongxingTan/Time-series-prediction/blob/master/CONTRIBUTING.md>`_.
+If you want to contribute to the project, please refer to our `contribution guidelines <https://github.com/LongxingTan/Time-series-prediction/blob/master/CONTRIBUTING.md>`_.
 
 
 .. toctree::

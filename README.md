@@ -39,17 +39,17 @@
 - Embedding fine-tuned through point-wise, pairwise, listwise, contrastive learning, and LLM.
 - Reranking fine-tuned with Cross Encoder, ColBERT, and LLM.
 - Easily build enhanced modular RAG, integrated with Transformers, Langchain, and LlamaIndex.
-- Term matching and semantic matching.
 
-| Exp                           | Model                   | Original | Finetuned | Demo                                                                                                                                                                |
-|-------------------------------|-------------------------|----------|-----------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **embed** pairwise finetune   | bge-base-zh-v1.5        | 0.657    | **0.703** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/17KXe2lnNRID-HiVvMtzQnONiO74oGs91?usp=sharing) |
-| **embed** LLM finetune (LoRA) | Qwen2-1.5B-Instruct     | 0.546    | **0.695** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1jj1kBQWFcuQ3a7P9ttnl1hgX7H8WA_Za?usp=sharing) |
-| **rerank** cross encoder      | bge-reranker-base       | 0.666    | **0.706** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1QvbUkZtG56SXomGYidwI4RQzwODQrWNm?usp=sharing) |
-| **rerank** colbert            | chinese-roberta-wwm-ext | 0.643    | **0.687** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1QVtqhQ080ZMltXoJyODMmvEQYI6oo5kO?usp=sharing) |
-| **rerank** LLM (LoRA)         | Qwen2-1.5B-Instruct     | 0.531    | **0.699** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1fzq1iV7-f8hNKFnjMmpVhVxadqPb9IXk?usp=sharing) |
+| Exp                           | Model               | Original | Finetuned | Demo                                                                                                                                                                |
+|-------------------------------|---------------------|----------|-----------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **embed** pairwise finetune   | bge-base-zh-v1.5    | 0.657    | **0.703** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/17KXe2lnNRID-HiVvMtzQnONiO74oGs91?usp=sharing) |
+| **embed** LLM finetune (LoRA) | Qwen2-1.5B-Instruct | 0.546    | **0.695** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1jj1kBQWFcuQ3a7P9ttnl1hgX7H8WA_Za?usp=sharing) |
+| **rerank** cross encoder      | bge-reranker-base   | 0.666    | **0.706** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1QvbUkZtG56SXomGYidwI4RQzwODQrWNm?usp=sharing) |
+| **rerank** colbert            | bge-m3              | 0.657    | **0.695** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1QVtqhQ080ZMltXoJyODMmvEQYI6oo5kO?usp=sharing) |
+| **rerank** LLM (LoRA)         | Qwen2-1.5B-Instruct | 0.531    | **0.699** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1fzq1iV7-f8hNKFnjMmpVhVxadqPb9IXk?usp=sharing) |
 
-* The metrics is MAP in 10% [t2-reranking data](https://huggingface.co/datasets/C-MTEB/T2Reranking). Original score of LLM and colbert original is Zero-shot
+* The metrics is MAP in 10% eval [t2-reranking data](https://huggingface.co/datasets/C-MTEB/T2Reranking). Original LLM score is Zero-shot
+* Read [more examples](./examples)
 
 
 ## Installation
@@ -191,7 +191,7 @@ print(response)
 ```
 
 
-**Embedding fine-tuning**
+**Fine-tune Embedding**
 
 ```python
 import torch.nn as nn
@@ -231,7 +231,7 @@ trainer.scheduler = scheduler
 trainer.train()
 ```
 
-**Reranking Fine-tuning**
+**Fine-tune cross-encoder reranking**
 
 ```python
 from transformers import AutoTokenizer, TrainingArguments, get_cosine_schedule_with_warmup, AdamW
@@ -268,6 +268,71 @@ trainer.scheduler = scheduler
 trainer.train()
 ```
 
+**Fine-tune ColBERT reranking**
+```python
+import os
+import transformers
+from transformers import (
+    AdamW,
+    AutoTokenizer,
+    TrainingArguments,
+    get_cosine_schedule_with_warmup,
+)
+
+from retrievals import ColBERT, ColBertCollator, RerankTrainer, RetrievalTrainDataset
+from retrievals.losses import ColbertLoss
+
+transformers.logging.set_verbosity_error()
+os.environ["WANDB_DISABLED"] = "true"
+
+model_name_or_path: str = "BAAI/bge-m3"
+learning_rate: float = 5e-6
+batch_size: int = 32
+epochs: int = 3
+colbert_dim: int = 1024
+output_dir: str = './checkpoints'
+
+train_dataset = RetrievalTrainDataset(
+    'C-MTEB/T2Reranking', positive_key='positive', negative_key='negative', dataset_split='dev'
+)
+tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, use_fast=False)
+data_collator = ColBertCollator(
+    tokenizer,
+    query_max_length=128,
+    document_max_length=256,
+    positive_key='positive',
+    negative_key='negative',
+)
+model = ColBERT.from_pretrained(
+    model_name_or_path,
+    colbert_dim=colbert_dim,
+    loss_fn=ColbertLoss(use_inbatch_negative=False),
+)
+
+optimizer = AdamW(model.parameters(), lr=learning_rate)
+num_train_steps = int(len(train_dataset) / batch_size * epochs)
+scheduler = get_cosine_schedule_with_warmup(
+    optimizer, num_warmup_steps=0.05 * num_train_steps, num_training_steps=num_train_steps
+)
+
+training_args = TrainingArguments(
+    learning_rate=learning_rate,
+    per_device_train_batch_size=batch_size,
+    num_train_epochs=epochs,
+    output_dir=output_dir,
+    remove_unused_columns=False,
+    logging_steps=100,
+)
+trainer = RerankTrainer(
+    model=model,
+    args=training_args,
+    train_dataset=train_dataset,
+    data_collator=data_collator,
+)
+trainer.optimizer = optimizer
+trainer.scheduler = scheduler
+trainer.train()
+```
 
 ## Reference & Acknowledge
 - [sentence-transformers](https://github.com/UKPLab/sentence-transformers)

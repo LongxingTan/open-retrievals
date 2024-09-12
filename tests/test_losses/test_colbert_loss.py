@@ -14,7 +14,7 @@ class TestColbertLoss(unittest.TestCase):
         self.loss_fn = ColbertLoss(
             criterion=self.criterion,
             temperature=self.temperature,
-            use_inbatch_negative=self.use_inbatch_negative,
+            use_inbatch_negative=True,
         )
         self.query_embeddings = torch.randn(2, 10, 128)
         self.positive_embeddings = torch.randn(2, 10, 128)

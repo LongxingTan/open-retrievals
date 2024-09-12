@@ -34,20 +34,21 @@
 
 ![structure](./docs/source/_static/structure.png)
 
-**Open-Retrievals** 是一个统一文本向量、检索、重排的工具，使信息检索、RAG等更加便捷
+**Open-Retrievals** 支持统一调用或微调文本向量、检索、重排等模型，使信息检索、RAG应用更加便捷
 - 支持全套向量微调，对比学习、大模型、point-wise、pairwise、listwise
 - 支持全套重排微调，cross encoder、ColBERT、LLM
 - 支持定制化、模块化RAG，支持在Transformers、Langchain、LlamaIndex中便捷使用微调后的模型
 
-| 实验                  | 模型                      | 参数 | 原分数 | 微调分数      | Demo代码                                                                                                                           |
-|----------------------|-------------------------|------|-------|-----------|-------------------------------------------------------------------------------------------------------------------------------------|
-| pairwise微调**向量**   | bge-base-zh-v1.5        | -    | 0.657 | **0.703** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/17KXe2lnNRID-HiVvMtzQnONiO74oGs91?usp=sharing) |
-| 大模型LoRA微调**向量**  | Qwen2-1.5B-Instruct     | -    | 0.546 | **0.695** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1jj1kBQWFcuQ3a7P9ttnl1hgX7H8WA_Za?usp=sharing) |
-| cross encoder**重排** | bge-reranker-base       | -    | 0.666 | **0.706** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1QvbUkZtG56SXomGYidwI4RQzwODQrWNm?usp=sharing) |
-| colbert**重排**       | chinese-roberta-wwm-ext | -    | 0.643 | **0.687** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1QVtqhQ080ZMltXoJyODMmvEQYI6oo5kO?usp=sharing) |
-| LLM**重排**           | Qwen2-1.5B-Instruct     | -    | 0.531 | **0.699** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1fzq1iV7-f8hNKFnjMmpVhVxadqPb9IXk?usp=sharing) |
+| 实验                  | 模型                 | 原分数    | 微调分数      | Demo代码                                                                                                                                                              |
+|----------------------|---------------------|--------|-----------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| pairwise微调**向量**   | bge-base-zh-v1.5    | 0.657  | **0.703** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/17KXe2lnNRID-HiVvMtzQnONiO74oGs91?usp=sharing) |
+| 大模型LoRA微调**向量**  | Qwen2-1.5B-Instruct | 0.546  | **0.695** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1jj1kBQWFcuQ3a7P9ttnl1hgX7H8WA_Za?usp=sharing) |
+| cross encoder**重排** | bge-reranker-base   | 0.666  | **0.706** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1QvbUkZtG56SXomGYidwI4RQzwODQrWNm?usp=sharing) |
+| colbert**重排**       | bge-m3              | 0.657  | **0.695** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1QVtqhQ080ZMltXoJyODMmvEQYI6oo5kO?usp=sharing) |
+| LLM**重排**           | Qwen2-1.5B-Instruct | 0.531  | **0.699** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1fzq1iV7-f8hNKFnjMmpVhVxadqPb9IXk?usp=sharing) |
 
-* 指标为10% [t2-reranking数据](https://huggingface.co/datasets/C-MTEB/T2Reranking)的MAP. 其中大模型与ColBERT原分数为Zero-shot
+* 指标为10%测试[t2-reranking数据](https://huggingface.co/datasets/C-MTEB/T2Reranking)的MAP. 大模型原分数为Zero-shot
+* 阅读[更多示例](./examples)
 
 
 ## 安装
@@ -193,7 +194,9 @@ print(response)
 ```
 
 
-**向量模型微调**
+**微调向量模型**
+
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1w2dRoRThG6DnUW46swqEUuWySKS1AXCp?usp=sharing)
 
 ```python
 import torch.nn as nn
@@ -233,34 +236,8 @@ trainer.scheduler = scheduler
 trainer.train()
 ```
 
-命令行快速使用
 
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1w2dRoRThG6DnUW46swqEUuWySKS1AXCp?usp=sharing)
-
-```shell
-MODEL_NAME='BAAI/bge-small-zh-v1.5'
-OUTPUT_DIR="/train_out"
-
-torchrun --nproc_per_node 1 \
-  -m retrievals.pipelines.embed \
-  --output_dir $OUTPUT_DIR \
-  --overwrite_output_dir \
-  --model_name_or_path $MODEL_NAME \
-  --do_train \
-  --train_data t2_ranking.jsonl \
-  --learning_rate 3e-5 \
-  --fp16 \
-  --num_train_epochs 5 \
-  --per_device_train_batch_size 32 \
-  --dataloader_drop_last True \
-  --query_max_length 64 \
-  --document_max_length 512 \
-  --train_group_size 2 \
-  --logging_steps 100
-```
-
-
-**重排模型微调**
+**微调Cross-encoder重排模型**
 
 ```python
 from transformers import AutoTokenizer, TrainingArguments, get_cosine_schedule_with_warmup, AdamW
@@ -297,30 +274,71 @@ trainer.scheduler = scheduler
 trainer.train()
 ```
 
-命令行快速使用
-```shell
-MODEL_NAME="BAAI/bge-reranker-base"
-OUTPUT_DIR="/train_out"
+**微调ColBERT重排模型**
 
-torchrun --nproc_per_node 1 \
-  -m retrievals.pipelines.rerank \
-  --output_dir $OUTPUT_DIR \
-  --overwrite_output_dir \
-  --model_name_or_path $MODEL_NAME \
-  --do_train \
-  --train_data t2_ranking.jsonl \
-  --positive_key positive \
-  --negative_key negative \
-  --learning_rate 3e-5 \
-  --fp16 \
-  --num_train_epochs 3 \
-  --per_device_train_batch_size 64 \
-  --dataloader_drop_last True \
-  --max_length 512 \
-  --max_negative_samples 7 \
-  --unfold_each_positive false \
-  --save_total_limit 2 \
-  --logging_steps 100
+```python
+import os
+import transformers
+from transformers import (
+    AdamW,
+    AutoTokenizer,
+    TrainingArguments,
+    get_cosine_schedule_with_warmup,
+)
+
+from retrievals import ColBERT, ColBertCollator, RerankTrainer, RetrievalTrainDataset
+from retrievals.losses import ColbertLoss
+
+transformers.logging.set_verbosity_error()
+os.environ["WANDB_DISABLED"] = "true"
+
+model_name_or_path: str = "BAAI/bge-m3"
+learning_rate: float = 5e-6
+batch_size: int = 32
+epochs: int = 3
+colbert_dim: int = 1024
+output_dir: str = './checkpoints'
+
+train_dataset = RetrievalTrainDataset(
+    'C-MTEB/T2Reranking', positive_key='positive', negative_key='negative', dataset_split='dev'
+)
+tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, use_fast=False)
+data_collator = ColBertCollator(
+    tokenizer,
+    query_max_length=128,
+    document_max_length=256,
+    positive_key='positive',
+    negative_key='negative',
+)
+model = ColBERT.from_pretrained(
+    model_name_or_path,
+    colbert_dim=colbert_dim,
+    loss_fn=ColbertLoss(use_inbatch_negative=False),
+)
+
+optimizer = AdamW(model.parameters(), lr=learning_rate)
+num_train_steps = int(len(train_dataset) / batch_size * epochs)
+scheduler = get_cosine_schedule_with_warmup(
+    optimizer, num_warmup_steps=0.05 * num_train_steps, num_training_steps=num_train_steps
+)
+
+training_args = TrainingArguments(
+    learning_rate=learning_rate,
+    per_device_train_batch_size=batch_size,
+    num_train_epochs=epochs,
+    output_dir=output_dir,
+    remove_unused_columns=False,
+    logging_steps=100,
+)
+trainer = RerankTrainer(
+    model=model,
+    args=training_args,
+    train_dataset=train_dataset,
+    data_collator=data_collator,
+)
+trainer.optimizer = optimizer
+trainer.scheduler = scheduler
+trainer.train()
 ```
 
 
