@@ -61,12 +61,12 @@ class ColbertLoss(nn.Module):
             )
         late_interactions = late_interactions.max(-1).values.sum(-1)
 
-        if query_attention_mask is not None:
-            query_sequence_length = query_attention_mask[:, 1:].sum(-1, keepdim=False)
-            if late_interactions.dim() == 2:  # if the train_group_size > 2, the late_interactions shape: batch * neg
-                query_sequence_length = query_sequence_length.unsqueeze(1)
-
-            late_interactions = late_interactions / query_sequence_length
-        else:
-            late_interactions = late_interactions / query_embeddings.size(1)
+        # if query_attention_mask is not None:
+        #     query_sequence_length = query_attention_mask[:, 1:].sum(-1, keepdim=False)
+        #     if late_interactions.dim() == 2:  # if the train_group_size > 2, the late_interactions shape: batch * neg
+        #         query_sequence_length = query_sequence_length.unsqueeze(1)
+        #
+        #     late_interactions = late_interactions / query_sequence_length
+        # else:
+        #     late_interactions = late_interactions / query_embeddings.size(1)
         return late_interactions
