@@ -105,6 +105,71 @@ ColBERT reranking
     :target: https://colab.research.google.com/drive/1QVtqhQ080ZMltXoJyODMmvEQYI6oo5kO?usp=sharing
     :alt: Open In Colab
 
+.. code-block:: python
+
+    import os
+    import transformers
+    from transformers import (
+        AdamW,
+        AutoTokenizer,
+        TrainingArguments,
+        get_cosine_schedule_with_warmup,
+    )
+
+    from retrievals import ColBERT, ColBertCollator, RerankTrainer, RetrievalTrainDataset
+    from retrievals.losses import ColbertLoss
+
+    transformers.logging.set_verbosity_error()
+    os.environ["WANDB_DISABLED"] = "true"
+
+    model_name_or_path: str = "BAAI/bge-m3"
+    learning_rate: float = 5e-6
+    batch_size: int = 1
+    epochs: int = 3
+    colbert_dim: int = 1024
+    output_dir: str = './checkpoints'
+
+    train_dataset = RetrievalTrainDataset(
+        'C-MTEB/T2Reranking', positive_key='positive', negative_key='negative', dataset_split='dev'
+    )
+    tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, use_fast=False)
+    data_collator = ColBertCollator(
+        tokenizer,
+        query_max_length=64,
+        document_max_length=256,
+        positive_key='positive',
+        negative_key='negative',
+    )
+    model = ColBERT.from_pretrained(
+        model_name_or_path,
+        colbert_dim=colbert_dim,
+        loss_fn=ColbertLoss(use_inbatch_negative=False),
+    )
+
+    optimizer = AdamW(model.parameters(), lr=learning_rate)
+    num_train_steps = int(len(train_dataset) / batch_size * epochs)
+    scheduler = get_cosine_schedule_with_warmup(
+        optimizer, num_warmup_steps=0.05 * num_train_steps, num_training_steps=num_train_steps
+    )
+
+    training_args = TrainingArguments(
+        learning_rate=learning_rate,
+        per_device_train_batch_size=batch_size,
+        num_train_epochs=epochs,
+        output_dir=output_dir,
+        remove_unused_columns=False,
+        logging_steps=100,
+    )
+    trainer = RerankTrainer(
+        model=model,
+        args=training_args,
+        train_dataset=train_dataset,
+        data_collator=data_collator,
+    )
+    trainer.optimizer = optimizer
+    trainer.scheduler = scheduler
+    trainer.train()
+
 
 4. Fine-tune LLM reranker
 -------------------------------------

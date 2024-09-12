@@ -79,6 +79,8 @@ class TestColBERT(TestCase):
             query_attention_mask=query_attention_mask,
             pos_input_ids=pos_input_ids,
             pos_attention_mask=pos_attention_mask,
+            neg_input_ids=pos_input_ids,
+            neg_attention_mask=pos_attention_mask,
         )
         self.assertIn('loss', output)
         self.assertIsInstance(output['loss'], torch.Tensor)
