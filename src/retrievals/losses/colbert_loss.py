@@ -23,6 +23,12 @@ class ColbertLoss(nn.Module):
         negative_embeddings: Optional[torch.Tensor] = None,
         query_attention_mask: Optional[torch.Tensor] = None,
     ):
+
+        if negative_embeddings is None and self.use_inbatch_negative is False:
+            raise ValueError(
+                "No negative samples for ColBERT, either provide negative_embeddings or use_inbatch_negative=True"
+            )
+
         scores = self.similarity(query_embeddings, positive_embeddings)
 
         if negative_embeddings is not None:
@@ -37,13 +43,13 @@ class ColbertLoss(nn.Module):
         if self.use_inbatch_negative:
             labels = torch.arange(scores.size(0), dtype=torch.long, device=scores.device)
         else:
-            labels = torch.zeros(scores.shape[0], dtype=torch.long, device=scores.device)
-        loss = self.criterion(scores, labels)
+            labels = torch.zeros(scores.size(0), dtype=torch.long, device=scores.device)
 
+        loss = self.criterion(scores, labels)
         return loss
 
     def similarity(self, query_embeddings, document_embeddings, query_attention_mask=None):
-        if query_embeddings.size(0) != document_embeddings.size(0) and self.use_inbatch_negative:
+        if self.use_inbatch_negative:  # query_embeddings.size(0) != document_embeddings.size(0) and
             late_interactions = torch.einsum(
                 "bsh,cdh->bcsd",
                 query_embeddings,
