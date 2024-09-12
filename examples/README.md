@@ -227,4 +227,4 @@ The fine-tuned embedding performance during inference is worse than original?
 - check whether the prompt is the same as training for LLM model
 
 How can we fine-tune the `BAAI/bge-m3` ColBERT model?
-- open-retrievals support to fine-tune the `BAAI/bge-m3 colbert` directly, just don't set use_fp16=True while fine-tuning
+- open-retrievals support to fine-tune the `BAAI/bge-m3 colbert` directly, just don't set use_fp16=True while fine-tuning, and set the learning_rate smaller
