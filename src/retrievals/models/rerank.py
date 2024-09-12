@@ -493,6 +493,7 @@ class ColBERT(Base):
     def _encode(
         self, input_ids: torch.Tensor, attention_mask: torch.Tensor, normalize_embeddings: bool = True
     ) -> torch.Tensor:
+        """encode the ids and mask to embedding"""
         outputs: SequenceClassifierOutput = self.model(
             input_ids,
             attention_mask=attention_mask,
@@ -505,8 +506,9 @@ class ColBERT(Base):
         else:
             hidden_state = outputs.hidden_states[1]
 
+        # without the first the [CLS] token
         embeddings = self.linear(hidden_state[:, 1:])
-        embeddings = embeddings * attention_mask[:, 1:][:, :, None].float()
+        embeddings = embeddings * attention_mask[:, 1:].unsqueeze(-1).float()
 
         if normalize_embeddings:
             embeddings = torch.nn.functional.normalize(embeddings, p=2, dim=-1)
