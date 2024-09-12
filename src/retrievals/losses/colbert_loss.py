@@ -34,7 +34,10 @@ class ColbertLoss(nn.Module):
         if self.temperature is not None:
             scores = scores / self.temperature
 
-        labels = torch.zeros(scores.shape[0], dtype=torch.long, device=scores.device)
+        if self.use_inbatch_negative:
+            labels = torch.arange(scores.size(0), dtype=torch.long, device=scores.device)
+        else:
+            labels = torch.zeros(scores.shape[0], dtype=torch.long, device=scores.device)
         loss = self.criterion(scores, labels)
 
         return loss
@@ -60,7 +63,7 @@ class ColbertLoss(nn.Module):
 
         if query_attention_mask is not None:
             query_sequence_length = query_attention_mask[:, 1:].sum(-1, keepdim=False)
-            if late_interactions.dim() == 2:
+            if late_interactions.dim() == 2:  # if the train_group_size > 2, the late_interactions shape: batch * neg
                 query_sequence_length = query_sequence_length.unsqueeze(1)
 
             late_interactions = late_interactions / query_sequence_length

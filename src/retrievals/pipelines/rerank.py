@@ -204,10 +204,10 @@ def main():
         model = ColBERT.from_pretrained(
             model_args.model_name_or_path,
             colbert_dim=model_args.colbert_dim,
-            loss_fn=ColbertLoss(temperature=1.0, use_inbatch_negative=training_args.use_inbatch_negative),
+            loss_fn=ColbertLoss(temperature=0.02, use_inbatch_negative=training_args.use_inbatch_negative),
         )
     elif training_args.model_type == 'cross-encoder':
-        logger.info('Set rank model to CrossEncoder')
+        logger.info('Set rank model to Cross-Encoder')
         train_dataset = RerankTrainDataset(args=data_args, tokenizer=tokenizer)
         data_collator = RerankCollator(tokenizer, max_length=data_args.max_length)
         model = AutoModelForRanking.from_pretrained(
@@ -240,7 +240,7 @@ def main():
         )
     else:
         raise ValueError(
-            f'model_type should be one of colbert, cross-encoder and llm, instead of {training_args.model_type}'
+            f"model_type should be one of 'colbert', 'cross-encoder' and 'llm', instead of {training_args.model_type}"
         )
 
     logger.info(f"Total training examples: {len(train_dataset)}")
