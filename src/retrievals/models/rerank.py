@@ -421,7 +421,7 @@ class ColBERT(Base):
         self.tokenizer = tokenizer
         self.linear = linear_layer
 
-        self.loss_fn = loss_fn if loss_fn else ColbertLoss(temperature=temperature)
+        self.loss_fn = loss_fn
         self.temperature = temperature
         self.max_length = max_length
         self.device = device or get_device_name()
@@ -442,6 +442,9 @@ class ColBERT(Base):
         positive_embedding = self._encode(pos_input_ids, attention_mask=pos_attention_mask, normalize_embeddings=True)
 
         if self.training:
+            if not self.loss_fn:
+                self.loss_fn = ColbertLoss(temperature=self.temperature, use_inbatch_negative=False)
+
             negative_embedding = None
             if neg_input_ids is not None:
                 negative_embedding = self._encode(
@@ -497,7 +500,7 @@ class ColBERT(Base):
             return_dict=True,
         )
         if hasattr(outputs, 'last_hidden_state'):
-            # hidden_state shape: [batch, seq_len, attention_dim]
+            # hidden_state shape: [batch, sequence_length, attention_dim]
             hidden_state = outputs.last_hidden_state
         else:
             hidden_state = outputs.hidden_states[1]
@@ -568,7 +571,7 @@ class ColBERT(Base):
         all_embeddings = [all_embeddings[idx] for idx in np.argsort(length_sorted_idx)]
 
         if convert_to_tensor:
-            if len(all_embeddings):
+            if len(all_embeddings) > 0:
                 all_embeddings = torch.stack(all_embeddings)
             else:
                 all_embeddings = torch.Tensor()
