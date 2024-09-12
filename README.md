@@ -45,7 +45,7 @@
 | **embed** pairwise finetune   | bge-base-zh-v1.5    | 0.657    | **0.703** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/17KXe2lnNRID-HiVvMtzQnONiO74oGs91?usp=sharing) |
 | **embed** LLM finetune (LoRA) | Qwen2-1.5B-Instruct | 0.546    | **0.695** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1jj1kBQWFcuQ3a7P9ttnl1hgX7H8WA_Za?usp=sharing) |
 | **rerank** cross encoder      | bge-reranker-base   | 0.666    | **0.706** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1QvbUkZtG56SXomGYidwI4RQzwODQrWNm?usp=sharing) |
-| **rerank** colbert            | bge-m3              | 0.657    | **0.687** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1QVtqhQ080ZMltXoJyODMmvEQYI6oo5kO?usp=sharing) |
+| **rerank** colbert            | bge-m3              | 0.657    | **0.695** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1QVtqhQ080ZMltXoJyODMmvEQYI6oo5kO?usp=sharing) |
 | **rerank** LLM (LoRA)         | Qwen2-1.5B-Instruct | 0.531    | **0.699** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1fzq1iV7-f8hNKFnjMmpVhVxadqPb9IXk?usp=sharing) |
 
 * The metrics is MAP in 10% eval [t2-reranking data](https://huggingface.co/datasets/C-MTEB/T2Reranking). Original LLM score is Zero-shot
@@ -289,7 +289,7 @@ model_name_or_path: str = "BAAI/bge-m3"
 learning_rate: float = 5e-6
 batch_size: int = 32
 epochs: int = 3
-colbert_dim: int = 128
+colbert_dim: int = 1024
 output_dir: str = './checkpoints'
 
 train_dataset = RetrievalTrainDataset(
@@ -298,7 +298,7 @@ train_dataset = RetrievalTrainDataset(
 tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, use_fast=False)
 data_collator = ColBertCollator(
     tokenizer,
-    query_max_length=64,
+    query_max_length=128,
     document_max_length=256,
     positive_key='positive',
     negative_key='negative',

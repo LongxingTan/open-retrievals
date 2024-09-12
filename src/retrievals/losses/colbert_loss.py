@@ -7,8 +7,8 @@ import torch.nn as nn
 class ColbertLoss(nn.Module):
     def __init__(
         self,
-        criterion: Union[nn.Module, Callable] = nn.CrossEntropyLoss(reduction='mean'),
-        temperature: float = 1.0,
+        criterion: Union[nn.Module, Callable] = nn.CrossEntropyLoss(label_smoothing=0.0, reduction='mean'),
+        temperature: float = 0.02,
         use_inbatch_negative: bool = False,
     ):
         super(ColbertLoss, self).__init__()
