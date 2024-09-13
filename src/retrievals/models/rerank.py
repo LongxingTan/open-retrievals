@@ -719,7 +719,8 @@ class LLMRanker(AutoModelForRanking):
     def __init__(
         self,
         task_prompt: Optional[str] = None,
-        target_token='Yes',
+        target_token: str = 'Yes',
+        sep_token: str = '\n',
         query_instruction: Optional[str] = 'A: ',
         document_instruction: Optional[str] = 'B: ',
         **kwargs,
@@ -731,11 +732,7 @@ class LLMRanker(AutoModelForRanking):
                 """by providing a prediction of either 'Yes' or 'No'."""
             )
         self.task_prompt = task_prompt
-        self.prompt_inputs = self.tokenizer(self.task_prompt, return_tensors=None, add_special_tokens=False)[
-            'input_ids'
-        ]
-        sep = "\n"
-        self.sep_inputs = self.tokenizer(sep, return_tensors=None, add_special_tokens=False)['input_ids']
+        self.sep_token = sep_token
         self.target_token_loc = self.tokenizer(target_token, add_special_tokens=False)['input_ids'][0]
         self.query_instruction = query_instruction
         self.document_instruction = document_instruction
@@ -761,6 +758,7 @@ class LLMRanker(AutoModelForRanking):
         collator = LLMRerankCollator(
             tokenizer=self.tokenizer,
             prompt=self.task_prompt,
+            sep_token=self.sep_token,
             max_length=max_length,
         )
         batch_inputs = collator(batch_sentence_pair)
