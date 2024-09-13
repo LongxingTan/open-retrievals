@@ -1,44 +1,14 @@
 # Open-Retrievals examples
 
-## Embedding
-
-**Data Format**
-
-- Text pair: use in-batch negative fine-tuning
-```
-{'query': TEXT_TYPE, 'positive': List[TEXT_TYPE]}
-...
-```
-
-- Text triplet: Hard negative (or mix In-batch negative) fine-tuning
-```
-{'query': TEXT_TYPE, 'positive': List[TEXT_TYPE], 'negative': List[TEXT_TYPE]}
-...
-```
-
-- Text scored pair:
-```
-{(query, positive, label), (query, negative, label), ...}
-```
-
-**Fine-tune**
-
+## [Embedding](./0_embedding)
 - [embedding-pairwise finetune](./0_embedding/train_pairwise.py)
 - [embedding-llm pairwise finetune](./0_embedding/train_llm.py)
-  - set `query_instruction`
-    - "Given a query and a relevant document, retrieve the document that are pertinent to the query\nQuery: "
-  - use the appropriate `pooling_method`
-    - `last`
-  - maybe we need to reduce the batch_size due to large model size
-  - set `use_lora` to `True` if you want to use lora to reduce training memory
 
 
 ## Reranking
 - [rerank-cross encoder](./2_reranking/train_cross_encoder.py)
 - [rerank-colbert](3_colbert/rerank_colbert.py)
 - [rerank-llm finetune](./2_reranking/train_llm.py)
-  - `AutoModelForRanking.from_pretrained(model_name_or_path, causal_lm=True)`
-  - Prompt: "Given a query with a relevant body, determine whether the document is pertinent to the query by providing a prediction of either 'Yes' or 'No'."
 
 
 ## RAG

@@ -1,5 +1,9 @@
 # Open-Retrievals 示例
 
+```shell
+export HF_ENDPOINT=https://hf-mirror.com
+```
+
 ## 向量模型
 
 **数据格式**
