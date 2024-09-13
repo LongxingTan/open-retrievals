@@ -315,6 +315,7 @@ class LLMRerankCollator(DataCollatorForSeq2Seq):
         self.prompt = prompt
         self.add_target_token = add_target_token
         self.sep_token = sep_token
+        self.eos_token = tokenizer.bos_token if tokenizer.bos_token else ''
         self.max_length = max_length
         self.pad_to_multiple_of = pad_to_multiple_of
 
@@ -330,7 +331,7 @@ class LLMRerankCollator(DataCollatorForSeq2Seq):
             examples = features
 
         batch = self.tokenizer(
-            [self.tokenizer.bos_token + i[0] for i in examples],
+            [self.bos_token + i[0] for i in examples],
             [self.sep_token + i[1] + self.sep_token + self.prompt + self.add_target_token for i in examples],
             return_tensors=None,
             max_length=self.max_length,
