@@ -180,7 +180,7 @@ class AutoModelForEmbedding(Base):
                 normalize_embeddings=normalize_embeddings,
             )
         elif isinstance(inputs, (str, List, Tuple, 'pd.Series', np.ndarray)):
-            return self.encode_from_text(
+            return self._encode_from_text(
                 sentences=inputs,
                 is_query=is_query,
                 batch_size=batch_size,
@@ -231,7 +231,7 @@ class AutoModelForEmbedding(Base):
             all_embeddings = torch.concat(all_embeddings, dim=0)
         return all_embeddings
 
-    def encode_from_text(
+    def _encode_from_text(
         self,
         sentences: Union[str, List[str], Tuple[str], 'pd.Series', np.ndarray],
         is_query: bool = False,
@@ -347,7 +347,7 @@ class AutoModelForEmbedding(Base):
         return all_embeddings
 
     def encode_queries(self, queries: List[str], **kwargs) -> np.ndarray:
-        return self.encode_from_text(queries, is_query=True, **kwargs)
+        return self._encode_from_text(queries, is_query=True, **kwargs)
 
     def build_index(
         self,
@@ -413,7 +413,6 @@ class AutoModelForEmbedding(Base):
             tokenizer=self.tokenizer,
             pooling_method=self.pooling_method,
             normalize_embeddings=self.normalize_embeddings,
-            # loss_fn=self.loss_fn,
             query_instruction=self.query_instruction,
             document_instruction=self.document_instruction,
             device=self.device,
@@ -475,7 +474,7 @@ class AutoModelForEmbedding(Base):
             config.update(custom_config_dict)
 
         if check_causal_lm(model_name_or_path) and pooling_method != 'last':
-            logger.warning('You are using a LLM model, while pooling_method is not last, is that sure?')
+            logger.warning('You are using a LLM model, while pooling_method is not last, is that right?')
 
         if pretrained:
             model = AutoModel.from_pretrained(
@@ -538,6 +537,7 @@ class PairwiseModel(AutoModelForEmbedding):
         - shared_weights or not
     - cross_encoder
     - poly_encoder
+
     support: query + pos pair, or query + pos + neg triplet
     """
 
