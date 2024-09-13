@@ -749,10 +749,12 @@ class LLMRanker(AutoModelForRanking):
         **kwargs,
     ):
         model_output = self.model(input_ids, attention_mask, output_hidden_states=True)
-        loss = self.loss_fn(model_output.logits, labels)
+
         outputs_dict = dict()
         outputs_dict['logits'] = model_output.logits
-        outputs_dict['loss'] = loss
+        if self.training:
+            loss = self.loss_fn(model_output.logits, labels)
+            outputs_dict['loss'] = loss
         return outputs_dict
 
     def preprocess_pair(self, batch_sentence_pair: List[List[str]], max_length: int, **kwargs):
@@ -799,7 +801,7 @@ class LLMRanker(AutoModelForRanking):
             batch_sentences = sentences_sorted[batch_start : batch_start + batch_size]
             batch_on_device = self.preprocess_pair(batch_sentences, max_length=max_length)
             outputs = self.model(**batch_on_device, output_hidden_states=True)
-            scores = self.score(outputs.logits, batch_on_device['attention_mask'])
+            scores = self.score(outputs['logits'], batch_on_device['attention_mask'])
 
             if normalize:
                 scores = torch.sigmoid(scores)
@@ -812,9 +814,8 @@ class LLMRanker(AutoModelForRanking):
 
         return all_scores
 
-    def score(self, logits, attention_mask: torch.Tensor):
-        scores = AutoPooling('last')(logits, attention_mask)
-        scores = scores[:, self.target_token_loc]
+    def score(self, logits: torch.Tensor):
+        scores = logits[:, -1, self.target_token_loc]
         return scores
 
 
