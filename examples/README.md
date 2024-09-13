@@ -1,34 +1,28 @@
 # Open-Retrievals examples
 
-- [embedding-pairwise finetune](./embedding_pairwise_finetune.py)
-- [embedding-llm pairwise finetune](./embedding_llm_finetune.py)
-- [rerank-cross encoder](./rerank_cross_encoder.py)
-- [rerank-colbert](./rerank_colbert.py)
-- [rerank-llm finetune](rerank_llm_finetune.py)
-- [RAG with Langchain](./rag_langchain_demo.py)
-
-Check the whole pipeline examples
-- [t2-ranking dataset](./t2_ranking/README.md)
-- [scifact dataset](./scifact/README.md)
-- [wikipedia-nq dataset](./wikipedia-nq/README.md)
-
-
 ## Embedding
+- [embedding-pairwise finetune](./0_embedding/train_pairwise.py)
+- [embedding-llm pairwise finetune](./0_embedding/train_llm.py)
+
 
 **Data Format**
 
-- Use in-batch negative fine-tuning
+- Text pair: use in-batch negative fine-tuning
 ```
 {'query': TEXT_TYPE, 'positive': List[TEXT_TYPE]}
 ...
 ```
 
-- Hard negative (or mix In-batch negative) fine-tuning
+- Text triplet: Hard negative (or mix In-batch negative) fine-tuning
 ```
 {'query': TEXT_TYPE, 'positive': List[TEXT_TYPE], 'negative': List[TEXT_TYPE]}
 ...
 ```
 
+- Text scored pair:
+```
+{(query, positive, label), (query, negative, label), ...}
+```
 
 **Pairwise fine-tune embedding model**
 ```shell
@@ -120,7 +114,12 @@ python -m retrievals.pipelines.embed \
 ```
 
 
-## Rerank
+## Reranking
+- [rerank-cross encoder](./2_reranking/train_cross_encoder.py)
+- [rerank-colbert](3_colbert/rerank_colbert.py)
+- [rerank-llm finetune](./2_reranking/train_llm.py)
+
+
 
 **Cross encoder reranking**
 
@@ -215,6 +214,16 @@ torchrun --nproc_per_node 1 \
     --save_total_limit 1 \
     --bf16
 ```
+
+
+## RAG
+- [RAG with Langchain](4_rag/rag_langchain_demo.py)
+
+
+## Whole pipeline examples
+- [t2-ranking dataset](./t2_ranking/README.md)
+- [scifact dataset](./scifact/README.md)
+- [wikipedia-nq dataset](./wikipedia-nq/README.md)
 
 
 ## FAQ

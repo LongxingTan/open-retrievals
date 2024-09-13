@@ -48,7 +48,7 @@
 | LLM**重排**           | Qwen2-1.5B-Instruct | 0.531  | **0.699** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1fzq1iV7-f8hNKFnjMmpVhVxadqPb9IXk?usp=sharing) |
 
 * 指标为10%测试[t2-reranking数据](https://huggingface.co/datasets/C-MTEB/T2Reranking)的MAP. 大模型原分数为Zero-shot
-* 阅读[更多示例](./examples)
+* 阅读[更多示例](./examples/README_zh_CN.md)
 
 
 ## 安装

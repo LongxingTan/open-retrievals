@@ -33,16 +33,19 @@ The Transformer model could get the representation vector from a sentence.
 Prepare data
 ~~~~~~~~~~~~~~~~~~~~
 
-- point-wise
+- Text label: point-wise fine-tuning
 
     `{(query, label), (document, label), ...}`
 
-
-- pairwise
+- Text pair: in-batch negative pairwise fine-tuning
 
     `{(query, positive, negative), {query, positive, negative}, ...}`
 
+- Triplet pair: hard negative fine-tuning
+
     `{(query, positive, negative1, negative2, negative3), (query, positive, negative1, negative2, negative3), ...}`
+
+- Text scored pair
 
     `{(query, positive, label), (query, negative, label), ...}`
 
