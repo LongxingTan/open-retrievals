@@ -349,10 +349,14 @@ class AutoModelForRanking(Base):
         )
 
         if causal_lm or check_causal_lm(model_name_or_path):
-            logger.info('Set model to AutoModelForCausalLM')
+            logger.info(
+                "Set model to AutoModelForCausalLM, set query_instruction to 'A: ' and document_instruction to 'B: '"
+            )
             model = AutoModelForCausalLM.from_pretrained(
                 model_name_or_path, quantization_config=quantization_config, trust_remote_code=trust_remote_code
             )
+            query_instruction = 'A: '
+            document_instruction = 'B: '
         else:
             logger.info('Set model to  AutoModelForSequenceClassification')
             model = AutoModelForSequenceClassification.from_pretrained(
@@ -798,7 +802,7 @@ class LLMRanker(AutoModelForRanking):
         ):
             batch_sentences = sentences_sorted[batch_start : batch_start + batch_size]
             batch_on_device = self.preprocess_pair(batch_sentences, max_length=max_length)
-            outputs = self.model(**batch_on_device, output_hidden_states=True)
+            outputs = self.model(**batch_on_device)
             scores = self.score(outputs['logits'])
 
             if normalize:

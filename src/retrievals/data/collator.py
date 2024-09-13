@@ -309,12 +309,14 @@ class LLMRerankCollator(DataCollatorForSeq2Seq):
         add_target_token: str = '',
         sep_token: str = "\n",
         max_length: int = 128,
+        pad_to_multiple_of: Optional[int] = 8,
     ):
         self.tokenizer = tokenizer
         self.prompt = prompt
         self.add_target_token = add_target_token
         self.sep_token = sep_token
         self.max_length = max_length
+        self.pad_to_multiple_of = pad_to_multiple_of
 
     def __call__(self, features: List[Dict[str, Any]], return_tensors='pt'):
         examples = []
