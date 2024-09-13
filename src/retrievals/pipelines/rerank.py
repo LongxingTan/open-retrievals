@@ -227,7 +227,7 @@ def main():
             negative_key=data_args.negative_key,
         )
         data_collator = LLMRerankCollator(
-            tokenizer=tokenizer, max_length=data_args.max_length, prompt=data_args.task_prompt
+            tokenizer=tokenizer, max_length=data_args.max_length, prompt=data_args.task_prompt, add_target_token='Yes'
         )
         token_index = tokenizer('Yes', add_special_tokens=False)['input_ids'][-1]
         model = AutoModelForRanking.from_pretrained(

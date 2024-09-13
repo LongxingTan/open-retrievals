@@ -725,8 +725,8 @@ class LLMRanker(AutoModelForRanking):
         super(LLMRanker, self).__init__(**kwargs)
         if task_prompt is None:
             task_prompt = (
-                "Given a query A and a passage B, determine whether the passage contains an answer to the query"
-                "by providing a prediction of either 'Yes' or 'No'."
+                """Given a query A and a passage B, determine whether the passage contains an answer to the query """
+                """by providing a prediction of either 'Yes' or 'No'."""
             )
         self.task_prompt = task_prompt
         self.prompt_inputs = self.tokenizer(self.task_prompt, return_tensors=None, add_special_tokens=False)[
@@ -757,7 +757,7 @@ class LLMRanker(AutoModelForRanking):
         collator = LLMRerankCollator(
             tokenizer=self.tokenizer,
             prompt=self.task_prompt,
-            max_length=max_length,  # query_instruction='A'
+            max_length=max_length,
         )
         batch_inputs = collator(batch_sentence_pair)
 
