@@ -145,10 +145,12 @@ class AutoModelForRanking(Base):
         if self.causal_lm:
             # LLM rerank
             model_output = self.model(input_ids, attention_mask, output_hidden_states=True)
-            loss = self.loss_fn(model_output.logits, labels)
+
             outputs_dict = dict()
             outputs_dict['logits'] = model_output.logits
-            outputs_dict['loss'] = loss
+            if self.training:
+                loss = self.loss_fn(model_output.logits, labels)
+                outputs_dict['loss'] = loss
             return outputs_dict
 
         # cross-encoder rerank
