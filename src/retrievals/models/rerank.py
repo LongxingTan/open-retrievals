@@ -801,7 +801,7 @@ class LLMRanker(AutoModelForRanking):
             batch_sentences = sentences_sorted[batch_start : batch_start + batch_size]
             batch_on_device = self.preprocess_pair(batch_sentences, max_length=max_length)
             outputs = self.model(**batch_on_device, output_hidden_states=True)
-            scores = self.score(outputs['logits'], batch_on_device['attention_mask'])
+            scores = self.score(outputs['logits'])
 
             if normalize:
                 scores = torch.sigmoid(scores)
