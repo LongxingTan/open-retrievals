@@ -270,16 +270,21 @@ class AutoModelForRanking(Base):
         self,
         query: str,
         documents: List[str],
-        top_n: int = 3,
-        data_collator: Optional[RerankCollator] = None,
+        top_k: Optional[int] = None,
+        return_documents: bool = False,
         batch_size: int = 16,
+        show_progress_bar: bool = None,
+        num_workers: int = 0,
+        activation_fct=None,
+        apply_softmax=False,
+        convert_to_numpy: bool = True,
+        convert_to_tensor: bool = False,
         chunk_max_length: int = 256,
         chunk_overlap: int = 48,
         max_chunks_per_doc: int = 100,
-        normalize: bool = False,
-        show_progress_bar: bool = None,
         return_dict: bool = True,
-        return_documents: bool = True,
+        normalize: bool = False,
+        data_collator: Optional[RerankCollator] = None,
         **kwargs,
     ):
         if query is None or len(query) == 0 or len(documents) == 0:
@@ -390,7 +395,7 @@ class AutoModelForRanking(Base):
             model.print_trainable_parameters()
 
         if lora_path is not None:
-            logger.info(f'Load pretrained LoRA adapter from {lora_path}')
+            logger.info(f'Load LoRA adapter from {lora_path}')
             from peft import LoraConfig, PeftModel
 
             model = PeftModel.from_pretrained(model, lora_path)

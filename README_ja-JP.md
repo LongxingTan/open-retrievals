@@ -45,7 +45,7 @@
 | **embed** LLM finetune (LoRA) | e5-mistral-7b-instruct | -    | 0.546    | **0.695** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1jj1kBQWFcuQ3a7P9ttnl1hgX7H8WA_Za?usp=sharing) |
 | **rerank** cross encoder      | bge-reranker-base      | -    | 0.666    | **0.706** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1QvbUkZtG56SXomGYidwI4RQzwODQrWNm?usp=sharing) |
 | **rerank** colbert            | bge-m3                 | -    | 0.657    | **0.695** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1QVtqhQ080ZMltXoJyODMmvEQYI6oo5kO?usp=sharing) |
-| **rerank** LLM (LoRA)         | bge-reranker-v2-gemma  | -    | 0.531    | **0.699** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1fzq1iV7-f8hNKFnjMmpVhVxadqPb9IXk?usp=sharing) |
+| **rerank** LLM (LoRA)         | bge-reranker-v2-gemma  | -    | 0.637    | **0.706** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1fzq1iV7-f8hNKFnjMmpVhVxadqPb9IXk?usp=sharing) |
 
 
 ## インストール
