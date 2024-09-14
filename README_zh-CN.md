@@ -75,7 +75,8 @@ python -m pip install -U git+https://github.com/LongxingTan/open-retrievals.git
 
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1-WBMisdWLeHUKlzJ2DrREXY_kSV8vjP3?usp=sharing)
 
-**向量：使用预训练权重**
+<details><summary> 向量模型使用：预训练权重 </summary>
+
 ```python
 from retrievals import AutoModelForEmbedding
 
@@ -93,7 +94,10 @@ scores = (embeddings[:2] @ embeddings[2:].T) * 100
 print(scores.tolist())
 ```
 
-**检索：使用Faiss向量数据库**
+</details>
+
+<details><summary> 检索：使用Faiss向量数据库 </summary>
+
 ```python
 from retrievals import AutoModelForEmbedding, AutoModelForRetrieval
 
@@ -109,7 +113,10 @@ dists, indices = matcher.search(query_embed, index_path=index_path)
 print(indices)
 ```
 
-**重排：使用预训练权重**
+</details>
+
+<details><summary> 重排模型使用：预训练权重 </summary>
+
 ```python
 from retrievals import AutoModelForRanking
 
@@ -121,8 +128,9 @@ scores_list = rerank_model.compute_score(
 )
 print(scores_list)
 ```
+</details>
 
-**RAG：搭配Langchain**
+<details><summary> RAG：搭配Langchain </summary>
 
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1fJC-8er-a4NRkdJkwWr4On7lGt9rAO4P?usp=sharing)
 
@@ -192,6 +200,7 @@ user_query = '1974年，谁获得了东南亚自由搏击的冠军？'
 response = qa_chain({"query": user_query})
 print(response)
 ```
+</details>
 
 
 ## 微调
@@ -236,6 +245,14 @@ trainer = RetrievalTrainer(
 trainer.optimizer = optimizer
 trainer.scheduler = scheduler
 trainer.train()
+```
+
+</details>
+
+<details><summary> 微调LLM向量模型 </summary>
+
+```python
+
 ```
 
 </details>
@@ -344,6 +361,14 @@ trainer = RerankTrainer(
 trainer.optimizer = optimizer
 trainer.scheduler = scheduler
 trainer.train()
+```
+
+</details>
+
+<details><summary> 微调LLM重排模型 </summary>
+
+```python
+
 ```
 
 </details>
