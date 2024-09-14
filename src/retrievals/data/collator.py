@@ -315,7 +315,7 @@ class LLMRerankCollator(DataCollatorForSeq2Seq):
         self.prompt = prompt
         self.add_target_token = add_target_token
         self.sep_token = sep_token
-        self.eos_token = tokenizer.bos_token if tokenizer.bos_token else ''
+        self.bos_token = tokenizer.bos_token if tokenizer.bos_token else ''
         self.max_length = max_length
         self.pad_to_multiple_of = pad_to_multiple_of
 

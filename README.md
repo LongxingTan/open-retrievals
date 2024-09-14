@@ -200,7 +200,7 @@ print(response)
 
 ## Fine-tuning
 
-<details><summary> Fine-tune Embedding </summary>
+<details><summary> Fine-tune embedding </summary>
 
 ```python
 import torch.nn as nn
@@ -238,6 +238,13 @@ trainer = RetrievalTrainer(
 trainer.optimizer = optimizer
 trainer.scheduler = scheduler
 trainer.train()
+```
+</details>
+
+<details><summary> Fine-tune LLM embedding </summary>
+
+```python
+
 ```
 </details>
 
@@ -344,6 +351,13 @@ trainer = RerankTrainer(
 trainer.optimizer = optimizer
 trainer.scheduler = scheduler
 trainer.train()
+```
+</details>
+
+<details><summary> Fine-tune LLM reranking </summary>
+
+```python
+
 ```
 </details>
 
