@@ -76,7 +76,8 @@ python -m pip install -U git+https://github.com/LongxingTan/open-retrievals.git
 
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1-WBMisdWLeHUKlzJ2DrREXY_kSV8vjP3?usp=sharing)
 
-**Embeddings from pretrained weights**
+<details><summary> Embeddings from pretrained weights </summary>
+
 ```python
 from retrievals import AutoModelForEmbedding
 
@@ -92,8 +93,10 @@ embeddings = model.encode(sentences, normalize_embeddings=True, convert_to_tenso
 scores = (embeddings[:2] @ embeddings[2:].T) * 100
 print(scores.tolist())
 ```
+</details>
 
-**Index building for dense retrieval search**
+<details><summary> Index building for dense retrieval search </summary>
+
 ```python
 from retrievals import AutoModelForEmbedding, AutoModelForRetrieval
 
@@ -108,8 +111,10 @@ matcher = AutoModelForRetrieval()
 dists, indices = matcher.search(query_embed, index_path=index_path)
 print(indices)
 ```
+</details>
 
-**Rerank using pretrained weights**
+<details><summary> Rerank using pretrained weights </summary>
+
 ```python
 from retrievals import AutoModelForRanking
 
@@ -118,8 +123,9 @@ rerank_model = AutoModelForRanking.from_pretrained(model_name_or_path)
 scores_list = rerank_model.compute_score(["In 1974, I won the championship in Southeast Asia in my first kickboxing match", "In 1982, I defeated the heavy hitter Ryu Long."])
 print(scores_list)
 ```
+</details>
 
-**RAG with LangChain integration**
+<details><summary> RAG with LangChain integration </summary>
 
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1fJC-8er-a4NRkdJkwWr4On7lGt9rAO4P?usp=sharing)
 
@@ -189,11 +195,12 @@ user_query = 'Introduce this'
 response = qa_chain({"query": user_query})
 print(response)
 ```
+</details>
 
 
 ## Fine-tuning
 
-**Fine-tune Embedding**
+<details><summary> Fine-tune Embedding </summary>
 
 ```python
 import torch.nn as nn
@@ -232,8 +239,9 @@ trainer.optimizer = optimizer
 trainer.scheduler = scheduler
 trainer.train()
 ```
+</details>
 
-**Fine-tune cross-encoder reranking**
+<details><summary> Fine-tune cross-encoder reranking </summary>
 
 ```python
 from transformers import AutoTokenizer, TrainingArguments, get_cosine_schedule_with_warmup, AdamW
@@ -269,8 +277,10 @@ trainer.optimizer = optimizer
 trainer.scheduler = scheduler
 trainer.train()
 ```
+</details>
 
-**Fine-tune ColBERT reranking**
+<details><summary> Fine-tune ColBERT reranking </summary>
+
 ```python
 import os
 import transformers
@@ -335,6 +345,8 @@ trainer.optimizer = optimizer
 trainer.scheduler = scheduler
 trainer.train()
 ```
+</details>
+
 
 ## Reference & Acknowledge
 - [UKPLab/sentence-transformers](https://github.com/UKPLab/sentence-transformers)
