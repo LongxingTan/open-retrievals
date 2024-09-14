@@ -34,3 +34,15 @@ if you want to train directly use shell, refer to the [document](https://open-re
   - `last`
 - maybe we need to reduce the batch_size due to large model size
 - set `use_lora` to `True` if you want to use lora to reduce training memory
+
+```python
+from retrievals import AutoModelForEmbedding
+
+model_name = 'intfloat/e5-mistral-7b-instruct'
+model = AutoModelForEmbedding.from_pretrained(
+            model_name,
+            pooling_method='last',
+            use_fp16=True,
+        )
+
+```
