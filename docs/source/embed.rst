@@ -19,12 +19,32 @@ The Transformer model could get the representation vector from a sentence.
 
     from retrievals import AutoModelForEmbedding
 
+    model = AutoModelForEmbedding.from_pretrained('moka-ai/m3e-base', pooling_method='mean')
+
+    sentences = [
+        '* Moka 此文本嵌入模型由 MokaAI 训练并开源，训练脚本使用 uniem',
+        '* Massive 此文本嵌入模型通过**千万级**的中文句对数据集进行训练',
+        '* Mixed 此文本嵌入模型支持中英双语的同质文本相似度计算，异质文本检索等功能，未来还会支持代码检索，ALL in one'
+    ]
+    embeddings = model.encode(sentences)
+
 
 **LLM decoder embedding model**
 
 .. code-block:: python
 
     from retrievals import AutoModelForEmbedding
+
+    model_name = 'intfloat/e5-mistral-7b-instruct'
+    model = AutoModelForEmbedding.from_pretrained(
+                model_name,
+                pooling_method='last',
+                use_fp16=True,
+            )
+
+.. code::
+
+    [[82.9375, 47.96875], [46.9375, 81.8125]]
 
 
 2. Fine-tune
@@ -96,7 +116,6 @@ Pair wise
     trainer.optimizer = optimizer
     trainer.scheduler = scheduler
     trainer.train()
-
 
 
 Point wise

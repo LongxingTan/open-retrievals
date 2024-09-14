@@ -1,5 +1,6 @@
+# Sentence embedding model
 
-##
+## Fine-tune
 
 **Data Format**
 
@@ -26,7 +27,7 @@ if you want to train directly use shell, refer to the [document](https://open-re
 
 
 ## LLM embed
-
+- no need to set `causal_lm=True` like LLMRanker for AutoModelForEmbedding, but normally set the pooling_method to `last`
 - set `query_instruction`
   - "Given a query and a relevant document, retrieve the document that are pertinent to the query\nQuery: "
 - use the appropriate `pooling_method`
