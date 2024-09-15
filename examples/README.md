@@ -7,7 +7,7 @@
 
 ## 2. [Reranking](./2_reranking)
 - [rerank-cross encoder](./2_reranking/train_cross_encoder.py)
-- [rerank-colbert](3_colbert/rerank_colbert.py)
+- [rerank-colbert](3_colbert/train_colbert.py)
 - [rerank-llm finetune](./2_reranking/train_llm.py)
 
 

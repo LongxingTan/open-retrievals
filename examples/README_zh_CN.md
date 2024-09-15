@@ -40,7 +40,7 @@ export HF_ENDPOINT=https://hf-mirror.com
 ## 2. [重排](./2_reranking)
 
 - [重排序-交叉编码器](./2_reranking/train_cross_encoder.py)
-- [重排序-ColBERT](3_colbert/rerank_colbert.py)
+- [重排序-ColBERT](3_colbert/train_colbert.py)
 - [重排序-LLM微调](./2_reranking/train_llm.py)
   - `AutoModelForRanking.from_pretrained(model_name_or_path, causal_lm=True)`
   - 提示: "给定一个带有相关正文的查询，通过提供'是'或'否'的预测来确定文档是否与查询相关。"

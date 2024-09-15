@@ -25,8 +25,18 @@
 
 Train directly using shell script, refer to the [document](https://open-retrievals.readthedocs.io/en/master/embed.html)
 
+## Encoder embedding
 
-## LLM embed
+Refer to [the fine-tuning code](./train_pairwise.py) to train the model like
+
+
+
+## LLM embedding
+
+Refer to [the fine-tuning code](./train_llm.py), to train the model like
+
+
+Note
 - no need to set `causal_lm=True` like LLMRanker for AutoModelForEmbedding, but normally set the pooling_method to `last`
 - set `query_instruction`
   - "Given a query and a relevant document, retrieve the document that are pertinent to the query\nQuery: "
