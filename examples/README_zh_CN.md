@@ -4,7 +4,7 @@
 export HF_ENDPOINT=https://hf-mirror.com
 ```
 
-## 向量模型
+## 1. [向量模型](./0_embedding)
 
 **数据格式**
 
@@ -37,7 +37,7 @@ export HF_ENDPOINT=https://hf-mirror.com
   - 如果想要使用 lora 减少训练内存，设置 `use_lora` 为 `True`
 
 
-## 重排序
+## 2. [重排](./2_reranking)
 
 - [重排序-交叉编码器](./2_reranking/train_cross_encoder.py)
 - [重排序-ColBERT](3_colbert/rerank_colbert.py)
@@ -46,17 +46,17 @@ export HF_ENDPOINT=https://hf-mirror.com
   - 提示: "给定一个带有相关正文的查询，通过提供'是'或'否'的预测来确定文档是否与查询相关。"
 
 
-## RAG
+## 3. [RAG](./4_rag)
 - [使用Langchain的RAG](4_rag/rag_langchain_demo.py)
 
 
-## 一些数据全流程示例
+## 4. 数据全流程示例
 - [t2-ranking数据集](./t2_ranking/README.md)
 - [scifact数据集](./scifact/README.md)
 - [wikipedia-nq数据集](./wikipedia-nq/README.md)
 
 
-## 常见问题
+## 5. 常见问题
 
 1. 训练过程中的 grad_norm 始终为零？
 - 考虑更改 fp16 或 bf16

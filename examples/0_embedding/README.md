@@ -1,4 +1,4 @@
-# Sentence embedding model
+# Text embedding model
 
 ## Fine-tune
 
@@ -23,7 +23,7 @@
 
 
 
-if you want to train directly use shell, refer to the [document](https://open-retrievals.readthedocs.io/en/master/embed.html)
+Train directly using shell script, refer to the [document](https://open-retrievals.readthedocs.io/en/master/embed.html)
 
 
 ## LLM embed
@@ -44,5 +44,4 @@ model = AutoModelForEmbedding.from_pretrained(
             pooling_method='last',
             use_fp16=True,
         )
-
 ```

@@ -1,4 +1,4 @@
-
+# Reranking model
 
 ## LLM reranking
 - `AutoModelForRanking.from_pretrained(model_name_or_path, causal_lm=True)`

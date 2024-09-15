@@ -1,27 +1,27 @@
 # Open-Retrievals examples
 
-## [Embedding](./0_embedding)
+## 1. [Embedding](./0_embedding)
 - [embedding-pairwise finetune](./0_embedding/train_pairwise.py)
 - [embedding-llm pairwise finetune](./0_embedding/train_llm.py)
 
 
-## [Reranking](./2_reranking)
+## 2. [Reranking](./2_reranking)
 - [rerank-cross encoder](./2_reranking/train_cross_encoder.py)
 - [rerank-colbert](3_colbert/rerank_colbert.py)
 - [rerank-llm finetune](./2_reranking/train_llm.py)
 
 
-## [RAG](./4_rag)
+## 3. [RAG](./4_rag)
 - [RAG with Langchain](4_rag/rag_langchain_demo.py)
 
 
-## Whole pipeline examples
+## 4. Whole pipeline examples
 - [t2-ranking dataset](./t2_ranking/README.md)
 - [scifact dataset](./scifact/README.md)
 - [wikipedia-nq dataset](./wikipedia-nq/README.md)
 
 
-## FAQ
+## 5. FAQ
 
 1. The grad_norm during training is always zero?
 - consider to change fp16 or bf16
