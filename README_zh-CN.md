@@ -39,13 +39,13 @@
 - 支持全套重排微调，cross encoder、ColBERT、LLM
 - 支持定制化、模块化RAG，支持在Transformers、Langchain、LlamaIndex中便捷使用微调后的模型
 
-| 实验                  | 模型                   | 原分数 | 微调分数    | Demo代码                                                                                                                                                            |
-|----------------------|-----------------------|-------|-----------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| pairwise微调**向量**   | bge-base-zh-v1.5      | 0.657 | **0.703** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/17KXe2lnNRID-HiVvMtzQnONiO74oGs91?usp=sharing) |
-| 大模型LoRA微调**向量**  | e5-mistral-7b-instruct| 0.651 | **0.699** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1jj1kBQWFcuQ3a7P9ttnl1hgX7H8WA_Za?usp=sharing) |
-| cross encoder**重排** | bge-reranker-base     | 0.666 | **0.706** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1QvbUkZtG56SXomGYidwI4RQzwODQrWNm?usp=sharing) |
-| colbert**重排**       | bge-m3                | 0.657 | **0.695** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1QVtqhQ080ZMltXoJyODMmvEQYI6oo5kO?usp=sharing) |
-| LLM**重排**           | bge-reranker-v2-gemma | 0.637 | **0.706** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1fzq1iV7-f8hNKFnjMmpVhVxadqPb9IXk?usp=sharing) |
+| 实验               | 模型                   | 原分数 | 微调分数    | Demo代码                                                                                                                                                            |
+|------------------|-----------------------|-------|-----------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| pairwise向量微调    | bge-base-zh-v1.5      | 0.657 | **0.703** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/17KXe2lnNRID-HiVvMtzQnONiO74oGs91?usp=sharing) |
+| 大模型向量LoRA微调   | e5-mistral-7b-instruct| 0.651 | **0.699** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1jj1kBQWFcuQ3a7P9ttnl1hgX7H8WA_Za?usp=sharing) |
+| cross encoder重排  | bge-reranker-base     | 0.666 | **0.706** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1QvbUkZtG56SXomGYidwI4RQzwODQrWNm?usp=sharing) |
+| 迟交互colbert重排   | bge-m3                | 0.657 | **0.695** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1QVtqhQ080ZMltXoJyODMmvEQYI6oo5kO?usp=sharing) |
+| 大模型重排          | bge-reranker-v2-gemma | 0.637 | **0.706** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1fzq1iV7-f8hNKFnjMmpVhVxadqPb9IXk?usp=sharing) |
 
 
 * 指标为 [t2-reranking 10% 测试数据](https://huggingface.co/datasets/C-MTEB/T2Reranking) MAP
@@ -218,14 +218,60 @@ from retrievals import AutoModelForEmbedding, RetrievalTrainer, PairCollator, Tr
 from retrievals.losses import ArcFaceAdaptiveMarginLoss, InfoNCE, SimCSE, TripletLoss
 
 model_name_or_path: str = "sentence-transformers/paraphrase-multilingual-mpnet-base-v2"
-batch_size: int = 128
+batch_size: int = 32
 epochs: int = 3
 
 train_dataset = load_dataset('shibing624/nli_zh', 'STS-B')['train']
-train_dataset = train_dataset.rename_columns({'sentence1': 'query', 'sentence2': 'document'})
+train_dataset = train_dataset.rename_columns({'sentence1': 'query', 'sentence2': 'positive'})
 tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, use_fast=False)
 model = AutoModelForEmbedding.from_pretrained(model_name_or_path, pooling_method="cls")
-# model = model.set_train_type('pointwise')  # 'pointwise', 'pairwise', 'listwise'
+model = model.set_train_type('pairwise')
+
+optimizer = AdamW(model.parameters(), lr=5e-5)
+num_train_steps = int(len(train_dataset) / batch_size * epochs)
+scheduler = get_linear_schedule_with_warmup(
+    optimizer, num_warmup_steps=0.05 * num_train_steps, num_training_steps=num_train_steps
+)
+
+training_arguments = TrainingArguments(
+    output_dir='./checkpoints',
+    num_train_epochs=epochs,
+    per_device_train_batch_size=batch_size,
+    remove_unused_columns=False,
+    logging_steps=100,
+)
+trainer = RetrievalTrainer(
+    model=model,
+    args=training_arguments,
+    train_dataset=train_dataset,
+    data_collator=PairCollator(tokenizer, query_max_length=32, document_max_length=128),
+    loss_fn=InfoNCE(nn.CrossEntropyLoss(label_smoothing=0.05)),
+)
+trainer.optimizer = optimizer
+trainer.scheduler = scheduler
+trainer.train()
+```
+
+</details>
+
+<details><summary> 微调LLM向量模型 </summary>
+
+```python
+import torch.nn as nn
+from datasets import load_dataset
+from transformers import AutoTokenizer, AdamW, get_linear_schedule_with_warmup, TrainingArguments
+from retrievals import AutoModelForEmbedding, RetrievalTrainer, PairCollator, TripletCollator
+from retrievals.losses import ArcFaceAdaptiveMarginLoss, InfoNCE, SimCSE, TripletLoss
+
+model_name_or_path: str = "Qwen/Qwen2-1.5B-Instruct"
+batch_size: int = 8
+epochs: int = 3
+
+train_dataset = load_dataset('shibing624/nli_zh', 'STS-B')['train']
+train_dataset = train_dataset.rename_columns({'sentence1': 'query', 'sentence2': 'positive'})
+tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, use_fast=False)
+model = AutoModelForEmbedding.from_pretrained(model_name_or_path, pooling_method="last", use_lora=True)
+model = model.set_train_type('pairwise', loss_fn=InfoNCE(nn.CrossEntropyLoss(label_smoothing=0.05)))
 optimizer = AdamW(model.parameters(), lr=5e-5)
 num_train_steps = int(len(train_dataset) / batch_size * epochs)
 scheduler = get_linear_schedule_with_warmup(optimizer, num_warmup_steps=0.05 * num_train_steps, num_training_steps=num_train_steps)
@@ -240,20 +286,11 @@ trainer = RetrievalTrainer(
     model=model,
     args=training_arguments,
     train_dataset=train_dataset,
-    data_collator=PairCollator(tokenizer, query_max_length=128, document_max_length=128),
-    loss_fn=InfoNCE(nn.CrossEntropyLoss(label_smoothing=0.05)),
+    data_collator=PairCollator(tokenizer, query_max_length=64, document_max_length=128),
 )
 trainer.optimizer = optimizer
 trainer.scheduler = scheduler
 trainer.train()
-```
-
-</details>
-
-<details><summary> 微调LLM向量模型 </summary>
-
-```python
-
 ```
 
 </details>
