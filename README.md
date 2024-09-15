@@ -127,13 +127,13 @@ print(scores_list)
 
 <details><summary> RAG with LangChain integration </summary>
 
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1fJC-8er-a4NRkdJkwWr4On7lGt9rAO4P?usp=sharing)
-
 ```shell
 pip install langchain
 pip install langchain_community
 pip install chromadb
 ```
+
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1fJC-8er-a4NRkdJkwWr4On7lGt9rAO4P?usp=sharing)
 
 ```python
 from retrievals.tools.langchain import LangchainEmbedding, LangchainReranker, LangchainLLM
