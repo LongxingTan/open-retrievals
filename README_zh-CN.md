@@ -39,7 +39,7 @@
 - 支持全套重排微调，cross encoder、ColBERT、LLM
 - 支持定制化、模块化RAG，支持在Transformers、Langchain、LlamaIndex中便捷使用微调后的模型
 
-| 实验               | 模型                   | 原分数 | 微调分数    | Demo代码                                                                                                                                                            |
+| 实验              | 模型                   | 原分数 | 微调分数    | Demo代码                                                                                                                                                            |
 |------------------|-----------------------|-------|-----------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | pairwise向量微调    | bge-base-zh-v1.5      | 0.657 | **0.703** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/17KXe2lnNRID-HiVvMtzQnONiO74oGs91?usp=sharing) |
 | 大模型向量LoRA微调   | e5-mistral-7b-instruct| 0.651 | **0.699** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1jj1kBQWFcuQ3a7P9ttnl1hgX7H8WA_Za?usp=sharing) |

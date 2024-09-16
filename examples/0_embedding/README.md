@@ -1,11 +1,11 @@
 # Text embedding model
 
-| 模型                    | 微调前  | 微调后 |
-|------------------------|--------|-------|
-| m3e                    | 0.654  | 0.693 |
-| bge-base-zh-v1.5       | 0.657  | 0.703 |
-| Qwen2-1.5B-Instruct    | -      | 0.695 |
-| e5-mistral-7b-instruct | 0.651  | 0.699 |
+| Model                  | Original | Finetuned |
+|------------------------|----------|-----------|
+| m3e                    | 0.654    | 0.693     |
+| bge-base-zh-v1.5       | 0.657    | 0.703     |
+| Qwen2-1.5B-Instruct    | -        | 0.695     |
+| e5-mistral-7b-instruct | 0.651    | 0.699     |
 
 - MAP in t2 ranking data
 
