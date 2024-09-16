@@ -6,7 +6,7 @@ Rerank
 1. Use reranking from open-retrievals
 -------------------------------------------
 
-Cross encoder reranking
+**Cross encoder reranking**
 
 .. code-block:: python
 
@@ -26,7 +26,7 @@ Cross encoder reranking
     Ranking score: [-5.075257778167725, -10.194067001342773]
 
 
-ColBERT reranking
+**ColBERT reranking**
 
 .. code-block:: python
 
@@ -52,6 +52,13 @@ ColBERT reranking
 
     Embedding shape: (2, 21, 1024)
     Ranking score: [5.445939064025879, 3.0762712955474854]
+
+
+**LLM reranking**
+
+.. code-block:: python
+
+    from retrievals import LLMRanker
 
 
 2. Fine-tune cross-encoder reranking model
@@ -205,6 +212,101 @@ ColBERT reranking
 
     Given a query "{query}", which of the following passages is the most relevant one to the query?\n\n' \
     + passages + '\n\nOutput only the passage label of the most relevant passage:'
+
+
+**Cross encoder reranking**
+
+.. code-block:: shell
+
+    MODEL_NAME="BAAI/bge-reranker-base"
+    TRAIN_DATA="/t2_ranking.jsonl"
+    OUTPUT_DIR="/t2_output"
+
+    torchrun --nproc_per_node 1 \
+      -m retrievals.pipelines.rerank \
+      --output_dir $OUTPUT_DIR \
+      --overwrite_output_dir \
+      --model_name_or_path $MODEL_NAME \
+      --model_type cross-encoder \
+      --do_train \
+      --data_name_or_path $TRAIN_DATA \
+      --positive_key positive \
+      --negative_key negative \
+      --learning_rate 2e-5 \
+      --fp16 \
+      --num_train_epochs 3 \
+      --per_device_train_batch_size 64 \
+      --dataloader_drop_last True \
+      --max_length 512 \
+      --save_total_limit 1 \
+      --logging_steps 100
+
+
+**Colbert reranking**
+
+.. code-block:: shell
+
+    MODEL_NAME='hfl/chinese-roberta-wwm-ext'
+    TRAIN_DATA="/t2_ranking.jsonl"
+    OUTPUT_DIR="/t2_output"
+
+    torchrun --nproc_per_node 1 \
+      --module retrievals.pipelines.rerank \
+      --output_dir $OUTPUT_DIR \
+      --overwrite_output_dir \
+      --model_name_or_path $MODEL_NAME \
+      --tokenizer_name $MODEL_NAME \
+      --model_type colbert \
+      --do_train \
+      --data_name_or_path $TRAIN_DATA \
+      --positive_key positive \
+      --negative_key negative \
+      --learning_rate 1e-4 \
+      --bf16 \
+      --num_train_epochs 3 \
+      --per_device_train_batch_size 64 \
+      --dataloader_drop_last True \
+      --max_length 256 \
+      --train_group_size 4 \
+      --unfold_each_positive false \
+      --save_total_limit 1 \
+      --logging_steps 100 \
+      --use_inbatch_negative false
+
+
+**LLM reranking**
+
+.. code-block:: shell
+
+    MODEL_NAME="Qwen/Qwen2-1.5B-Instruct"
+    TRAIN_DATA="/t2_ranking.jsonl"
+    OUTPUT_DIR="/t2_output"
+
+    torchrun --nproc_per_node 1 \
+        -m retrievals.pipelines.rerank \
+        --output_dir ${OUTPUT_DIR} \
+        --overwrite_output_dir \
+        --model_name_or_path $MODEL_NAME \
+        --model_type llm \
+        --causal_lm True \
+        --use_lora True \
+        --data_name_or_path $TRAIN_DATA \
+        --task_prompt "Given a query A and a passage B, determine whether the passage contains an answer to the query by providing a prediction of either 'Yes' or 'No'." \
+        --query_instruction "A: " \
+        --document_instruction 'B: ' \
+        --positive_key positive \
+        --negative_key negative \
+        --learning_rate 2e-4 \
+        --num_train_epochs 3 \
+        --per_device_train_batch_size 4 \
+        --gradient_accumulation_steps 16 \
+        --dataloader_drop_last True \
+        --max_len 256 \
+        --train_group_size 4 \
+        --logging_steps 10 \
+        --save_steps 20000 \
+        --save_total_limit 1 \
+        --bf16
 
 
 Reference

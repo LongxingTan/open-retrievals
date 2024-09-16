@@ -10,7 +10,41 @@ we can use `AutoModelForEmbedding` to get the sentence embedding from pretrained
 
 The Transformer model could get the representation vector from a sentence.
 
-    Choose the right `pooling_method` when use the pretrained embedding, check in `huggingface <https://huggingface.co/models>`_
+
+**Transformer encoder embedding model**
+
+- Choose the right `pooling_method`, check in `huggingface <https://huggingface.co/models>`_
+
+.. code-block:: python
+
+    from retrievals import AutoModelForEmbedding
+
+    model = AutoModelForEmbedding.from_pretrained('moka-ai/m3e-base', pooling_method='mean')
+
+    sentences = [
+        '* Moka 此文本嵌入模型由 MokaAI 训练并开源，训练脚本使用 uniem',
+        '* Massive 此文本嵌入模型通过**千万级**的中文句对数据集进行训练',
+        '* Mixed 此文本嵌入模型支持中英双语的同质文本相似度计算，异质文本检索等功能，未来还会支持代码检索，ALL in one'
+    ]
+    embeddings = model.encode(sentences)
+
+
+**LLM decoder embedding model**
+
+.. code-block:: python
+
+    from retrievals import AutoModelForEmbedding
+
+    model_name = 'intfloat/e5-mistral-7b-instruct'
+    model = AutoModelForEmbedding.from_pretrained(
+                model_name,
+                pooling_method='last',
+                use_fp16=True,
+            )
+
+.. code::
+
+    [[82.9375, 47.96875], [46.9375, 81.8125]]
 
 
 2. Fine-tune
@@ -19,16 +53,19 @@ The Transformer model could get the representation vector from a sentence.
 Prepare data
 ~~~~~~~~~~~~~~~~~~~~
 
-- point-wise
+- Text label: point-wise fine-tuning
 
     `{(query, label), (document, label), ...}`
 
-
-- pairwise
+- Text pair: in-batch negative pairwise fine-tuning
 
     `{(query, positive, negative), {query, positive, negative}, ...}`
 
+- Triplet pair: hard negative fine-tuning
+
     `{(query, positive, negative1, negative2, negative3), (query, positive, negative1, negative2, negative3), ...}`
+
+- Text scored pair
 
     `{(query, positive, label), (query, negative, label), ...}`
 
@@ -81,7 +118,6 @@ Pair wise
     trainer.train()
 
 
-
 Point wise
 ~~~~~~~~~~~~~~~~~~
 
@@ -97,6 +133,71 @@ arcface
 
 List wise
 ~~~~~~~~~~~~~~~~~~
+
+**Pairwise fine-tune embedding model**
+
+.. code-block:: shell
+
+    MODEL_NAME="BAAI/bge-base-zh-v1.5"
+    TRAIN_DATA="/t2_ranking.jsonl"
+    OUTPUT_DIR="/t2_output"
+
+    torchrun --nproc_per_node 1 \
+      -m retrievals.pipelines.embed \
+      --output_dir $OUTPUT_DIR \
+      --overwrite_output_dir \
+      --model_name_or_path $MODEL_NAME \
+      --do_train \
+      --data_name_or_path $TRAIN_DATA \
+      --positive_key positive \
+      --negative_key negative \
+      --learning_rate 3e-5 \
+      --fp16 \
+      --num_train_epochs 5 \
+      --per_device_train_batch_size 32 \
+      --dataloader_drop_last True \
+      --query_max_length 64 \
+      --document_max_length 512 \
+      --train_group_size 4 \
+      --logging_steps 100 \
+      --temperature 0.02 \
+      --use_inbatch_negative false
+
+
+**Pairwise fine-tune LLM embedding**
+
+.. code-block:: shell
+
+    MODEL_NAME="intfloat/e5-mistral-7b-instruct"
+    TRAIN_DATA="/t2_ranking.jsonl"
+    OUTPUT_DIR="/t2_output"
+
+    torchrun --nproc_per_node 1 \
+      -m retrievals.pipelines.embed \
+      --output_dir $OUTPUT_DIR \
+      --overwrite_output_dir \
+      --model_name_or_path $MODEL_NAME \
+      --pooling_method last \
+      --do_train \
+      --data_name_or_path $TRAIN_DATA \
+      --positive_key positive \
+      --negative_key negative \
+      --use_lora True \
+      --query_instruction "Retrieve the possible answer for query.\nQuery: " \
+      --document_instruction 'Document: ' \
+      --learning_rate 2e-4 \
+      --bf16 \
+      --num_train_epochs 3 \
+      --per_device_train_batch_size 4 \
+      --gradient_accumulation_steps 16 \
+      --dataloader_drop_last True \
+      --query_max_length 64 \
+      --document_max_length 256 \
+      --train_group_size 4 \
+      --logging_steps 100 \
+      --temperature 0.02 \
+      --use_inbatch_negative false \
+      --save_total_limit 1
 
 
 3. Training skills to enhance the performance

@@ -40,15 +40,15 @@
 - Reranking fine-tuned with Cross Encoder, ColBERT, and LLM.
 - Easily build enhanced modular RAG, integrated with Transformers, Langchain, and LlamaIndex.
 
-| Exp                           | Model               | Original | Finetuned | Demo                                                                                                                                                                |
-|-------------------------------|---------------------|----------|-----------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **embed** pairwise finetune   | bge-base-zh-v1.5    | 0.657    | **0.703** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/17KXe2lnNRID-HiVvMtzQnONiO74oGs91?usp=sharing) |
-| **embed** LLM finetune (LoRA) | Qwen2-1.5B-Instruct | 0.546    | **0.695** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1jj1kBQWFcuQ3a7P9ttnl1hgX7H8WA_Za?usp=sharing) |
-| **rerank** cross encoder      | bge-reranker-base   | 0.666    | **0.706** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1QvbUkZtG56SXomGYidwI4RQzwODQrWNm?usp=sharing) |
-| **rerank** colbert            | bge-m3              | 0.657    | **0.695** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1QVtqhQ080ZMltXoJyODMmvEQYI6oo5kO?usp=sharing) |
-| **rerank** LLM (LoRA)         | Qwen2-1.5B-Instruct | 0.531    | **0.699** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1fzq1iV7-f8hNKFnjMmpVhVxadqPb9IXk?usp=sharing) |
+| Experiment                    | Model                  | Original | Finetuned | Demo                                                                                                                                                                |
+|-------------------------------|------------------------|----------|-----------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **embed** pairwise finetune   | bge-base-zh-v1.5       | 0.657    | **0.703** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/17KXe2lnNRID-HiVvMtzQnONiO74oGs91?usp=sharing) |
+| **embed** LLM finetune (LoRA) | e5-mistral-7b-instruct | 0.651    | **0.699** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1jj1kBQWFcuQ3a7P9ttnl1hgX7H8WA_Za?usp=sharing) |
+| **rerank** cross encoder      | bge-reranker-base      | 0.666    | **0.706** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1QvbUkZtG56SXomGYidwI4RQzwODQrWNm?usp=sharing) |
+| **rerank** colbert            | bge-m3                 | 0.657    | **0.695** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1QVtqhQ080ZMltXoJyODMmvEQYI6oo5kO?usp=sharing) |
+| **rerank** LLM (LoRA)         | bge-reranker-v2-gemma  | 0.637    | **0.706** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1fzq1iV7-f8hNKFnjMmpVhVxadqPb9IXk?usp=sharing) |
 
-* The metrics is MAP in 10% eval [t2-reranking data](https://huggingface.co/datasets/C-MTEB/T2Reranking). Original LLM score is Zero-shot
+* The metrics is MAP in 10% eval [t2-reranking data](https://huggingface.co/datasets/C-MTEB/T2Reranking).
 * Read [more examples](./examples)
 
 
@@ -57,8 +57,8 @@
 **Prerequisites**
 ```shell
 pip install transformers
-pip install faiss-cpu  # if necessary
-pip install peft  # if necessary
+pip install faiss-cpu  # if necessary while faiss retrieval
+pip install peft  # if necessary while LoRA training
 ```
 
 **With pip**
@@ -76,7 +76,8 @@ python -m pip install -U git+https://github.com/LongxingTan/open-retrievals.git
 
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1-WBMisdWLeHUKlzJ2DrREXY_kSV8vjP3?usp=sharing)
 
-**Embeddings from pretrained weights**
+<details><summary> Embeddings from pretrained weights </summary>
+
 ```python
 from retrievals import AutoModelForEmbedding
 
@@ -92,8 +93,10 @@ embeddings = model.encode(sentences, normalize_embeddings=True, convert_to_tenso
 scores = (embeddings[:2] @ embeddings[2:].T) * 100
 print(scores.tolist())
 ```
+</details>
 
-**Index building for dense retrieval search**
+<details><summary> Index building for dense retrieval search </summary>
+
 ```python
 from retrievals import AutoModelForEmbedding, AutoModelForRetrieval
 
@@ -108,8 +111,10 @@ matcher = AutoModelForRetrieval()
 dists, indices = matcher.search(query_embed, index_path=index_path)
 print(indices)
 ```
+</details>
 
-**Rerank using pretrained weights**
+<details><summary> Rerank using pretrained weights </summary>
+
 ```python
 from retrievals import AutoModelForRanking
 
@@ -118,16 +123,17 @@ rerank_model = AutoModelForRanking.from_pretrained(model_name_or_path)
 scores_list = rerank_model.compute_score(["In 1974, I won the championship in Southeast Asia in my first kickboxing match", "In 1982, I defeated the heavy hitter Ryu Long."])
 print(scores_list)
 ```
+</details>
 
-**RAG with LangChain integration**
-
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1fJC-8er-a4NRkdJkwWr4On7lGt9rAO4P?usp=sharing)
+<details><summary> RAG with LangChain integration </summary>
 
 ```shell
 pip install langchain
 pip install langchain_community
 pip install chromadb
 ```
+
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1fJC-8er-a4NRkdJkwWr4On7lGt9rAO4P?usp=sharing)
 
 ```python
 from retrievals.tools.langchain import LangchainEmbedding, LangchainReranker, LangchainLLM
@@ -189,9 +195,12 @@ user_query = 'Introduce this'
 response = qa_chain({"query": user_query})
 print(response)
 ```
+</details>
 
 
-**Fine-tune Embedding**
+## Fine-tuning
+
+<details><summary> Fine-tune embedding </summary>
 
 ```python
 import torch.nn as nn
@@ -201,14 +210,59 @@ from retrievals import AutoModelForEmbedding, RetrievalTrainer, PairCollator, Tr
 from retrievals.losses import ArcFaceAdaptiveMarginLoss, InfoNCE, SimCSE, TripletLoss
 
 model_name_or_path: str = "sentence-transformers/paraphrase-multilingual-mpnet-base-v2"
-batch_size: int = 128
+batch_size: int = 32
 epochs: int = 3
 
 train_dataset = load_dataset('shibing624/nli_zh', 'STS-B')['train']
-train_dataset = train_dataset.rename_columns({'sentence1': 'query', 'sentence2': 'document'})
+train_dataset = train_dataset.rename_columns({'sentence1': 'query', 'sentence2': 'positive'})
 tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, use_fast=False)
 model = AutoModelForEmbedding.from_pretrained(model_name_or_path, pooling_method="cls")
-# model = model.set_train_type('pointwise')  # 'pointwise', 'pairwise', 'listwise'
+model = model.set_train_type('pairwise')
+
+optimizer = AdamW(model.parameters(), lr=5e-5)
+num_train_steps = int(len(train_dataset) / batch_size * epochs)
+scheduler = get_linear_schedule_with_warmup(
+    optimizer, num_warmup_steps=0.05 * num_train_steps, num_training_steps=num_train_steps
+)
+
+training_arguments = TrainingArguments(
+    output_dir='./checkpoints',
+    num_train_epochs=epochs,
+    per_device_train_batch_size=batch_size,
+    remove_unused_columns=False,
+    logging_steps=100,
+)
+trainer = RetrievalTrainer(
+    model=model,
+    args=training_arguments,
+    train_dataset=train_dataset,
+    data_collator=PairCollator(tokenizer, query_max_length=32, document_max_length=128),
+    loss_fn=InfoNCE(nn.CrossEntropyLoss(label_smoothing=0.05)),
+)
+trainer.optimizer = optimizer
+trainer.scheduler = scheduler
+trainer.train()
+```
+</details>
+
+<details><summary> Fine-tune LLM embedding </summary>
+
+```python
+import torch.nn as nn
+from datasets import load_dataset
+from transformers import AutoTokenizer, AdamW, get_linear_schedule_with_warmup, TrainingArguments
+from retrievals import AutoModelForEmbedding, RetrievalTrainer, PairCollator, TripletCollator
+from retrievals.losses import ArcFaceAdaptiveMarginLoss, InfoNCE, SimCSE, TripletLoss
+
+model_name_or_path: str = "Qwen/Qwen2-1.5B-Instruct"
+batch_size: int = 8
+epochs: int = 3
+
+train_dataset = load_dataset('shibing624/nli_zh', 'STS-B')['train']
+train_dataset = train_dataset.rename_columns({'sentence1': 'query', 'sentence2': 'positive'})
+tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, use_fast=False)
+model = AutoModelForEmbedding.from_pretrained(model_name_or_path, pooling_method="last", use_lora=True)
+model = model.set_train_type('pairwise', loss_fn=InfoNCE(nn.CrossEntropyLoss(label_smoothing=0.05)))
 optimizer = AdamW(model.parameters(), lr=5e-5)
 num_train_steps = int(len(train_dataset) / batch_size * epochs)
 scheduler = get_linear_schedule_with_warmup(optimizer, num_warmup_steps=0.05 * num_train_steps, num_training_steps=num_train_steps)
@@ -223,15 +277,15 @@ trainer = RetrievalTrainer(
     model=model,
     args=training_arguments,
     train_dataset=train_dataset,
-    data_collator=PairCollator(tokenizer, query_max_length=128, document_max_length=128),
-    loss_fn=InfoNCE(nn.CrossEntropyLoss(label_smoothing=0.05)),
+    data_collator=PairCollator(tokenizer, query_max_length=64, document_max_length=128),
 )
 trainer.optimizer = optimizer
 trainer.scheduler = scheduler
 trainer.train()
 ```
+</details>
 
-**Fine-tune cross-encoder reranking**
+<details><summary> Fine-tune cross-encoder reranking </summary>
 
 ```python
 from transformers import AutoTokenizer, TrainingArguments, get_cosine_schedule_with_warmup, AdamW
@@ -267,8 +321,10 @@ trainer.optimizer = optimizer
 trainer.scheduler = scheduler
 trainer.train()
 ```
+</details>
 
-**Fine-tune ColBERT reranking**
+<details><summary> Fine-tune ColBERT reranking </summary>
+
 ```python
 import os
 import transformers
@@ -333,10 +389,17 @@ trainer.optimizer = optimizer
 trainer.scheduler = scheduler
 trainer.train()
 ```
+</details>
+
+<details><summary> Fine-tune LLM reranking </summary>
+
+```python
+
+```
+</details>
+
 
 ## Reference & Acknowledge
-- [sentence-transformers](https://github.com/UKPLab/sentence-transformers)
-- [Dense](https://github.com/luyug/Dense)
-- [FlagEmbedding](https://github.com/FlagOpen/FlagEmbedding)
-- [uniem](https://github.com/wangyuxinwhy/uniem)
-- [BCEmbedding](https://github.com/netease-youdao/BCEmbedding)
+- [UKPLab/sentence-transformers](https://github.com/UKPLab/sentence-transformers)
+- [luyug/Dense](https://github.com/luyug/Dense)
+- [FlagOpen/FlagEmbedding](https://github.com/FlagOpen/FlagEmbedding)

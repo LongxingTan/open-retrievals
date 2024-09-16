@@ -39,13 +39,13 @@
 - 対照学習エンベッディング, LLM エンベッディング
 - 高速 RAG デモ
 
-| Exp                           | Model               | Size | Original | Finetuned | Demo                                                                                                                                                                |
-|-------------------------------|---------------------|------|----------|-----------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **embed** pairwise finetune   | bge-base-zh-v1.5    | -    | 0.657    | **0.703** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/17KXe2lnNRID-HiVvMtzQnONiO74oGs91?usp=sharing) |
-| **embed** LLM finetune (LoRA) | Qwen2-1.5B-Instruct | -    | 0.546    | **0.695** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1jj1kBQWFcuQ3a7P9ttnl1hgX7H8WA_Za?usp=sharing) |
-| **rerank** cross encoder      | bge-reranker-base   | -    | 0.666    | **0.706** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1QvbUkZtG56SXomGYidwI4RQzwODQrWNm?usp=sharing) |
-| **rerank** colbert            | bge-m3              | -    | 0.657    | **0.695** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1QVtqhQ080ZMltXoJyODMmvEQYI6oo5kO?usp=sharing) |
-| **rerank** LLM (LoRA)         | Qwen2-1.5B-Instruct | -    | 0.531    | **0.699** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1fzq1iV7-f8hNKFnjMmpVhVxadqPb9IXk?usp=sharing) |
+| Exp                           | Model                  | Size | Original | Finetuned | Demo                                                                                                                                                                |
+|-------------------------------|------------------------|------|----------|-----------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **embed** pairwise finetune   | bge-base-zh-v1.5       | -    | 0.657    | **0.703** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/17KXe2lnNRID-HiVvMtzQnONiO74oGs91?usp=sharing) |
+| **embed** LLM finetune (LoRA) | e5-mistral-7b-instruct | -    | 0.651    | **0.699** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1jj1kBQWFcuQ3a7P9ttnl1hgX7H8WA_Za?usp=sharing) |
+| **rerank** cross encoder      | bge-reranker-base      | -    | 0.666    | **0.706** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1QvbUkZtG56SXomGYidwI4RQzwODQrWNm?usp=sharing) |
+| **rerank** colbert            | bge-m3                 | -    | 0.657    | **0.695** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1QVtqhQ080ZMltXoJyODMmvEQYI6oo5kO?usp=sharing) |
+| **rerank** LLM (LoRA)         | bge-reranker-v2-gemma  | -    | 0.637    | **0.706** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1fzq1iV7-f8hNKFnjMmpVhVxadqPb9IXk?usp=sharing) |
 
 
 ## インストール
@@ -288,8 +288,6 @@ dists, indices = matcher.search(query_embeddings, document_embeddings, top_k=1)
 
 
 ## 参考資料と謝辞
-- [sentence-transformers](https://github.com/UKPLab/sentence-transformers)
-- [Dense](https://github.com/luyug/Dense)
-- [FlagEmbedding](https://github.com/FlagOpen/FlagEmbedding)
-- [uniem](https://github.com/wangyuxinwhy/uniem)
-- [BCEmbedding](https://github.com/netease-youdao/BCEmbedding)
+- [UKPLab/sentence-transformers](https://github.com/UKPLab/sentence-transformers)
+- [luyug/Dense](https://github.com/luyug/Dense)
+- [FlagOpen/FlagEmbedding](https://github.com/FlagOpen/FlagEmbedding)

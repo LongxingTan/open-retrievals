@@ -17,12 +17,31 @@ pretrain -> fine tuning -> distill
 ----------------------------
 
 
+.. code-block:: shell
+
+    QUERY_ENCODE_DIR=nq-queries
+    OUT_DIR=temp
+    MODEL_DIR="BAAI/bge-base-zh-v1.5"
+    QUERY=nq-test-queries.json
+    mkdir $QUERY_ENCODE_DIR
+
+    python -m retrievals.pipelines.embed \
+        --model_name_or_path $MODEL_DIR \
+        --output_dir $OUT_DIR \
+        --do_encode \
+        --fp16 \
+        --per_device_eval_batch_size 256 \
+        --data_name_or_path $QUERY \
+        --is_query true
+
+
 3. Retrieval
 ----------------------------
 
 
 Faiss retrieval
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 
 
 BM25 retrieval

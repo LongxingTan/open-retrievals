@@ -145,10 +145,12 @@ class AutoModelForRanking(Base):
         if self.causal_lm:
             # LLM rerank
             model_output = self.model(input_ids, attention_mask, output_hidden_states=True)
-            loss = self.loss_fn(model_output.logits, labels)
+
             outputs_dict = dict()
             outputs_dict['logits'] = model_output.logits
-            outputs_dict['loss'] = loss
+            if self.training:
+                loss = self.loss_fn(model_output.logits, labels)
+                outputs_dict['loss'] = loss
             return outputs_dict
 
         # cross-encoder rerank
@@ -188,8 +190,8 @@ class AutoModelForRanking(Base):
             return logits
 
     def set_model_type(self, model_type: Literal['cross-encoder', 'colbert'], **kwargs):
-        model_type = model_type.lower().replace('-', '').replace('_', '')
         logger.info(f'Set model type to: {model_type}')
+        model_type = model_type.lower().replace('-', '').replace('_', '')
         model_class = {'crossencoder': self, 'colbert': ColBERT, 'llm': LLMRanker}
         model_class = model_class.get(model_type)
         return model_class(
@@ -268,14 +270,21 @@ class AutoModelForRanking(Base):
         self,
         query: str,
         documents: List[str],
-        data_collator: Optional[RerankCollator] = None,
+        top_k: Optional[int] = None,
+        return_documents: bool = False,
         batch_size: int = 16,
+        show_progress_bar: bool = None,
+        num_workers: int = 0,
+        activation_fct=None,
+        apply_softmax=False,
+        convert_to_numpy: bool = True,
+        convert_to_tensor: bool = False,
         chunk_max_length: int = 256,
         chunk_overlap: int = 48,
         max_chunks_per_doc: int = 100,
-        normalize: bool = False,
-        show_progress_bar: bool = None,
         return_dict: bool = True,
+        normalize: bool = False,
+        data_collator: Optional[RerankCollator] = None,
         **kwargs,
     ):
         if query is None or len(query) == 0 or len(documents) == 0:
@@ -345,10 +354,14 @@ class AutoModelForRanking(Base):
         )
 
         if causal_lm or check_causal_lm(model_name_or_path):
-            logger.info('Set model to AutoModelForCausalLM')
+            logger.info(
+                "Set model to AutoModelForCausalLM, set query_instruction to 'A: ' and document_instruction to 'B: '"
+            )
             model = AutoModelForCausalLM.from_pretrained(
                 model_name_or_path, quantization_config=quantization_config, trust_remote_code=trust_remote_code
             )
+            query_instruction = 'A: '
+            document_instruction = 'B: '
         else:
             logger.info('Set model to  AutoModelForSequenceClassification')
             model = AutoModelForSequenceClassification.from_pretrained(
@@ -382,7 +395,7 @@ class AutoModelForRanking(Base):
             model.print_trainable_parameters()
 
         if lora_path is not None:
-            logger.info('Load pretrained with LoRA adapter')
+            logger.info(f'Load LoRA adapter from {lora_path}')
             from peft import LoraConfig, PeftModel
 
             model = PeftModel.from_pretrained(model, lora_path)
@@ -712,20 +725,26 @@ class ColBERT(Base):
 
 
 class LLMRanker(AutoModelForRanking):
-    def __init__(self, task_prompt: Optional[str] = None, token='Yes', **kwargs):
+    def __init__(
+        self,
+        task_prompt: Optional[str] = None,
+        target_token: str = 'Yes',
+        sep_token: str = '\n',
+        query_instruction: Optional[str] = 'A: ',
+        document_instruction: Optional[str] = 'B: ',
+        **kwargs,
+    ):
         super(LLMRanker, self).__init__(**kwargs)
         if task_prompt is None:
             task_prompt = (
-                "Given a query A and a passage B, determine whether the passage contains an answer to the query"
-                "by providing a prediction of either 'Yes' or 'No'."
+                """Given a query A and a passage B, determine whether the passage contains an answer to the query """
+                """by providing a prediction of either 'Yes' or 'No'."""
             )
         self.task_prompt = task_prompt
-        self.prompt_inputs = self.tokenizer(self.task_prompt, return_tensors=None, add_special_tokens=False)[
-            'input_ids'
-        ]
-        sep = "\n"
-        self.sep_inputs = self.tokenizer(sep, return_tensors=None, add_special_tokens=False)['input_ids']
-        self.token_loc = self.tokenizer(token, add_special_tokens=False)['input_ids'][0]
+        self.sep_token = sep_token
+        self.target_token_loc = self.tokenizer(target_token, add_special_tokens=False)['input_ids'][0]
+        self.query_instruction = query_instruction
+        self.document_instruction = document_instruction
 
     def forward(
         self,
@@ -736,14 +755,21 @@ class LLMRanker(AutoModelForRanking):
         **kwargs,
     ):
         model_output = self.model(input_ids, attention_mask, output_hidden_states=True)
-        loss = self.loss_fn(model_output.logits, labels)
+
         outputs_dict = dict()
         outputs_dict['logits'] = model_output.logits
-        outputs_dict['loss'] = loss
+        if self.training:
+            loss = self.loss_fn(model_output.logits, labels)
+            outputs_dict['loss'] = loss
         return outputs_dict
 
     def preprocess_pair(self, batch_sentence_pair: List[List[str]], max_length: int, **kwargs):
-        collator = LLMRerankCollator(tokenizer=self.tokenizer, prompt=self.task_prompt, max_length=max_length)
+        collator = LLMRerankCollator(
+            tokenizer=self.tokenizer,
+            prompt=self.task_prompt,
+            sep_token=self.sep_token,
+            max_length=max_length,
+        )
         batch_inputs = collator(batch_sentence_pair)
 
         batch_inputs = {
@@ -781,8 +807,8 @@ class LLMRanker(AutoModelForRanking):
         ):
             batch_sentences = sentences_sorted[batch_start : batch_start + batch_size]
             batch_on_device = self.preprocess_pair(batch_sentences, max_length=max_length)
-            outputs = self.model(**batch_on_device, output_hidden_states=True)
-            scores = self.score(outputs.logits, batch_on_device['attention_mask'])
+            outputs = self.model(**batch_on_device)
+            scores = self.score(outputs['logits'])
 
             if normalize:
                 scores = torch.sigmoid(scores)
@@ -795,9 +821,8 @@ class LLMRanker(AutoModelForRanking):
 
         return all_scores
 
-    def score(self, logits, attention_mask: torch.Tensor):
-        scores = AutoPooling('last')(logits, attention_mask)
-        scores = scores[:, self.token_loc]
+    def score(self, logits: torch.Tensor):
+        scores = logits[:, -1, self.target_token_loc]
         return scores
 
 

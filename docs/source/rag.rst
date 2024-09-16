@@ -3,14 +3,18 @@ RAG
 
 .. _rag:
 
-Build an RAG Application
-----------------------------
+1. Build an RAG Application
+-------------------------------
 
 RAG could help solve the false information, out-of-date information, and data security for LLM by searching the external data.
 The basic RAG process is document indexing, query embedding, retrieval, optional rerank, and LLM generate.
 
 * Output reference for explainability
 * LLM Hallucination
+
+.. code-block:: python
+
+    from retrievals import AutoModelForEmbedding
 
 
 Integrated with Langchain
@@ -83,17 +87,13 @@ Integrated with Langchain
     print(response)
 
 
-Integrated with Llamaindex
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-
-Custom RAG
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Integrated with LlamaIndex
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
 
-Enhance RAG Performance
----------------------------
+2. RAG enhancement tricks
+----------------------------------
 
 * Multi-vector retrieval, sparse + dense
 * Rerank
@@ -103,6 +103,10 @@ Enhance RAG Performance
 * Multi-chunks
 * Pretrain and finetune of embeddings and rerank weights
 * Meta data of documents
+
+
+Agentic RAG
+---------------------
 
 
 Graph RAG
@@ -116,6 +120,7 @@ Use knowledge graph
 * Community summarization
 
 - https://github.com/microsoft/graphrag
+
 
 
 pdf parse

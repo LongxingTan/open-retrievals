@@ -30,6 +30,8 @@ class RetrievalTrainDataset(Dataset):
         dataset_split: str = 'train',
         dataset_language: str = 'default',
     ):
+        if not args and not data_name_or_path:
+            raise ValueError('Provide the data_name_or_path or args')
         if args:
             data_name_or_path = args.data_name_or_path
             self.train_group_size = (
