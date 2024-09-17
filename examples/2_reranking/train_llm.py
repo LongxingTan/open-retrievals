@@ -5,7 +5,6 @@ from transformers import (
     AutoTokenizer,
     TrainingArguments,
     get_cosine_schedule_with_warmup,
-    get_linear_schedule_with_warmup,
 )
 
 from retrievals import (

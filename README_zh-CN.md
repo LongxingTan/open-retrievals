@@ -48,8 +48,8 @@
 | 大模型重排          | bge-reranker-v2-gemma | 0.637 | **0.706** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1fzq1iV7-f8hNKFnjMmpVhVxadqPb9IXk?usp=sharing) |
 
 
-* 指标为 [t2-reranking 10% 测试数据](https://huggingface.co/datasets/C-MTEB/T2Reranking) MAP
-* 阅读[更多示例](./examples/README_zh_CN.md)
+* 测试指标为10%[t2-reranking数据](https://huggingface.co/datasets/C-MTEB/T2Reranking)的MAP
+* 阅读[更多实例](./examples/README_zh_CN.md)
 
 
 ## 安装
