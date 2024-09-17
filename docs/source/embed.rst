@@ -6,9 +6,9 @@ Embedding
 1. Use embedding from open-retrievals
 ---------------------------------------
 
-we can use `AutoModelForEmbedding` to get the sentence embedding from pretrained transformer or large language model.
+we can use `AutoModelForEmbedding` to get the text embedding from pretrained transformer or LLM.
 
-The Transformer model could get the representation vector from a sentence.
+The Transformer model could get a representation vector from a sentence.
 
 
 **Transformer encoder embedding model**
@@ -20,7 +20,6 @@ The Transformer model could get the representation vector from a sentence.
     from retrievals import AutoModelForEmbedding
 
     model = AutoModelForEmbedding.from_pretrained('moka-ai/m3e-base', pooling_method='mean')
-
     sentences = [
         '* Moka 此文本嵌入模型由 MokaAI 训练并开源，训练脚本使用 uniem',
         '* Massive 此文本嵌入模型通过**千万级**的中文句对数据集进行训练',
@@ -40,6 +39,8 @@ The Transformer model could get the representation vector from a sentence.
                 model_name,
                 pooling_method='last',
                 use_fp16=True,
+                query_instruction='Instruct: Given a web search query, retrieve relevant passages that answer the query\nQuery: ',
+                document_instruction='',
             )
 
 .. code::
@@ -118,22 +119,6 @@ Pair wise
     trainer.train()
 
 
-Point wise
-~~~~~~~~~~~~~~~~~~
-
-If the positive and negative examples have some noise in label, the directly point-wise cross-entropy maybe not the best. The pair wise just compare relatively, or the hinge loss with margin could be better.
-
-arcface
-
-- layer wise learning rate
-- batch size is important
-- dynamic arcface_margin, margin is important
-- arc_weight init
-
-
-List wise
-~~~~~~~~~~~~~~~~~~
-
 **Pairwise fine-tune embedding model**
 
 .. code-block:: shell
@@ -198,6 +183,24 @@ List wise
       --temperature 0.02 \
       --use_inbatch_negative false \
       --save_total_limit 1
+
+
+Point wise
+~~~~~~~~~~~~~~~~~~
+
+If the positive and negative examples have some noise in label, the directly point-wise cross-entropy maybe not the best. The pair wise just compare relatively, or the hinge loss with margin could be better.
+
+arcface
+
+- layer wise learning rate
+- batch size is important
+- dynamic arcface_margin, margin is important
+- arc_weight init
+
+
+List wise
+~~~~~~~~~~~~~~~~~~
+
 
 
 3. Training skills to enhance the performance
