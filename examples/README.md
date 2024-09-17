@@ -25,10 +25,11 @@
 
 1. The grad_norm during training is always zero?
 - consider to change fp16 or bf16
+- while training, set `bf16` or `fp16` in `TrainingArguments`; while inference, set `use_fp16=True` in `AutoModelForEmbedding` or `LLMRanker`
 
 2. The fine-tuned embedding performance during inference is worse than original?
 - check whether the pooling_method is correct
-- check whether the prompt is exactly same as training for LLM model
+- check whether the prompt or instruction is exactly same as training for LLM model
 
 3. How can we fine-tune the `BAAI/bge-m3` ColBERT model?
 - open-retrievals support to fine-tune the `BAAI/bge-m3 colbert` directly, just don't set `use_fp16=True` while fine-tuning, and set the learning_rate smaller

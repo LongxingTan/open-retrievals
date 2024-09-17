@@ -44,7 +44,6 @@ def train():
     model = LLMRanker.from_pretrained(
         model_name_or_path,
         causal_lm=True,
-        use_fp16=True,
         loss_fn=TokenLoss(token_index=token_index),
         use_lora=True,
     )
@@ -61,6 +60,7 @@ def train():
         learning_rate=learning_rate,
         per_device_train_batch_size=batch_size,
         num_train_epochs=epochs,
+        bf16=True,
         output_dir="./checkpoints",
         remove_unused_columns=False,
         logging_steps=100,
