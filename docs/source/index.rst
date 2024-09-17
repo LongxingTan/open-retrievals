@@ -4,10 +4,11 @@ Open-Retrievals Documentation
 
    <a class="github-button" href="https://github.com/LongxingTan/open-retrievals" data-icon="octicon-star" data-size="large" data-show-count="true" aria-label="Star LongxingTan/open-retrievals on GitHub">GitHub</a>
 
-Retrievals is an easy, flexible, scalable framework supporting state-of-the-art embeddings, retrieval and reranking for information retrieval or RAG, based on PyTorch and Transformers.
+Retrievals is an easy, flexible, scalable framework supporting state-of-the-art embeddings, retrieval and reranking for information retrieval or RAG.
 
-* Embeddings fine-tuned by Contrastive learning
-* Embeddings from LLM model
+* Embedding fine-tuned through point-wise, pairwise, listwise, contrastive learning and LLM.
+* Reranking fine-tuned with Cross-Encoder, ColBERT and LLM.
+* Easily build enhanced modular RAG, integrated with Transformers, Langchain and LlamaIndex.
 
 
 Installation
@@ -43,13 +44,13 @@ Run a simple example
     sentences = ["Hello NLP", "Open-retrievals is designed for retrieval, rerank and RAG"]
     model_name_or_path = "sentence-transformers/all-MiniLM-L6-v2"
     model = AutoModelForEmbedding.from_pretrained(model_name_or_path, pooling_method="mean")
-    sentence_embeddings = model.encode(sentences, normalize_embeddings=True, convert_to_tensor=True)
+    sentence_embeddings = model.encode(sentences, normalize_embeddings=True)
     print(sentence_embeddings)
 
 Open-retrievals support to fine-tune the embedding model, reranking model, llm easily for custom usage.
 
-* `Pairwise embedding fine-tuning <https://github.com/LongxingTan/open-retrievals/blob/master/examples/embedding_pairwise_finetune.py>`_
-* `Pairwise LLM embedding fine-tuning <https://github.com/LongxingTan/open-retrievals/blob/master/examples/embedding_llm_finetune.py>`_
+* `Embedding pairwise fine-tuning <https://github.com/LongxingTan/open-retrievals/blob/master/examples/embedding_pairwise_finetune.py>`_
+* `LLM embedding pairwise fine-tuning <https://github.com/LongxingTan/open-retrievals/blob/master/examples/embedding_llm_finetune.py>`_
 * `ColBERT fine-tuning <https://github.com/LongxingTan/open-retrievals/blob/master/examples/rerank_colbert.py>`_
 * `Cross-encoder reranking fine-tuning <https://github.com/LongxingTan/open-retrievals/blob/master/examples/rerank_cross_encoder.py>`_
 * `LLM reranking fine-tuning <https://github.com/LongxingTan/open-retrievals/blob/master/examples/rerank_llm_finetune.py>`_
@@ -62,7 +63,6 @@ More datasets examples
 * `msmacro dataset <https://github.com/LongxingTan/open-retrievals/tree/master/examples/msmacro>`_
 * `wikipedia nq dataset <https://github.com/LongxingTan/open-retrievals/tree/master/examples/wikipedia-nq>`_
 * `rag example <https://github.com/LongxingTan/open-retrievals/tree/master/examples/rag>`_
-* `graph rag example <URL>`_
 
 
 Contributing

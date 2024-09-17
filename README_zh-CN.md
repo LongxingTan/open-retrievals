@@ -36,7 +36,7 @@
 
 **Open-Retrievals** 支持统一调用或微调文本向量、检索、重排等模型，使信息检索、RAG应用更加便捷
 - 支持全套向量微调，对比学习、大模型、point-wise、pairwise、listwise
-- 支持全套重排微调，cross encoder、ColBERT、LLM
+- 支持全套重排微调，cross-encoder、ColBERT、LLM
 - 支持定制化、模块化RAG，支持在Transformers、Langchain、LlamaIndex中便捷使用微调后的模型
 
 | 实验              | 模型                   | 原分数 | 微调分数    | Demo代码                                                                                                                                                            |
@@ -48,8 +48,8 @@
 | 大模型重排          | bge-reranker-v2-gemma | 0.637 | **0.706** | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1fzq1iV7-f8hNKFnjMmpVhVxadqPb9IXk?usp=sharing) |
 
 
-* 指标为 [t2-reranking 10% 测试数据](https://huggingface.co/datasets/C-MTEB/T2Reranking) MAP
-* 阅读[更多示例](./examples/README_zh_CN.md)
+* 测试指标为10%[t2-reranking数据](https://huggingface.co/datasets/C-MTEB/T2Reranking)的MAP
+* 阅读[更多实例](./examples/README_zh_CN.md)
 
 
 ## 安装
@@ -89,8 +89,8 @@ sentences = [
 ]
 
 model_name_or_path = 'intfloat/multilingual-e5-base'
-model = AutoModelForEmbedding.from_pretrained(model_name_or_path)
-embeddings = model.encode(sentences)  # 384维度的文本向量
+model = AutoModelForEmbedding.from_pretrained(model_name_or_path, pooling_method="mean")
+embeddings = model.encode(sentences, normalize_embeddings=True)  # 384维度的文本向量
 scores = (embeddings[:2] @ embeddings[2:].T) * 100
 print(scores.tolist())
 ```
@@ -105,7 +105,7 @@ from retrievals import AutoModelForEmbedding, AutoModelForRetrieval
 index_path = './database/faiss/faiss.index'
 sentences = ['在中国是中国人', '在美国是美国人', '2000人民币大于3000美元']
 model_name_or_path = "sentence-transformers/all-MiniLM-L6-v2"
-model = AutoModelForEmbedding.from_pretrained(model_name_or_path)
+model = AutoModelForEmbedding.from_pretrained(model_name_or_path, pooling_method='mean')
 model.build_index(sentences, index_path=index_path)
 
 query_embed = model.encode("在加拿大是加拿大人")
@@ -208,14 +208,14 @@ print(response)
 
 <details><summary> 微调向量模型 </summary>
 
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1w2dRoRThG6DnUW46swqEUuWySKS1AXCp?usp=sharing)
-
 ```python
+import os
 import torch.nn as nn
 from datasets import load_dataset
 from transformers import AutoTokenizer, AdamW, get_linear_schedule_with_warmup, TrainingArguments
 from retrievals import AutoModelForEmbedding, RetrievalTrainer, PairCollator, TripletCollator
 from retrievals.losses import ArcFaceAdaptiveMarginLoss, InfoNCE, SimCSE, TripletLoss
+os.environ['HF_ENDPOINT'] = 'https://hf-mirror.com'
 
 model_name_or_path: str = "sentence-transformers/paraphrase-multilingual-mpnet-base-v2"
 batch_size: int = 32
@@ -224,7 +224,7 @@ epochs: int = 3
 train_dataset = load_dataset('shibing624/nli_zh', 'STS-B')['train']
 train_dataset = train_dataset.rename_columns({'sentence1': 'query', 'sentence2': 'positive'})
 tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, use_fast=False)
-model = AutoModelForEmbedding.from_pretrained(model_name_or_path, pooling_method="cls")
+model = AutoModelForEmbedding.from_pretrained(model_name_or_path, pooling_method="mean")
 model = model.set_train_type('pairwise')
 
 optimizer = AdamW(model.parameters(), lr=5e-5)
@@ -257,18 +257,28 @@ trainer.train()
 <details><summary> 微调LLM向量模型 </summary>
 
 ```python
+import os
 import torch.nn as nn
 from datasets import load_dataset
 from transformers import AutoTokenizer, AdamW, get_linear_schedule_with_warmup, TrainingArguments
 from retrievals import AutoModelForEmbedding, RetrievalTrainer, PairCollator, TripletCollator
-from retrievals.losses import ArcFaceAdaptiveMarginLoss, InfoNCE, SimCSE, TripletLoss
+from retrievals.losses import InfoNCE, SimCSE, TripletLoss
+os.environ['HF_ENDPOINT'] = 'https://hf-mirror.com'
+
+def add_instructions(example):
+    example['query'] = query_instruction + example['query']
+    example['positive'] = document_instruction + example['positive']
+    return example
 
 model_name_or_path: str = "Qwen/Qwen2-1.5B-Instruct"
 batch_size: int = 8
 epochs: int = 3
+query_instruction = "Retrieve relevant passages that answer the query\nQuery: "
+document_instruction = "Document: "
 
 train_dataset = load_dataset('shibing624/nli_zh', 'STS-B')['train']
 train_dataset = train_dataset.rename_columns({'sentence1': 'query', 'sentence2': 'positive'})
+train_dataset = train_dataset.map(add_instructions)
 tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, use_fast=False)
 model = AutoModelForEmbedding.from_pretrained(model_name_or_path, pooling_method="last", use_lora=True)
 model = model.set_train_type('pairwise', loss_fn=InfoNCE(nn.CrossEntropyLoss(label_smoothing=0.05)))
@@ -281,6 +291,7 @@ training_arguments = TrainingArguments(
     num_train_epochs=epochs,
     per_device_train_batch_size=batch_size,
     remove_unused_columns=False,
+    logging_steps=100,
 )
 trainer = RetrievalTrainer(
     model=model,
@@ -298,28 +309,39 @@ trainer.train()
 <details><summary> 微调Cross-encoder重排模型 </summary>
 
 ```python
+import os
 from transformers import AutoTokenizer, TrainingArguments, get_cosine_schedule_with_warmup, AdamW
 from retrievals import RerankCollator, AutoModelForRanking, RerankTrainer, RerankTrainDataset
+os.environ['HF_ENDPOINT'] = 'https://hf-mirror.com'
 
-model_name_or_path: str = "microsoft/deberta-v3-base"
+model_name_or_path: str = "BAAI/bge-reranker-base"
 max_length: int = 128
 learning_rate: float = 3e-5
 batch_size: int = 4
 epochs: int = 3
+output_dir: str = "./checkpoints"
 
-train_dataset = RerankTrainDataset('./t2rank.json', positive_key='pos', negative_key='neg')
+train_dataset = RerankTrainDataset(
+    "C-MTEB/T2Reranking", positive_key="positive", negative_key="negative", dataset_split='dev'
+)
 tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, use_fast=False)
 model = AutoModelForRanking.from_pretrained(model_name_or_path)
 optimizer = AdamW(model.parameters(), lr=learning_rate)
 num_train_steps = int(len(train_dataset) / batch_size * epochs)
-scheduler = get_cosine_schedule_with_warmup(optimizer, num_warmup_steps=0.05 * num_train_steps, num_training_steps=num_train_steps)
+scheduler = get_cosine_schedule_with_warmup(
+    optimizer,
+    num_warmup_steps=0.05 * num_train_steps,
+    num_training_steps=num_train_steps,
+)
 
 training_args = TrainingArguments(
     learning_rate=learning_rate,
     per_device_train_batch_size=batch_size,
     num_train_epochs=epochs,
-    output_dir='./checkpoints',
+    output_dir=output_dir,
     remove_unused_columns=False,
+    logging_steps=100,
+    report_to="none",
 )
 trainer = RerankTrainer(
     model=model,
@@ -350,6 +372,7 @@ from retrievals import ColBERT, ColBertCollator, RerankTrainer, RetrievalTrainDa
 from retrievals.losses import ColbertLoss
 
 transformers.logging.set_verbosity_error()
+os.environ['HF_ENDPOINT'] = 'https://hf-mirror.com'
 os.environ["WANDB_DISABLED"] = "true"
 
 model_name_or_path: str = "BAAI/bge-m3"
@@ -359,9 +382,7 @@ epochs: int = 3
 colbert_dim: int = 1024
 output_dir: str = './checkpoints'
 
-train_dataset = RetrievalTrainDataset(
-    'C-MTEB/T2Reranking', positive_key='positive', negative_key='negative', dataset_split='dev'
-)
+train_dataset = RetrievalTrainDataset('C-MTEB/T2Reranking', positive_key='positive', negative_key='negative', dataset_split='dev')
 tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, use_fast=False)
 data_collator = ColBertCollator(
     tokenizer,
@@ -378,9 +399,7 @@ model = ColBERT.from_pretrained(
 
 optimizer = AdamW(model.parameters(), lr=learning_rate)
 num_train_steps = int(len(train_dataset) / batch_size * epochs)
-scheduler = get_cosine_schedule_with_warmup(
-    optimizer, num_warmup_steps=0.05 * num_train_steps, num_training_steps=num_train_steps
-)
+scheduler = get_cosine_schedule_with_warmup(optimizer, num_warmup_steps=0.05 * num_train_steps, num_training_steps=num_train_steps)
 
 training_args = TrainingArguments(
     learning_rate=learning_rate,
@@ -403,10 +422,81 @@ trainer.train()
 
 </details>
 
-<details><summary> 微调LLM重排模型 </summary>
+<details><summary> 微调大模型重排模型 </summary>
 
 ```python
+import os
+from transformers import (
+    AdamW,
+    AutoTokenizer,
+    TrainingArguments,
+    get_cosine_schedule_with_warmup,
+)
 
+from retrievals import (
+    LLMRanker,
+    LLMRerankCollator,
+    RerankTrainer,
+    RetrievalTrainDataset,
+)
+from retrievals.losses import TokenLoss
+os.environ['HF_ENDPOINT'] = 'https://hf-mirror.com'
+
+model_name_or_path: str = "Qwen/Qwen2-1.5B-Instruct"
+max_length: int = 512
+learning_rate: float = 3e-5
+batch_size: int = 8
+epochs: int = 3
+task_prompt: str = (
+    """Given a query A and a passage B, determine whether the passage contains an answer to the query"""
+    """by providing a prediction of either 'Yes' or 'No'."""
+)
+
+tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, use_fast=False)
+train_dataset = RetrievalTrainDataset(
+    data_name_or_path='C-MTEB/T2Reranking',
+    positive_key='positive',
+    negative_key='negative',
+    query_instruction='A: ',
+    document_instruction='B: ',
+    dataset_split='dev',
+)
+data_collator = LLMRerankCollator(
+    tokenizer=tokenizer, max_length=max_length, prompt=task_prompt, add_target_token='Yes'
+)
+token_index = tokenizer('Yes', add_special_tokens=False)['input_ids'][-1]
+model = LLMRanker.from_pretrained(
+    model_name_or_path,
+    causal_lm=True,
+    use_fp16=True,
+    loss_fn=TokenLoss(token_index=token_index),
+    use_lora=True,
+)
+
+optimizer = AdamW(model.parameters(), lr=learning_rate)
+num_train_steps = int(len(train_dataset) / batch_size * epochs)
+scheduler = get_cosine_schedule_with_warmup(
+    optimizer,
+    num_warmup_steps=0.05 * num_train_steps,
+    num_training_steps=num_train_steps,
+)
+
+training_args = TrainingArguments(
+    learning_rate=learning_rate,
+    per_device_train_batch_size=batch_size,
+    num_train_epochs=epochs,
+    output_dir="./checkpoints",
+    remove_unused_columns=False,
+)
+trainer = RerankTrainer(
+    model=model,
+    args=training_args,
+    train_dataset=train_dataset,
+    data_collator=data_collator,
+)
+trainer.optimizer = optimizer
+trainer.scheduler = scheduler
+trainer.train()
 ```
 
 </details>

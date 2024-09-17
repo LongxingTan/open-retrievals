@@ -60,6 +60,16 @@ Rerank
 
     from retrievals import LLMRanker
 
+    model_name = 'BAAI/bge-reranker-v2-gemma'
+    model = LLMRanker.from_pretrained(
+                model_name,
+                causal_lm=True,
+                use_fp16=True,
+            )
+
+    scores = model.compute_score([['what is panda?', 'hi'], ['what is panda?', 'The giant panda (Ailuropoda melanoleuca), sometimes called a panda bear or simply panda, is a bear species endemic to China.']])
+    print('Ranking score: ', scores)
+
 
 2. Fine-tune cross-encoder reranking model
 -----------------------------------------------
@@ -74,31 +84,38 @@ Rerank
     from transformers import AutoTokenizer, TrainingArguments, get_cosine_schedule_with_warmup, AdamW
     from retrievals import RerankCollator, AutoModelForRanking, RerankTrainer, RerankTrainDataset
 
-    model_name_or_path: str = "microsoft/deberta-v3-base"
+    model_name_or_path: str = "BAAI/bge-reranker-base"
     max_length: int = 128
     learning_rate: float = 3e-5
     batch_size: int = 4
     epochs: int = 3
+    output_dir: str = "./checkpoints"
 
-    train_dataset = RerankTrainDataset('./t2rank.json', positive_key='pos', negative_key='neg')
+    train_dataset = RerankTrainDataset("C-MTEB/T2Reranking", positive_key="positive", negative_key="negative", dataset_split='dev')
     tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, use_fast=False)
-    model = AutoModelForRanking.from_pretrained(model_name_or_path, pooling_method="mean")
+    model = AutoModelForRanking.from_pretrained(model_name_or_path)
     optimizer = AdamW(model.parameters(), lr=learning_rate)
     num_train_steps = int(len(train_dataset) / batch_size * epochs)
-    scheduler = get_cosine_schedule_with_warmup(optimizer, num_warmup_steps=0.05 * num_train_steps, num_training_steps=num_train_steps)
+    scheduler = get_cosine_schedule_with_warmup(
+        optimizer,
+        num_warmup_steps=0.05 * num_train_steps,
+        num_training_steps=num_train_steps,
+    )
 
     training_args = TrainingArguments(
         learning_rate=learning_rate,
         per_device_train_batch_size=batch_size,
         num_train_epochs=epochs,
-        output_dir = './checkpoints',
+        output_dir=output_dir,
         remove_unused_columns=False,
+        logging_steps=100,
+        report_to="none",
     )
     trainer = RerankTrainer(
         model=model,
         args=training_args,
         train_dataset=train_dataset,
-        data_collator=RerankCollator(tokenizer, query_max_length=max_length, document_max_length=max_length),
+        data_collator=RerankCollator(tokenizer, max_length=max_length),
     )
     trainer.optimizer = optimizer
     trainer.scheduler = scheduler

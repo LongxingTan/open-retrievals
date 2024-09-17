@@ -6,9 +6,9 @@ Embedding
 1. Use embedding from open-retrievals
 ---------------------------------------
 
-we can use `AutoModelForEmbedding` to get the sentence embedding from pretrained transformer or large language model.
+we can use `AutoModelForEmbedding` to get the text embedding from pretrained transformer or LLM.
 
-The Transformer model could get the representation vector from a sentence.
+The Transformer model could get a representation vector from a sentence.
 
 
 **Transformer encoder embedding model**
@@ -20,7 +20,6 @@ The Transformer model could get the representation vector from a sentence.
     from retrievals import AutoModelForEmbedding
 
     model = AutoModelForEmbedding.from_pretrained('moka-ai/m3e-base', pooling_method='mean')
-
     sentences = [
         '* Moka 此文本嵌入模型由 MokaAI 训练并开源，训练脚本使用 uniem',
         '* Massive 此文本嵌入模型通过**千万级**的中文句对数据集进行训练',
@@ -40,6 +39,8 @@ The Transformer model could get the representation vector from a sentence.
                 model_name,
                 pooling_method='last',
                 use_fp16=True,
+                query_instruction='Instruct: Given a web search query, retrieve relevant passages that answer the query\nQuery: ',
+                document_instruction='',
             )
 
 .. code::
@@ -95,7 +96,7 @@ Pair wise
     train_dataset = load_dataset('shibing624/nli_zh', 'STS-B')['train']
     train_dataset = train_dataset.rename_columns({'sentence1': 'query', 'sentence2': 'positive'})
     tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, use_fast=False)
-    model = AutoModelForEmbedding.from_pretrained(model_name_or_path, pooling_method="cls")
+    model = AutoModelForEmbedding.from_pretrained(model_name_or_path, pooling_method="mean")
     optimizer = AdamW(model.parameters(), lr=5e-5)
     num_train_steps=int(len(train_dataset) / batch_size * epochs)
     scheduler = get_linear_schedule_with_warmup(optimizer, num_warmup_steps=0.05 * num_train_steps, num_training_steps=num_train_steps)
@@ -117,22 +118,6 @@ Pair wise
     trainer.scheduler = scheduler
     trainer.train()
 
-
-Point wise
-~~~~~~~~~~~~~~~~~~
-
-If the positive and negative examples have some noise in label, the directly point-wise cross-entropy maybe not the best. The pair wise just compare relatively, or the hinge loss with margin could be better.
-
-arcface
-
-- layer wise learning rate
-- batch size is important
-- dynamic arcface_margin, margin is important
-- arc_weight init
-
-
-List wise
-~~~~~~~~~~~~~~~~~~
 
 **Pairwise fine-tune embedding model**
 
@@ -198,6 +183,24 @@ List wise
       --temperature 0.02 \
       --use_inbatch_negative false \
       --save_total_limit 1
+
+
+Point wise
+~~~~~~~~~~~~~~~~~~
+
+If the positive and negative examples have some noise in label, the directly point-wise cross-entropy maybe not the best. The pair wise just compare relatively, or the hinge loss with margin could be better.
+
+arcface
+
+- layer wise learning rate
+- batch size is important
+- dynamic arcface_margin, margin is important
+- arc_weight init
+
+
+List wise
+~~~~~~~~~~~~~~~~~~
+
 
 
 3. Training skills to enhance the performance

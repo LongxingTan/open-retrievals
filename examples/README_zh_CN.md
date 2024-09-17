@@ -60,10 +60,11 @@ export HF_ENDPOINT=https://hf-mirror.com
 
 1. 训练过程中的 grad_norm 始终为零？
 - 考虑更改 fp16 或 bf16
+- 训练时，在`TrainingArguments`中设置`bf16`或`fp16`；推理时，在`AutoModelForEmbedding`或`LLMRanker`中设置`use_fp16=True`
 
 2. 推理过程中微调后的嵌入性能比原始模型差？
 - 检查 pooling_method 是否正确
-- 检查 LLM 模型的提示词是否与训练时一致
+- 检查LLM大模型使用的提示词或instruction是否与训练时一致
 
 3. 如何微调 `BAAI/bge-m3` ColBERT 模型？
 - open-retrievals 支持直接微调 `BAAI/bge-m3 colbert`，只需在微调时不设置 `use_fp16=True`，并将学习率设置得更小

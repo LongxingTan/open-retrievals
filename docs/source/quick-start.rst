@@ -13,7 +13,7 @@ We can use Open-retrievals to easily fine-tune models of information retrieval a
 1. Embedding
 -----------------------------
 
-Use the pretrained embedding
+Embedding from the pretrained model
 
 .. code-block:: python
 
@@ -26,7 +26,7 @@ Use the pretrained embedding
         "passage: Definition of summit for English Language Learners. : 1  the highest point of a mountain : the top of a mountain. : 2  the highest level."
     ]
     model_name_or_path = 'intfloat/e5-base-v2'
-    # sentence embedding mode
+    # sentence embedding model
     model = AutoModelForEmbedding.from_pretrained(model_name_or_path, pooling_method="mean")
     # encode the sentence to embedding vector
     embeddings = model.encode(sentences, normalize_embeddings=True, convert_to_tensor=True)
@@ -58,7 +58,7 @@ To further improve the retrieval performance, we can fine tune the embedding mod
     train_dataset = load_dataset('shibing624/nli_zh', 'STS-B')['train']
     train_dataset = train_dataset.rename_columns({'sentence1': 'query', 'sentence2': 'document'})
     tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, use_fast=False)
-    model = AutoModelForEmbedding.from_pretrained(model_name_or_path, pooling_method="cls")
+    model = AutoModelForEmbedding.from_pretrained(model_name_or_path, pooling_method="mean")
     optimizer = AdamW(model.parameters(), lr=5e-5)
     num_train_steps = int(len(train_dataset) / batch_size * epochs)
     scheduler = get_linear_schedule_with_warmup(optimizer, num_warmup_steps=0.05 * num_train_steps, num_training_steps=num_train_steps)
@@ -96,7 +96,7 @@ Save the document embedding offline using the vector database.
     sentences = ['A dog is chasing car.', 'A man is playing a guitar.']
     model_name_or_path = "sentence-transformers/all-MiniLM-L6-v2"
     index_path = './database/faiss/faiss.index'
-    model = AutoModelForEmbedding.from_pretrained(model_name_or_path)
+    model = AutoModelForEmbedding.from_pretrained(model_name_or_path, pooling_method='mean)
     model.build_index(sentences, index_path=index_path)
 
     query_embed = model.encode("He plays guitar.")
@@ -118,7 +118,6 @@ If we have multiple retrieval source or a better sequence, we can add the rerank
         ["In 1974, I won the championship in Southeast Asia in my first kickboxing match", "In 1982, I defeated the heavy hitter Ryu Long."],
         ['A dog is chasing car.', 'A man is playing a guitar.'],
     ]
-
     model_name_or_path: str = "BAAI/bge-reranker-base"
     rerank_model = AutoModelForRanking.from_pretrained(model_name_or_path)
     scores_list = rerank_model.compute_score(sentences)
@@ -139,25 +138,32 @@ Similarly, fine tune the reranking model to get a better performance for the spe
     from transformers import AutoTokenizer, TrainingArguments, get_cosine_schedule_with_warmup, AdamW
     from retrievals import RerankCollator, AutoModelForRanking, RerankTrainer, RerankTrainDataset
 
-    model_name_or_path: str = "microsoft/deberta-v3-base"
+    model_name_or_path: str = "BAAI/bge-reranker-base"
     max_length: int = 128
     learning_rate: float = 3e-5
     batch_size: int = 4
     epochs: int = 3
+    output_dir: str = "./checkpoints"
 
-    train_dataset = RerankTrainDataset('./t2rank.json', positive_key='pos', negative_key='neg')
+    train_dataset = RerankTrainDataset("C-MTEB/T2Reranking", positive_key="positive", negative_key="negative", dataset_split='dev')
     tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, use_fast=False)
     model = AutoModelForRanking.from_pretrained(model_name_or_path)
     optimizer = AdamW(model.parameters(), lr=learning_rate)
     num_train_steps = int(len(train_dataset) / batch_size * epochs)
-    scheduler = get_cosine_schedule_with_warmup(optimizer, num_warmup_steps=0.05 * num_train_steps, num_training_steps=num_train_steps)
+    scheduler = get_cosine_schedule_with_warmup(
+        optimizer,
+        num_warmup_steps=0.05 * num_train_steps,
+        num_training_steps=num_train_steps,
+    )
 
     training_args = TrainingArguments(
         learning_rate=learning_rate,
         per_device_train_batch_size=batch_size,
         num_train_epochs=epochs,
-        output_dir='./checkpoints',
+        output_dir=output_dir,
         remove_unused_columns=False,
+        logging_steps=100,
+        report_to="none",
     )
     trainer = RerankTrainer(
         model=model,

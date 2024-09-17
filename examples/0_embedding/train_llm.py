@@ -89,7 +89,7 @@ class TrainingArguments(transformers.TrainingArguments):
     num_train_epochs: int = 1
     per_device_train_batch_size: int = 1
     remove_unused_columns: bool = False
-    cache_dir: Optional[str] = field(default="/root/autodl-tmp/llm_output")
+    cache_dir: Optional[str] = None
     negatives_cross_device: bool = field(default=False, metadata={"help": "share negatives across devices"})
     temperature: Optional[float] = field(default=0.02)
     fix_position_embedding: bool = field(
@@ -99,7 +99,8 @@ class TrainingArguments(transformers.TrainingArguments):
     normalized: bool = field(default=True)
     use_inbatch_neg: bool = field(default=True, metadata={"help": "Freeze the parameters of position embeddings"})
     gradient_accumulation_steps: int = field(default=1024)
-    fp16: bool = field(default=True)
+    bf16: bool = field(default=True)
+    logging_steps: int = field(default=100)
 
 
 @dataclass
