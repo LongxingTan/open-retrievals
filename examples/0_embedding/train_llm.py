@@ -100,6 +100,7 @@ class TrainingArguments(transformers.TrainingArguments):
     use_inbatch_neg: bool = field(default=True, metadata={"help": "Freeze the parameters of position embeddings"})
     gradient_accumulation_steps: int = field(default=1024)
     fp16: bool = field(default=True)
+    logging_steps: int = field(default=100)
 
 
 @dataclass
