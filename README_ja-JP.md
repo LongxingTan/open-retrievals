@@ -79,7 +79,7 @@ sentences = [
 ]
 model_name_or_path = 'intfloat/e5-base-v2'
 model = AutoModelForEmbedding.from_pretrained(model_name_or_path, pooling_method="mean")
-embeddings = model.encode(sentences, normalize_embeddings=True, convert_to_tensor=True)
+embeddings = model.encode(sentences, normalize_embeddings=True)
 scores = (embeddings[:2] @ embeddings[2:].T) * 100
 print(scores.tolist())
 ```
@@ -91,7 +91,7 @@ from retrievals import AutoModelForEmbedding, AutoModelForRetrieval
 sentences = ['A dog is chasing car.', 'A man is playing a guitar.']
 model_name_or_path = "sentence-transformers/all-MiniLM-L6-v2"
 index_path = './database/faiss/faiss.index'
-model = AutoModelForEmbedding.from_pretrained(model_name_or_path)
+model = AutoModelForEmbedding.from_pretrained(model_name_or_path, pooling_method='mean')
 model.build_index(sentences, index_path=index_path)
 
 query_embed = model.encode("He plays guitar.")
@@ -199,8 +199,9 @@ epochs: int = 3
 train_dataset = load_dataset('shibing624/nli_zh', 'STS-B')['train']
 train_dataset = train_dataset.rename_columns({'sentence1': 'query', 'sentence2': 'document'})
 tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, use_fast=False)
-model = AutoModelForEmbedding.from_pretrained(model_name_or_path, pooling_method="cls")
-# model = model.set_train_type('pointwise')  # 'pointwise', 'pairwise', 'listwise'
+model = AutoModelForEmbedding.from_pretrained(model_name_or_path, pooling_method="mean")
+model = model.set_train_type('pairwise')
+
 optimizer = AdamW(model.parameters(), lr=5e-5)
 num_train_steps = int(len(train_dataset) / batch_size * epochs)
 scheduler = get_linear_schedule_with_warmup(optimizer, num_warmup_steps=0.05 * num_train_steps, num_training_steps=num_train_steps)
@@ -240,25 +241,34 @@ model = AutoModelForEmbedding.from_pretrained(
 from transformers import AutoTokenizer, TrainingArguments, get_cosine_schedule_with_warmup, AdamW
 from retrievals import RerankCollator, AutoModelForRanking, RerankTrainer, RerankTrainDataset
 
-model_name_or_path: str = "microsoft/deberta-v3-base"
+model_name_or_path: str = "BAAI/bge-reranker-base"
 max_length: int = 128
 learning_rate: float = 3e-5
 batch_size: int = 4
 epochs: int = 3
+output_dir: str = "./checkpoints"
 
-train_dataset = RerankTrainDataset('./t2rank.json', positive_key='pos', negative_key='neg')
+train_dataset = RerankTrainDataset(
+    "C-MTEB/T2Reranking", positive_key="positive", negative_key="negative", dataset_split='dev'
+)
 tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, use_fast=False)
 model = AutoModelForRanking.from_pretrained(model_name_or_path)
 optimizer = AdamW(model.parameters(), lr=learning_rate)
 num_train_steps = int(len(train_dataset) / batch_size * epochs)
-scheduler = get_cosine_schedule_with_warmup(optimizer, num_warmup_steps=0.05 * num_train_steps, num_training_steps=num_train_steps)
+scheduler = get_cosine_schedule_with_warmup(
+    optimizer,
+    num_warmup_steps=0.05 * num_train_steps,
+    num_training_steps=num_train_steps,
+)
 
 training_args = TrainingArguments(
     learning_rate=learning_rate,
     per_device_train_batch_size=batch_size,
     num_train_epochs=epochs,
-    output_dir='./checkpoints',
+    output_dir=output_dir,
     remove_unused_columns=False,
+    logging_steps=100,
+    report_to="none",
 )
 trainer = RerankTrainer(
     model=model,

@@ -43,7 +43,7 @@ Run a simple example
     sentences = ["Hello NLP", "Open-retrievals is designed for retrieval, rerank and RAG"]
     model_name_or_path = "sentence-transformers/all-MiniLM-L6-v2"
     model = AutoModelForEmbedding.from_pretrained(model_name_or_path, pooling_method="mean")
-    sentence_embeddings = model.encode(sentences, normalize_embeddings=True, convert_to_tensor=True)
+    sentence_embeddings = model.encode(sentences, normalize_embeddings=True)
     print(sentence_embeddings)
 
 Open-retrievals support to fine-tune the embedding model, reranking model, llm easily for custom usage.

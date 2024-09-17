@@ -76,7 +76,7 @@ python -m pip install -U git+https://github.com/LongxingTan/open-retrievals.git
 
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1-WBMisdWLeHUKlzJ2DrREXY_kSV8vjP3?usp=sharing)
 
-<details><summary> Embeddings from pretrained weights </summary>
+<details><summary> Embedding from pretrained weights </summary>
 
 ```python
 from retrievals import AutoModelForEmbedding
@@ -89,7 +89,7 @@ sentences = [
 ]
 model_name_or_path = 'intfloat/e5-base-v2'
 model = AutoModelForEmbedding.from_pretrained(model_name_or_path, pooling_method="mean")
-embeddings = model.encode(sentences, normalize_embeddings=True, convert_to_tensor=True)
+embeddings = model.encode(sentences, normalize_embeddings=True)
 scores = (embeddings[:2] @ embeddings[2:].T) * 100
 print(scores.tolist())
 ```
@@ -103,7 +103,7 @@ from retrievals import AutoModelForEmbedding, AutoModelForRetrieval
 sentences = ['A dog is chasing car.', 'A man is playing a guitar.']
 model_name_or_path = "sentence-transformers/all-MiniLM-L6-v2"
 index_path = './database/faiss/faiss.index'
-model = AutoModelForEmbedding.from_pretrained(model_name_or_path)
+model = AutoModelForEmbedding.from_pretrained(model_name_or_path, pooling_method='mean')
 model.build_index(sentences, index_path=index_path)
 
 query_embed = model.encode("He plays guitar.")
@@ -216,7 +216,7 @@ epochs: int = 3
 train_dataset = load_dataset('shibing624/nli_zh', 'STS-B')['train']
 train_dataset = train_dataset.rename_columns({'sentence1': 'query', 'sentence2': 'positive'})
 tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, use_fast=False)
-model = AutoModelForEmbedding.from_pretrained(model_name_or_path, pooling_method="cls")
+model = AutoModelForEmbedding.from_pretrained(model_name_or_path, pooling_method="mean")
 model = model.set_train_type('pairwise')
 
 optimizer = AdamW(model.parameters(), lr=5e-5)
@@ -252,14 +252,22 @@ import torch.nn as nn
 from datasets import load_dataset
 from transformers import AutoTokenizer, AdamW, get_linear_schedule_with_warmup, TrainingArguments
 from retrievals import AutoModelForEmbedding, RetrievalTrainer, PairCollator, TripletCollator
-from retrievals.losses import ArcFaceAdaptiveMarginLoss, InfoNCE, SimCSE, TripletLoss
+from retrievals.losses import InfoNCE, SimCSE, TripletLoss
+
+def add_instructions(example):
+    example['query'] = query_instruction + example['query']
+    example['positive'] = document_instruction + example['positive']
+    return example
 
 model_name_or_path: str = "Qwen/Qwen2-1.5B-Instruct"
 batch_size: int = 8
 epochs: int = 3
+query_instruction = "Retrieve relevant passages that answer the query\nQuery: "
+document_instruction = "Document: "
 
 train_dataset = load_dataset('shibing624/nli_zh', 'STS-B')['train']
 train_dataset = train_dataset.rename_columns({'sentence1': 'query', 'sentence2': 'positive'})
+train_dataset = train_dataset.map(add_instructions)
 tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, use_fast=False)
 model = AutoModelForEmbedding.from_pretrained(model_name_or_path, pooling_method="last", use_lora=True)
 model = model.set_train_type('pairwise', loss_fn=InfoNCE(nn.CrossEntropyLoss(label_smoothing=0.05)))
@@ -272,6 +280,7 @@ training_arguments = TrainingArguments(
     num_train_epochs=epochs,
     per_device_train_batch_size=batch_size,
     remove_unused_columns=False,
+    logging_steps=100,
 )
 trainer = RetrievalTrainer(
     model=model,
@@ -291,25 +300,32 @@ trainer.train()
 from transformers import AutoTokenizer, TrainingArguments, get_cosine_schedule_with_warmup, AdamW
 from retrievals import RerankCollator, AutoModelForRanking, RerankTrainer, RerankTrainDataset
 
-model_name_or_path: str = "microsoft/deberta-v3-base"
+model_name_or_path: str = "BAAI/bge-reranker-base"
 max_length: int = 128
 learning_rate: float = 3e-5
 batch_size: int = 4
 epochs: int = 3
+output_dir: str = "./checkpoints"
 
-train_dataset = RerankTrainDataset('./t2rank.json', positive_key='pos', negative_key='neg')
+train_dataset = RerankTrainDataset("C-MTEB/T2Reranking", positive_key="positive", negative_key="negative", dataset_split='dev')
 tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, use_fast=False)
 model = AutoModelForRanking.from_pretrained(model_name_or_path)
 optimizer = AdamW(model.parameters(), lr=learning_rate)
 num_train_steps = int(len(train_dataset) / batch_size * epochs)
-scheduler = get_cosine_schedule_with_warmup(optimizer, num_warmup_steps=0.05 * num_train_steps, num_training_steps=num_train_steps)
+scheduler = get_cosine_schedule_with_warmup(
+    optimizer,
+    num_warmup_steps=0.05 * num_train_steps,
+    num_training_steps=num_train_steps,
+)
 
 training_args = TrainingArguments(
     learning_rate=learning_rate,
     per_device_train_batch_size=batch_size,
     num_train_epochs=epochs,
-    output_dir='./checkpoints',
+    output_dir=output_dir,
     remove_unused_columns=False,
+    logging_steps=100,
+    report_to="none",
 )
 trainer = RerankTrainer(
     model=model,
@@ -348,9 +364,7 @@ epochs: int = 3
 colbert_dim: int = 1024
 output_dir: str = './checkpoints'
 
-train_dataset = RetrievalTrainDataset(
-    'C-MTEB/T2Reranking', positive_key='positive', negative_key='negative', dataset_split='dev'
-)
+train_dataset = RetrievalTrainDataset('C-MTEB/T2Reranking', positive_key='positive', negative_key='negative', dataset_split='dev')
 tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, use_fast=False)
 data_collator = ColBertCollator(
     tokenizer,
@@ -367,9 +381,7 @@ model = ColBERT.from_pretrained(
 
 optimizer = AdamW(model.parameters(), lr=learning_rate)
 num_train_steps = int(len(train_dataset) / batch_size * epochs)
-scheduler = get_cosine_schedule_with_warmup(
-    optimizer, num_warmup_steps=0.05 * num_train_steps, num_training_steps=num_train_steps
-)
+scheduler = get_cosine_schedule_with_warmup(optimizer, num_warmup_steps=0.05 * num_train_steps, num_training_steps=num_train_steps)
 
 training_args = TrainingArguments(
     learning_rate=learning_rate,
@@ -428,9 +440,7 @@ train_dataset = RetrievalTrainDataset(
     document_instruction='B: ',
     dataset_split='dev',
 )
-data_collator = LLMRerankCollator(
-    tokenizer=tokenizer, max_length=max_length, prompt=task_prompt, add_target_token='Yes'
-)
+data_collator = LLMRerankCollator(tokenizer=tokenizer, max_length=max_length, prompt=task_prompt, add_target_token='Yes')
 token_index = tokenizer('Yes', add_special_tokens=False)['input_ids'][-1]
 model = LLMRanker.from_pretrained(
     model_name_or_path,

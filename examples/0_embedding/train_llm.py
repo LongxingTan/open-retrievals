@@ -89,7 +89,7 @@ class TrainingArguments(transformers.TrainingArguments):
     num_train_epochs: int = 1
     per_device_train_batch_size: int = 1
     remove_unused_columns: bool = False
-    cache_dir: Optional[str] = field(default="/root/autodl-tmp/llm_output")
+    cache_dir: Optional[str] = None
     negatives_cross_device: bool = field(default=False, metadata={"help": "share negatives across devices"})
     temperature: Optional[float] = field(default=0.02)
     fix_position_embedding: bool = field(

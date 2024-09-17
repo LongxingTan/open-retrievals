@@ -48,7 +48,7 @@ Refer to [the fine-tuning code](./train_llm.py), to train the model like
 
 Note
 - no need to set `causal_lm=True` like LLMRanker for AutoModelForEmbedding, but normally set the pooling_method to `last`
-- set `query_instruction`
+- set `query_instruction` and `document_instruction` in `RetrievalTrainDataset` during train or add it manually to text directly, set it in `AutoModelForEmbedding` during encode
   - "Given a query and a relevant document, retrieve the document that are pertinent to the query\nQuery: "
 - use the appropriate `pooling_method`
   - `last`
@@ -60,8 +60,10 @@ from retrievals import AutoModelForEmbedding
 
 model_name = 'intfloat/e5-mistral-7b-instruct'
 model = AutoModelForEmbedding.from_pretrained(
-            model_name,
-            pooling_method='last',
-            use_fp16=True,
-        )
+  model_name,
+  pooling_method='last',
+  use_fp16=True,
+  query_instruction='Instruct: Given a web search query, retrieve relevant passages that answer the query\nQuery: ',
+  document_instruction='',
+)
 ```
