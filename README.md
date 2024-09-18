@@ -54,21 +54,10 @@
 
 ## Installation
 
-**Prerequisites**
-```shell
-pip install transformers
-pip install faiss-cpu  # if necessary while faiss retrieval
-pip install peft  # if necessary while LoRA training
-```
-
 **With pip**
 ```shell
+pip install transformers
 pip install open-retrievals
-```
-
-**With source code**
-```shell
-python -m pip install -U git+https://github.com/LongxingTan/open-retrievals.git
 ```
 
 

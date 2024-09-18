@@ -31,6 +31,12 @@ Now you are ready, proceed with
     # install with support of evaluation
     pip install open-retrievals[eval]
 
+Or install from source code
+
+.. code-block:: shell
+
+    python -m pip install -U git+https://github.com/LongxingTan/open-retrievals.git
+
 
 Examples
 ------------------

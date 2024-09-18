@@ -54,21 +54,10 @@
 
 ## 安装
 
-**基础**
-```shell
-pip install transformers
-pip install faiss  # 如有必要，检索
-pip install peft  # 如有必要，LoRA训练
-```
-
 **pip安装**
 ```shell
+pip install transformers
 pip install open-retrievals
-```
-
-**源码安装**
-```shell
-python -m pip install -U git+https://github.com/LongxingTan/open-retrievals.git
 ```
 
 
