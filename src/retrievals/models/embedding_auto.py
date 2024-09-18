@@ -408,7 +408,7 @@ class AutoModelForEmbedding(Base):
         model_class = {'pointwise': self, 'pairwise': PairwiseModel, 'listwise': ListwiseModel}
         model_class = model_class.get(train_type)
 
-        new_model = model_class(
+        return model_class(
             model=self.model,
             tokenizer=self.tokenizer,
             pooling_method=self.pooling_method,
@@ -418,7 +418,6 @@ class AutoModelForEmbedding(Base):
             device=self.device,
             **kwargs,
         )
-        self.__dict__.update(new_model.__dict__)
 
     @classmethod
     def as_retriever(cls, retrieval_args, **kwargs):
