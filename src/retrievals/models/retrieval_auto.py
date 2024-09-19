@@ -346,7 +346,7 @@ class ElasticRetriever(BaseRetriever):
 
 class EnsembleRetriever(BaseRetriever):
     """
-    RRF_fusion
+    RRF fusion: Reciprocal Rank Fusion
     """
 
     def __init__(self, retrievers: List[BaseRetriever], weights=None):

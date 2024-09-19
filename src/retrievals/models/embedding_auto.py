@@ -454,6 +454,8 @@ class AutoModelForEmbedding(Base):
         device: Optional[str] = None,
         query_instruction: Optional[str] = None,
         document_instruction: Optional[str] = None,
+        mrl_dim: int = -1,
+        pretrained_linear_name: str = 'linear.pt',
         max_length: Optional[int] = None,
         **kwargs,
     ):
@@ -491,6 +493,14 @@ class AutoModelForEmbedding(Base):
         if use_fp16:
             logger.info('Set model to fp16, please note that if you want fp16 during training, set training_args fp16')
             model.half()
+
+        if mrl_dim > 0:
+            vector_linear = torch.nn.Linear(in_features=model.config.hidden_size, out_features=mrl_dim)
+            vector_linear_dict = {
+                k.replace("linear.", ""): v
+                for k, v in torch.load(os.path.join(model_name_or_path, pretrained_linear_name)).items()
+            }
+            vector_linear.load_state_dict(vector_linear_dict)
 
         if use_lora and lora_path is None:
             logger.info('Set fine-tuning to LoRA')

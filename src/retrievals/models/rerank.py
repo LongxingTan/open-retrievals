@@ -669,7 +669,7 @@ class ColBERT(Base):
         cls,
         model_name_or_path: str,
         colbert_dim: int = 1024,
-        pretrained_colbert_linear_name: str = 'colbert_linear.pt',
+        pretrained_linear_name: str = 'colbert_linear.pt',
         loss_fn: Union[nn.Module, Callable] = ColbertLoss(),
         trust_remote_code: bool = True,
         use_fp16: bool = False,
@@ -691,12 +691,12 @@ class ColBERT(Base):
         model = AutoModel.from_pretrained(model_name_or_path, trust_remote_code=trust_remote_code, **kwargs)
 
         linear_layer = nn.Linear(model.config.hidden_size, colbert_dim)
-        if os.path.exists(path=os.path.join(model_name_or_path, pretrained_colbert_linear_name)):
+        if os.path.exists(path=os.path.join(model_name_or_path, pretrained_linear_name)):
             logger.info(
                 f'Loading colbert_linear pretrained weight from {model_name_or_path}, colbert_dim={colbert_dim}'
             )
             colbert_state_dict = torch.load(
-                os.path.join(model_name_or_path, pretrained_colbert_linear_name), map_location='cpu'
+                os.path.join(model_name_or_path, pretrained_linear_name), map_location='cpu'
             )
             linear_layer.load_state_dict(colbert_state_dict)
         else:
