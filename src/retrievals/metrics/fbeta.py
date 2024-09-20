@@ -1,7 +1,7 @@
 from typing import Dict, List
 
 
-def get_recall(qid2positive: Dict[str, List[str]], qid2ranking: Dict[str, List[str]], cutoff_ranks: List[int] = [10]):
+def get_fbeta(qid2positive: Dict[str, List[str]], qid2ranking: Dict[str, List[str]], cutoff_ranks: List[int] = [10]):
     qid2recall = {cutoff_rank: {} for cutoff_rank in cutoff_ranks}
     num_samples = len(qid2ranking.keys())
 
