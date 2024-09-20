@@ -9,7 +9,7 @@ def get_map(qid2positive: Dict[str, List[str]], qid2ranking: Dict[str, List[str]
 
     def average_precision(positives: List[str], ranked_doc_ids: List[str], cutoff: int) -> float:
         """
-        for each cut_off, calculate its precision
+        Average of precision for each cut_off
         """
         hits = 0
         sum_precisions = 0.0
@@ -19,7 +19,7 @@ def get_map(qid2positive: Dict[str, List[str]], qid2ranking: Dict[str, List[str]
                 hits += 1
                 sum_precisions += hits / rank
 
-        return sum_precisions / len(positives) if positives else 0.0
+        return sum_precisions / min(len(positives), cutoff) if positives else 0.0
 
     qid2map = dict()
 

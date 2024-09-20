@@ -295,7 +295,7 @@ trainer.train()
 
 </details>
 
-<details><summary> 微调Cross-encoder重排模型 </summary>
+<details><summary> 微调Cross-encoder重排 </summary>
 
 ```python
 import os
@@ -345,7 +345,7 @@ trainer.train()
 
 </details>
 
-<details><summary> 微调ColBERT重排模型 </summary>
+<details><summary> 微调ColBERT重排 </summary>
 
 ```python
 import os
@@ -411,7 +411,7 @@ trainer.train()
 
 </details>
 
-<details><summary> 微调大模型重排模型 </summary>
+<details><summary> 微调大模型重排 </summary>
 
 ```python
 import os
