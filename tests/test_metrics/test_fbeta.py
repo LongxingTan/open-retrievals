@@ -1,10 +1,10 @@
 import unittest
 
-from src.retrievals.metrics.fbeta import get_recall
+from src.retrievals.metrics.fbeta import get_fbeta
 
 
-class TestGetRecall(unittest.TestCase):
-    def test_get_recall(self):
+class TestGetFbeta(unittest.TestCase):
+    def test_get_fbeta(self):
         qid2positive = {'q1': ['d1', 'd3'], 'q2': ['d1'], 'q3': ['d2', 'd3']}
 
         qid2ranking = {'q1': ['d1', 'd2', 'd3', 'd4'], 'q2': ['d2', 'd1', 'd3'], 'q3': ['d1', 'd3', 'd2']}
@@ -26,7 +26,7 @@ class TestGetRecall(unittest.TestCase):
         expected_mean_recall_at_2 = sum(expected_recall_at_2.values()) / len(expected_recall_at_2)
         expected_mean_recall_at_3 = sum(expected_recall_at_3.values()) / len(expected_recall_at_3)
 
-        result = get_recall(qid2positive, qid2ranking, cutoff_ranks)
+        result = get_fbeta(qid2positive, qid2ranking, cutoff_ranks)
         print(result)
 
         self.assertAlmostEqual(result['recall@2'], expected_mean_recall_at_2, places=4)
