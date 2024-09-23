@@ -227,9 +227,16 @@ tuning the important parameters:
 
 Hard negative mining
 ~~~~~~~~~~~~~~~~~~~~~~~~
-offline hard mining
 
-online hard mining
+- offline hard mining or online hard mining
+
+If we only have query and positive, we can use it to generate more negative samples to enhance the retrieval performance.
+
+.. code-block:: shell
+
+    python -m retrievals.pipeline.build_hn \
+        --model_name_or_path 'BAAI/bge-large-en-v1.5' \
+        --input_file t2_ranking.json
 
 
 Matryoshka Representation Learning

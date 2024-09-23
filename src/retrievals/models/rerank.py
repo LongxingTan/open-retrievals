@@ -538,9 +538,11 @@ class ColBERT(Base):
         device: str = None,
         normalize_embeddings: bool = True,
     ):
-        device = device or self.device
+
         self.model.eval()
-        self.model.to(device)
+        if device and device != self.device:
+            self.model.to(device)
+        device = device or self.device
 
         if show_progress_bar is None:
             show_progress_bar = (

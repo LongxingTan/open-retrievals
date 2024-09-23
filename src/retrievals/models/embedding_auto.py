@@ -159,11 +159,11 @@ class AutoModelForEmbedding(Base):
 
     def encode(
         self,
-        inputs: Union[DataLoader, Dict, List, str],
+        inputs: Union[DataLoader, Dict, List, str, np.ndarray, 'pd.Series'],
         is_query: bool = False,
         batch_size: int = 16,
         show_progress_bar: bool = None,
-        output_value: str = "sentence_embedding",
+        output_value: Literal["sentence_embedding", "token_embeddings", None] = "sentence_embedding",
         convert_to_numpy: bool = True,
         convert_to_tensor: bool = False,
         device: str = None,
@@ -204,9 +204,11 @@ class AutoModelForEmbedding(Base):
         **kwargs,
     ) -> Union[List[torch.Tensor], np.ndarray, torch.Tensor]:
         """Encode for sentence embedding"""
-        device = device or self.device
         self.model.eval()
-        self.model.to(device)
+        if device and device != self.device:
+            # for llm, avoid frequently to device
+            self.model.to(device)
+        device = device or self.device
 
         all_embeddings = []
 
@@ -262,9 +264,11 @@ class AutoModelForEmbedding(Base):
         :return: By default, a list of tensors is returned. If convert_to_tensor, a stacked tensor is returned.
             If convert_to_numpy, a numpy matrix is returned.
         """
-        device = device or self.device
+
         self.model.eval()
-        self.model.to(device)
+        if device and device != self.device:
+            self.model.to(device)
+        device = device or self.device
 
         if show_progress_bar is None:
             show_progress_bar = (
@@ -286,10 +290,10 @@ class AutoModelForEmbedding(Base):
         all_embeddings = []
         length_sorted_idx = np.argsort([-self._text_length(sentence) for sentence in sentences])
         sentences_sorted = [sentences[idx] for idx in length_sorted_idx]
-        if is_query:
+        if is_query and self.query_instruction:
             logger.info("Encoding query")
             sentences_sorted = [self.query_instruction + sentence for sentence in sentences_sorted]
-        else:
+        if not is_query and self.document_instruction:
             logger.info('Encoding document')
             sentences_sorted = [self.document_instruction + sentence for sentence in sentences_sorted]
 
@@ -425,17 +429,6 @@ class AutoModelForEmbedding(Base):
 
         embedding_model = cls(**kwargs)
         return AutoModelForRetrieval(embedding_model, **retrieval_args)
-
-    @classmethod
-    def as_reranker(cls, rerank_args, **kwargs):
-        from .rerank import AutoModelForRanking
-
-        ranking_model = cls(**kwargs)
-        return AutoModelForRanking(ranking_model, **rerank_args)
-
-    @classmethod
-    def as_langchain_embedding(cls):
-        from ..tools.langchain import LangchainEmbedding
 
     @classmethod
     def from_pretrained(
