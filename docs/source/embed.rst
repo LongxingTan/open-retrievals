@@ -226,21 +226,31 @@ tuning the important parameters:
 
 
 Hard negative mining
-~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~
 
 - offline hard mining or online hard mining
 
 If we only have query and positive, we can use it to generate more negative samples to enhance the retrieval performance.
 
+The data format of `input_file` to generate hard negative is `(query, positive)` or `(query, positive, negative)`
+The format of `candidate_pool` of corpus is jsonl of `{text}`
+
+
 .. code-block:: shell
 
-    python -m retrievals.pipeline.build_hn \
-        --model_name_or_path 'BAAI/bge-large-en-v1.5' \
-        --input_file t2_ranking.json
+    python -m retrievals.pipelines.build_hn \
+        --model_name_or_path BAAI/bge-base-en-v1.5 \
+        --input_file /t2_ranking.jsonl \
+        --output_file /t2_ranking_hn.jsonl \
+        --positive_key positive \
+        --negative_key negative \
+        --range_for_sampling 2-200 \
+        --negative_number 15 \
 
 
 Matryoshka Representation Learning
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 
 
 Contrastive loss
