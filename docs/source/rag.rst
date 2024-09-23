@@ -39,7 +39,7 @@ Integrated with Langchain
     rerank_model_name_or_path = "BAAI/bge-reranker-base"
     llm_model_name_or_path = "microsoft/Phi-3-mini-128k-instruct"
 
-    embeddings = LangchainEmbedding(model_name_or_path=embed_model_name_or_path)
+    embeddings = LangchainEmbedding(model_name_or_path=embed_model_name_or_path, model_kwargs={'pooling_method': 'mean'})
     vectordb = Vectorstore(
         persist_directory=persist_directory,
         embedding_function=embeddings,

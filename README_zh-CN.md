@@ -34,9 +34,9 @@
 
 ![structure](./docs/source/_static/structure.png)
 
-**Open-Retrievals** 支持统一调用或微调文本向量、检索、重排等模型，使信息检索、RAG应用更加便捷
-- 支持全套向量微调，对比学习、大模型、point-wise、pairwise、listwise
-- 支持全套重排微调，cross-encoder、ColBERT、LLM
+**Open-Retrievals** 统一调用和微调文本向量、检索、重排模型，使信息检索、RAG应用更加便捷
+- 支持文本向量微调，对比学习、大模型、point-wise、pairwise、listwise
+- 支持重排微调，cross-encoder、ColBERT、LLM
 - 支持定制化、模块化RAG，支持在Transformers、Langchain、LlamaIndex中便捷使用微调后的模型
 
 | 实验              | 模型                   | 原分数 | 微调分数    | Demo代码                                                                                                                                                            |
@@ -54,21 +54,10 @@
 
 ## 安装
 
-**基础**
-```shell
-pip install transformers
-pip install faiss  # 如有必要，检索
-pip install peft  # 如有必要，LoRA训练
-```
-
 **pip安装**
 ```shell
+pip install transformers
 pip install open-retrievals
-```
-
-**源码安装**
-```shell
-python -m pip install -U git+https://github.com/LongxingTan/open-retrievals.git
 ```
 
 
@@ -306,7 +295,7 @@ trainer.train()
 
 </details>
 
-<details><summary> 微调Cross-encoder重排模型 </summary>
+<details><summary> 微调Cross-encoder重排 </summary>
 
 ```python
 import os
@@ -356,7 +345,7 @@ trainer.train()
 
 </details>
 
-<details><summary> 微调ColBERT重排模型 </summary>
+<details><summary> 微调ColBERT重排 </summary>
 
 ```python
 import os
@@ -422,7 +411,7 @@ trainer.train()
 
 </details>
 
-<details><summary> 微调大模型重排模型 </summary>
+<details><summary> 微调大模型重排 </summary>
 
 ```python
 import os

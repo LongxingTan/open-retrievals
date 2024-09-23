@@ -76,6 +76,8 @@ Prepare data
 Pair wise
 ~~~~~~~~~~~~~
 
+If the positive and negative examples have some noise in label, the directly point-wise cross-entropy maybe not the best. The pair wise just compare relatively, or the hinge loss with margin could be better.
+
 .. image:: https://colab.research.google.com/assets/colab-badge.svg
     :target: https://colab.research.google.com/drive/17KXe2lnNRID-HiVvMtzQnONiO74oGs91?usp=sharing
     :alt: Open In Colab
@@ -188,9 +190,9 @@ Pair wise
 Point wise
 ~~~~~~~~~~~~~~~~~~
 
-If the positive and negative examples have some noise in label, the directly point-wise cross-entropy maybe not the best. The pair wise just compare relatively, or the hinge loss with margin could be better.
+We can use point-wise train, similar to use `tfidf` in information retrieval.
 
-arcface
+**arcface**
 
 - layer wise learning rate
 - batch size is important
@@ -200,7 +202,6 @@ arcface
 
 List wise
 ~~~~~~~~~~~~~~~~~~
-
 
 
 3. Training skills to enhance the performance
@@ -225,14 +226,31 @@ tuning the important parameters:
 
 
 Hard negative mining
-~~~~~~~~~~~~~~~~~~~~~~~~
-offline hard mining
+~~~~~~~~~~~~~~~~~~~~~~~~~
 
-online hard mining
+- offline hard mining or online hard mining
+
+If we only have query and positive, we can use it to generate more negative samples to enhance the retrieval performance.
+
+The data format of `input_file` to generate hard negative is `(query, positive)` or `(query, positive, negative)`
+The format of `candidate_pool` of corpus is jsonl of `{text}`
+
+
+.. code-block:: shell
+
+    python -m retrievals.pipelines.build_hn \
+        --model_name_or_path BAAI/bge-base-en-v1.5 \
+        --input_file /t2_ranking.jsonl \
+        --output_file /t2_ranking_hn.jsonl \
+        --positive_key positive \
+        --negative_key negative \
+        --range_for_sampling 2-200 \
+        --negative_number 15 \
 
 
 Matryoshka Representation Learning
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 
 
 Contrastive loss

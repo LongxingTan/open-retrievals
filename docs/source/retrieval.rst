@@ -6,6 +6,8 @@ Retrieval
 1. Pipeline
 ----------------------------
 
+The retrieval method could solve the **search** or **extreme multiclass classification** problem.
+
 generate data -> train -> eval
 
 pretrained encoding -> build hard negative -> train -> eval -> indexing -> retrieval

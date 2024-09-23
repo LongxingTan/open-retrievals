@@ -35,7 +35,7 @@
 
 ![structure](./docs/source/_static/structure.png)
 
-**Open-retrievals** unify text embedding, retrieval, reranking and RAG. It's easy, flexible and scalable.
+**Open-retrievals** unify text embedding, retrieval, reranking and RAG. It's easy, flexible and scalable to fine-tune the model.
 - Embedding fine-tuned through point-wise, pairwise, listwise, contrastive learning and LLM.
 - Reranking fine-tuned with Cross-Encoder, ColBERT and LLM.
 - Easily build enhanced modular RAG, integrated with Transformers, Langchain and LlamaIndex.
@@ -54,21 +54,10 @@
 
 ## Installation
 
-**Prerequisites**
-```shell
-pip install transformers
-pip install faiss-cpu  # if necessary while faiss retrieval
-pip install peft  # if necessary while LoRA training
-```
-
 **With pip**
 ```shell
+pip install transformers
 pip install open-retrievals
-```
-
-**With source code**
-```shell
-python -m pip install -U git+https://github.com/LongxingTan/open-retrievals.git
 ```
 
 

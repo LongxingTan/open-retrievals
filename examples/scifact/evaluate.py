@@ -4,7 +4,7 @@ from collections import defaultdict
 
 from datasets import load_dataset
 
-from retrievals.metrics import get_mrr, get_ndcg, get_recall
+from retrievals.metrics import get_fbeta, get_mrr, get_ndcg
 
 
 def transfer_index_to_id(save_path):
@@ -56,7 +56,7 @@ if __name__ == "__main__":
             qid2ranking[qid].append(pid)
 
     results = get_mrr(qid2positives, qid2ranking, cutoff_rank=10)
-    results.update(get_recall(qid2positives, qid2ranking, cutoff_ranks=[10]))
+    results.update(get_fbeta(qid2positives, qid2ranking, cutoff_ranks=[10]))
     results.update(get_ndcg(qid2positives, qid2ranking, cutoff_rank=10))
 
     print(json.dumps(results, indent=4))

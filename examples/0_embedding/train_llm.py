@@ -147,9 +147,6 @@ class TrainDatasetForEmbedding(Dataset):
         query = self.dataset[item]["query"] + self.tokenizer.eos_token
         pos = self.dataset[item]["pos"][0] + self.tokenizer.eos_token
         neg = self.dataset[item]["neg"][0] + self.tokenizer.eos_token
-        # pos = random.choice(self.dataset[item]["pos"])
-        # neg = random.choice(self.dataset[item]["neg"])
-
         res = {"query": query, "pos": pos, "neg": neg}
         return res
 
