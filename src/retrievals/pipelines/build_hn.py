@@ -110,8 +110,7 @@ def add_neg(
     query_embeds = model.encode_queries(queries, batch_size=256)
 
     logger.info(f'Indexing and search of {len(corpus)}')
-
-    index = model.build_index()
+    index = model.build_index(inputs=corpus)
 
     retriever = FaissRetrieval(corpus_index=index)
     _, all_indices = retriever.search(query_embeds, top_k=sample_range[-1])
@@ -139,6 +138,7 @@ def add_neg(
                 samples = [sent for sent in samples if sent not in data[positive_key]]
                 data[negative_key].extend(samples[: negative_number - len(data[negative_key])])
             f.write(json.dumps(data, ensure_ascii=False) + '\n')
+    logger.info(f"With hard negative file saved in {output_file}")
 
 
 if __name__ == "__main__":

@@ -483,7 +483,10 @@ class AutoModelForEmbedding(Base):
             model = AutoModel.from_config(config)
         tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, trust_remote_code=trust_remote_code)
 
-        if use_fp16:
+        if device is None:
+            device = get_device_name()
+
+        if use_fp16 and device != 'cpu':
             logger.info('Set model to fp16, please note that if you want fp16 during training, set training_args fp16')
             model.half()
 
