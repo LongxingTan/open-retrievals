@@ -94,9 +94,9 @@ def add_neg(
     for line in open(input_file):
         line = json.loads(line.strip())
         train_data.append(line)
-        corpus.append(line[positive_key])  # if not candidate_pool, all pos will be considered as corpus
+        corpus.extend(line[positive_key])  # if not candidate_pool, all pos will be considered as corpus
         if negative_key in line:
-            corpus.extend(line['neg'])
+            corpus.extend(line[negative_key])
         queries.append(line['query'])
 
     if candidate_pool is not None:
@@ -124,7 +124,7 @@ def add_neg(
         for idx in idxs:
             if idx == -1:
                 break
-            if corpus[idx] not in data['pis'] and corpus[idx] != query:
+            if corpus[idx] not in data[positive_key] and corpus[idx] != query:
                 filtered_idx.append(idx)
 
         if len(filtered_idx) > negative_number:
