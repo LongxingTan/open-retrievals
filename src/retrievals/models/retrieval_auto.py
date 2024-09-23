@@ -258,7 +258,7 @@ class FaissRetrieval(BaseRetriever):
         self,
         query_embeddings: Union[torch.Tensor, np.ndarray],
         top_k: int = 100,
-        batch_size: int = 128,
+        batch_size: int = 64,
     ) -> Tuple[np.ndarray, np.ndarray]:
         """
         1. Encode queries into dense embeddings

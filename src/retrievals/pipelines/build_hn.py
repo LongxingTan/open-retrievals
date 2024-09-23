@@ -7,7 +7,7 @@ import random
 from argparse import ArgumentParser
 
 from ..models.embedding_auto import AutoModelForEmbedding
-from ..models.retrieval_auto import AutoModelForRetrieval
+from ..models.retrieval_auto import AutoModelForRetrieval, FaissRetrieval
 
 logger = logging.getLogger(__name__)
 
@@ -110,8 +110,8 @@ def add_neg(
 
     index = model.build_index()
 
-    retriever = AutoModelForRetrieval()
-    _, all_indices = retriever.search(query_embeds, index_path=index, top_k=sample_range[-1])
+    retriever = FaissRetrieval(corpus_index=index)
+    _, all_indices = retriever.search(query_embeds, top_k=sample_range[-1])
     assert len(all_indices) == len(train_data)
 
     for i, data in enumerate(train_data):
