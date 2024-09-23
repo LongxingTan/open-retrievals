@@ -20,6 +20,9 @@ def parse_args():
     parser.add_argument('--model_name_or_path', default="BAAI/bge-base-en", type=str)
     parser.add_argument('--range_for_sampling', default="10-210", type=str, help="range to sample negatives")
     parser.add_argument('--negative_number', default=15, type=int, help='the number of negatives')
+    parser.add_argument('--query_instruction_for_retrieval', default="")
+    parser.add_argument('--positive_key', type=str, default="positive")
+    parser.add_argument('--negative_key', type=str, default="negative")
     return parser.parse_args()
 
 
@@ -83,7 +86,7 @@ def add_neg(
     sample_range,
     negative_number,
     positive_key: str = 'pos',
-    negative_key: str = 'meg',
+    negative_key: str = 'neg',
 ):
     corpus = []
     queries = []
@@ -144,7 +147,7 @@ if __name__ == "__main__":
     sample_range = [int(x) for x in sample_range]
 
     model = AutoModelForEmbedding.from_pretrained(
-        args.model_name_or_path, query_instruction_for_retrieval=args.query_instruction_for_retrieval
+        args.model_name_or_path, query_instruction=args.query_instruction_for_retrieval
     )
 
     add_neg(
@@ -154,4 +157,6 @@ if __name__ == "__main__":
         output_file=args.output_file,
         sample_range=sample_range,
         negative_number=args.negative_number,
+        positive_key=args.positive_key,
+        negative_key=args.negative_key,
     )
