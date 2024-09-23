@@ -3,7 +3,7 @@ from typing import Dict, List, Literal, Optional
 
 import torch
 from torch import nn
-from transformers import PreTrainedModel
+from transformers import PreTrainedModel, is_torch_npu_available
 
 DEFAULT_LLM_PATTERNS = [
     r'.*llama.*',
@@ -16,7 +16,7 @@ DEFAULT_LLM_PATTERNS = [
 ]
 
 
-def get_device_name() -> Literal["mps", "cuda", "cpu"]:
+def get_device_name():
     """
     Returns the name of the device where this module is running on.
     It's a simple implementation that doesn't cover cases when more powerful GPUs are available and
@@ -26,11 +26,13 @@ def get_device_name() -> Literal["mps", "cuda", "cpu"]:
     :return: Device name, like 'cuda' or 'cpu'
     """
     if torch.cuda.is_available():
-        return "cuda"
+        return torch.device("cuda")
     elif torch.backends.mps.is_available():
-        return "mps"
+        return torch.device("mps")
+    elif is_torch_npu_available():
+        return torch.device('npu')
     else:
-        return "cpu"
+        return torch.device("cpu")
 
 
 def batch_to_device(batch: Dict, target_device: str) -> Dict[str, torch.Tensor]:
