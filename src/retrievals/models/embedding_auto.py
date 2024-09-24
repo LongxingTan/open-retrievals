@@ -179,7 +179,7 @@ class AutoModelForEmbedding(Base):
                 device=device,
                 normalize_embeddings=normalize_embeddings,
             )
-        elif isinstance(inputs, (str, List, Tuple, 'pd.Series', np.ndarray)):
+        elif isinstance(inputs, (str, List, Tuple, np.ndarray)):
             return self._encode_from_text(
                 sentences=inputs,
                 is_query=is_query,
