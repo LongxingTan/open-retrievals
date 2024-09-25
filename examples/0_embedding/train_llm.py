@@ -63,7 +63,7 @@ class DataArguments:
         },
     )
     document_max_length: int = field(
-        default=32,
+        default=64,
         metadata={
             "help": "The maximum total input sequence length after tokenization for document. Sequences longer "
             "than this will be truncated, sequences shorter will be padded."
@@ -101,6 +101,7 @@ class TrainingArguments(transformers.TrainingArguments):
     gradient_accumulation_steps: int = field(default=1024)
     bf16: bool = field(default=True)
     logging_steps: int = field(default=100)
+    output_dir: str = field(default='./checkpoint')
 
 
 @dataclass
@@ -237,6 +238,8 @@ def main():
         pooling_method="last",
         lora_config=lora_config,
     )
+    model = model.set_train_type("pairwise", loss_fn=TripletLoss())
+
     optimizer = get_optimizer(model, lr=5e-5, weight_decay=1e-3)
 
     lr_scheduler = get_scheduler(optimizer, num_train_steps=int(len(train_dataset) / 2 * 1))
@@ -248,14 +251,12 @@ def main():
         data_collator=TripletCollator(
             tokenizer, query_max_length=data_args.query_max_length, document_max_length=data_args.document_max_length
         ),
-        loss_fn=TripletLoss(),
     )
     trainer.optimizer = optimizer
     trainer.scheduler = lr_scheduler
     trainer.train()
 
     trainer.save_state()
-    trainer.save_model(output_dir=training_args.output_dir)
 
 
 if __name__ == "__main__":

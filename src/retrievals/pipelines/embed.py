@@ -105,6 +105,7 @@ class RetrieverTrainingArguments(TrainingArguments):
     report_to: Optional[List[str]] = field(
         default="none", metadata={"help": "The list of integrations to report the results and logs to."}
     )
+    output_dir: str = field(default='./checkpoint')
 
 
 def main():

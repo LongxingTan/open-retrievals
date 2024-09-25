@@ -19,6 +19,10 @@ class AutoCollator(DataCollatorWithPadding):
 
 
 class PairCollator(DataCollatorWithPadding):
+    """
+    Given the list[dict[pair]], output the dict[batch pair]
+    """
+
     def __init__(
         self,
         tokenizer: PreTrainedTokenizer,
@@ -84,6 +88,10 @@ class PairCollator(DataCollatorWithPadding):
 
 
 class TripletCollator(DataCollatorWithPadding):
+    """
+    Given the list[dict], output the dict[key, batch], the length of output batch is not necessary equal for listwise
+    """
+
     def __init__(
         self,
         tokenizer: PreTrainedTokenizer,
