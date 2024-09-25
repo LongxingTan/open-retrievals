@@ -27,9 +27,6 @@ from .utils import (
     get_device_name,
 )
 
-if TYPE_CHECKING:
-    import pandas as pd
-
 logger = logging.getLogger(__name__)
 
 
@@ -159,7 +156,7 @@ class AutoModelForEmbedding(Base):
 
     def encode(
         self,
-        inputs: Union[DataLoader, Dict, List, str, np.ndarray, 'pd.Series'],
+        inputs: Union[DataLoader, Dict, List, str, np.ndarray],
         is_query: bool = False,
         batch_size: int = 16,
         show_progress_bar: bool = None,
@@ -179,7 +176,7 @@ class AutoModelForEmbedding(Base):
                 device=device,
                 normalize_embeddings=normalize_embeddings,
             )
-        elif isinstance(inputs, (str, List, Tuple, np.ndarray)):
+        elif isinstance(inputs, str) or isinstance(inputs[0], str):
             return self._encode_from_text(
                 sentences=inputs,
                 is_query=is_query,
@@ -235,7 +232,7 @@ class AutoModelForEmbedding(Base):
 
     def _encode_from_text(
         self,
-        sentences: Union[str, List[str], Tuple[str], 'pd.Series', np.ndarray],
+        sentences: Union[str, List[str], Tuple[str], np.ndarray],
         is_query: bool = False,
         batch_size: int = 16,
         show_progress_bar: bool = None,

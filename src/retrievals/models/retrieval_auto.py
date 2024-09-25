@@ -3,7 +3,7 @@ import logging
 import os.path
 import time
 from abc import ABC, abstractmethod
-from typing import Any, Iterable, List, Literal, Optional, Tuple, Union
+from typing import Any, Dict, Iterable, List, Literal, Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -124,13 +124,13 @@ class AutoModelForRetrieval(object):
     def get_relevant_documents(self, query: str):
         return
 
-    def get_pandas_candidate(
+    def get_candidate_dict(
         self,
         query_ids: Union[pd.Series, np.ndarray],
         document_ids: Union[pd.Series, np.ndarray],
         dists: np.ndarray,
         indices: np.ndarray,
-    ) -> pd.DataFrame:
+    ) -> Dict:
         if isinstance(query_ids, pd.Series):
             query_ids = query_ids.values
         if isinstance(document_ids, pd.Series):
@@ -141,7 +141,7 @@ class AutoModelForRetrieval(object):
             'predict_id': document_ids[indices.ravel()],
             'score': dists.ravel(),
         }
-        return pd.DataFrame(retrieval)
+        return retrieval
 
     def get_rerank_df(
         self,

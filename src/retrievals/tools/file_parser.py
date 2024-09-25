@@ -8,7 +8,6 @@ import io
 import logging
 from typing import Dict, List
 
-import pandas as pd
 import requests
 
 logger = logging.getLogger(__name__)
@@ -108,6 +107,8 @@ def process_word(file_path):
 
 
 def process_excel(file_path: str):
+    import pandas as pd
+
     if file_path.endswith('.csv'):
         table = pd.read_csv(file_path)
     else:

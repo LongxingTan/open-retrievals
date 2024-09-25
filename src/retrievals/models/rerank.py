@@ -28,9 +28,6 @@ from .utils import (
     get_device_name,
 )
 
-if TYPE_CHECKING:
-    import pandas as pd
-
 logger = logging.getLogger(__name__)
 
 
@@ -529,7 +526,7 @@ class ColBERT(Base):
 
     def encode(
         self,
-        sentences: Union[str, List[str], Tuple[str], 'pd.Series', np.ndarray],
+        sentences: Union[str, List[str], Tuple[str], np.ndarray],
         batch_size: int = 16,
         show_progress_bar: bool = None,
         output_value: str = "sentence_embedding",
