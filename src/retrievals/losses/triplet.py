@@ -19,7 +19,7 @@ class TripletLoss(nn.Module):
     def __init__(
         self,
         temperature: float = 0.05,
-        margin: float = 0.0,
+        margin: Optional[float] = None,
         negatives_cross_device: bool = False,
         batch_hard: bool = False,
         **kwargs
@@ -92,3 +92,23 @@ class TripletCosineSimilarity(nn.Module):
 
         losses = F.relu(distance_pos - distance_neg + self.margin)
         return losses.mean()
+
+
+class TripletRankingLoss(nn.Module):
+    def __init__(self, temperature: float = 0.05):
+        super().__init__()
+        self.temperature = temperature
+        # self.similarity_fn = F.cosine_similarity
+        self.loss_fn = nn.CrossEntropyLoss()
+
+    def forward(self, query_embedding, pos_embedding: torch.Tensor, neg_embedding: torch.Tensor):
+        document_embedding = torch.concat([pos_embedding, neg_embedding], dim=0)
+        scores = self.similarity_fn(query_embedding, document_embedding) / self.temperature
+        labels = torch.arange(0, scores.size(0), device=scores.device)
+        return self.loss_fn(scores, labels)
+
+    def similarity_fn(self, query_embedding, document_embedding):
+        query_embedding = F.normalize(query_embedding, p=2, dim=1)
+        document_embedding = F.normalize(document_embedding, p=2, dim=1)
+
+        return torch.mm(query_embedding, document_embedding.transpose(0, 1))

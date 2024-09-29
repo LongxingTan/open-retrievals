@@ -9,7 +9,7 @@ from .infonce import InfoNCE
 from .pearson_loss import PearsonLoss
 from .simcse import SimCSE
 from .token_loss import TokenLoss
-from .triplet import TripletLoss
+from .triplet import TripletLoss, TripletRankingLoss
 
 
 class AutoLoss(nn.Module):
