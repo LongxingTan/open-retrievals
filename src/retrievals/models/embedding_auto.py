@@ -551,8 +551,6 @@ class PairwiseModel(AutoModelForEmbedding):
         pooling_method: str = 'cls',
         normalize_embeddings: bool = False,
         loss_fn: Optional[Callable] = None,
-        cross_encoder: bool = False,
-        poly_encoder: bool = False,
         shared_weights: bool = True,
         **kwargs,
     ) -> None:
@@ -565,7 +563,6 @@ class PairwiseModel(AutoModelForEmbedding):
             **kwargs,
         )
 
-        self.cross_encoder = cross_encoder
         self.shared_weights = shared_weights
         if not shared_weights:
             self.document_model = copy.deepcopy(self.model)
@@ -579,6 +576,7 @@ class PairwiseModel(AutoModelForEmbedding):
         output_hidden_states: Optional[bool] = None,
         return_dict: Optional[bool] = None,
     ):
+
         if isinstance(inputs, (list, tuple, dict)) and 2 <= len(inputs) <= 3 or inputs_pair is not None:
             if inputs_pair:
                 input1 = inputs
@@ -593,36 +591,25 @@ class PairwiseModel(AutoModelForEmbedding):
 
             ids1, mask1 = input1['input_ids'], input1['attention_mask']
             ids2, mask2 = input2['input_ids'], input2['attention_mask']
-            if self.cross_encoder:
-                ids = torch.cat([ids1, ids2], dim=0)
-                mask = torch.cat([mask1, mask2], dim=0)
 
-                transformer_out = super().forward_from_loader(
-                    {"input_ids": ids, "attention_mask": mask}, without_pooling=True
-                )
-                pooled_output = self.pooling(transformer_out[0], mask)
-                pooled_output1 = pooled_output[: len(ids1), :]
-                pooled_output2 = pooled_output[len(ids1) :, :]
+            if self.shared_weights:  # bi-encoder, pooling in each
+                pooled_output1 = super().forward_from_loader(ids1, attention_mask=mask1)
+                pooled_output2 = super().forward_from_loader(ids2, attention_mask=mask2)
+                if len(inputs) == 3:
+                    pooled_output3 = super().forward_from_loader(
+                        input3['input_ids'], attention_mask=input3['attention_mask']
+                    )
+                    if self.loss_fn is None:
+                        return pooled_output1, pooled_output2, pooled_output3
+
+                    outputs = dict()
+                    loss = self.loss_fn(pooled_output1, pooled_output2, pooled_output3)
+                    outputs["loss"] = loss
+                    return outputs
 
             else:
-                # bi-encoder, pooling in each
-                if self.shared_weights:
-                    pooled_output1 = super().forward_from_loader(ids1, attention_mask=mask1)
-                    pooled_output2 = super().forward_from_loader(ids2, attention_mask=mask2)
-                    if len(inputs) == 3:
-                        pooled_output3 = super().forward_from_loader(
-                            input3['input_ids'], attention_mask=input3['attention_mask']
-                        )
-                        if self.loss_fn is None:
-                            return pooled_output1, pooled_output2, pooled_output3
-                        outputs = dict()
-                        loss = self.loss_fn(pooled_output1, pooled_output2, pooled_output3)
-                        outputs["loss"] = loss
-                        return outputs
-
-                else:
-                    pooled_output1 = super().forward_from_loader(ids1, attention_mask=mask1)
-                    pooled_output2 = self.document_model(ids2, mask2)
+                pooled_output1 = super().forward_from_loader(ids1, attention_mask=mask1)
+                pooled_output2 = self.document_model(ids2, mask2)
 
             if self.loss_fn is None:
                 return pooled_output1, pooled_output2
@@ -633,7 +620,15 @@ class PairwiseModel(AutoModelForEmbedding):
                 return outputs
 
         else:
-            pooled_output = super(PairwiseModel, self).forward_from_loader(**inputs, without_pooling=False)
+            # if the example data pair/triplet is already concat into one group. The Sentence-transformer style
+            ids = inputs['input_ids']
+            mask = inputs['attention_mask']
+            transformer_out = super().forward_from_loader(
+                {"input_ids": ids, "attention_mask": mask}, without_pooling=True
+            )
+            pooled_output = self.pooling(transformer_out[0], mask)
+            # pooled_output1 = pooled_output[: len(ids1), :]
+            # pooled_output2 = pooled_output[len(ids1):, :]
             return pooled_output
 
 

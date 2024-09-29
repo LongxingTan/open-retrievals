@@ -42,9 +42,8 @@ class TripletLoss(nn.Module):
         neg_embeddings: torch.Tensor,
         margin: Optional[float] = None,
     ):
-        if margin is not None:
-            # dynamic margin
-            self.set_margin(margin=margin)
+        # if margin is not None:
+        #     self.set_margin(margin=margin)
 
         if self.negatives_cross_device:
             pos_embeddings = self._dist_gather_tensor(pos_embeddings)
@@ -108,7 +107,7 @@ class TripletRankingLoss(nn.Module):
         return self.loss_fn(scores, labels)
 
     def similarity_fn(self, query_embedding, document_embedding):
-        query_embedding = F.normalize(query_embedding, p=2, dim=1)
-        document_embedding = F.normalize(document_embedding, p=2, dim=1)
+        query_embedding = F.normalize(query_embedding, p=2, dim=-1)
+        document_embedding = F.normalize(document_embedding, p=2, dim=-1)
 
         return torch.mm(query_embedding, document_embedding.transpose(0, 1))
