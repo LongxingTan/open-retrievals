@@ -19,7 +19,7 @@ class TripletLoss(nn.Module):
     def __init__(
         self,
         temperature: float = 0.05,
-        margin: Optional[float] = None,
+        margin: float = 0.0,
         negatives_cross_device: bool = False,
         batch_hard: bool = False,
         **kwargs
@@ -40,10 +40,10 @@ class TripletLoss(nn.Module):
         query_embeddings: torch.Tensor,
         pos_embeddings: torch.Tensor,
         neg_embeddings: torch.Tensor,
-        margin: Optional[float] = None,
+        margin: float = 0.0,
     ):
-        # if margin is not None:
-        #     self.set_margin(margin=margin)
+        if margin:
+            self.set_margin(margin=margin)
 
         if self.negatives_cross_device:
             pos_embeddings = self._dist_gather_tensor(pos_embeddings)
@@ -58,7 +58,7 @@ class TripletLoss(nn.Module):
         )
         neg_similarity = neg_similarity / self.temperature
         similarity_diff = pos_similarity.unsqueeze(1) - neg_similarity
-        loss = -torch.log(torch.sigmoid(similarity_diff)).mean()
+        loss = -torch.log(torch.sigmoid(similarity_diff) + self.margin).mean()
         return loss
 
     def set_margin(self, margin: float):
@@ -94,16 +94,23 @@ class TripletCosineSimilarity(nn.Module):
 
 
 class TripletRankingLoss(nn.Module):
-    def __init__(self, temperature: float = 0.05):
+    def __init__(self, temperature: float = 0.05, use_inbatch_neg: bool = False):
         super().__init__()
         self.temperature = temperature
+        self.use_inbatch_neg = use_inbatch_neg
         # self.similarity_fn = F.cosine_similarity
         self.loss_fn = nn.CrossEntropyLoss()
 
     def forward(self, query_embedding, pos_embedding: torch.Tensor, neg_embedding: torch.Tensor):
         document_embedding = torch.concat([pos_embedding, neg_embedding], dim=0)
-        scores = self.similarity_fn(query_embedding, document_embedding) / self.temperature
-        labels = torch.arange(0, scores.size(0), device=scores.device)
+        if self.use_inbatch_neg:
+            scores = self.similarity_fn(query_embedding, document_embedding) / self.temperature
+            labels = torch.arange(0, scores.size(0), device=scores.device)
+
+        # else:
+        #     scores = self.similarity_fn(query_embedding[:, None, :], document_embedding.view())
+        #     labels = torch.zeros(scores.size(0), device=scores.device, dtype=torch.long)
+
         return self.loss_fn(scores, labels)
 
     def similarity_fn(self, query_embedding, document_embedding):

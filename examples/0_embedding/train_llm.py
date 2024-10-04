@@ -25,7 +25,7 @@ from retrievals import (
     RetrievalTrainer,
     TripletCollator,
 )
-from retrievals.losses import InfoNCE, TripletLoss
+from retrievals.losses import InfoNCE, TripletLoss, TripletRankingLoss
 
 logger = logging.getLogger(__name__)
 
@@ -210,7 +210,6 @@ def main():
         data_args: DataArguments
         training_args: TrainingArguments
 
-    # Setup logging
     logging.basicConfig(
         format="%(asctime)s - %(levelname)s - %(name)s -   %(message)s",
         datefmt="%m/%d/%Y %H:%M:%S",
@@ -236,7 +235,7 @@ def main():
     )
 
     train_dataset = TrainDatasetForEmbedding(args=data_args, tokenizer=tokenizer)
-    print(len(train_dataset))
+    print('Number of samples: ', len(train_dataset))
 
     lora_config = LoraArguments()
 
@@ -245,11 +244,16 @@ def main():
         pooling_method=training_args.pooling_method,
         lora_config=lora_config,
     )
-    model = model.set_train_type("pairwise", loss_fn=TripletLoss())
+    model = model.set_train_type("pairwise", loss_fn=TripletRankingLoss())
 
     optimizer = get_optimizer(model, lr=5e-5, weight_decay=1e-3)
 
-    lr_scheduler = get_scheduler(optimizer, num_train_steps=int(len(train_dataset) / 2 * 1))
+    lr_scheduler = get_scheduler(
+        optimizer,
+        num_train_steps=int(
+            len(train_dataset) // training_args.per_device_train_batch_size * training_args.num_train_epochs
+        ),
+    )
 
     trainer = RetrievalTrainer(
         model=model,
@@ -263,7 +267,8 @@ def main():
     trainer.scheduler = lr_scheduler
     trainer.train()
 
-    trainer.save_state()
+    trainer.save_model(training_args.output_dir)
+    tokenizer.save_pretrained(training_args.output_dir)
 
 
 if __name__ == "__main__":
