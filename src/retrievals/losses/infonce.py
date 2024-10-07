@@ -72,11 +72,11 @@ class InfoNCE(nn.Module):
                 similarity = similarity.view(query_embeddings.size(0), -1)
                 target = torch.arange(query_embeddings.size(0), dtype=torch.long, device=device)
             else:
-                # -> [batch_size, embedding_size, num_negative_samples]
+                # negative_embeddings: [batch_size, num_negative_samples, embedding_size]
                 negative_embeddings = negative_embeddings.view(query_embeddings.size(0), -1, query_embeddings.size(1))
-                negative_embeddings = negative_embeddings.permute(0, 2, 1)
                 similarity = query_embeddings.unsqueeze(1) @ positive_embeddings.unsqueeze(2)
-                negative_similarity = query_embeddings.unsqueeze(1) @ negative_embeddings
+                negative_similarity = query_embeddings.unsqueeze(1) @ negative_embeddings.permute(0, 2, 1)
+                # similarity: [batch_size, train_group_sizes]
                 similarity = torch.cat([similarity.squeeze(1), negative_similarity.squeeze(1)], dim=1)
                 similarity = similarity / self.temperature
                 target = torch.zeros(query_embeddings.size(0), dtype=torch.long, device=device)
