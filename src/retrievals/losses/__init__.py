@@ -13,7 +13,7 @@ from .triplet import TripletLoss, TripletRankingLoss
 
 
 class AutoLoss(nn.Module):
-    def __init__(self, loss_name, loss_kwargs):
+    def __init__(self, loss_name, loss_kwargs={}):
         super(AutoLoss, self).__init__()
         if loss_name == 'simcse':
             self.loss_fn = SimCSE(**loss_kwargs)
@@ -27,6 +27,8 @@ class AutoLoss(nn.Module):
             self.loss_fn = CoSentLoss(**loss_kwargs)
         elif loss_name == 'pearson':
             self.loss_fn = PearsonLoss(**loss_kwargs)
+        elif loss_name == 'triplet_ranking':
+            self.loss_fn = TripletRankingLoss(**loss_kwargs)
 
     def forward(self, *args, **kwargs):
         return self.loss_fn(*args, **kwargs)

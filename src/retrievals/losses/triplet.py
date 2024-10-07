@@ -94,7 +94,7 @@ class TripletCosineSimilarity(nn.Module):
 
 
 class TripletRankingLoss(nn.Module):
-    def __init__(self, temperature: float = 0.05, use_inbatch_neg: bool = False):
+    def __init__(self, temperature: float = 0.05, use_inbatch_neg: bool = True):
         super().__init__()
         self.temperature = temperature
         self.use_inbatch_neg = use_inbatch_neg
