@@ -40,7 +40,6 @@ class ModelArguments:
     cache_dir: Optional[str] = field(
         default=None, metadata={"help": "Where do you want to store the pretrained models downloaded from s3"}
     )
-    causal_lm: bool = field(default=False, metadata={'help': "Whether the model is a causal lm or not"})
     lora_path: Optional[str] = field(default=None, metadata={'help': "Lora adapter save path"})
 
 

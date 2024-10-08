@@ -8,7 +8,7 @@ Retrievals is an easy, flexible, scalable framework supporting state-of-the-art 
 
 * Embedding fine-tuned through point-wise, pairwise, listwise, contrastive learning and LLM.
 * Reranking fine-tuned with Cross-Encoder, ColBERT and LLM.
-* Easily build enhanced modular RAG, integrated with Transformers, Langchain and LlamaIndex.
+* Easily build modular RAG, integrated with Transformers, Langchain and LlamaIndex.
 
 
 Installation
@@ -17,8 +17,8 @@ Installation
 Install the **prerequisites**
 
 * transformers
-* peft
-* faiss-cpu
+* peft  # for lora fine-tuning if necessary
+* faiss-cpu  # for faiss retrieval if necessary
 
 
 Now you are ready, proceed with

@@ -37,6 +37,10 @@ Embedding from the pretrained model
 
     [[89.92379760742188, 68.0742416381836], [68.93356323242188, 91.32250213623047]]
 
+.. note::
+
+    Use the write pooling_method while calling, add the query_instruction if it's not embedding into the data already.
+
 
 Fine-tune embedding
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -82,6 +86,10 @@ To further improve the retrieval performance, we can fine tune the embedding mod
 
 
 It's also easy to use multiple gpus for transformers `Trainer`.
+
+.. note::
+
+    `transformer trainer docs <https://huggingface.co/docs/transformers/main_classes/trainer>`_
 
 
 2. Indexing
