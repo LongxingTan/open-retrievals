@@ -94,32 +94,37 @@ class TripletCosineSimilarity(nn.Module):
 
 
 class TripletRankingLoss(nn.Module):
-    def __init__(self, temperature: float = 0.05, use_inbatch_neg: bool = True, symmetric=False):
+    """Similar to sentence-transformers MultiNegativesRankingLoss"""
+
+    def __init__(self, temperature: float = 0.05, use_inbatch_negegative: bool = True, symmetric=False):
         super().__init__()
         self.temperature = temperature
-        self.use_inbatch_neg = use_inbatch_neg
+        self.use_inbatch_negative = use_inbatch_negegative
         self.symmetric = symmetric
-        # self.similarity_fn = F.cosine_similarity
-        self.loss_fn = nn.CrossEntropyLoss()
+        self.criterion = nn.CrossEntropyLoss(reduction='mean')
 
-    def forward(self, query_embedding, pos_embedding: torch.Tensor, neg_embedding: torch.Tensor):
+    def forward(
+        self, query_embedding, positive_embedding: torch.Tensor, negative_embedding: Optional[torch.Tensor] = None
+    ):
 
-        if self.use_inbatch_neg:
-            document_embedding = torch.concat([pos_embedding, neg_embedding], dim=0)
-            scores = self.similarity_fn(query_embedding, document_embedding) / self.temperature
+        query_embedding = F.normalize(query_embedding, p=2, dim=-1)
+        positive_embedding = F.normalize(positive_embedding, p=2, dim=-1)
+        if negative_embedding:
+            negative_embedding = F.normalize(negative_embedding, p=2, dim=-1)
+
+        if self.use_inbatch_negative:
+            if negative_embedding is not None:
+                positive_embedding = torch.concat([positive_embedding, negative_embedding], dim=0)
+            scores = torch.mm(query_embedding, positive_embedding.transpose(0, 1)) / self.temperature
             labels = torch.arange(0, scores.size(0), device=scores.device)
 
         else:
-            negative_embeddings = neg_embedding.view(query_embedding.size(0), -1, query_embedding.size(1))
-            similarity = query_embedding.unsqueeze(1) @ pos_embedding.unsqueeze(2)
-            negative_similarity = query_embedding.unsqueeze(1) @ negative_embeddings.permute(0, 2, 1)
-            similarity = torch.cat([similarity.squeeze(1), negative_similarity.squeeze(1)], dim=1)
+            similarity = query_embedding.unsqueeze(1) @ positive_embedding.unsqueeze(2)
+            if negative_embedding is not None:
+                negative_embedding = negative_embedding.view(query_embedding.size(0), -1, query_embedding.size(1))
+                negative_similarity = query_embedding.unsqueeze(1) @ negative_embedding.permute(0, 2, 1)
+                similarity = torch.cat([similarity.squeeze(1), negative_similarity.squeeze(1)], dim=1)
             scores = similarity / self.temperature
             labels = torch.zeros(query_embedding.size(0), dtype=torch.long, device=query_embedding.device)
 
-        return self.loss_fn(scores, labels)
-
-    def similarity_fn(self, query_embedding, document_embedding):
-        query_embedding = F.normalize(query_embedding, p=2, dim=-1)
-        document_embedding = F.normalize(document_embedding, p=2, dim=-1)
-        return torch.mm(query_embedding, document_embedding.transpose(0, 1))
+        return self.criterion(scores, labels)

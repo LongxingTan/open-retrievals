@@ -1,6 +1,7 @@
 # Open-Retrievals 示例
 
 ```shell
+# If you are behind the wall
 export HF_ENDPOINT=https://hf-mirror.com
 ```
 

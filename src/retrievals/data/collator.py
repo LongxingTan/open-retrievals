@@ -12,7 +12,9 @@ from transformers import (
 
 
 class AutoCollator(DataCollatorWithPadding):
-    """Choose the collator based on data/task"""
+    """Choose the collator based on data/task
+    TODO: combine pair, triplet, colbert into one
+    """
 
     def __init__(self):
         pass
