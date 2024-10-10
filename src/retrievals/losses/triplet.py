@@ -96,10 +96,10 @@ class TripletCosineSimilarity(nn.Module):
 class TripletRankingLoss(nn.Module):
     """Similar to sentence-transformers MultiNegativesRankingLoss"""
 
-    def __init__(self, temperature: float = 0.05, use_inbatch_negegative: bool = True, symmetric=False):
+    def __init__(self, temperature: float = 0.05, use_inbatch_negative: bool = True, symmetric=False):
         super().__init__()
         self.temperature = temperature
-        self.use_inbatch_negative = use_inbatch_negegative
+        self.use_inbatch_negative = use_inbatch_negative
         self.symmetric = symmetric
         self.criterion = nn.CrossEntropyLoss(reduction='mean')
 
