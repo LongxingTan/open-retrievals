@@ -109,7 +109,7 @@ class TripletRankingLoss(nn.Module):
 
         query_embedding = F.normalize(query_embedding, p=2, dim=-1)
         positive_embedding = F.normalize(positive_embedding, p=2, dim=-1)
-        if negative_embedding:
+        if negative_embedding is not None:
             negative_embedding = F.normalize(negative_embedding, p=2, dim=-1)
 
         if self.use_inbatch_negative:
