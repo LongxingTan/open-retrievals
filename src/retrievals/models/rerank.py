@@ -336,6 +336,7 @@ class AutoModelForRanking(Base):
         trust_remote_code: bool = True,
         use_fp16: bool = False,
         use_lora: bool = False,
+        use_qlora: bool = False,
         lora_config=None,
         lora_path: Optional[str] = None,
         quantization_config=None,
@@ -372,22 +373,31 @@ class AutoModelForRanking(Base):
             logger.info('Set model to fp16, please note that if you want fp16 during training, set training_args fp16')
             model.half()
 
-        if use_lora:
+        if use_lora or use_qlora:
             logger.info('Set fine-tuning to LoRA')
-            from peft import LoraConfig, TaskType, get_peft_model
+            from peft import (
+                LoraConfig,
+                TaskType,
+                get_peft_model,
+                prepare_model_for_kbit_training,
+            )
 
             if lora_config is None:
-                lora_alpha = 64
+                lora_r = 16
+                lora_alpha = 32
                 lora_dropout = 0.05
                 target_modules = find_all_linear_names(model)
+                logger.info(f'Set Lora target module to {target_modules}, r to {lora_r}, lora_alpha to {lora_alpha}')
                 lora_config = LoraConfig(
+                    r=lora_r,
                     lora_alpha=lora_alpha,
                     lora_dropout=lora_dropout,
                     target_modules=target_modules,
                     bias='none',
                     task_type=TaskType.CAUSAL_LM,
                 )
-
+            if use_qlora:
+                model = prepare_model_for_kbit_training(model)
             model = get_peft_model(model, lora_config)
             model.print_trainable_parameters()
 
