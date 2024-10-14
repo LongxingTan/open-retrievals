@@ -433,6 +433,7 @@ class AutoModelForEmbedding(Base):
         custom_config_dict: Optional[Dict] = None,
         use_fp16: bool = False,
         use_lora: bool = False,
+        use_qlora: bool = False,
         lora_path: Optional[str] = None,
         lora_config=None,
         quantization_config=None,
@@ -490,9 +491,14 @@ class AutoModelForEmbedding(Base):
             }
             vector_linear.load_state_dict(vector_linear_dict)
 
-        if use_lora and lora_path is None:
+        if (use_lora or use_qlora) and lora_path is None:
             logger.info('Set fine-tuning to LoRA')
-            from peft import LoraConfig, TaskType, get_peft_model
+            from peft import (
+                LoraConfig,
+                TaskType,
+                get_peft_model,
+                prepare_model_for_kbit_training,
+            )
 
             if lora_config is None:
                 lora_alpha = 64
@@ -505,7 +511,8 @@ class AutoModelForEmbedding(Base):
                     bias='none',
                     task_type='FEATURE_EXTRACTION',
                 )
-
+            if use_qlora:
+                model = prepare_model_for_kbit_training(model)
             model = get_peft_model(model, lora_config)
             model.print_trainable_parameters()
 
