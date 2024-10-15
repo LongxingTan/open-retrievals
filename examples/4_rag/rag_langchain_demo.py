@@ -10,7 +10,7 @@ from langchain.document_loaders import PyPDFLoader
 from langchain.memory.chat_message_histories import StreamlitChatMessageHistory
 from langchain.retrievers import EnsembleRetriever
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain.vectorstores import Chroma
+from langchain_chroma import Chroma
 
 from retrievals.tools.langchain import LangchainEmbedding, LangchainLLM
 
@@ -36,7 +36,7 @@ def configure_retriever(uploaded_files):
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=50)
     splits = text_splitter.split_documents(docs)
 
-    embeddings = LangchainEmbedding(model_name_or_path="sentence-transformers/all-MiniLM-L6-v2")
+    embeddings = LangchainEmbedding(model_name="sentence-transformers/all-MiniLM-L6-v2")
     vectordb = Chroma.from_documents(splits, embeddings)
     retrieval_args = {"search_type": "similarity", "score_threshold": 0.15, "k": 30}
     retriever = vectordb.as_retriever(**retrieval_args)
