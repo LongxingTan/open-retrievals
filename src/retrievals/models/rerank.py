@@ -333,6 +333,7 @@ class AutoModelForRanking(Base):
         loss_fn: Union[nn.Module, Callable] = None,
         loss_type: Literal['classification', 'regression'] = 'classification',
         causal_lm: bool = False,
+        chat_reranking: bool = False,
         trust_remote_code: bool = True,
         use_fp16: bool = False,
         use_lora: bool = False,
@@ -351,17 +352,23 @@ class AutoModelForRanking(Base):
             model_name_or_path, return_tensors=False, trust_remote_code=trust_remote_code
         )
 
-        if causal_lm or check_causal_lm(model_name_or_path):
-            logger.info(
-                "Set model to AutoModelForCausalLM, set query_instruction to 'A: ' and document_instruction to 'B: '"
-            )
+        if chat_reranking:
+            logger.info("Set model to AutoModelForCausalLM, LLM generation for reranking")
             model = AutoModelForCausalLM.from_pretrained(
                 model_name_or_path, quantization_config=quantization_config, trust_remote_code=trust_remote_code
             )
             query_instruction = 'A: '
             document_instruction = 'B: '
+
+        elif causal_lm or check_causal_lm(model_name_or_path):
+            logger.info("Set model to AutoModelForCausalLM, LLM representation for reranking")
+            model = AutoModelForCausalLM.from_pretrained(
+                model_name_or_path, quantization_config=quantization_config, trust_remote_code=trust_remote_code
+            )
+            tokenizer.padding_side = "right"
+
         else:
-            logger.info('Set model to  AutoModelForSequenceClassification')
+            logger.info('Set model to AutoModelForSequenceClassification')
             model = AutoModelForSequenceClassification.from_pretrained(
                 model_name_or_path, num_labels=num_labels, trust_remote_code=trust_remote_code, **kwargs
             )
