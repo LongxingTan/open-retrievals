@@ -28,5 +28,6 @@ def get_hit_rate(qid2positive: Dict[str, List[str]], qid2ranking: Dict[str, List
             qid2hr[cutoff_rank][qid] = hit_rate(positives_ids, ranked_doc_ids, cutoff_rank)
 
     return {
-        f"hit_rate@{cutoff_rank}": sum(qid2hr.values()) / len(qid2hr) if qid2hr else 0.0 for cutoff_rank in cutoff_ranks
+        f"hit_rate@{cutoff_rank}": sum(qid2hr[cutoff_rank].values()) / len(qid2hr) if qid2hr else 0.0
+        for cutoff_rank in cutoff_ranks
     }

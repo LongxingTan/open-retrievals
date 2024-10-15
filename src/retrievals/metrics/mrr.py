@@ -19,4 +19,7 @@ def get_mrr(qid2positive: Dict[str, List[str]], qid2ranking: Dict[str, List[str]
                     if rank <= cutoff_rank:
                         qid2mrr[cutoff_rank][qid] = 1.0 / rank
                     break
-    return {f"mrr@{cutoff_rank}": sum(qid2mrr.values()) / len(qid2ranking.keys()) for cutoff_rank in cutoff_ranks}
+    return {
+        f"mrr@{cutoff_rank}": sum(qid2mrr[cutoff_rank].values()) / len(qid2ranking.keys())
+        for cutoff_rank in cutoff_ranks
+    }

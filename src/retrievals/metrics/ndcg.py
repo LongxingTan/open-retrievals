@@ -30,4 +30,7 @@ def get_ndcg(qid2positive: Dict[str, List[str]], qid2ranking: Dict[str, List[str
             else:
                 qid2ndcg[cutoff_rank][qid] = 0.0
 
-    return {f"ndcg@{cutoff_rank}": sum(qid2ndcg.values()) / len(qid2ranking.keys()) for cutoff_rank in cutoff_ranks}
+    return {
+        f"ndcg@{cutoff_rank}": sum(qid2ndcg[cutoff_rank].values()) / len(qid2ranking.keys())
+        for cutoff_rank in cutoff_ranks
+    }

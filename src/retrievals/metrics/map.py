@@ -29,4 +29,7 @@ def get_map(qid2positive: Dict[str, List[str]], qid2ranking: Dict[str, List[str]
         for cutoff_rank in cutoff_ranks:
             qid2map[cutoff_rank][qid] = average_precision(positives_ids, ranked_doc_ids, cutoff_rank)
 
-    return {f"map@{cutoff_rank}": sum(qid2map.values()) / len(qid2ranking.keys()) for cutoff_rank in cutoff_ranks}
+    return {
+        f"map@{cutoff_rank}": sum(qid2map[cutoff_rank].values()) / len(qid2ranking.keys())
+        for cutoff_rank in cutoff_ranks
+    }
