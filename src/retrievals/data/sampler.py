@@ -1,3 +1,8 @@
+"""
+sampler
+- override the get_train_dataloader/get_eval_dataloader methods in Trainer to use the custom sampler
+"""
+
 import logging
 from typing import List, Optional
 

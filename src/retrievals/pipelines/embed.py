@@ -40,7 +40,6 @@ class ModelArguments:
     cache_dir: Optional[str] = field(
         default=None, metadata={"help": "Where do you want to store the pretrained models downloaded from s3"}
     )
-    causal_lm: bool = field(default=False, metadata={'help': "Whether the model is a causal lm or not"})
     lora_path: Optional[str] = field(default=None, metadata={'help': "Lora adapter save path"})
 
 
@@ -105,6 +104,7 @@ class RetrieverTrainingArguments(TrainingArguments):
     report_to: Optional[List[str]] = field(
         default="none", metadata={"help": "The list of integrations to report the results and logs to."}
     )
+    output_dir: str = field(default='./checkpoint')
 
 
 def main():

@@ -125,9 +125,9 @@ pip install chromadb
 from retrievals.tools.langchain import LangchainEmbedding, LangchainReranker, LangchainLLM
 from retrievals import AutoModelForRanking
 from langchain.retrievers import ContextualCompressionRetriever
-from langchain_community.vectorstores import Chroma as Vectorstore
 from langchain.prompts.prompt import PromptTemplate
 from langchain.chains import RetrievalQA
+from langchain_chroma import Chroma as Vectorstore
 
 persist_directory = './database/faiss.index'
 embed_model_name_or_path = "sentence-transformers/all-MiniLM-L6-v2"
@@ -136,6 +136,7 @@ llm_model_name_or_path = "microsoft/Phi-3-mini-128k-instruct"
 
 embeddings = LangchainEmbedding(model_name=embed_model_name_or_path)
 vectordb = Vectorstore(
+    collection_name="example_collection",
     persist_directory=persist_directory,
     embedding_function=embeddings,
 )

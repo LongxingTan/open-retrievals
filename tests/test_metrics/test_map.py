@@ -9,7 +9,7 @@ class TestGetMap(unittest.TestCase):
 
         qid2ranking = {'q1': ['d1', 'd2', 'd3', 'd4'], 'q2': ['d2', 'd1', 'd3'], 'q3': ['d1', 'd3', 'd2']}
 
-        cutoff_rank = 3
+        cutoff_ranks = [3, 5]
 
         expected_map = {
             'q1': (1 / 1 + 2 / 3) / 2,  # (Precision@1 for d1 + Precision@3 for d3) / 2 positives
@@ -19,6 +19,6 @@ class TestGetMap(unittest.TestCase):
 
         expected_mean_map = sum(expected_map.values()) / len(expected_map)
 
-        result = get_map(qid2positive, qid2ranking, cutoff_rank)
+        result = get_map(qid2positive, qid2ranking, cutoff_ranks)
 
-        self.assertAlmostEqual(result[f'map@{cutoff_rank}'], expected_mean_map, places=4)
+        self.assertAlmostEqual(result[f'map@{cutoff_ranks[0]}'], expected_mean_map, places=4)

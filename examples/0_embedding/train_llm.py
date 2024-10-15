@@ -25,7 +25,7 @@ from retrievals import (
     RetrievalTrainer,
     TripletCollator,
 )
-from retrievals.losses import InfoNCE, TripletLoss
+from retrievals.losses import InfoNCE, TripletLoss, TripletRankingLoss
 
 logger = logging.getLogger(__name__)
 
@@ -37,7 +37,8 @@ class ModelArguments:
     """
 
     model_name_or_path: str = field(
-        metadata={"help": "Path to pretrained model or model identifier from huggingface.co/models"}
+        default="intfloat/e5-mistral-7b-instruct",
+        metadata={"help": "Path to pretrained model or model identifier from huggingface.co/models"},
     )
     config_name: Optional[str] = field(
         default=None,
@@ -51,9 +52,7 @@ class ModelArguments:
 
 @dataclass
 class DataArguments:
-    data_name_or_path: str = field(
-        default="intfloat/personalized_passkey_retrieval", metadata={"help": "Path to train data"}
-    )
+    data_name_or_path: str = field(default="Tevatron/scifact", metadata={"help": "Path to train data"})
     train_group_size: int = field(default=8)
     query_max_length: int = field(
         default=32,
@@ -63,7 +62,7 @@ class DataArguments:
         },
     )
     document_max_length: int = field(
-        default=32,
+        default=64,
         metadata={
             "help": "The maximum total input sequence length after tokenization for document. Sequences longer "
             "than this will be truncated, sequences shorter will be padded."
@@ -79,8 +78,17 @@ class DataArguments:
     document_instruction: str = field(default=None, metadata={"help": "instruction for document"})
 
     def __post_init__(self):
-        if not os.path.exists(self.data_name_or_path):
-            raise FileNotFoundError(f"cannot find file: {self.data_name_or_path}, please set a true path")
+        self.dataset_split = 'train'
+        self.dataset_language = 'default'
+
+        if self.data_name_or_path is not None:
+            if not os.path.isfile(self.data_name_or_path) and not os.path.isdir(self.data_name_or_path):
+                info = self.data_name_or_path.split('/')
+                self.dataset_split = info[-1] if len(info) == 3 else 'train'
+                self.data_name_or_path = "/".join(info[:-1]) if len(info) == 3 else '/'.join(info)
+                self.dataset_language = 'default'
+                if ':' in self.data_name_or_path:
+                    self.data_name_or_path, self.dataset_language = self.data_name_or_path.split(':')
 
 
 @dataclass
@@ -95,12 +103,14 @@ class TrainingArguments(transformers.TrainingArguments):
     fix_position_embedding: bool = field(
         default=False, metadata={"help": "Freeze the parameters of position embeddings"}
     )
-    sentence_pooling_method: str = field(default="cls", metadata={"help": "the pooling method, should be cls or mean"})
+    pooling_method: str = field(default="cls", metadata={"help": "the pooling method, should be cls or mean"})
     normalized: bool = field(default=True)
     use_inbatch_neg: bool = field(default=True, metadata={"help": "Freeze the parameters of position embeddings"})
-    gradient_accumulation_steps: int = field(default=1024)
+    gradient_accumulation_steps: int = field(default=1)
     bf16: bool = field(default=True)
     logging_steps: int = field(default=100)
+    output_dir: str = field(default='./checkpoint')
+    save_total_limit: int = field(default=1)
 
 
 @dataclass
@@ -147,7 +157,7 @@ class TrainDatasetForEmbedding(Dataset):
         query = self.dataset[item]["query"] + self.tokenizer.eos_token
         pos = self.dataset[item]["pos"][0] + self.tokenizer.eos_token
         neg = self.dataset[item]["neg"][0] + self.tokenizer.eos_token
-        res = {"query": query, "pos": pos, "neg": neg}
+        res = {"query": query, "positive": pos, "negative": neg}
         return res
 
 
@@ -200,7 +210,6 @@ def main():
         data_args: DataArguments
         training_args: TrainingArguments
 
-    # Setup logging
     logging.basicConfig(
         format="%(asctime)s - %(levelname)s - %(name)s -   %(message)s",
         datefmt="%m/%d/%Y %H:%M:%S",
@@ -226,20 +235,25 @@ def main():
     )
 
     train_dataset = TrainDatasetForEmbedding(args=data_args, tokenizer=tokenizer)
-    print(len(train_dataset))
+    print('Number of samples: ', len(train_dataset))
 
-    # lora_config = LoraConfig(**json.load(open("./conf/lora.json")))
-    lora_config = None
+    lora_config = LoraArguments()
 
-    # model = PairwiseModel.from_pretrained(model_args.model_name_or_path, pooling_method="mean")
     model = AutoModelForEmbedding.from_pretrained(
         model_args.model_name_or_path,
-        pooling_method="last",
+        pooling_method=training_args.pooling_method,
         lora_config=lora_config,
     )
+    model = model.set_train_type("pairwise", loss_fn=TripletRankingLoss())
+
     optimizer = get_optimizer(model, lr=5e-5, weight_decay=1e-3)
 
-    lr_scheduler = get_scheduler(optimizer, num_train_steps=int(len(train_dataset) / 2 * 1))
+    lr_scheduler = get_scheduler(
+        optimizer,
+        num_train_steps=int(
+            len(train_dataset) // training_args.per_device_train_batch_size * training_args.num_train_epochs
+        ),
+    )
 
     trainer = RetrievalTrainer(
         model=model,
@@ -248,14 +262,13 @@ def main():
         data_collator=TripletCollator(
             tokenizer, query_max_length=data_args.query_max_length, document_max_length=data_args.document_max_length
         ),
-        loss_fn=TripletLoss(),
     )
     trainer.optimizer = optimizer
     trainer.scheduler = lr_scheduler
     trainer.train()
 
-    trainer.save_state()
-    trainer.save_model(output_dir=training_args.output_dir)
+    trainer.save_model(training_args.output_dir)
+    tokenizer.save_pretrained(training_args.output_dir)
 
 
 if __name__ == "__main__":

@@ -12,13 +12,19 @@ from transformers import (
 
 
 class AutoCollator(DataCollatorWithPadding):
-    """Choose the collator based on data/task"""
+    """Choose the collator based on data/task
+    TODO: combine pair, triplet, colbert into one
+    """
 
     def __init__(self):
         pass
 
 
 class PairCollator(DataCollatorWithPadding):
+    """
+    Given the list[dict[pair]], output the dict[batch pair]
+    """
+
     def __init__(
         self,
         tokenizer: PreTrainedTokenizer,
@@ -84,6 +90,10 @@ class PairCollator(DataCollatorWithPadding):
 
 
 class TripletCollator(DataCollatorWithPadding):
+    """
+    Given the list[dict], output the dict[key, batch], the length of output batch is not necessary equal for listwise
+    """
+
     def __init__(
         self,
         tokenizer: PreTrainedTokenizer,

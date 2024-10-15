@@ -2,8 +2,9 @@ import copy
 import logging
 import os
 import time
+from collections.abc import Iterable
 from contextlib import nullcontext
-from typing import TYPE_CHECKING, Callable, Dict, List, Literal, Optional, Tuple, Union
+from typing import Callable, Dict, List, Literal, Optional, Tuple, Union
 
 import numpy as np
 import torch
@@ -27,9 +28,6 @@ from .utils import (
     get_device_name,
 )
 
-if TYPE_CHECKING:
-    import pandas as pd
-
 logger = logging.getLogger(__name__)
 
 
@@ -47,7 +45,6 @@ class AutoModelForEmbedding(Base):
         model: Optional[nn.Module] = None,
         tokenizer: Optional[PreTrainedTokenizer] = None,
         pooling_method: str = 'cls',
-        normalize_embeddings: bool = False,
         max_length: Optional[int] = None,
         loss_fn: Optional[Callable] = None,
         query_instruction: Optional[str] = None,
@@ -79,7 +76,6 @@ class AutoModelForEmbedding(Base):
             logger.info('max_length will only work if the encode or forward function input text directly')
 
         self.max_length = max_length
-        self.normalize_embeddings = normalize_embeddings
 
         self.query_instruction = query_instruction if query_instruction else ''
         self.document_instruction = document_instruction if document_instruction else ''
@@ -109,8 +105,8 @@ class AutoModelForEmbedding(Base):
         return_dict: Optional[bool] = False,
     ):
         if isinstance(inputs, (dict, BatchEncoding)):
-            embeddings = self.forward_from_loader(inputs['input_ids'], inputs['attention_mask'])
-        elif isinstance(inputs, str) or (isinstance(inputs, list) and isinstance(inputs[0], str)):
+            embeddings = self.forward_from_tensor(inputs['input_ids'], inputs['attention_mask'])
+        elif isinstance(inputs, str) or (isinstance(inputs, Iterable) and isinstance(inputs[0], str)):
             embeddings = self.forward_from_text(inputs)
         else:
             raise ValueError
@@ -126,7 +122,7 @@ class AutoModelForEmbedding(Base):
             outputs["sentence_embedding"] = loss_output["sentence_embedding"]
             return outputs
 
-    def forward_from_loader(self, input_ids: torch.Tensor, attention_mask: torch.Tensor, without_pooling: bool = False):
+    def forward_from_tensor(self, input_ids: torch.Tensor, attention_mask: torch.Tensor, without_pooling: bool = False):
         model_output = self.model(input_ids, attention_mask=attention_mask, return_dict=True)
         if self.pooling is not None and not without_pooling:
             if 'last_hidden_state' in model_output:
@@ -137,9 +133,6 @@ class AutoModelForEmbedding(Base):
                 hidden_states = model_output['hidden_states']
                 last_hidden_state = hidden_states[-1]
             embeddings = self.pooling(last_hidden_state, attention_mask=attention_mask)
-
-            if self.normalize_embeddings:
-                embeddings = torch.nn.functional.normalize(embeddings, p=2, dim=1)
 
             return embeddings
         return model_output
@@ -155,11 +148,11 @@ class AutoModelForEmbedding(Base):
         batch_dict["input_ids"] = [input_ids + [self.tokenizer.eos_token_id] for input_ids in batch_dict["input_ids"]]
         batch_dict = self.tokenizer.pad(batch_dict, padding=True, return_attention_mask=True, return_tensors="pt")
         batch_dict.pop("token_type_ids")
-        return self.forward_from_loader(**batch_dict)
+        return self.forward_from_tensor(**batch_dict)
 
     def encode(
         self,
-        inputs: Union[DataLoader, Dict, List, str, np.ndarray, 'pd.Series'],
+        inputs: Union[DataLoader, Dict, List, str, np.ndarray],
         is_query: bool = False,
         batch_size: int = 16,
         show_progress_bar: bool = None,
@@ -179,7 +172,7 @@ class AutoModelForEmbedding(Base):
                 device=device,
                 normalize_embeddings=normalize_embeddings,
             )
-        elif isinstance(inputs, (str, List, Tuple, 'pd.Series', np.ndarray)):
+        elif isinstance(inputs, str) or isinstance(inputs[0], str):
             return self._encode_from_text(
                 sentences=inputs,
                 is_query=is_query,
@@ -216,7 +209,7 @@ class AutoModelForEmbedding(Base):
             with torch.autocast(device_type=device) if self.use_fp16 else nullcontext():
                 with torch.no_grad():
                     inputs_on_device = {k: v.to(device) for k, v in inputs.items()}
-                    embeddings = self.forward_from_loader(
+                    embeddings = self.forward_from_tensor(
                         inputs_on_device['input_ids'], attention_mask=inputs_on_device['attention_mask']
                     )
                     embeddings = embeddings.detach()
@@ -235,7 +228,7 @@ class AutoModelForEmbedding(Base):
 
     def _encode_from_text(
         self,
-        sentences: Union[str, List[str], Tuple[str], 'pd.Series', np.ndarray],
+        sentences: Union[str, List[str], Tuple[str], np.ndarray],
         is_query: bool = False,
         batch_size: int = 16,
         show_progress_bar: bool = None,
@@ -416,7 +409,6 @@ class AutoModelForEmbedding(Base):
             model=self.model,
             tokenizer=self.tokenizer,
             pooling_method=self.pooling_method,
-            normalize_embeddings=self.normalize_embeddings,
             query_instruction=self.query_instruction,
             document_instruction=self.document_instruction,
             device=self.device,
@@ -441,6 +433,7 @@ class AutoModelForEmbedding(Base):
         custom_config_dict: Optional[Dict] = None,
         use_fp16: bool = False,
         use_lora: bool = False,
+        use_qlora: bool = False,
         lora_path: Optional[str] = None,
         lora_config=None,
         quantization_config=None,
@@ -453,7 +446,7 @@ class AutoModelForEmbedding(Base):
         **kwargs,
     ):
         if not model_name_or_path or not isinstance(model_name_or_path, str):
-            assert ValueError('Please input valid model_name_or_path')
+            assert ValueError(f'Please input valid model_name_or_path, instead of {model_name_or_path}')
 
         config = None
         if config_path:
@@ -498,22 +491,31 @@ class AutoModelForEmbedding(Base):
             }
             vector_linear.load_state_dict(vector_linear_dict)
 
-        if use_lora and lora_path is None:
+        if (use_lora or use_qlora) and lora_path is None:
             logger.info('Set fine-tuning to LoRA')
-            from peft import LoraConfig, TaskType, get_peft_model
+            from peft import (
+                LoraConfig,
+                TaskType,
+                get_peft_model,
+                prepare_model_for_kbit_training,
+            )
 
             if lora_config is None:
-                lora_alpha = 64
+                lora_r = 16
+                lora_alpha = 32
                 lora_dropout = 0.05
                 target_modules = find_all_linear_names(model)
+                logger.info(f'Set Lora target module to {target_modules}, r to {lora_r}, lora_alpha to {lora_alpha}')
                 lora_config = LoraConfig(
+                    r=lora_r,
                     lora_alpha=lora_alpha,
                     lora_dropout=lora_dropout,
                     target_modules=target_modules,
                     bias='none',
                     task_type='FEATURE_EXTRACTION',
                 )
-
+            if use_qlora:
+                model = prepare_model_for_kbit_training(model)
             model = get_peft_model(model, lora_config)
             model.print_trainable_parameters()
 
@@ -541,7 +543,6 @@ class PairwiseModel(AutoModelForEmbedding):
     """Pairwise Model wrapper
     - bi_encoder
         - shared_weights or not
-    - cross_encoder
     - poly_encoder
 
     support: query + pos pair, or query + pos + neg triplet
@@ -552,10 +553,7 @@ class PairwiseModel(AutoModelForEmbedding):
         model: Optional[nn.Module] = None,
         tokenizer: Optional[PreTrainedTokenizer] = None,
         pooling_method: str = 'cls',
-        normalize_embeddings: bool = False,
         loss_fn: Optional[Callable] = None,
-        cross_encoder: bool = False,
-        poly_encoder: bool = False,
         shared_weights: bool = True,
         **kwargs,
     ) -> None:
@@ -563,12 +561,10 @@ class PairwiseModel(AutoModelForEmbedding):
             model=model,
             tokenizer=tokenizer,
             pooling_method=pooling_method,
-            normalize_embeddings=normalize_embeddings,
             loss_fn=loss_fn,
             **kwargs,
         )
 
-        self.cross_encoder = cross_encoder
         self.shared_weights = shared_weights
         if not shared_weights:
             self.document_model = copy.deepcopy(self.model)
@@ -582,6 +578,7 @@ class PairwiseModel(AutoModelForEmbedding):
         output_hidden_states: Optional[bool] = None,
         return_dict: Optional[bool] = None,
     ):
+
         if isinstance(inputs, (list, tuple, dict)) and 2 <= len(inputs) <= 3 or inputs_pair is not None:
             if inputs_pair:
                 input1 = inputs
@@ -596,36 +593,25 @@ class PairwiseModel(AutoModelForEmbedding):
 
             ids1, mask1 = input1['input_ids'], input1['attention_mask']
             ids2, mask2 = input2['input_ids'], input2['attention_mask']
-            if self.cross_encoder:
-                ids = torch.cat([ids1, ids2], dim=0)
-                mask = torch.cat([mask1, mask2], dim=0)
 
-                transformer_out = super().forward_from_loader(
-                    {"input_ids": ids, "attention_mask": mask}, without_pooling=True
-                )
-                pooled_output = self.pooling(transformer_out[0], mask)
-                pooled_output1 = pooled_output[: len(ids1), :]
-                pooled_output2 = pooled_output[len(ids1) :, :]
+            if self.shared_weights:  # bi-encoder, pooling in each
+                pooled_output1 = super().forward_from_tensor(ids1, attention_mask=mask1)
+                pooled_output2 = super().forward_from_tensor(ids2, attention_mask=mask2)
+                if len(inputs) == 3:
+                    pooled_output3 = super().forward_from_tensor(
+                        input3['input_ids'], attention_mask=input3['attention_mask']
+                    )
+                    if self.loss_fn is None:
+                        return pooled_output1, pooled_output2, pooled_output3
+
+                    outputs = dict()
+                    loss = self.loss_fn(pooled_output1, pooled_output2, pooled_output3)
+                    outputs["loss"] = loss
+                    return outputs
 
             else:
-                # bi-encoder, pooling in each
-                if self.shared_weights:
-                    pooled_output1 = super().forward_from_loader(ids1, attention_mask=mask1)
-                    pooled_output2 = super().forward_from_loader(ids2, attention_mask=mask2)
-                    if len(inputs) == 3:
-                        pooled_output3 = super().forward_from_loader(
-                            input3['input_ids'], attention_mask=input3['attention_mask']
-                        )
-                        if self.loss_fn is None:
-                            return pooled_output1, pooled_output2, pooled_output3
-                        outputs = dict()
-                        loss = self.loss_fn(pooled_output1, pooled_output2, pooled_output3)
-                        outputs["loss"] = loss
-                        return outputs
-
-                else:
-                    pooled_output1 = super().forward_from_loader(ids1, attention_mask=mask1)
-                    pooled_output2 = self.document_model(ids2, mask2)
+                pooled_output1 = super().forward_from_tensor(ids1, attention_mask=mask1)
+                pooled_output2 = self.document_model(ids2, mask2)
 
             if self.loss_fn is None:
                 return pooled_output1, pooled_output2
@@ -636,7 +622,15 @@ class PairwiseModel(AutoModelForEmbedding):
                 return outputs
 
         else:
-            pooled_output = super(PairwiseModel, self).forward_from_loader(**inputs, without_pooling=False)
+            # if the example data pair/triplet is already concat into one group. The Sentence-transformer style
+            ids = inputs['input_ids']
+            mask = inputs['attention_mask']
+            transformer_out = super().forward_from_tensor(
+                {"input_ids": ids, "attention_mask": mask}, without_pooling=True
+            )
+            pooled_output = self.pooling(transformer_out[0], mask)
+            # pooled_output1 = pooled_output[: len(ids1), :]
+            # pooled_output2 = pooled_output[len(ids1):, :]
             return pooled_output
 
 
@@ -650,7 +644,6 @@ class ListwiseModel(AutoModelForEmbedding):
         model: Optional[nn.Module] = None,
         tokenizer: Optional[PreTrainedTokenizer] = None,
         pooling_method: str = 'cls',
-        normalize_embeddings: bool = False,
         loss_fn: Optional[Callable] = None,
         listwise_pooling: bool = False,
         num_segments: Optional[int] = None,
@@ -660,7 +653,6 @@ class ListwiseModel(AutoModelForEmbedding):
             model=model,
             tokenizer=tokenizer,
             pooling_method=pooling_method,
-            normalize_embeddings=normalize_embeddings,
             loss_fn=loss_fn,
             **kwargs,
         )

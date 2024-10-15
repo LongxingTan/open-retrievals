@@ -46,7 +46,7 @@ Refer to [the fine-tuning code](./train_llm.py), to train the model like
 
 Note
 - no need to set `causal_lm=True` like LLMRanker for AutoModelForEmbedding, but normally set the pooling_method to `last`
-- set `query_instruction` and `document_instruction` in `RetrievalTrainDataset` during train or add it manually to text directly, set it in `AutoModelForEmbedding` during encode
+- set `query_instruction` and `document_instruction` in `RetrievalTrainDataset` during train or add it manually to text directly, while set it in `AutoModelForEmbedding` during encode
   - "Given a query and a relevant document, retrieve the document that are pertinent to the query\nQuery: "
 - use the appropriate `pooling_method`
   - `last`

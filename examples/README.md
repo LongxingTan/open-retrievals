@@ -33,3 +33,6 @@
 
 3. How can we fine-tune the `BAAI/bge-m3` ColBERT model?
 - open-retrievals support to fine-tune the `BAAI/bge-m3 colbert` directly, just don't set `use_fp16=True` while fine-tuning, and set the learning_rate smaller
+
+4. The performance is worse?
+- the collator and loss should be aligned, especially for triplet training with negative embeddings. The collator of open-retrievals provided is `{query: value, positive: value, negative: value}`. Another collator is `{query: value, document: positive+negative}`, if so the loss function should be treated accordingly
