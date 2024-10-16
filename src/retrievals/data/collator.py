@@ -13,7 +13,7 @@ from transformers import (
 
 class AutoCollator(DataCollatorWithPadding):
     """Choose the collator based on data/task
-    TODO: combine pair, triplet, colbert into one
+    TODO: combine pair, triplet, colbert into one collator
     """
 
     def __init__(self):
@@ -333,6 +333,7 @@ class LLMRerankCollator(DataCollatorForSeq2Seq):
         examples = []
 
         if isinstance(features[0], dict):
+            """explode the {(query, positive, negatives)} to pair data"""
             for i in range(len(features)):
                 examples.append((features[i][self.query_key], features[i][self.positive_key]))
                 for neg in features[i][self.negative_key]:
@@ -340,6 +341,7 @@ class LLMRerankCollator(DataCollatorForSeq2Seq):
         else:
             examples = features
 
+        # TODO: double check the add_target_token, only yes now?
         batch = self.tokenizer(
             [self.bos_token + i[0] for i in examples],
             [self.sep_token + i[1] + self.sep_token + self.prompt + self.add_target_token for i in examples],

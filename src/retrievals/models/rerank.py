@@ -2,7 +2,7 @@ import json
 import logging
 import os
 from copy import deepcopy
-from typing import TYPE_CHECKING, Callable, Dict, List, Literal, Optional, Tuple, Union
+from typing import Callable, Dict, List, Literal, Optional, Tuple, Union
 
 import numpy as np
 import torch
