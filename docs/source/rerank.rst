@@ -54,7 +54,7 @@ Rerank
     Ranking score: [5.445939064025879, 3.0762712955474854]
 
 
-**LLM reranking**
+**LLM generative reranking**
 
 .. code-block:: python
 
@@ -195,7 +195,7 @@ Rerank
     trainer.train()
 
 
-4. Fine-tune LLM reranker
+4. Fine-tune LLM Generative reranker
 -------------------------------------
 
 .. image:: https://colab.research.google.com/assets/colab-badge.svg

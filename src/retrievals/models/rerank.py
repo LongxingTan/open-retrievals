@@ -333,7 +333,7 @@ class AutoModelForRanking(Base):
         loss_fn: Union[nn.Module, Callable] = None,
         loss_type: Literal['classification', 'regression'] = 'classification',
         causal_lm: bool = False,
-        chat_reranking: bool = False,
+        generative_llm_reranking: bool = False,
         trust_remote_code: bool = True,
         use_fp16: bool = False,
         use_lora: bool = False,
@@ -352,26 +352,24 @@ class AutoModelForRanking(Base):
             model_name_or_path, return_tensors=False, trust_remote_code=trust_remote_code
         )
 
-        if chat_reranking:
-            logger.info("Set model to AutoModelForCausalLM, LLM generation for reranking")
+        if generative_llm_reranking:
+            logger.info("Set model to AutoModelForCausalLM, LLM generative reranking")
             model = AutoModelForCausalLM.from_pretrained(
                 model_name_or_path, quantization_config=quantization_config, trust_remote_code=trust_remote_code
             )
             query_instruction = 'A: '
             document_instruction = 'B: '
-
-        elif causal_lm or check_causal_lm(model_name_or_path):
-            logger.info("Set model to AutoModelForCausalLM, LLM representation for reranking")
-            model = AutoModelForCausalLM.from_pretrained(
-                model_name_or_path, quantization_config=quantization_config, trust_remote_code=trust_remote_code
-            )
-            tokenizer.padding_side = "right"
-
         else:
-            logger.info('Set model to AutoModelForSequenceClassification')
+            logger.info('Set model to AutoModelForSequenceClassification, representation reranking')
             model = AutoModelForSequenceClassification.from_pretrained(
-                model_name_or_path, num_labels=num_labels, trust_remote_code=trust_remote_code, **kwargs
+                model_name_or_path,
+                num_labels=num_labels,
+                trust_remote_code=trust_remote_code,
+                quantization_config=quantization_config,
+                **kwargs,
             )
+            if causal_lm or check_causal_lm(model_name_or_path):
+                tokenizer.padding_side = "right"
 
         if device is None:
             device = get_device_name()
@@ -741,6 +739,8 @@ class ColBERT(Base):
 
 
 class LLMRanker(AutoModelForRanking):
+    """LLM Generative Reranker"""
+
     def __init__(
         self,
         task_prompt: Optional[str] = None,
@@ -750,7 +750,7 @@ class LLMRanker(AutoModelForRanking):
         document_instruction: Optional[str] = 'B: ',
         **kwargs,
     ):
-        super(LLMRanker, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         if task_prompt is None:
             task_prompt = (
                 """Given a query A and a passage B, determine whether the passage contains an answer to the query """
