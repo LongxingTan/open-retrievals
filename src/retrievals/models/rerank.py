@@ -370,6 +370,7 @@ class AutoModelForRanking(Base):
             )
             if causal_lm or check_causal_lm(model_name_or_path):
                 tokenizer.padding_side = "right"
+                tokenizer.add_eos_token = True
 
         if device is None:
             device = get_device_name()
