@@ -1,3 +1,5 @@
+"""Text embedding model"""
+
 import copy
 import logging
 import os
@@ -480,7 +482,7 @@ class AutoModelForEmbedding(Base):
             device = get_device_name()
 
         if use_fp16 and device != 'cpu':
-            logger.info('Set model to fp16, please note that if you want fp16 during training, set training_args fp16')
+            logger.info('Set model to fp16 in inference, if you want fp16 during training, training_args fp16=True')
             model.half()
 
         if mrl_dim > 0:

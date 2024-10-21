@@ -1,3 +1,5 @@
+"""Base model for embedding and reranking"""
+
 import logging
 from abc import ABC, abstractmethod
 from typing import List, Optional, Tuple, Union

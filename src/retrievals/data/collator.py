@@ -30,9 +30,10 @@ class PairCollator(DataCollatorWithPadding):
         tokenizer: PreTrainedTokenizer,
         query_max_length: int = 32,
         document_max_length: int = 128,
-        append_eos_token: bool = False,
         query_key: str = 'query',
         document_key: str = 'positive',
+        append_eos_token: bool = False,
+        tokenize_args: Optional[Dict] = None,
     ) -> None:
         self.tokenizer = tokenizer
         if not hasattr(self.tokenizer, "pad_token_id") or self.tokenizer.pad_token is None:
@@ -176,9 +177,10 @@ class RerankCollator(DataCollatorWithPadding):
         self,
         tokenizer: PreTrainedTokenizer,
         max_length: int = 128,
-        append_eos_token: bool = False,
         query_key: str = 'query',
         document_key: str = 'document',
+        append_eos_token: bool = False,
+        tokenize_args: Optional[Dict] = None,
     ):
         self.tokenizer = tokenizer
         if not hasattr(self.tokenizer, "pad_token_id") or self.tokenizer.pad_token is None:
@@ -235,6 +237,7 @@ class ColBertCollator(DataCollatorWithPadding):
         query_key: str = 'query',
         positive_key: str = 'positive',
         negative_key: str = 'negative',
+        tokenize_args: Optional[Dict] = None,
     ) -> None:
         self.tokenizer = tokenizer
         if not hasattr(self.tokenizer, "pad_token_id") or self.tokenizer.pad_token is None:
@@ -319,6 +322,7 @@ class LLMRerankCollator(DataCollatorForSeq2Seq):
         add_target_token: str = '',
         sep_token: str = "\n",
         max_length: int = 128,
+        tokenize_args: Optional[Dict] = None,
         pad_to_multiple_of: Optional[int] = 8,
     ):
         self.tokenizer = tokenizer

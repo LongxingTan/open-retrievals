@@ -1,3 +1,5 @@
+"""Text reranking model"""
+
 import json
 import logging
 import os
