@@ -1,6 +1,4 @@
-"""
-
-"""
+"""Retrieval model"""
 
 import glob
 import logging
@@ -375,6 +373,7 @@ class EnsembleRetriever(BaseRetriever):
 
     def __init__(self, retrievers: List[BaseRetriever], weights=None):
         self.retrievers = retrievers
+        self.weights = weights
 
     def search(self, query: str, top_k: int = 10, batch_size: int = -1) -> List[str]:
         combined_results = []
