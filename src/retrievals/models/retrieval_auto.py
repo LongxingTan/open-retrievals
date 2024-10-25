@@ -192,6 +192,38 @@ def knn_search(query_embed, document_embed, top_k):
     return dists, indices
 
 
+def cos_sim(a, b) -> torch.Tensor:
+    """
+    Computes the cosine similarity between two tensors.
+
+    Args:
+        a (Union[list, np.ndarray, Tensor]): The first tensor.
+        b (Union[list, np.ndarray, Tensor]): The second tensor.
+
+    Returns:
+        Tensor: Matrix with res[i][j] = cos_sim(a[i], b[j])
+    """
+    if not isinstance(a, torch.Tensor):
+        a = torch.tensor(a)
+    if not isinstance(b, torch.Tensor):
+        b = torch.tensor(b)
+
+    a_norm = torch.nn.functional.normalize(a, p=2, dim=1)
+    b_norm = torch.nn.functional.normalize(b, p=2, dim=1)
+    return torch.mm(a_norm, b_norm.transpose(0, 1))
+
+
+def semantic_search(
+    query_embed: torch.Tensor,
+    document_embed: torch.Tensor,
+    top_k: int = 10,
+    score_function=cos_sim,
+    query_chunk_size: int = 100,
+    document_chunk_size: int = 500000,
+):
+    return
+
+
 def cosine_similarity_search(
     query_embed: torch.Tensor,
     document_embed: torch.Tensor,
