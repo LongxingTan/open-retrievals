@@ -450,10 +450,13 @@ class AutoModelForEmbedding(Base):
         if not model_name_or_path or not isinstance(model_name_or_path, str):
             assert ValueError(f'Please input valid model_name_or_path, instead of {model_name_or_path}')
 
-        config = None
         if config_path:
             config = AutoConfig.from_pretrained(
                 config_path, output_hidden_states=True, trust_remote_code=trust_remote_code
+            )
+        else:
+            config = AutoConfig.from_pretrained(
+                model_name_or_path, output_hidden_states=True, trust_remote_code=trust_remote_code
             )
 
         if custom_config_dict:
@@ -462,6 +465,9 @@ class AutoModelForEmbedding(Base):
                     model_name_or_path, output_hidden_states=True, trust_remote_code=trust_remote_code
                 )
             config.update(custom_config_dict)
+
+        # if quantization_config is None and hasattr(config, 'quantization_config'):
+        #     quantization_config = config.quantization_config
 
         if check_causal_lm(model_name_or_path) and pooling_method != 'last':
             logger.warning('You are using a LLM model, while pooling_method is not last, is that right?')
@@ -481,7 +487,7 @@ class AutoModelForEmbedding(Base):
         if device is None:
             device = get_device_name()
 
-        if use_fp16 and device != 'cpu' and quantization_config is None:
+        if use_fp16 and device != 'cpu' and quantization_config is None and not hasattr(config, 'quantization_config'):
             logger.info('Set model to fp16 in inference, if you want fp16 during training, training_args fp16=True')
             model.half()
 
