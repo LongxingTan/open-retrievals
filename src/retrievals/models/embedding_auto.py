@@ -481,7 +481,7 @@ class AutoModelForEmbedding(Base):
         if device is None:
             device = get_device_name()
 
-        if use_fp16 and device != 'cpu':
+        if use_fp16 and device != 'cpu' and quantization_config is None:
             logger.info('Set model to fp16 in inference, if you want fp16 during training, training_args fp16=True')
             model.half()
 
