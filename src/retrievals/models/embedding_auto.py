@@ -83,7 +83,11 @@ class AutoModelForEmbedding(Base):
         self.document_instruction = document_instruction if document_instruction else ''
         self.use_fp16 = use_fp16
         self.device = device or get_device_name()
-        self.model.to(self.device)
+        try:
+            self.model.to(self.device)
+        except (AttributeError, RuntimeError):
+            # `4-bit` or `8-bit` bitsandbytes models have already been set to the correct devices
+            pass
 
     def _init_weights(self, module: nn.Module):
         if isinstance(module, nn.Linear):
