@@ -85,7 +85,7 @@ class AutoModelForEmbedding(Base):
         self.device = device or get_device_name()
         try:
             self.model.to(self.device)
-        except (AttributeError, RuntimeError):
+        except ValueError:
             # `4-bit` or `8-bit` bitsandbytes models have already been set to the correct devices
             pass
 
