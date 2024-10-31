@@ -153,21 +153,21 @@ def main():
         from transformers import BitsAndBytesConfig
 
         logger.info('Use quantization bnb config')
-        quantization_config = BitsAndBytesConfig(
+        bnb_config = BitsAndBytesConfig(
             load_in_4bit=True,
             bnb_4bit_use_double_quant=True,
             bnb_4bit_quant_type="nf4",
             bnb_4bit_compute_dtype=torch.bfloat16,
         )
     else:
-        quantization_config = None
+        bnb_config = None
 
     if training_args.do_train:
         model = AutoModelForEmbedding.from_pretrained(
             model_name_or_path=model_args.model_name_or_path,
             pooling_method=training_args.pooling_method,
             use_lora=training_args.use_lora,
-            quantization_config=quantization_config,
+            bnb_config=bnb_config,
         )
 
         loss_fn = AutoLoss(
@@ -218,7 +218,7 @@ def main():
             model_name_or_path=model_args.model_name_or_path,
             pooling_method=training_args.pooling_method,
             use_lora=training_args.use_lora,
-            quantization_config=quantization_config,
+            bnb_config=bnb_config,
             lora_path=model_args.lora_path,
         )
 

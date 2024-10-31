@@ -173,14 +173,14 @@ def main():
         from transformers import BitsAndBytesConfig
 
         logger.info('Use quantization bnb config')
-        quantization_config = BitsAndBytesConfig(
+        bnb_config = BitsAndBytesConfig(
             load_in_4bit=True,
             bnb_4bit_use_double_quant=True,
             bnb_4bit_quant_type="nf4",
             bnb_4bit_compute_dtype=torch.bfloat16,
         )
     else:
-        quantization_config = None
+        bnb_config = None
 
     if training_args.model_type == 'colbert':
         logger.info('Set rank model to ColBERT')
@@ -236,7 +236,7 @@ def main():
             loss_fn=TokenLoss(token_index=token_index, train_group_size=data_args.train_group_size),
             causal_lm=True,
             use_lora=training_args.use_lora,
-            quantization_config=quantization_config,
+            bnb_config=bnb_config,
         )
     else:
         raise ValueError(

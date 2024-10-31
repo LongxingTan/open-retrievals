@@ -342,7 +342,7 @@ class AutoModelForRanking(Base):
         use_qlora: bool = False,
         lora_config=None,
         lora_path: Optional[str] = None,
-        quantization_config=None,
+        bnb_config=None,
         task_prompt: Optional[str] = None,
         query_instruction: Optional[str] = None,
         document_instruction: Optional[str] = None,
@@ -357,7 +357,7 @@ class AutoModelForRanking(Base):
         if generative_llm_reranking:
             logger.info("Set model to AutoModelForCausalLM, LLM generative reranking")
             model = AutoModelForCausalLM.from_pretrained(
-                model_name_or_path, quantization_config=quantization_config, trust_remote_code=trust_remote_code
+                model_name_or_path, bnb_config=bnb_config, trust_remote_code=trust_remote_code
             )
             query_instruction = 'A: '
             document_instruction = 'B: '
@@ -367,7 +367,7 @@ class AutoModelForRanking(Base):
                 model_name_or_path,
                 num_labels=num_labels,
                 trust_remote_code=trust_remote_code,
-                quantization_config=quantization_config,
+                bnb_config=bnb_config,
                 **kwargs,
             )
             if causal_lm or check_causal_lm(model_name_or_path):
