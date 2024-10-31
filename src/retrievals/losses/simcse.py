@@ -33,13 +33,15 @@ class SimCSE(nn.Module):
     def forward(
         self,
         query_embeddings: torch.Tensor,
-        pos_embeddings: torch.Tensor,
-        neg_embeddings: Optional[torch.Tensor] = None,
+        positive_embeddings: torch.Tensor,
+        negative_embeddings: Optional[torch.Tensor] = None,
     ):
-        similarity = F.cosine_similarity(query_embeddings.unsqueeze(1), pos_embeddings.unsqueeze(0), dim=-1)
+        similarity = F.cosine_similarity(query_embeddings.unsqueeze(1), positive_embeddings.unsqueeze(0), dim=-1)
 
-        if neg_embeddings is not None:
-            neg_similarity = F.cosine_similarity(query_embeddings.unsqueeze(1), neg_embeddings.unsqueeze(0), dim=-1)
+        if negative_embeddings is not None:
+            neg_similarity = F.cosine_similarity(
+                query_embeddings.unsqueeze(1), negative_embeddings.unsqueeze(0), dim=-1
+            )
             similarity = torch.cat([similarity, neg_similarity], dim=1)
 
         similarity = similarity / self.temperature

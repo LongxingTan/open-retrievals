@@ -36,13 +36,13 @@ class MRLLoss(nn.Module):
     def forward(
         self,
         query_embeddings: torch.Tensor,
-        pos_embeddings: torch.Tensor,
-        neg_embeddings: Optional[torch.Tensor] = None,
+        positive_embeddings: torch.Tensor,
+        negative_embeddings: Optional[torch.Tensor] = None,
     ):
         query_mrl_embed = self.query_mrl(query_embeddings)
-        positive_mrl_embed = self.positive_mrl(pos_embeddings)
-        if neg_embeddings is not None:
-            negative_mrl_embed = self.negative_mrl(neg_embeddings)
+        positive_mrl_embed = self.positive_mrl(positive_embeddings)
+        if negative_embeddings is not None:
+            negative_mrl_embed = self.negative_mrl(negative_embeddings)
         else:
             negative_mrl_embed = [None] * len(positive_mrl_embed)
 

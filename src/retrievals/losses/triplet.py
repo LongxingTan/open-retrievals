@@ -38,8 +38,8 @@ class TripletLoss(nn.Module):
     def forward(
         self,
         query_embeddings: torch.Tensor,
-        pos_embeddings: torch.Tensor,
-        neg_embeddings: torch.Tensor,
+        positive_embeddings: torch.Tensor,
+        negative_embeddings: torch.Tensor,
         margin: float = 0.0,
     ):
         if margin:
@@ -47,14 +47,14 @@ class TripletLoss(nn.Module):
 
         if self.negatives_cross_device and self.use_inbatch_negative:
             query_embeddings = self._dist_gather_tensor(query_embeddings)
-            pos_embeddings = self._dist_gather_tensor(pos_embeddings)
-            neg_embeddings = self._dist_gather_tensor(neg_embeddings)
+            positive_embeddings = self._dist_gather_tensor(positive_embeddings)
+            negative_embeddings = self._dist_gather_tensor(negative_embeddings)
 
-        pos_similarity = torch.cosine_similarity(query_embeddings, pos_embeddings, dim=-1)
+        pos_similarity = torch.cosine_similarity(query_embeddings, positive_embeddings, dim=-1)
         pos_similarity = pos_similarity / self.temperature
         neg_similarity = torch.cosine_similarity(
             query_embeddings.unsqueeze(1),
-            neg_embeddings.unsqueeze(0),
+            negative_embeddings.unsqueeze(0),
             dim=-1,
         )
         neg_similarity = neg_similarity / self.temperature
