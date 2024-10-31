@@ -21,14 +21,14 @@ class TripletLoss(nn.Module):
         temperature: float = 0.05,
         margin: float = 0.0,
         negatives_cross_device: bool = False,
-        batch_hard: bool = False,
+        use_inbatch_negative: bool = False,
         **kwargs
     ):
         super().__init__()
         self.temperature = temperature
         self.margin = margin
         self.negatives_cross_device = negatives_cross_device
-        self.batch_hard = batch_hard
+        self.use_inbatch_negative = use_inbatch_negative
         if self.negatives_cross_device:
             if not dist.is_initialized():
                 raise ValueError("Cannot do negatives_cross_device without distributed training")
@@ -45,7 +45,8 @@ class TripletLoss(nn.Module):
         if margin:
             self.set_margin(margin=margin)
 
-        if self.negatives_cross_device:
+        if self.negatives_cross_device and self.use_inbatch_negative:
+            query_embeddings = self._dist_gather_tensor(query_embeddings)
             pos_embeddings = self._dist_gather_tensor(pos_embeddings)
             neg_embeddings = self._dist_gather_tensor(neg_embeddings)
 

@@ -637,9 +637,7 @@ class PairwiseModel(AutoModelForEmbedding):
             # if the example data pair/triplet is already concat into one group. The Sentence-transformer style
             ids = inputs['input_ids']
             mask = inputs['attention_mask']
-            transformer_out = super().forward_from_tensor(
-                {"input_ids": ids, "attention_mask": mask}, without_pooling=True
-            )
+            transformer_out = super().forward_from_tensor(input_ids=ids, attention_mask=mask, without_pooling=True)
             pooled_output = self.pooling(transformer_out[0], mask)
             # pooled_output1 = pooled_output[: len(ids1), :]
             # pooled_output2 = pooled_output[len(ids1):, :]
