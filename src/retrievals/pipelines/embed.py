@@ -99,7 +99,7 @@ class RetrieverTrainingArguments(TrainingArguments):
     use_inbatch_negative: bool = field(default=True, metadata={"help": "use documents in the same batch as negatives"})
     remove_unused_columns: bool = field(default=False)
     use_lora: bool = field(default=False)
-    use_bnb_config: bool = field(default=False)
+    use_quantization_config: bool = field(default=False)
     do_encode: bool = field(default=False, metadata={"help": "run the encoding loop"})
     report_to: Optional[List[str]] = field(
         default="none", metadata={"help": "The list of integrations to report the results and logs to."}
@@ -149,25 +149,25 @@ def main():
         cache_dir=model_args.cache_dir,
         use_fast=False,
     )
-    if training_args.use_bnb_config:
+    if training_args.use_quantization_config:
         from transformers import BitsAndBytesConfig
 
         logger.info('Use quantization bnb config')
-        bnb_config = BitsAndBytesConfig(
+        quantization_config = BitsAndBytesConfig(
             load_in_4bit=True,
             bnb_4bit_use_double_quant=True,
             bnb_4bit_quant_type="nf4",
             bnb_4bit_compute_dtype=torch.bfloat16,
         )
     else:
-        bnb_config = None
+        quantization_config = None
 
     if training_args.do_train:
         model = AutoModelForEmbedding.from_pretrained(
             model_name_or_path=model_args.model_name_or_path,
             pooling_method=training_args.pooling_method,
             use_lora=training_args.use_lora,
-            bnb_config=bnb_config,
+            quantization_config=quantization_config,
         )
 
         loss_fn = AutoLoss(
@@ -218,7 +218,7 @@ def main():
             model_name_or_path=model_args.model_name_or_path,
             pooling_method=training_args.pooling_method,
             use_lora=training_args.use_lora,
-            bnb_config=bnb_config,
+            quantization_config=quantization_config,
             lora_path=model_args.lora_path,
         )
 

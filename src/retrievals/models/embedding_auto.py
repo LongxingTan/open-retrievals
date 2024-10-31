@@ -442,7 +442,7 @@ class AutoModelForEmbedding(Base):
         use_qlora: bool = False,
         lora_path: Optional[str] = None,
         lora_config=None,
-        bnb_config=None,
+        quantization_config=None,
         device: Optional[str] = None,
         query_instruction: Optional[str] = None,
         document_instruction: Optional[str] = None,
@@ -470,8 +470,8 @@ class AutoModelForEmbedding(Base):
                 )
             config.update(custom_config_dict)
 
-        # if bnb_config is None and hasattr(config, 'bnb_config'):
-        #     bnb_config = config.bnb_config
+        # if quantization_config is None and hasattr(config, 'quantization_config'):
+        #     quantization_config = config.quantization_config
 
         if check_causal_lm(model_name_or_path) and pooling_method != 'last':
             logger.warning('You are using a LLM model, while pooling_method is not last, is that right?')
@@ -481,7 +481,7 @@ class AutoModelForEmbedding(Base):
                 model_name_or_path,
                 config=config,
                 trust_remote_code=trust_remote_code,
-                bnb_config=bnb_config,
+                quantization_config=quantization_config,
                 **kwargs,
             )
         else:
@@ -491,7 +491,7 @@ class AutoModelForEmbedding(Base):
         if device is None:
             device = get_device_name()
 
-        if use_fp16 and device != 'cpu' and bnb_config is None and not hasattr(config, 'bnb_config'):
+        if use_fp16 and device != 'cpu' and quantization_config is None and not hasattr(config, 'quantization_config'):
             logger.info('Set model to fp16 in inference, if you want fp16 during training, training_args fp16=True')
             model.half()
 
