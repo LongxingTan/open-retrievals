@@ -513,8 +513,8 @@ class AutoModelForEmbedding(Base):
             )
 
             if lora_config is None:
-                lora_r = 16
-                lora_alpha = 32
+                lora_r = 64
+                lora_alpha = 128
                 lora_dropout = 0.05
                 target_modules = find_all_linear_names(model)
                 logger.info(f'Set Lora target module to {target_modules}, r to {lora_r}, lora_alpha to {lora_alpha}')

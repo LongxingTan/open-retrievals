@@ -234,7 +234,7 @@ class AutoModelForRanking(Base):
         normalize: bool = False,
         show_progress_bar: bool = None,
         **kwargs,
-    ):
+    ) -> Union[List[float], float]:
         """
         preprocess -> score -> output
         """
@@ -285,7 +285,7 @@ class AutoModelForRanking(Base):
         normalize: bool = False,
         data_collator: Optional[RerankCollator] = None,
         **kwargs,
-    ):
+    ) -> Union[Dict[str, List[str]], List[str]]:
         if query is None or len(query) == 0 or len(documents) == 0:
             return {'rerank_documents': [], 'rerank_scores': []}
 
