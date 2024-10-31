@@ -40,6 +40,11 @@ class InfoNCE(nn.Module):
         self.negative_mode = negative_mode
         if self.temperature > 0.5:
             logger.error('InfoNCE loss use normalized and inner product by default, temperature should be 0.01 ~ 0.1')
+        if self.negatives_cross_device:
+            if not dist.is_initialized():
+                raise ValueError("Cannot do negatives_cross_device without distributed training")
+            self.rank = dist.get_rank()
+            self.world_size = dist.get_world_size()
 
     def forward(
         self,
