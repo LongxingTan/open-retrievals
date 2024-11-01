@@ -205,8 +205,11 @@ class AutoModelForRanking(Base):
         batch_sentence_pair: List[List[str]],
         max_length: int,
         padding: Union[str, bool] = 'max_length',
+        pairs: bool = True,
     ):
-        if isinstance(batch_sentence_pair[0][0], str):
+        if (pairs and isinstance(batch_sentence_pair[0][0], str)) or (
+            not pairs and isinstance(batch_sentence_pair[0], str)
+        ):
             batch = self.tokenizer(
                 batch_sentence_pair,
                 padding=True,
@@ -430,6 +433,36 @@ class AutoModelForRanking(Base):
             document_instruction=document_instruction,
         )
         return reranker
+
+    @torch.no_grad()
+    @torch.cuda.amp.autocast()
+    def predict(
+        self,
+        sentences: Union[Tuple[str], List[str]],
+        batch_size: int = 16,
+        max_length: int = 512,
+        show_progress_bar: bool = None,
+        normalize: bool = True,
+    ):
+        self.model.eval()
+
+        length_sorted_idx = np.argsort([-self._text_length(p) for p in sentences])
+        sentences_sorted = [sentences[idx] for idx in length_sorted_idx]
+
+        all_scores: List[float] = []
+        for batch_start in tqdm(
+            range(0, len(sentences_sorted), batch_size), desc='Scoring', disable=not show_progress_bar
+        ):
+            batch_sentences = sentences_sorted[batch_start : batch_start + batch_size]
+            batch_on_device = self.preprocess_pair(batch_sentences, max_length=max_length, pairs=False)
+            scores = self.model(**batch_on_device, return_dict=True).logits.view(-1).float()
+
+            if normalize:
+                scores = torch.sigmoid(scores)
+            all_scores.extend(scores.cpu().float().tolist())
+
+        all_scores = [all_scores[idx] for idx in np.argsort(length_sorted_idx)]
+        return all_scores
 
 
 class ColBERT(Base):
