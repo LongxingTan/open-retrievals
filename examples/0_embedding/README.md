@@ -65,3 +65,10 @@ model = AutoModelForEmbedding.from_pretrained(
   document_instruction='',
 )
 ```
+
+## Deployment
+
+**Prerequisites**
+```shell
+pip install optimum
+```

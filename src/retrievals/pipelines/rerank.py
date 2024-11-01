@@ -104,7 +104,7 @@ class RerankerTrainingArguments(TrainingArguments):
     remove_unused_columns: bool = field(default=False)
     num_train_epochs: int = field(default=3)
     use_lora: bool = field(default=False)
-    use_bnb_config: bool = field(default=False)
+    use_quantization_config: bool = field(default=False)
     do_rerank: bool = field(default=False, metadata={"help": "run the reranking loop"})
     report_to: Optional[List[str]] = field(
         default="none", metadata={"help": "The list of integrations to report the results and logs to."}
@@ -169,7 +169,7 @@ def main():
         use_fast=False,
     )
 
-    if training_args.use_bnb_config:
+    if training_args.use_quantization_config:
         from transformers import BitsAndBytesConfig
 
         logger.info('Use quantization bnb config')

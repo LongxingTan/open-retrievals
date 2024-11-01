@@ -21,14 +21,14 @@ class TripletLoss(nn.Module):
         temperature: float = 0.05,
         margin: float = 0.0,
         negatives_cross_device: bool = False,
-        batch_hard: bool = False,
+        use_inbatch_negative: bool = False,
         **kwargs
     ):
         super().__init__()
         self.temperature = temperature
         self.margin = margin
         self.negatives_cross_device = negatives_cross_device
-        self.batch_hard = batch_hard
+        self.use_inbatch_negative = use_inbatch_negative
         if self.negatives_cross_device:
             if not dist.is_initialized():
                 raise ValueError("Cannot do negatives_cross_device without distributed training")
@@ -38,22 +38,23 @@ class TripletLoss(nn.Module):
     def forward(
         self,
         query_embeddings: torch.Tensor,
-        pos_embeddings: torch.Tensor,
-        neg_embeddings: torch.Tensor,
+        positive_embeddings: torch.Tensor,
+        negative_embeddings: torch.Tensor,
         margin: float = 0.0,
     ):
         if margin:
             self.set_margin(margin=margin)
 
-        if self.negatives_cross_device:
-            pos_embeddings = self._dist_gather_tensor(pos_embeddings)
-            neg_embeddings = self._dist_gather_tensor(neg_embeddings)
+        if self.negatives_cross_device and self.use_inbatch_negative:
+            query_embeddings = self._dist_gather_tensor(query_embeddings)
+            positive_embeddings = self._dist_gather_tensor(positive_embeddings)
+            negative_embeddings = self._dist_gather_tensor(negative_embeddings)
 
-        pos_similarity = torch.cosine_similarity(query_embeddings, pos_embeddings, dim=-1)
+        pos_similarity = torch.cosine_similarity(query_embeddings, positive_embeddings, dim=-1)
         pos_similarity = pos_similarity / self.temperature
         neg_similarity = torch.cosine_similarity(
             query_embeddings.unsqueeze(1),
-            neg_embeddings.unsqueeze(0),
+            negative_embeddings.unsqueeze(0),
             dim=-1,
         )
         neg_similarity = neg_similarity / self.temperature

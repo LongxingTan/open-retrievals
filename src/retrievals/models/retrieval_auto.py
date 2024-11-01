@@ -1,3 +1,5 @@
+"""Retrieval model"""
+
 import glob
 import logging
 import os.path
@@ -97,7 +99,7 @@ class AutoModelForRetrieval(object):
                 dists, indices = faiss_index.search(query_embed.astype(np.float32), k=top_k)
             else:
                 dists, indices = faiss_retrieval.search(
-                    query_embed=query_embed,
+                    query_embeddings=query_embed,
                     top_k=top_k,
                     batch_size=batch_size,
                 )
@@ -188,6 +190,38 @@ def knn_search(query_embed, document_embed, top_k):
     neighbors_model.fit(document_embed)
     dists, indices = neighbors_model.kneighbors(query_embed)
     return dists, indices
+
+
+def cos_sim(a, b) -> torch.Tensor:
+    """
+    Computes the cosine similarity between two tensors.
+
+    Args:
+        a (Union[list, np.ndarray, Tensor]): The first tensor.
+        b (Union[list, np.ndarray, Tensor]): The second tensor.
+
+    Returns:
+        Tensor: Matrix with res[i][j] = cos_sim(a[i], b[j])
+    """
+    if not isinstance(a, torch.Tensor):
+        a = torch.tensor(a)
+    if not isinstance(b, torch.Tensor):
+        b = torch.tensor(b)
+
+    a_norm = torch.nn.functional.normalize(a, p=2, dim=1)
+    b_norm = torch.nn.functional.normalize(b, p=2, dim=1)
+    return torch.mm(a_norm, b_norm.transpose(0, 1))
+
+
+def semantic_search(
+    query_embed: torch.Tensor,
+    document_embed: torch.Tensor,
+    top_k: int = 10,
+    score_function=cos_sim,
+    query_chunk_size: int = 100,
+    document_chunk_size: int = 500000,
+):
+    return
 
 
 def cosine_similarity_search(
@@ -300,15 +334,28 @@ class FaissRetrieval(BaseRetriever):
 
 
 class BM25Retrieval(BaseRetriever):
+    """
+    BM25 retrieval by rank_bm25
+    """
+
     def __init__(
-        self, documents, chunk_size=None, chunk_overlap=None, splitter=None, stop_words_dir: Optional[str] = None
+        self,
+        documents,
+        chunk_size=None,
+        chunk_overlap=None,
+        splitter=None,
+        tokenizer=None,
+        stop_words: Optional[List[str]] = None,
+        stop_words_dir: Optional[str] = None,
     ):
         from rank_bm25 import BM25Okapi
 
         self.documents = documents
         self.splitter = splitter
+        self.tokenizer = tokenizer
         self.chunk_size = chunk_size
         self.chunk_overlap = chunk_overlap
+        self.stop_words = stop_words
         self.stop_words_dir = stop_words_dir
 
         if self.splitter:
@@ -316,27 +363,34 @@ class BM25Retrieval(BaseRetriever):
         else:
             documents = self.documents
 
+        if self.tokenizer:
+            documents = self.tokenizer(documents)
+
+        # add the documents first, then search by query
         self.bm25 = BM25Okapi(documents)
 
     def search(self, query: str, top_k: int, batch_size: int = -1) -> List[Tuple[List[str], float]]:
+        if self.tokenizer:
+            query = self.tokenizer(query)
         scores = self.bm25.get_scores(query)
         sorted_docs = sorted(zip(self.documents, scores), key=lambda x: x[1], reverse=True)[:top_k]
         return sorted_docs
 
     def _load_stop_words(self):
-        stop_words_path = os.path.join(self.stop_words_dir, 'stop_words.txt')
-        if not os.path.exists(stop_words_path):
-            raise Exception(f"system stop words: {stop_words_path} not found")
-
         stop_words = []
-        with open(stop_words_path, 'r', encoding='utf8') as reader:
-            for line in reader:
-                line = line.strip()
-                stop_words.append(line)
+        if self.stop_words_dir is not None and os.path.exists(self.stop_words_dir):
+            with open(self.stop_words_dir, 'r', encoding='utf8') as reader:
+                for line in reader:
+                    line = line.strip()
+                    stop_words.append(line)
         return stop_words
 
 
 class ElasticRetriever(BaseRetriever):
+    """
+    Elastic Search
+    """
+
     def __init__(self):
         super(ElasticRetriever, self).__init__()
         from elasticsearch import Elasticsearch
@@ -351,6 +405,7 @@ class EnsembleRetriever(BaseRetriever):
 
     def __init__(self, retrievers: List[BaseRetriever], weights=None):
         self.retrievers = retrievers
+        self.weights = weights
 
     def search(self, query: str, top_k: int = 10, batch_size: int = -1) -> List[str]:
         combined_results = []
@@ -364,6 +419,10 @@ class EnsembleRetriever(BaseRetriever):
 
 
 class GraphRetrieval(BaseRetriever):
+    """
+    Graph RAG Retrieval
+    """
+
     def __init__(self, index_name):
         super(GraphRetrieval, self).__init__()
 

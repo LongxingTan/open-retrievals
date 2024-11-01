@@ -54,7 +54,7 @@ Rerank
     Ranking score: [5.445939064025879, 3.0762712955474854]
 
 
-**LLM reranking**
+**LLM generative reranking**
 
 .. code-block:: python
 
@@ -73,6 +73,10 @@ Rerank
 
 2. Fine-tune cross-encoder reranking model
 -----------------------------------------------
+
+prepare data
+    `{(query1, document1, label1), (query2, document2, label2), ...}`
+
 
 .. image:: https://colab.research.google.com/assets/colab-badge.svg
     :target: https://colab.research.google.com/drive/1QvbUkZtG56SXomGYidwI4RQzwODQrWNm?usp=sharing
@@ -124,6 +128,10 @@ Rerank
 
 3. Fine-tune ColBERT reranking model
 ----------------------------------------
+
+prepare data
+    `{}`
+
 
 .. image:: https://colab.research.google.com/assets/colab-badge.svg
     :target: https://colab.research.google.com/drive/1QVtqhQ080ZMltXoJyODMmvEQYI6oo5kO?usp=sharing
@@ -195,8 +203,15 @@ Rerank
     trainer.train()
 
 
-4. Fine-tune LLM reranker
+4. Fine-tune LLM Generative reranker
 -------------------------------------
+
+prepare generative reranking data
+    `{}`
+
+prepare representative reranking data
+    `{}`
+
 
 .. image:: https://colab.research.google.com/assets/colab-badge.svg
     :target: https://colab.research.google.com/drive/1fzq1iV7-f8hNKFnjMmpVhVxadqPb9IXk?usp=sharing

@@ -1,8 +1,10 @@
+"""Text reranking model"""
+
 import json
 import logging
 import os
 from copy import deepcopy
-from typing import TYPE_CHECKING, Callable, Dict, List, Literal, Optional, Tuple, Union
+from typing import Callable, Dict, List, Literal, Optional, Tuple, Union
 
 import numpy as np
 import torch
@@ -163,7 +165,7 @@ class AutoModelForRanking(Base):
         scores = logits.view(-1, self.train_group_size)
 
         if return_dict:
-            outputs_dict = dict()
+            outputs_dict: Dict[str, Union[float, torch.Tensor]] = dict()
             outputs_dict['logits'] = logits
 
         if labels is not None:
@@ -226,13 +228,13 @@ class AutoModelForRanking(Base):
     @torch.no_grad()
     def compute_score(
         self,
-        sentence_pairs: Union[List[Tuple[str, str]], Tuple[str, str]],
+        sentence_pairs: Union[List[Tuple[str]], Tuple[str], List[str]],
         batch_size: int = 16,
         max_length: int = 512,
         normalize: bool = False,
         show_progress_bar: bool = None,
         **kwargs,
-    ):
+    ) -> Union[List[float], float]:
         """
         preprocess -> score -> output
         """
@@ -283,7 +285,7 @@ class AutoModelForRanking(Base):
         normalize: bool = False,
         data_collator: Optional[RerankCollator] = None,
         **kwargs,
-    ):
+    ) -> Union[Dict[str, List[str]], List[str]]:
         if query is None or len(query) == 0 or len(documents) == 0:
             return {'rerank_documents': [], 'rerank_scores': []}
 
@@ -304,7 +306,7 @@ class AutoModelForRanking(Base):
             show_progress_bar=show_progress_bar,
         )
 
-        merge_scores = [0 for _ in range(len(documents))]
+        merge_scores = [0.0 for _ in range(len(documents))]
         for pid, score in zip(sentence_pairs_pids, tot_scores):
             merge_scores[pid] = max(merge_scores[pid], score)
 
@@ -333,6 +335,7 @@ class AutoModelForRanking(Base):
         loss_fn: Union[nn.Module, Callable] = None,
         loss_type: Literal['classification', 'regression'] = 'classification',
         causal_lm: bool = False,
+        generative_llm_reranking: bool = False,
         trust_remote_code: bool = True,
         use_fp16: bool = False,
         use_lora: bool = False,
@@ -351,25 +354,30 @@ class AutoModelForRanking(Base):
             model_name_or_path, return_tensors=False, trust_remote_code=trust_remote_code
         )
 
-        if causal_lm or check_causal_lm(model_name_or_path):
-            logger.info(
-                "Set model to AutoModelForCausalLM, set query_instruction to 'A: ' and document_instruction to 'B: '"
-            )
+        if generative_llm_reranking:
+            logger.info("Set model to AutoModelForCausalLM, LLM generative reranking")
             model = AutoModelForCausalLM.from_pretrained(
                 model_name_or_path, quantization_config=quantization_config, trust_remote_code=trust_remote_code
             )
             query_instruction = 'A: '
             document_instruction = 'B: '
         else:
-            logger.info('Set model to  AutoModelForSequenceClassification')
+            logger.info('Set model to AutoModelForSequenceClassification, representation reranking')
             model = AutoModelForSequenceClassification.from_pretrained(
-                model_name_or_path, num_labels=num_labels, trust_remote_code=trust_remote_code, **kwargs
+                model_name_or_path,
+                num_labels=num_labels,
+                trust_remote_code=trust_remote_code,
+                quantization_config=quantization_config,
+                **kwargs,
             )
+            if causal_lm or check_causal_lm(model_name_or_path):
+                tokenizer.padding_side = "right"
+                tokenizer.add_eos_token = True
 
         if device is None:
             device = get_device_name()
 
-        if use_fp16 and device != 'cpu':
+        if use_fp16 and device != 'cpu' and quantization_config is None:
             logger.info('Set model to fp16, please note that if you want fp16 during training, set training_args fp16')
             model.half()
 
@@ -383,8 +391,8 @@ class AutoModelForRanking(Base):
             )
 
             if lora_config is None:
-                lora_r = 16
-                lora_alpha = 32
+                lora_r = 32
+                lora_alpha = 64
                 lora_dropout = 0.05
                 target_modules = find_all_linear_names(model)
                 logger.info(f'Set Lora target module to {target_modules}, r to {lora_r}, lora_alpha to {lora_alpha}')
@@ -734,6 +742,8 @@ class ColBERT(Base):
 
 
 class LLMRanker(AutoModelForRanking):
+    """LLM Generative Reranker"""
+
     def __init__(
         self,
         task_prompt: Optional[str] = None,
@@ -743,7 +753,7 @@ class LLMRanker(AutoModelForRanking):
         document_instruction: Optional[str] = 'B: ',
         **kwargs,
     ):
-        super(LLMRanker, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         if task_prompt is None:
             task_prompt = (
                 """Given a query A and a passage B, determine whether the passage contains an answer to the query """

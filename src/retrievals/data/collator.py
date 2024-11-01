@@ -13,7 +13,7 @@ from transformers import (
 
 class AutoCollator(DataCollatorWithPadding):
     """Choose the collator based on data/task
-    TODO: combine pair, triplet, colbert into one
+    TODO: combine pair, triplet, colbert into one collator
     """
 
     def __init__(self):
@@ -30,9 +30,10 @@ class PairCollator(DataCollatorWithPadding):
         tokenizer: PreTrainedTokenizer,
         query_max_length: int = 32,
         document_max_length: int = 128,
-        append_eos_token: bool = False,
         query_key: str = 'query',
         document_key: str = 'positive',
+        append_eos_token: bool = False,
+        tokenize_args: Optional[Dict] = None,
     ) -> None:
         self.tokenizer = tokenizer
         if not hasattr(self.tokenizer, "pad_token_id") or self.tokenizer.pad_token is None:
@@ -176,9 +177,10 @@ class RerankCollator(DataCollatorWithPadding):
         self,
         tokenizer: PreTrainedTokenizer,
         max_length: int = 128,
-        append_eos_token: bool = False,
         query_key: str = 'query',
         document_key: str = 'document',
+        append_eos_token: bool = False,
+        tokenize_args: Optional[Dict] = None,
     ):
         self.tokenizer = tokenizer
         if not hasattr(self.tokenizer, "pad_token_id") or self.tokenizer.pad_token is None:
@@ -235,6 +237,7 @@ class ColBertCollator(DataCollatorWithPadding):
         query_key: str = 'query',
         positive_key: str = 'positive',
         negative_key: str = 'negative',
+        tokenize_args: Optional[Dict] = None,
     ) -> None:
         self.tokenizer = tokenizer
         if not hasattr(self.tokenizer, "pad_token_id") or self.tokenizer.pad_token is None:
@@ -319,6 +322,7 @@ class LLMRerankCollator(DataCollatorForSeq2Seq):
         add_target_token: str = '',
         sep_token: str = "\n",
         max_length: int = 128,
+        tokenize_args: Optional[Dict] = None,
         pad_to_multiple_of: Optional[int] = 8,
     ):
         self.tokenizer = tokenizer
@@ -333,6 +337,7 @@ class LLMRerankCollator(DataCollatorForSeq2Seq):
         examples = []
 
         if isinstance(features[0], dict):
+            """explode the {(query, positive, negatives)} to pair data"""
             for i in range(len(features)):
                 examples.append((features[i][self.query_key], features[i][self.positive_key]))
                 for neg in features[i][self.negative_key]:
@@ -340,6 +345,7 @@ class LLMRerankCollator(DataCollatorForSeq2Seq):
         else:
             examples = features
 
+        # TODO: double check the add_target_token, only yes now?
         batch = self.tokenizer(
             [self.bos_token + i[0] for i in examples],
             [self.sep_token + i[1] + self.sep_token + self.prompt + self.add_target_token for i in examples],

@@ -99,7 +99,7 @@ class RetrieverTrainingArguments(TrainingArguments):
     use_inbatch_negative: bool = field(default=True, metadata={"help": "use documents in the same batch as negatives"})
     remove_unused_columns: bool = field(default=False)
     use_lora: bool = field(default=False)
-    use_bnb_config: bool = field(default=False)
+    use_quantization_config: bool = field(default=False)
     do_encode: bool = field(default=False, metadata={"help": "run the encoding loop"})
     report_to: Optional[List[str]] = field(
         default="none", metadata={"help": "The list of integrations to report the results and logs to."}
@@ -149,7 +149,7 @@ def main():
         cache_dir=model_args.cache_dir,
         use_fast=False,
     )
-    if training_args.use_bnb_config:
+    if training_args.use_quantization_config:
         from transformers import BitsAndBytesConfig
 
         logger.info('Use quantization bnb config')

@@ -27,7 +27,7 @@ class RetrievalTrainer(Trainer):
     def training_step(self, *args):
         return super().training_step(*args) / self._dist_loss_scale_factor
 
-    def compute_loss(self, model, inputs, return_outputs=False):
+    def compute_loss(self, model, inputs, return_outputs=False, **kwargs):
         if self.train_type == 'pairwise':
             return self.compute_pair_loss(model=model, inputs=inputs, return_outputs=return_outputs)
 
@@ -98,7 +98,7 @@ class DistilTrainer(Trainer):
         self.teacher_model = teacher_model
         self._dist_loss_scale_factor = 1
 
-    def compute_loss(self, model, inputs, return_outputs=False):
+    def compute_loss(self, model, inputs, return_outputs=False, **kwargs):
         student_scores = model(inputs)
         with torch.no_grad():
             teacher_scores = self.teacher_model(inputs)

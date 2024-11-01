@@ -84,7 +84,7 @@ print(scores.tolist())
 ```
 </details>
 
-<details><summary> Index building for dense retrieval search </summary>
+<details><summary> Faiss retrieval search </summary>
 
 ```python
 from retrievals import AutoModelForEmbedding, AutoModelForRetrieval

@@ -1,3 +1,5 @@
+"""Text embedding model"""
+
 import copy
 import logging
 import os
@@ -81,7 +83,11 @@ class AutoModelForEmbedding(Base):
         self.document_instruction = document_instruction if document_instruction else ''
         self.use_fp16 = use_fp16
         self.device = device or get_device_name()
-        self.model.to(self.device)
+        try:
+            self.model.to(self.device)
+        except ValueError:
+            # `4-bit` or `8-bit` bitsandbytes models have already been set to the correct devices
+            pass
 
     def _init_weights(self, module: nn.Module):
         if isinstance(module, nn.Linear):
@@ -448,10 +454,13 @@ class AutoModelForEmbedding(Base):
         if not model_name_or_path or not isinstance(model_name_or_path, str):
             assert ValueError(f'Please input valid model_name_or_path, instead of {model_name_or_path}')
 
-        config = None
         if config_path:
             config = AutoConfig.from_pretrained(
                 config_path, output_hidden_states=True, trust_remote_code=trust_remote_code
+            )
+        else:
+            config = AutoConfig.from_pretrained(
+                model_name_or_path, output_hidden_states=True, trust_remote_code=trust_remote_code
             )
 
         if custom_config_dict:
@@ -460,6 +469,9 @@ class AutoModelForEmbedding(Base):
                     model_name_or_path, output_hidden_states=True, trust_remote_code=trust_remote_code
                 )
             config.update(custom_config_dict)
+
+        # if quantization_config is None and hasattr(config, 'quantization_config'):
+        #     quantization_config = config.quantization_config
 
         if check_causal_lm(model_name_or_path) and pooling_method != 'last':
             logger.warning('You are using a LLM model, while pooling_method is not last, is that right?')
@@ -479,8 +491,8 @@ class AutoModelForEmbedding(Base):
         if device is None:
             device = get_device_name()
 
-        if use_fp16 and device != 'cpu':
-            logger.info('Set model to fp16, please note that if you want fp16 during training, set training_args fp16')
+        if use_fp16 and device != 'cpu' and quantization_config is None and not hasattr(config, 'quantization_config'):
+            logger.info('Set model to fp16 in inference, if you want fp16 during training, training_args fp16=True')
             model.half()
 
         if mrl_dim > 0:
@@ -501,8 +513,8 @@ class AutoModelForEmbedding(Base):
             )
 
             if lora_config is None:
-                lora_r = 16
-                lora_alpha = 32
+                lora_r = 64
+                lora_alpha = 128
                 lora_dropout = 0.05
                 target_modules = find_all_linear_names(model)
                 logger.info(f'Set Lora target module to {target_modules}, r to {lora_r}, lora_alpha to {lora_alpha}')
@@ -625,9 +637,7 @@ class PairwiseModel(AutoModelForEmbedding):
             # if the example data pair/triplet is already concat into one group. The Sentence-transformer style
             ids = inputs['input_ids']
             mask = inputs['attention_mask']
-            transformer_out = super().forward_from_tensor(
-                {"input_ids": ids, "attention_mask": mask}, without_pooling=True
-            )
+            transformer_out = super().forward_from_tensor(input_ids=ids, attention_mask=mask, without_pooling=True)
             pooled_output = self.pooling(transformer_out[0], mask)
             # pooled_output1 = pooled_output[: len(ids1), :]
             # pooled_output2 = pooled_output[len(ids1):, :]
