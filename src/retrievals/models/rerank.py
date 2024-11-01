@@ -841,7 +841,14 @@ class LLMRanker(AutoModelForRanking):
         return all_scores
 
     def score(self, logits: torch.Tensor):
-        scores = logits[:, -1, self.target_token_loc]
+        scores = logits[:, -1, self.target_token_loc]  # for left_padding
+        # left_padding = (attention_mask[:, -1].sum() == attention_mask.shape[0])
+        # if left_padding:
+        #     return logits[:, -1, :]
+        # else:
+        #     sequence_lengths = attention_mask.sum(dim=1) - 1
+        #     batch_size = logits.shape[0]
+        #     return torch.stack([logits[i, sequence_lengths[i], :] for i in range(batch_size)], dim=0)
         return scores
 
 

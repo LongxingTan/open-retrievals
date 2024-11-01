@@ -98,7 +98,7 @@ class RetrievalTrainDataset(Dataset):
         self.negative_key = negative_key
         self.separator = separator
 
-        logger.info("Load original {} retrieval data.".format(len(dataset)))
+        logger.info(f"Load original {len(dataset)} retrieval data.")
 
         if self.unfold_each_positive:
             self.samples = self.generate_unfold_samples(dataset)
@@ -190,7 +190,6 @@ class RerankTrainDataset(Dataset):
         positive_key: Optional[str] = 'document',
         negative_key: Optional[str] = 'negative',
         args: Optional = None,
-        tokenizer: PreTrainedTokenizer = None,
         dataset_split: str = 'train',
     ):
         """
@@ -243,12 +242,12 @@ class RerankTrainDataset(Dataset):
         if self.negative_key in dataset[0]:
             dataset = dataset.filter(lambda x: len(x[self.negative_key]) > 0)
 
-        logger.info("Load original {} rerank data.".format(len(dataset)))
+        logger.info(f"Load original {len(dataset)} rerank data.")
         if positive_key:
             dataset = self.generate_samples(dataset)
 
         self.dataset = dataset
-        logger.info("Generate total {} rerank data.".format(len(self.dataset)))
+        logger.info(f"Generate total {len(self.dataset)} rerank data.")
 
     def __len__(self):
         return len(self.dataset)
