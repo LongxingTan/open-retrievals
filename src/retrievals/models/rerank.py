@@ -306,7 +306,7 @@ class AutoModelForRanking(Base):
             show_progress_bar=show_progress_bar,
         )
 
-        merge_scores = [0 for _ in range(len(documents))]
+        merge_scores = [0.0 for _ in range(len(documents))]
         for pid, score in zip(sentence_pairs_pids, tot_scores):
             merge_scores[pid] = max(merge_scores[pid], score)
 
