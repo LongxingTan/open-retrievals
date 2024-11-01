@@ -11,6 +11,7 @@ import torch
 import torch.nn as nn
 from tqdm.auto import tqdm, trange
 from transformers import (
+    AutoConfig,
     AutoModel,
     AutoModelForCausalLM,
     AutoModelForSequenceClassification,
@@ -353,6 +354,10 @@ class AutoModelForRanking(Base):
         temperature: Optional[float] = None,
         **kwargs,
     ):
+        config = AutoConfig.from_pretrained(
+            model_name_or_path, output_hidden_states=True, trust_remote_code=trust_remote_code
+        )
+
         tokenizer = AutoTokenizer.from_pretrained(
             model_name_or_path, return_tensors=False, trust_remote_code=trust_remote_code
         )
@@ -369,6 +374,7 @@ class AutoModelForRanking(Base):
             model = AutoModelForSequenceClassification.from_pretrained(
                 model_name_or_path,
                 num_labels=num_labels,
+                config=config,
                 trust_remote_code=trust_remote_code,
                 quantization_config=quantization_config,
                 **kwargs,
