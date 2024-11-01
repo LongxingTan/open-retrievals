@@ -165,7 +165,7 @@ class AutoModelForRanking(Base):
         scores = logits.view(-1, self.train_group_size)
 
         if return_dict:
-            outputs_dict = dict()
+            outputs_dict: Dict[str, Union[float, torch.Tensor]] = dict()
             outputs_dict['logits'] = logits
 
         if labels is not None:
@@ -228,7 +228,7 @@ class AutoModelForRanking(Base):
     @torch.no_grad()
     def compute_score(
         self,
-        sentence_pairs: Union[List[Tuple[str, str]], Tuple[str, str]],
+        sentence_pairs: Union[List[Tuple[str]], Tuple[str], List[str]],
         batch_size: int = 16,
         max_length: int = 512,
         normalize: bool = False,
@@ -377,7 +377,7 @@ class AutoModelForRanking(Base):
         if device is None:
             device = get_device_name()
 
-        if use_fp16 and device != 'cpu':
+        if use_fp16 and device != 'cpu' and quantization_config is None:
             logger.info('Set model to fp16, please note that if you want fp16 during training, set training_args fp16')
             model.half()
 
@@ -391,8 +391,8 @@ class AutoModelForRanking(Base):
             )
 
             if lora_config is None:
-                lora_r = 16
-                lora_alpha = 32
+                lora_r = 32
+                lora_alpha = 64
                 lora_dropout = 0.05
                 target_modules = find_all_linear_names(model)
                 logger.info(f'Set Lora target module to {target_modules}, r to {lora_r}, lora_alpha to {lora_alpha}')
