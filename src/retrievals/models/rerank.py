@@ -358,7 +358,10 @@ class AutoModelForRanking(Base):
         config = AutoConfig.from_pretrained(
             model_name_or_path, output_hidden_states=True, trust_remote_code=trust_remote_code
         )
-        # config.num_labels = num_labels
+        if getattr(config, "num_labels", None) is not None:
+            if num_labels != config.num_labels:
+                logger.info(f"Set num_labels to {config.num_labels} according to config")
+                num_labels = config.num_labels
 
         tokenizer = AutoTokenizer.from_pretrained(
             model_name_or_path, return_tensors=False, trust_remote_code=trust_remote_code
@@ -466,11 +469,11 @@ class AutoModelForRanking(Base):
         ):
             batch_sentences = sentences_sorted[batch_start : batch_start + batch_size]
             batch_on_device = self.preprocess_pair(batch_sentences, max_length=max_length, pairs=False)
-            scores = self.model(**batch_on_device, return_dict=True).logits
+            scores = self.model(**batch_on_device, return_dict=True).logits[:, 1]
 
             if normalize:
                 scores = torch.sigmoid(scores)
-            all_scores.append(scores.cpu().float().tolist())
+            all_scores.extend(scores.cpu().float().tolist())
 
         all_scores = [all_scores[idx] for idx in np.argsort(length_sorted_idx)]
         return all_scores
