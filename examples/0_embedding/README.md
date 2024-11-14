@@ -1,3 +1,5 @@
+from Cython.Compiler.Options import embed
+
 # Text embedding model
 
 | Model                  | Original | Finetuned |
@@ -10,7 +12,7 @@
 - MAP in t2 ranking data
 
 
-## Fine-tune
+## 1. Fine-tune
 
 **Data Format**
 
@@ -34,12 +36,12 @@
 
 Train directly using shell script, refer to the [document](https://open-retrievals.readthedocs.io/en/master/embed.html)
 
-## Transformer encoder embedding
+### Transformer encoder embedding
 
 Refer to [the fine-tuning code](./train_pairwise.py) to train the model like
 
 
-## LLM embedding
+### LLM embedding
 
 Refer to [the fine-tuning code](./train_llm.py), to train the model like
 
@@ -66,9 +68,14 @@ model = AutoModelForEmbedding.from_pretrained(
 )
 ```
 
-## Deployment
+## 2. Deployment
+speed: `Nvidia TensorRT + Nvidia Triton inference server` > `Microsoft ONNX Runtime + Nvidia Triton inference server` > `Pytorch + FastAPI`
 
 **Prerequisites**
 ```shell
 pip install optimum
+```
+
+```shell
+python embed2onnx.py --model_name all-MiniLM-L6-v2 --output_path ./onnx_model
 ```
