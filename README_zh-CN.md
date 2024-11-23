@@ -29,7 +29,7 @@
 [![Code Coverage][coverage-image]][coverage-url]
 [![Contributing][contributing-image]][contributing-url]
 
-**[中文wiki](https://github.com/LongxingTan/open-retrievals/wiki)** | **[英文文档](https://open-retrievals.readthedocs.io/en/master/)**
+**[中文wiki](https://github.com/LongxingTan/open-retrievals/wiki)** | **[英文文档](https://open-retrievals.readthedocs.io/en/master/)** | **[日本语](https://github.com/LongxingTan/open-retrievals/blob/master/README_ja-JP.md)**
 </div>
 
 ![structure](./docs/source/_static/structure.png)
