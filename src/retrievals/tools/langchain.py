@@ -45,11 +45,12 @@ class LangchainEmbedding(AutoModelForEmbedding, Embeddings):
     model_kwargs: Dict[str, Any] = dict()
     encode_kwargs: Dict[str, Any] = dict()
 
-    def __init__(self, model_name, model_kwargs={}):
+    def __init__(self, model_name, model_kwargs=None):
         Embeddings.__init__(self)
-        self.model_kwargs = model_kwargs
+        if not model_kwargs:
+            self.model_kwargs = dict()
 
-        model = AutoModelForEmbedding.from_pretrained(model_name_or_path=model_name, **model_kwargs)
+        model = AutoModelForEmbedding.from_pretrained(model_name_or_path=model_name, **self.model_kwargs)
         for key, value in model.__dict__.items():
             self.__dict__[key] = value
 

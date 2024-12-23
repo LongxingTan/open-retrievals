@@ -360,7 +360,7 @@ class AutoModelForRanking(Base):
         )
         if getattr(config, "num_labels", None) is not None:
             if num_labels != config.num_labels:
-                logger.info(f"Set num_labels to {config.num_labels} according to config")
+                logger.info(f"Set num_labels to {config.num_labels} according to config, ignore {num_labels}")
                 num_labels = config.num_labels
 
         tokenizer = AutoTokenizer.from_pretrained(
@@ -449,7 +449,7 @@ class AutoModelForRanking(Base):
         return reranker
 
     @torch.no_grad()
-    @torch.cuda.amp.autocast()
+    @torch.amp.autocast('cuda')
     def predict(
         self,
         sentences: Union[Tuple[str], List[str]],
