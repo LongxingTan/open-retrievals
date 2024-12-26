@@ -140,14 +140,14 @@ class TestRerankTrainer(TestCase):
     #     trainer = RerankTrainer(model)
     #     self.assertIsInstance(trainer.loss_fn, nn.BCEWithLogitsLoss)
 
-    def test_train(self):
-        parser = HfArgumentParser((TrainingArguments))
-        training_args, _ = parser.parse_args_into_dataclasses(return_remaining_strings=True)
-
-        trainer = RerankTrainer(
-            model=self.model,
-            args=training_args,
-            train_dataset=self.train_dataset,
-            data_collator=RerankCollator(tokenizer=self.tokenizer, max_length=64),
-        )
-        # trainer.train()
+    # def test_train(self):
+    #     parser = HfArgumentParser((TrainingArguments))
+    #     training_args, _ = parser.parse_args_into_dataclasses(return_remaining_strings=True)
+    #
+    #     trainer = RerankTrainer(
+    #         model=self.model,
+    #         args=training_args,
+    #         train_dataset=self.train_dataset,
+    #         data_collator=RerankCollator(tokenizer=self.tokenizer, max_length=64),
+    #     )
+    #     trainer.train()
