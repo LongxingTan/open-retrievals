@@ -171,7 +171,7 @@ class AWP:
         self._save()
         for i in range(self.adv_step):
             self._attack_step()
-            with torch.cuda.amp.autocast():
+            with torch.amp.autocast('cuda'):
                 y_preds = self.model(inputs)
                 adv_loss = criterion(y_preds.view(-1, 1), labels.view(-1, 1))
                 # adv_loss, logits = self.model(input_ids=x, attention_mask=attention_mask, labels=y)
