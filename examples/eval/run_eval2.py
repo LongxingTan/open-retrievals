@@ -14,6 +14,7 @@ from retrievals import (
     RetrievalTrainer,
     TripletCollator,
 )
+
 logger = logging.getLogger(__name__)
 
 logging.basicConfig(
