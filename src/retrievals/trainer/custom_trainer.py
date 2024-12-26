@@ -70,7 +70,7 @@ def train_fn(
         labels = labels.to(device)
 
         batch_size = labels.size(0)
-        with torch.cuda.amp.autocast(enabled=apex):
+        with torch.amp.autocast('cuda', enabled=apex):
             if criterion is None:
                 try:
                     preds = model(inputs, labels=labels)
@@ -122,7 +122,7 @@ def train_fn(
         if fgm:
             # attach the embedding
             fgm.attack(epsilon=1.0)
-            with torch.cuda.amp.autocast(enabled=apex):
+            with torch.amp.autocast('cuda', enabled=apex):
                 preds = model(inputs)
                 if isinstance(preds, dict) and "loss" in preds:
                     loss_avg = preds["loss"]
@@ -215,7 +215,7 @@ def valid_fn(
         labels = labels.to(device)
 
         batch_size = labels.size(0)
-        with torch.cuda.amp.autocast(enabled=apex):
+        with torch.amp.autocast('cuda', enabled=apex):
             try:
                 preds = model(inputs, labels=labels)
             except ValueError:

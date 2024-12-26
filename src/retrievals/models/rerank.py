@@ -11,6 +11,7 @@ import torch
 import torch.nn as nn
 from tqdm.auto import tqdm, trange
 from transformers import (
+    AutoConfig,
     AutoModel,
     AutoModelForCausalLM,
     AutoModelForSequenceClassification,
@@ -205,8 +206,11 @@ class AutoModelForRanking(Base):
         batch_sentence_pair: List[List[str]],
         max_length: int,
         padding: Union[str, bool] = 'max_length',
+        pairs: bool = True,
     ):
-        if isinstance(batch_sentence_pair[0][0], str):
+        if (pairs and isinstance(batch_sentence_pair[0][0], str)) or (
+            not pairs and isinstance(batch_sentence_pair[0], str)
+        ):
             batch = self.tokenizer(
                 batch_sentence_pair,
                 padding=True,
@@ -251,12 +255,13 @@ class AutoModelForRanking(Base):
         ):
             batch_sentences = sentences_sorted[batch_start : batch_start + batch_size]
             batch_on_device = self.preprocess_pair(batch_sentences, max_length=max_length)
-            scores = self.model(**batch_on_device, return_dict=True).logits.view(-1).float()
+            scores = self.model(**batch_on_device, return_dict=True).logits.view(-1)
 
             if normalize:
                 scores = torch.sigmoid(scores)
             all_scores.extend(scores.cpu().float().tolist())
 
+        # only works for two class comparison
         all_scores = [all_scores[idx] for idx in np.argsort(length_sorted_idx)]
 
         if len(all_scores) == 1:
@@ -342,7 +347,7 @@ class AutoModelForRanking(Base):
         use_qlora: bool = False,
         lora_config=None,
         lora_path: Optional[str] = None,
-        quantization_config=None,
+        # quantization_config=None,
         task_prompt: Optional[str] = None,
         query_instruction: Optional[str] = None,
         document_instruction: Optional[str] = None,
@@ -350,6 +355,14 @@ class AutoModelForRanking(Base):
         temperature: Optional[float] = None,
         **kwargs,
     ):
+        config = AutoConfig.from_pretrained(
+            model_name_or_path, output_hidden_states=True, trust_remote_code=trust_remote_code
+        )
+        if getattr(config, "num_labels", None) is not None:
+            if num_labels != config.num_labels:
+                logger.info(f"Set num_labels to {config.num_labels} according to config, ignore {num_labels}")
+                num_labels = config.num_labels
+
         tokenizer = AutoTokenizer.from_pretrained(
             model_name_or_path, return_tensors=False, trust_remote_code=trust_remote_code
         )
@@ -357,7 +370,10 @@ class AutoModelForRanking(Base):
         if generative_llm_reranking:
             logger.info("Set model to AutoModelForCausalLM, LLM generative reranking")
             model = AutoModelForCausalLM.from_pretrained(
-                model_name_or_path, quantization_config=quantization_config, trust_remote_code=trust_remote_code
+                model_name_or_path,
+                # quantization_config=quantization_config,
+                trust_remote_code=trust_remote_code,
+                **kwargs,
             )
             query_instruction = 'A: '
             document_instruction = 'B: '
@@ -366,8 +382,9 @@ class AutoModelForRanking(Base):
             model = AutoModelForSequenceClassification.from_pretrained(
                 model_name_or_path,
                 num_labels=num_labels,
+                # config=config,
                 trust_remote_code=trust_remote_code,
-                quantization_config=quantization_config,
+                # quantization_config=quantization_config,
                 **kwargs,
             )
             if causal_lm or check_causal_lm(model_name_or_path):
@@ -377,7 +394,7 @@ class AutoModelForRanking(Base):
         if device is None:
             device = get_device_name()
 
-        if use_fp16 and device != 'cpu' and quantization_config is None:
+        if use_fp16 and device != 'cpu' and not hasattr(config, 'quantization_config'):
             logger.info('Set model to fp16, please note that if you want fp16 during training, set training_args fp16')
             model.half()
 
@@ -430,6 +447,36 @@ class AutoModelForRanking(Base):
             document_instruction=document_instruction,
         )
         return reranker
+
+    @torch.no_grad()
+    @torch.amp.autocast('cuda')
+    def predict(
+        self,
+        sentences: Union[Tuple[str], List[str]],
+        batch_size: int = 16,
+        max_length: int = 512,
+        show_progress_bar: bool = None,
+        normalize: bool = False,
+    ):
+        self.model.eval()
+
+        length_sorted_idx = np.argsort([-self._text_length(p) for p in sentences])
+        sentences_sorted = [sentences[idx] for idx in length_sorted_idx]
+
+        all_scores: List[List[float]] = []
+        for batch_start in tqdm(
+            range(0, len(sentences_sorted), batch_size), desc='Scoring', disable=not show_progress_bar
+        ):
+            batch_sentences = sentences_sorted[batch_start : batch_start + batch_size]
+            batch_on_device = self.preprocess_pair(batch_sentences, max_length=max_length, pairs=False)
+            scores = self.model(**batch_on_device, return_dict=True).logits[:, 1]
+
+            if normalize:
+                scores = torch.sigmoid(scores)
+            all_scores.extend(scores.cpu().float().tolist())
+
+        all_scores = [all_scores[idx] for idx in np.argsort(length_sorted_idx)]
+        return all_scores
 
 
 class ColBERT(Base):
@@ -841,7 +888,14 @@ class LLMRanker(AutoModelForRanking):
         return all_scores
 
     def score(self, logits: torch.Tensor):
-        scores = logits[:, -1, self.target_token_loc]
+        scores = logits[:, -1, self.target_token_loc]  # for left_padding
+        # left_padding = (attention_mask[:, -1].sum() == attention_mask.shape[0])
+        # if left_padding:
+        #     return logits[:, -1, :]
+        # else:
+        #     sequence_lengths = attention_mask.sum(dim=1) - 1
+        #     batch_size = logits.shape[0]
+        #     return torch.stack([logits[i, sequence_lengths[i], :] for i in range(batch_size)], dim=0)
         return scores
 
 

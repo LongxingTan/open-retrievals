@@ -29,7 +29,7 @@
 [![Code Coverage][coverage-image]][coverage-url]
 [![Contributing][contributing-image]][contributing-url]
 
-**[中文wiki](https://github.com/LongxingTan/open-retrievals/wiki)** | **[英文文档](https://open-retrievals.readthedocs.io/en/master/)**
+**[中文wiki](https://github.com/LongxingTan/open-retrievals/wiki)** | **[英文文档](https://open-retrievals.readthedocs.io/en/master/)** | **[日本语](https://github.com/LongxingTan/open-retrievals/blob/master/README_ja-JP.md)**
 </div>
 
 ![structure](./docs/source/_static/structure.png)
@@ -240,7 +240,6 @@ trainer.optimizer = optimizer
 trainer.scheduler = scheduler
 trainer.train()
 ```
-
 </details>
 
 <details><summary> 微调LLM向量模型 </summary>
@@ -292,7 +291,6 @@ trainer.optimizer = optimizer
 trainer.scheduler = scheduler
 trainer.train()
 ```
-
 </details>
 
 <details><summary> 微调Cross-encoder重排 </summary>
@@ -342,7 +340,6 @@ trainer.optimizer = optimizer
 trainer.scheduler = scheduler
 trainer.train()
 ```
-
 </details>
 
 <details><summary> 微调ColBERT重排 </summary>
@@ -408,7 +405,6 @@ trainer.optimizer = optimizer
 trainer.scheduler = scheduler
 trainer.train()
 ```
-
 </details>
 
 <details><summary> 微调大模型重排 </summary>
@@ -487,8 +483,11 @@ trainer.optimizer = optimizer
 trainer.scheduler = scheduler
 trainer.train()
 ```
-
 </details>
+
+
+## RAG 模块
+coming soon
 
 
 ## 参考与致谢

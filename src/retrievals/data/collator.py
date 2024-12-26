@@ -191,7 +191,11 @@ class RerankCollator(DataCollatorWithPadding):
         self.document_key = document_key
 
     def __call__(self, features: Union[List[Dict[str, Any]], List]) -> BatchEncoding:
-        assert len(features) > 0
+        assert len(features) > 0, "Make sure the collator is not empty"
+
+        if isinstance(features[0], list):
+            features = sum(features, [])
+
         if isinstance(features[0], dict):
             assert (
                 self.query_key in features[0] and self.document_key in features[0]

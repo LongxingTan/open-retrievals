@@ -467,6 +467,10 @@ trainer.train()
 </details>
 
 
+## RAG module
+coming soon
+
+
 ## Reference & Acknowledge
 - [UKPLab/sentence-transformers](https://github.com/UKPLab/sentence-transformers)
 - [luyug/Dense](https://github.com/luyug/Dense)
