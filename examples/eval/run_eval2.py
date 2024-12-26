@@ -1,3 +1,4 @@
+import logging
 import shutil
 
 from C_MTEB.tasks import AbsTaskReranking, ChineseRerankingEvaluator
@@ -12,6 +13,13 @@ from retrievals import (
     PairCollator,
     RetrievalTrainer,
     TripletCollator,
+)
+logger = logging.getLogger(__name__)
+
+logging.basicConfig(
+    format="%(asctime)s - %(levelname)s - %(name)s -   %(message)s",
+    datefmt="%m/%d/%Y %H:%M:%S",
+    level=logging.INFO,
 )
 
 model_name_or_path = 'BAAI/bge-reranker-v2-gemma'
