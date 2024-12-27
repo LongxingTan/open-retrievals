@@ -3,6 +3,8 @@
 from abc import ABC, abstractmethod
 from typing import Generic, List, Optional, Protocol, TypeVar
 
+from langchain_community.llms.openai import OpenAI
+
 
 class BaseLLM(ABC):
     """Base class for LLM chat"""
@@ -32,26 +34,24 @@ class BaseLLMCallback:
 class OpenAILLM(BaseLLM):
     """Concrete implementation of BaseLLM using OpenAI API"""
 
-    def __init__(self, api_key: str, model: str = "gpt-3.5-turbo"):
-        import openai
+    def __init__(self, api_key: str, base_url, model):
+        from openai import OpenAI
 
-        openai.api_key = api_key
+        self.client = OpenAI(api_key=api_key, base_url=base_url)
         self.model = model
 
-    def generate(self, prompt: str, max_length: int) -> str:
+    def generate(self, prompt, max_length: int = 1024) -> str:
         """Generate LLM response using OpenAI API (synchronous)"""
-        import openai
 
         try:
-            response = openai.Completion.create(model=self.model, prompt=prompt, max_tokens=max_length)
-            return response['choices'][0]['text'].strip()
+            response = self.client.chat.completions.create(model=self.model, messages=prompt, max_tokens=max_length)
+            return response.choices[0].message.content
         except Exception as e:
             print(f"Error during generation: {e}")
             return ""
 
-    async def agenerate(self, prompt: str, max_length: int) -> str:
+    async def agenerate(self, prompt, max_length: int = 1024) -> str:
         """Generate LLM response using OpenAI API (asynchronous)"""
-        # OpenAI API does not provide direct async support, but we can use `openai` in an async manner.
         import asyncio
 
         loop = asyncio.get_event_loop()
@@ -70,7 +70,7 @@ class HfLocalLLM(BaseLLM):
         self.device = torch.device(device)
         self.model.to(self.device)
 
-    def generate(self, prompt: str, max_length: int) -> str:
+    def generate(self, prompt: str, max_length: int = 1024, **kwargs) -> str:
         """Generate LLM response using a local model (synchronous)"""
         inputs = self.tokenizer(prompt, return_tensors="pt").to(self.device)
         outputs = self.model.generate(
@@ -82,7 +82,7 @@ class HfLocalLLM(BaseLLM):
         result = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
         return result.strip()
 
-    async def agenerate(self, prompt: str, max_length: int) -> str:
+    async def agenerate(self, prompt: str, max_length: int = 1024, **kwargs) -> str:
         """Generate LLM response using a local model (asynchronous)"""
         import asyncio
 

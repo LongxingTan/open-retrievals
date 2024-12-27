@@ -383,7 +383,7 @@ class BM25Retrieval(BaseRetriever):
         # add the documents first, then search by query
         self.bm25 = BM25Okapi(documents)
 
-    def search(self, query: str, top_k: int, batch_size: int = -1) -> List[Tuple[List[str], float]]:
+    def search(self, query: str, top_k: int = -1, batch_size: int = -1) -> List[Tuple[List[str], float]]:
         if self.tokenizer:
             query = self.tokenizer(query)
         else:
@@ -400,6 +400,10 @@ class BM25Retrieval(BaseRetriever):
                     line = line.strip()
                     stop_words.append(line)
         return stop_words
+
+    @classmethod
+    def from_documents(cls):
+        return
 
 
 class ElasticRetriever(BaseRetriever):
