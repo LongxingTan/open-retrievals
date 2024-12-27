@@ -5,6 +5,7 @@ import logging
 import os.path
 import time
 from abc import ABC, abstractmethod
+from collections import defaultdict
 from typing import Any, Dict, Iterable, List, Literal, Optional, Tuple, Union
 
 import numpy as np
@@ -406,31 +407,69 @@ class ElasticRetriever(BaseRetriever):
     Elastic Search
     """
 
-    def __init__(self):
+    def __init__(self, es_host="localhost:9200", index_name="documents"):
         super(ElasticRetriever, self).__init__()
         from elasticsearch import Elasticsearch
 
-        self.es = Elasticsearch()
+        self.es = Elasticsearch([es_host])
+        self.index_name = index_name
+
+        if not self.es.indices.exists(index=self.index_name):
+            self.es.indices.create(index=self.index_name, ignore=400)
+
+    def ingest(self, document: dict):
+        self.es.index(index=self.index_name, document=document)
+
+    def search(self, query: str, top_k: int, batch_size: int = -1) -> List[Tuple[str, float]]:
+        """
+        Search the Elasticsearch index using a query string and return the top-k documents.
+        """
+        body = {"query": {"match": {"content": query}}, "_source": ["content"], "size": top_k}
+        response = self.es.search(index=self.index_name, body=body)
+        results = [(hit["_source"]["content"], hit["_score"]) for hit in response["hits"]["hits"]]
+        return results
+
+    def similarity_search_by_vector(self, query_embedding: List[float], k: int = 10, **kwargs: Any):
+        body = {"query": {"knn": {"embedding": {"vector": query_embedding, "k": k}}}}
+        response = self.es.search(index=self.index_name, body=body)
+        results = [(hit["_source"]["content"], hit["_score"]) for hit in response["hits"]["hits"]]
+        return results
+
+    def similarity_search_by_text(self, text: str, text_embedder, k: int = 10, **kwargs: Any):
+        # Generate embedding using the provided text_embedder (e.g., Sentence-BERT or any other model)
+        query_embedding = text_embedder.encode([text])[0]  # Assuming text_embedder is a sentence transformer or similar
+        return self.similarity_search_by_vector(query_embedding, k, **kwargs)
 
 
 class EnsembleRetriever(BaseRetriever):
     """
-    RRF fusion: Reciprocal Rank Fusion
+    Ensemble retrieval with Reciprocal Rank Fusion (RRF)
     """
 
-    def __init__(self, retrievers: List[BaseRetriever], weights=None):
+    def __init__(self, retrievers: List[BaseRetriever], weights=None, k_rrf: int = 60):
+        """
+        :param retrievers: List of retrievers to ensemble.
+        :param weights: List of weights for each retriever. If None, all retrievers are equally weighted.
+        :param k_rrf: The maximum rank to be considered for Reciprocal Rank Fusion.
+        """
         self.retrievers = retrievers
-        self.weights = weights
+        self.weights = weights if weights else [1.0] * len(retrievers)
+        self.k_rrf = k_rrf
 
     def search(self, query: str, top_k: int = 10, batch_size: int = -1) -> List[str]:
-        combined_results = []
-        for retriever in self.retrievers:
-            combined_results.extend(retriever.search(query, top_k))
 
-        unique_results = list(set(combined_results))
-        unique_results.sort()
+        document_scores = defaultdict(float)
 
-        return unique_results[:top_k]
+        for idx, retriever in enumerate(self.retrievers):
+            results = retriever.search(query, top_k)
+            for rank, (doc, score) in enumerate(results):
+                rank_position = rank + 1
+                rrf_score = 1 / (self.k_rrf + rank_position)
+                document_scores[doc] += self.weights[idx] * rrf_score
+
+        sorted_docs = sorted(document_scores.items(), key=lambda x: x[1], reverse=True)
+
+        return [doc for doc, _ in sorted_docs[:top_k]]
 
 
 class GraphRetrieval(BaseRetriever):
