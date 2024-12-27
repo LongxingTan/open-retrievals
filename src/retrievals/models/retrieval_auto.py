@@ -43,6 +43,14 @@ class AutoModelForRetrieval(object):
         reranker_model: Optional[nn.Module] = None,
         method: Literal['cosine', 'knn', 'llm'] = "cosine",
     ) -> None:
+        """
+        Initialize the retrieval model with embedding and reranker models.
+
+        Parameters:
+            embedding_model (nn.Module, optional): The embedding model.
+            reranker_model (nn.Module, optional): The reranker model.
+            method (Literal['cosine', 'knn', 'llm']): The retrieval method to use.
+        """
         super().__init__()
         self.embedding_model = embedding_model
         self.reranker_model = reranker_model
@@ -268,11 +276,16 @@ def cosine_similarity_search(
 
 
 class FaissRetrieval(BaseRetriever):
-    def __init__(self, corpus_index: Union[np.ndarray, torch.Tensor]):
+    def __init__(self, corpus_index: Union[np.ndarray, torch.Tensor], index_type='flat'):
         import faiss
 
+        self.index_type = index_type
         if isinstance(corpus_index, (np.ndarray, torch.Tensor)):
-            index = faiss.IndexFlatIP(corpus_index.shape[1])
+            index = (
+                faiss.IndexFlatIP(corpus_index.shape[1])
+                if index_type == 'flat'
+                else faiss.IndexIVFFlat(corpus_index.shape[1], 256)
+            )
             self.index = index
         else:
             self.index = corpus_index
@@ -372,6 +385,8 @@ class BM25Retrieval(BaseRetriever):
     def search(self, query: str, top_k: int, batch_size: int = -1) -> List[Tuple[List[str], float]]:
         if self.tokenizer:
             query = self.tokenizer(query)
+        else:
+            query = query.split()
         scores = self.bm25.get_scores(query)
         sorted_docs = sorted(zip(self.documents, scores), key=lambda x: x[1], reverse=True)[:top_k]
         return sorted_docs

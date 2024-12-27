@@ -8,7 +8,7 @@ pip install open-retrievals[eval]
 
 **Eval**
 ```shell
-python run_eval.py  --model_name stella-base-zh  --output_dir ./zh_results/stella-base
+python eval_retrieval.py  --model_name stella-base-zh  --output_dir ./zh_results/stella-base
 ```
 
 

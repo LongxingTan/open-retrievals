@@ -303,7 +303,7 @@ class AutoModelForRanking(Base):
             tokenizer=self.tokenizer,
         )
 
-        tot_scores = self.compute_score(
+        scores = self.compute_score(
             sentence_pairs=text_pairs,
             data_collator=data_collator,
             batch_size=batch_size,
@@ -312,24 +312,21 @@ class AutoModelForRanking(Base):
         )
 
         merge_scores = [0.0 for _ in range(len(documents))]
-        for pid, score in zip(sentence_pairs_pids, tot_scores):
+        for pid, score in zip(sentence_pairs_pids, scores):
             merge_scores[pid] = max(merge_scores[pid], score)
 
         merge_scores_argsort = np.argsort(merge_scores)[::-1]
-        sorted_document = []
-        sorted_scores = []
-        for mid in merge_scores_argsort:
-            sorted_scores.append(merge_scores[mid])
-            sorted_document.append(documents[mid])
+        sorted_documents = [documents[i] for i in merge_scores_argsort]
+        sorted_scores = [merge_scores[i] for i in merge_scores_argsort]
 
         if return_dict:
             return {
-                'rerank_document': sorted_document,
+                'rerank_document': sorted_documents,
                 'rerank_scores': sorted_scores,
                 'rerank_ids': merge_scores_argsort.tolist(),
             }
         else:
-            return sorted_document
+            return sorted_documents
 
     @classmethod
     def from_pretrained(
