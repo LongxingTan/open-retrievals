@@ -62,7 +62,8 @@ Open-retrievals support to fine-tune the embedding model, reranking model, llm e
 * `LLM reranking fine-tuning <https://github.com/LongxingTan/open-retrievals/blob/master/examples/rerank_llm_finetune.py>`_
 
 
-More datasets examples
+Use cases
+------------------
 
 * `T2 ranking dataset <https://github.com/LongxingTan/open-retrievals/tree/master/examples/t2_ranking>`_
 * `scifact dataset <https://github.com/LongxingTan/open-retrievals/tree/master/examples/scifact>`_

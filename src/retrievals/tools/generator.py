@@ -40,22 +40,22 @@ class OpenAILLM(BaseLLM):
         self.client = OpenAI(api_key=api_key, base_url=base_url)
         self.model = model
 
-    def generate(self, prompt, max_length: int = 1024) -> str:
+    def generate(self, prompt, max_tokens: int = 1024) -> str:
         """Generate LLM response using OpenAI API (synchronous)"""
 
         try:
-            response = self.client.chat.completions.create(model=self.model, messages=prompt, max_tokens=max_length)
+            response = self.client.chat.completions.create(model=self.model, messages=prompt, max_tokens=max_tokens)
             return response.choices[0].message.content
         except Exception as e:
             print(f"Error during generation: {e}")
             return ""
 
-    async def agenerate(self, prompt, max_length: int = 1024) -> str:
+    async def agenerate(self, prompt, max_tokens: int = 1024) -> str:
         """Generate LLM response using OpenAI API (asynchronous)"""
         import asyncio
 
         loop = asyncio.get_event_loop()
-        return await loop.run_in_executor(None, self.generate, prompt, max_length)
+        return await loop.run_in_executor(None, self.generate, prompt, max_tokens)
 
 
 class HfLocalLLM(BaseLLM):
