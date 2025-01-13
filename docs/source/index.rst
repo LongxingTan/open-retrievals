@@ -83,7 +83,7 @@ If you want to contribute to the project, please refer to our `contribution guid
    :caption: Contents:
 
    quick-start
-   embed.rst
-   retrieval.rst
-   rerank.rst
-   rag.rst
+   embed
+   retrieval
+   rerank
+   rag

@@ -42,7 +42,7 @@ Embedding from the pretrained model
     Use the write pooling_method while calling, add the query_instruction if it's not embedding into the data already.
 
 
-Fine-tune embedding
+1.1 Fine-tune embedding
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 To further improve the retrieval performance, we can fine tune the embedding model. It can project the vector of query and answer to similar representation space to get better retrieval performance.
@@ -91,6 +91,9 @@ It's also easy to use multiple gpus for transformers `Trainer`.
 
     `transformer trainer docs <https://huggingface.co/docs/transformers/main_classes/trainer>`_
 
+1.2 Serving embedding
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 
 2. Indexing
 -----------------------------
@@ -136,7 +139,7 @@ If we have multiple retrieval source or a better sequence, we can add the rerank
     [-5.075257778167725, -10.194067001342773]
 
 
-Fine-tune reranking
+3.1 Fine-tune reranking
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Similarly, fine tune the reranking model to get a better performance for the specific task.
