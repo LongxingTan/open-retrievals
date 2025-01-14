@@ -11,165 +11,54 @@ from transformers import (
 )
 
 
-class AutoCollator(DataCollatorWithPadding):
-    """Choose the collator based on data/task
-    TODO: combine pair, triplet, colbert into one collator
-    """
+class RetrievalCollator(DataCollatorWithPadding):
+    """Choose the collator based on data/task, support both pair and triplet"""
 
-    def __init__(self):
-        pass
-
-
-class PairCollator(DataCollatorWithPadding):
-    """
-    Given the list[dict[pair]], output the dict[batch pair]
-    """
-
-    def __init__(
-        self,
-        tokenizer: PreTrainedTokenizer,
-        query_max_length: int = 32,
-        document_max_length: int = 128,
-        query_key: str = 'query',
-        document_key: str = 'positive',
-        append_eos_token: bool = False,
-        tokenize_args: Optional[Dict] = None,
-    ) -> None:
+    def __init__(self, tokenizer: PreTrainedTokenizer, max_lengths: List[int], keys: Optional[List[str]] = None):
         self.tokenizer = tokenizer
         if not hasattr(self.tokenizer, "pad_token_id") or self.tokenizer.pad_token is None:
             self.tokenizer.add_special_tokens({"pad_token": "[PAD]"})
 
-        self.query_max_length = query_max_length
-        self.document_max_length = document_max_length
-        self.query_key = query_key
-        self.document_key = document_key
+        self.keys = keys
+        self.max_lengths = max_lengths
 
     def __call__(self, features: List[Dict[str, Any]]) -> Dict[str, Any]:
-        # TODO: tokenizer.apply_chat_template(chat, tokenize=False)
-        assert len(features) > 0
-        if isinstance(features[0], dict):
-            assert (
-                self.query_key in features[0] and self.document_key in features[0]
-            ), f"PairCollator should have {self.query_key} and {self.document_key} in features, while get {features[0]}"
+        assert len(features) > 0, "Collator input should not be empty"
+        if self.keys is None:
+            if isinstance(features[0], dict):
+                self.keys = features[0].keys()
+            else:
+                raise TypeError('Please provide the dict type for each example')
 
-            query_texts = [feature[self.query_key] for feature in features]
-            document_texts = [feature[self.document_key] for feature in features]
-        elif isinstance(features[0], (list, tuple)):
-            query_texts = [f[0] for f in features]
-            document_texts = [f[1] for f in features]
-        else:
-            raise ValueError
+        if len(self.keys) != len(self.max_lengths):
+            raise ValueError(
+                f'Length of keys and max_lengths should be same, while get {len(self.keys)} and {len(self.max_lengths)}'
+            )
 
-        if isinstance(query_texts[0], list):
-            query_texts = sum(query_texts, [])
-        if isinstance(document_texts[0], list):
-            document_texts = sum(document_texts, [])  # flatten nested list
+        texts = {key: [] for key in self.keys}
+        for feature in features:
+            for key in self.keys:
+                if key in feature:
+                    texts[key].append(feature[key])
 
-        if isinstance(query_texts[0], str):
-            tokenize_fn = self.tokenizer
-            tokenize_args = {
-                "truncation": True,
-            }
-        else:
-            tokenize_fn = self.tokenizer.pad
-            tokenize_args = {
-                "pad_to_multiple_of": None,
-            }
+        tokenize_fn = self.tokenizer
+        result = {}
+        for i, key in enumerate(self.keys):
+            result[key] = self._flatten_and_tokenize(texts[key], self.max_lengths[i], tokenize_fn)
 
-        query_inputs = tokenize_fn(
-            query_texts, padding="max_length", max_length=self.query_max_length, return_tensors="pt", **tokenize_args
-        )
-        document_inputs = tokenize_fn(
-            document_texts,
-            padding="max_length",
-            max_length=self.document_max_length,
-            return_tensors="pt",
-            **tokenize_args,
-        )
+        return result
 
-        return {self.query_key: query_inputs, self.document_key: document_inputs}
+    def _flatten_and_tokenize(self, texts: List[Any], max_length: int, tokenize_fn) -> Dict[str, Any]:
+        if isinstance(texts[0], list):
+            texts = sum(texts, [])  # Flatten nested lists
 
-
-class TripletCollator(DataCollatorWithPadding):
-    """
-    Given the list[dict], output the dict[key, batch], the length of output batch is not necessary equal for listwise
-    """
-
-    def __init__(
-        self,
-        tokenizer: PreTrainedTokenizer,
-        query_max_length: int = 32,
-        document_max_length: int = 128,
-        append_eos_token: bool = False,
-        query_key: str = 'query',
-        positive_key: str = 'positive',
-        negative_key: Optional[str] = 'negative',
-    ) -> None:
-        self.tokenizer = tokenizer
-        if not hasattr(self.tokenizer, "pad_token_id") or self.tokenizer.pad_token is None:
-            self.tokenizer.add_special_tokens({"pad_token": "[PAD]"})
-
-        self.query_max_length = query_max_length
-        self.document_max_length = document_max_length
-
-        self.query_key = query_key
-        self.positive_key = positive_key
-        self.negative_key = negative_key
-
-    def __call__(self, features: List[Dict[str, Any]]) -> Dict[str, Any]:
-        assert len(features) > 0
-        if isinstance(features[0], dict):
-            assert (
-                self.positive_key in features[0]
-                and self.positive_key in features[0]
-                and self.negative_key in features[0]
-            ), f"TripletCollator should have {self.query_key}, {self.positive_key} and {self.negative_key} in dict key"
-
-            query_texts = [feature[self.query_key] for feature in features]
-            pos_texts = [feature[self.positive_key] for feature in features]
-            neg_texts = [feature[self.negative_key] for feature in features]
-        elif isinstance(features[0], (list, tuple)):
-            query_texts = [feature[0] for feature in features]
-            pos_texts = [feature[1] for feature in features]
-            neg_texts = [feature[2] for feature in features]
-        else:
-            raise ValueError
-
-        if isinstance(query_texts[0], list):
-            query_texts = sum(query_texts, [])
-        if isinstance(pos_texts[0], list):
-            pos_texts = sum(pos_texts, [])
-        if isinstance(neg_texts[0], list):
-            neg_texts = sum(neg_texts, [])
-
-        if isinstance(query_texts[0], str):
-            tokenize_fn = self.tokenizer
-            tokenize_args = {
-                "truncation": True,
-                "return_token_type_ids": False,
-                "add_special_tokens": True,
-            }
-        else:
-            tokenize_fn = self.tokenizer.pad
-            tokenize_args = {
-                "pad_to_multiple_of": None,
-            }
-
-        query_inputs = tokenize_fn(
-            query_texts, padding="max_length", max_length=self.query_max_length, return_tensors="pt", **tokenize_args
-        )
-        pos_inputs = tokenize_fn(
-            pos_texts, padding="max_length", max_length=self.document_max_length, return_tensors="pt", **tokenize_args
-        )
-        neg_inputs = tokenize_fn(
-            neg_texts, padding="max_length", max_length=self.document_max_length, return_tensors="pt", **tokenize_args
-        )
-
-        return {
-            self.query_key: query_inputs,
-            self.positive_key: pos_inputs,
-            self.negative_key: neg_inputs,
+        tokenize_args = {
+            "padding": "max_length",
+            "max_length": max_length,
+            "return_tensors": "pt",
+            "truncation": True,
         }
+        return tokenize_fn(texts, **tokenize_args)
 
 
 class RerankCollator(DataCollatorWithPadding):
@@ -179,8 +68,6 @@ class RerankCollator(DataCollatorWithPadding):
         max_length: int = 128,
         query_key: str = 'query',
         document_key: str = 'document',
-        append_eos_token: bool = False,
-        tokenize_args: Optional[Dict] = None,
     ):
         self.tokenizer = tokenizer
         if not hasattr(self.tokenizer, "pad_token_id") or self.tokenizer.pad_token is None:
@@ -257,7 +144,7 @@ class ColBertCollator(DataCollatorWithPadding):
         assert len(features) > 0
         assert (
             self.query_key in features[0] and self.positive_key in features[0]
-        ), f"PairCollator should have '{self.query_key}' and '{self.positive_key}' in features, while get {features[0]}"
+        ), f"Collator should have '{self.query_key}' and '{self.positive_key}' in features, while get {features[0]}"
 
         query_texts = [feature[self.query_key] for feature in features]
         pos_texts = [feature[self.positive_key] for feature in features]

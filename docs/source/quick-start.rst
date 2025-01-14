@@ -52,7 +52,7 @@ To further improve the retrieval performance, we can fine tune the embedding mod
     import torch.nn as nn
     from datasets import load_dataset
     from transformers import AutoTokenizer, AdamW, get_linear_schedule_with_warmup, TrainingArguments
-    from retrievals import AutoModelForEmbedding, RetrievalTrainer, PairCollator, TripletCollator
+    from retrievals import AutoModelForEmbedding, RetrievalTrainer, RetrievalCollator, RetrievalCollator
     from retrievals.losses import ArcFaceAdaptiveMarginLoss, InfoNCE, SimCSE, TripletLoss
 
     model_name_or_path: str = "sentence-transformers/paraphrase-multilingual-mpnet-base-v2"
@@ -77,7 +77,7 @@ To further improve the retrieval performance, we can fine tune the embedding mod
         model=model,
         args=training_arguments,
         train_dataset=train_dataset,
-        data_collator=PairCollator(tokenizer, query_max_length=128, document_max_length=128),
+        data_collator=RetrievalCollator(tokenizer, keys=['query', 'document'], max_lengths=[128, 128]),
         loss_fn=InfoNCE(nn.CrossEntropyLoss(label_smoothing=0.05)),
     )
     trainer.optimizer = optimizer

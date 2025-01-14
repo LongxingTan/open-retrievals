@@ -22,8 +22,8 @@ from retrievals import (
     AutoModelForEmbedding,
     AutoModelForRetrieval,
     PairwiseModel,
+    RetrievalCollator,
     RetrievalTrainer,
-    TripletCollator,
 )
 from retrievals.losses import InfoNCE, TripletLoss, TripletRankingLoss
 
@@ -259,8 +259,10 @@ def main():
         model=model,
         args=training_args,
         train_dataset=train_dataset,
-        data_collator=TripletCollator(
-            tokenizer, query_max_length=data_args.query_max_length, document_max_length=data_args.document_max_length
+        data_collator=RetrievalCollator(
+            tokenizer,
+            keys=['query', 'positive', 'negative'],
+            max_lengths=[data_args.query_max_length, data_args.document_max_length, data_args.document_max_length],
         ),
     )
     trainer.optimizer = optimizer

@@ -15,7 +15,7 @@ from src.retrievals import (
     AutoModelForEmbedding,
     AutoModelForRanking,
     RerankCollator,
-    TripletCollator,
+    RetrievalCollator,
 )
 from src.retrievals.losses import TripletLoss
 from src.retrievals.trainer.trainer import RerankTrainer, RetrievalTrainer
@@ -86,7 +86,9 @@ class TrainerTest(TestCase):
             model=self.model.set_train_type('pairwise', loss_fn=TripletLoss()),
             args=training_args,
             train_dataset=self.train_dataset,
-            data_collator=TripletCollator(tokenizer=self.tokenizer, query_max_length=32, document_max_length=128),
+            data_collator=RetrievalCollator(
+                tokenizer=self.tokenizer, keys=['query', 'positive', 'negative'], max_lengths=[32, 64, 64]
+            ),
         )
         trainer.train()
 
