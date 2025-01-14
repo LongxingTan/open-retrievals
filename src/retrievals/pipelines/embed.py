@@ -196,8 +196,8 @@ def main():
             train_dataset=train_dataset,
             data_collator=RetrievalCollator(
                 tokenizer,
-                keys=[data_args.positive_key, data_args.negative_key],
-                max_lengths=[data_args.query_max_length, data_args.document_max_length],
+                keys=[data_args.query_key, data_args.positive_key, data_args.negative_key],
+                max_lengths=[data_args.query_max_length, data_args.document_max_length, data_args.document_max_length],
             ),
         )
 
