@@ -135,6 +135,7 @@ If the positive and negative examples have some noise in label, the directly poi
       --model_name_or_path $MODEL_NAME \
       --do_train \
       --data_name_or_path $TRAIN_DATA \
+      --query_key query \
       --positive_key positive \
       --negative_key negative \
       --learning_rate 3e-5 \
@@ -166,6 +167,7 @@ If the positive and negative examples have some noise in label, the directly poi
       --pooling_method last \
       --do_train \
       --data_name_or_path $TRAIN_DATA \
+      --query_key query \
       --positive_key positive \
       --negative_key negative \
       --use_lora True \

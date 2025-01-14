@@ -239,7 +239,7 @@ trainer.train()
 import torch.nn as nn
 from datasets import load_dataset
 from transformers import AutoTokenizer, AdamW, get_linear_schedule_with_warmup, TrainingArguments
-from retrievals import AutoModelForEmbedding, RetrievalTrainer, RetrievalCollator, RetrievalCollator
+from retrievals import AutoModelForEmbedding, RetrievalTrainer, RetrievalCollator
 from retrievals.losses import InfoNCE, SimCSE, TripletLoss
 
 def add_instructions(example):

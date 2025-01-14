@@ -36,6 +36,7 @@ from Cython.Compiler.Options import embed
 
 Train directly using shell script, refer to the [document](https://open-retrievals.readthedocs.io/en/master/embed.html)
 
+
 ### Transformer encoder embedding
 
 Refer to [the fine-tuning code](./train_pairwise.py) to train the model like

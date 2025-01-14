@@ -246,7 +246,7 @@ import os
 import torch.nn as nn
 from datasets import load_dataset
 from transformers import AutoTokenizer, AdamW, get_linear_schedule_with_warmup, TrainingArguments
-from retrievals import AutoModelForEmbedding, RetrievalTrainer, RetrievalCollator, RetrievalCollator
+from retrievals import AutoModelForEmbedding, RetrievalTrainer, RetrievalCollator
 from retrievals.losses import InfoNCE, SimCSE, TripletLoss
 os.environ['HF_ENDPOINT'] = 'https://hf-mirror.com'
 
@@ -282,7 +282,7 @@ trainer = RetrievalTrainer(
     model=model,
     args=training_arguments,
     train_dataset=train_dataset,
-    data_collator=RetrievalCollator(tokenizer, query_max_length=64, document_max_length=128),
+    data_collator=RetrievalCollator(tokenizer, keys=['query', 'positive'], max_lengths=[64, 128]),
 )
 trainer.optimizer = optimizer
 trainer.scheduler = scheduler

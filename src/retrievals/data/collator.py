@@ -12,7 +12,7 @@ from transformers import (
 
 
 class RetrievalCollator(DataCollatorWithPadding):
-    """Choose the collator based on data/task"""
+    """Choose the collator based on data/task, support both pair and triplet"""
 
     def __init__(self, tokenizer: PreTrainedTokenizer, max_lengths: list[int], keys: Optional[List[str]] = None):
         self.tokenizer = tokenizer

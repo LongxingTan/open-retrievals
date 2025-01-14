@@ -41,7 +41,7 @@ def train():
         model=model,
         args=training_args,
         train_dataset=train_dataset,
-        data_collator=RetrievalCollator(tokenizer, query_max_length=128, document_max_length=128),
+        data_collator=RetrievalCollator(tokenizer, keys=['query', 'positive'], max_lengths=[128, 128]),
         loss_fn=InfoNCE(nn.CrossEntropyLoss(label_smoothing=0.05)),
     )
     trainer.optimizer = optimizer
