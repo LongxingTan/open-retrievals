@@ -106,7 +106,7 @@ def build_prompt(examples, prompt_input, tokenizer, data_args):
     return sources, targets
 
 
-def tokenize_fn(strings, tokenizer, IGNORE_INDEX):
+def tokenize_fn(strings, tokenizer, IGNORE_INDEX=-100):
     """Tokenize a list of strings."""
     tokenized_list = [
         tokenizer(
