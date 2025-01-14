@@ -14,9 +14,8 @@ from transformers import AutoTokenizer, HfArgumentParser, TrainingArguments, set
 from ..data import (
     EncodeCollator,
     EncodeDataset,
-    PairCollator,
+    RetrievalCollator,
     RetrievalTrainDataset,
-    TripletCollator,
 )
 from ..losses import AutoLoss, InfoNCE, SimCSE, TripletLoss
 from ..models.embedding_auto import AutoModelForEmbedding
@@ -195,12 +194,10 @@ def main():
             model=model,
             args=training_args,
             train_dataset=train_dataset,
-            data_collator=TripletCollator(
+            data_collator=RetrievalCollator(
                 tokenizer,
-                query_max_length=data_args.query_max_length,
-                document_max_length=data_args.document_max_length,
-                positive_key=data_args.positive_key,
-                negative_key=data_args.negative_key,
+                keys=[data_args.positive_key, data_args.negative_key],
+                max_lengths=[data_args.query_max_length, data_args.document_max_length],
             ),
         )
 

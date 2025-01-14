@@ -9,9 +9,8 @@ from transformers import BertTokenizer
 from src.retrievals.data.collator import (
     ColBertCollator,
     LLMRerankCollator,
-    PairCollator,
     RerankCollator,
-    TripletCollator,
+    RetrievalCollator,
 )
 
 
@@ -35,9 +34,7 @@ class CollatorTest(TestCase):
             {'query': 'hallo?', 'document': 'what is your problem'},
         ]
 
-        data_collator = PairCollator(
-            tokenizer=self.tokenizer, query_max_length=10, document_max_length=11, document_key='document'
-        )
+        data_collator = RetrievalCollator(tokenizer=self.tokenizer, keys=['query', 'document'], max_lengths=[10, 11])
         batch = data_collator(features)
         self.assertEqual(batch['query']['input_ids'].shape, torch.Size([2, 10]))
         self.assertEqual(batch['query']['attention_mask'].shape, torch.Size([2, 10]))
@@ -50,7 +47,9 @@ class CollatorTest(TestCase):
             {'query': 'hallo?', 'positive': 'what is your problem', 'negative': 'I am a doctor'},
         ]
 
-        data_collator = TripletCollator(tokenizer=self.tokenizer, query_max_length=10, document_max_length=11)
+        data_collator = RetrievalCollator(
+            tokenizer=self.tokenizer, keys=['query', 'positive', 'negative'], max_lengths=[10, 11, 11]
+        )
         batch = data_collator(features)
         self.assertEqual(batch['query']['input_ids'].shape, torch.Size([2, 10]))
         self.assertEqual(batch['query']['attention_mask'].shape, torch.Size([2, 10]))

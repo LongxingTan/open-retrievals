@@ -9,7 +9,7 @@ from transformers import (
     get_linear_schedule_with_warmup,
 )
 
-from retrievals import AutoModelForEmbedding, PairCollator, RetrievalTrainer
+from retrievals import AutoModelForEmbedding, RetrievalCollator, RetrievalTrainer
 from retrievals.losses import InfoNCE, SimCSE, TripletLoss
 
 model_name_or_path: str = "sentence-transformers/paraphrase-multilingual-mpnet-base-v2"
@@ -41,7 +41,7 @@ def train():
         model=model,
         args=training_args,
         train_dataset=train_dataset,
-        data_collator=PairCollator(tokenizer, query_max_length=128, document_max_length=128),
+        data_collator=RetrievalCollator(tokenizer, query_max_length=128, document_max_length=128),
         loss_fn=InfoNCE(nn.CrossEntropyLoss(label_smoothing=0.05)),
     )
     trainer.optimizer = optimizer

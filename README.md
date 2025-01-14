@@ -195,7 +195,7 @@ print(response)
 import torch.nn as nn
 from datasets import load_dataset
 from transformers import AutoTokenizer, AdamW, get_linear_schedule_with_warmup, TrainingArguments
-from retrievals import AutoModelForEmbedding, RetrievalTrainer, PairCollator, TripletCollator
+from retrievals import AutoModelForEmbedding, RetrievalTrainer, RetrievalCollator
 from retrievals.losses import ArcFaceAdaptiveMarginLoss, InfoNCE, SimCSE, TripletLoss
 
 model_name_or_path: str = "sentence-transformers/paraphrase-multilingual-mpnet-base-v2"
@@ -203,7 +203,6 @@ batch_size: int = 32
 epochs: int = 3
 
 train_dataset = load_dataset('shibing624/nli_zh', 'STS-B')['train']
-train_dataset = train_dataset.rename_columns({'sentence1': 'query', 'sentence2': 'positive'})
 tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, use_fast=False)
 model = AutoModelForEmbedding.from_pretrained(model_name_or_path, pooling_method="mean")
 model = model.set_train_type('pairwise')
@@ -225,7 +224,7 @@ trainer = RetrievalTrainer(
     model=model,
     args=training_arguments,
     train_dataset=train_dataset,
-    data_collator=PairCollator(tokenizer, query_max_length=32, document_max_length=128),
+    data_collator=RetrievalCollator(tokenizer, keys=['sentence1', 'sentence2'], max_lengths=[32, 128]),
     loss_fn=InfoNCE(nn.CrossEntropyLoss(label_smoothing=0.05)),
 )
 trainer.optimizer = optimizer
@@ -240,7 +239,7 @@ trainer.train()
 import torch.nn as nn
 from datasets import load_dataset
 from transformers import AutoTokenizer, AdamW, get_linear_schedule_with_warmup, TrainingArguments
-from retrievals import AutoModelForEmbedding, RetrievalTrainer, PairCollator, TripletCollator
+from retrievals import AutoModelForEmbedding, RetrievalTrainer, RetrievalCollator, RetrievalCollator
 from retrievals.losses import InfoNCE, SimCSE, TripletLoss
 
 def add_instructions(example):
@@ -255,7 +254,6 @@ query_instruction = "Retrieve relevant passages that answer the query\nQuery: "
 document_instruction = "Document: "
 
 train_dataset = load_dataset('shibing624/nli_zh', 'STS-B')['train']
-train_dataset = train_dataset.rename_columns({'sentence1': 'query', 'sentence2': 'positive'})
 train_dataset = train_dataset.map(add_instructions)
 tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, use_fast=False)
 model = AutoModelForEmbedding.from_pretrained(model_name_or_path, pooling_method="last", use_lora=True)
@@ -275,7 +273,7 @@ trainer = RetrievalTrainer(
     model=model,
     args=training_arguments,
     train_dataset=train_dataset,
-    data_collator=PairCollator(tokenizer, query_max_length=64, document_max_length=128),
+    data_collator=RetrievalCollator(tokenizer, keys=['sentence1', 'sentence2'], max_lengths=[32, 128]),
 )
 trainer.optimizer = optimizer
 trainer.scheduler = scheduler

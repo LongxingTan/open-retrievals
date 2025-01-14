@@ -62,6 +62,37 @@ class RetrievalTrainer(Trainer):
             outputs['negative'] = neg_embeddings
         return loss, outputs
 
+    def evaluate(self, eval_dataset=None, metrics=None, **kwargs):
+        if eval_dataset is None:
+            raise ValueError("No evaluation dataset provided.")
+        eval_dataloader = self.get_eval_dataloader(eval_dataset)
+
+        all_embeddings = []
+        all_labels = []
+
+        logger.info("Evaluating model...")
+        self.model.eval()
+
+        for batch in eval_dataloader:
+            with torch.no_grad():
+                for key, v in batch.items():
+                    embeddings = self.model(v.to(self.args.device))
+                    all_embeddings.append(embeddings)
+
+                if "labels" in batch:
+                    all_labels.append(batch["labels"])
+
+        all_query_embeddings = torch.cat(all_embeddings[::2], dim=0)
+        all_doc_embeddings = torch.cat(all_embeddings[1::2], dim=0)
+        if all_labels:
+            all_labels = torch.cat(all_labels, dim=0)
+            results = metrics(all_query_embeddings, all_doc_embeddings, all_labels)
+        else:
+            results = metrics(all_query_embeddings, all_doc_embeddings)
+
+        logger.info(f"Evaluation results: {results}")
+        return results
+
     def _save(self, output_dir: Optional[str] = None, state_dict=None):
         output_dir = output_dir if output_dir is not None else self.args.output_dir
         os.makedirs(output_dir, exist_ok=True)

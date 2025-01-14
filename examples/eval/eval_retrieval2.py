@@ -10,9 +10,8 @@ from retrievals import (
     AutoModelForRanking,
     ColBERT,
     LLMRanker,
-    PairCollator,
+    RetrievalCollator,
     RetrievalTrainer,
-    TripletCollator,
 )
 
 logger = logging.getLogger(__name__)

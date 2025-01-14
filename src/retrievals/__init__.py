@@ -2,9 +2,8 @@ from .data.collator import (
     ColBertCollator,
     EncodeCollator,
     LLMRerankCollator,
-    PairCollator,
     RerankCollator,
-    TripletCollator,
+    RetrievalCollator,
 )
 from .data.dataset import EncodeDataset, RerankTrainDataset, RetrievalTrainDataset
 from .models.embedding_auto import AutoModelForEmbedding, ListwiseModel, PairwiseModel
