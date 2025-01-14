@@ -14,7 +14,7 @@ from transformers import (
 class RetrievalCollator(DataCollatorWithPadding):
     """Choose the collator based on data/task, support both pair and triplet"""
 
-    def __init__(self, tokenizer: PreTrainedTokenizer, max_lengths: list[int], keys: Optional[List[str]] = None):
+    def __init__(self, tokenizer: PreTrainedTokenizer, max_lengths: List[int], keys: Optional[List[str]] = None):
         self.tokenizer = tokenizer
         if not hasattr(self.tokenizer, "pad_token_id") or self.tokenizer.pad_token is None:
             self.tokenizer.add_special_tokens({"pad_token": "[PAD]"})
