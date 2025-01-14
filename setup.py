@@ -32,7 +32,7 @@ dev = [
 
 
 setup(
-    name="open-retrievals",
+    name="open_retrievals",
     version=get_version(),
     author="Longxing Tan",
     author_email="tanlongxing888@163.com",
