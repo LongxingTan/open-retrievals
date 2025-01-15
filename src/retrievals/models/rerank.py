@@ -22,7 +22,7 @@ from transformers.modeling_outputs import SequenceClassifierOutput
 
 from ..data.collator import LLMRerankCollator, RerankCollator
 from ..losses.colbert_loss import ColbertLoss
-from .base import Base
+from .base import BaseRanker
 from .pooling import AutoPooling
 from .utils import (
     batch_to_device,
@@ -34,7 +34,7 @@ from .utils import (
 logger = logging.getLogger(__name__)
 
 
-class AutoModelForRanking(Base):
+class AutoModelForRanking(BaseRanker):
     def __init__(
         self,
         model: Optional[nn.Module] = None,
@@ -70,21 +70,9 @@ class AutoModelForRanking(Base):
         self.query_instruction = query_instruction if query_instruction else ""
         self.document_instruction = document_instruction if document_instruction else ""
 
-        if max_length is None:
-            if (
-                hasattr(self.model, "config")
-                and hasattr(self.model.config, "max_position_embeddings")
-                and hasattr(self.tokenizer, "model_max_length")
-            ):
-                max_length = min(self.model.config.max_position_embeddings, self.tokenizer.model_max_length)
-
-        self.max_length = max_length
+        self.max_length = max_length or self._determine_max_length()
         self.temperature = temperature
-
-        if device is None:
-            self.device = get_device_name()
-        else:
-            self.device = device
+        self.device = device or get_device_name()
 
         # self._post_init()
         self.to(self.device)
@@ -115,20 +103,13 @@ class AutoModelForRanking(Base):
     def encode(
         self, input_ids: torch.Tensor, attention_mask: torch.Tensor
     ) -> Union[torch.Tensor, SequenceClassifierOutput]:
-        # input_ids -> embedding
+        """Encode input IDs and attention masks into embeddings."""
         model_output: SequenceClassifierOutput = self.model(input_ids, attention_mask, output_hidden_states=True)
 
         if not self.pooling_method:
             return model_output
-
-        if 'last_hidden_state' in model_output:
-            last_hidden_state = model_output['last_hidden_state']
-        elif 'hidden_states' not in model_output:
-            last_hidden_state = model_output[0]
-        else:
-            raise ValueError
-
-        if self.pooling is not None:
+        last_hidden_state = model_output.get('last_hidden_state', model_output[0])
+        if self.pooling_method:
             embeddings = self.pooling(last_hidden_state, attention_mask)
         else:
             embeddings = self.classifier(last_hidden_state)
@@ -143,51 +124,48 @@ class AutoModelForRanking(Base):
         **kwargs,
     ) -> Union[Dict[str, torch.Tensor], Tuple[torch.Tensor, torch.Tensor], torch.Tensor]:
         if self.causal_lm:
-            # LLM rerank
-            model_output = self.model(input_ids, attention_mask, output_hidden_states=True)
+            return self._forward_causal_lm(input_ids, attention_mask, labels, **kwargs)
+        return self._forward_cross_encoder(input_ids, attention_mask, labels, **kwargs)
 
-            outputs_dict = dict()
-            outputs_dict['logits'] = model_output.logits
-            if self.training:
-                loss = self.loss_fn(model_output.logits, labels)
-                outputs_dict['loss'] = loss
-            return outputs_dict
+    def _forward_causal_lm(
+        self,
+        input_ids: torch.Tensor,
+        attention_mask: torch.Tensor,
+        labels: Optional[torch.Tensor],
+        **kwargs,
+    ) -> Dict[str, torch.Tensor]:
+        """Forward pass for causal language models."""
+        outputs = self.model(input_ids, attention_mask, output_hidden_states=True)
+        result = {"logits": outputs.logits}
+        if labels is not None:
+            result["loss"] = self._compute_loss(outputs.logits, labels)
+        return result
 
-        # cross-encoder rerank
-        features = self.encode(input_ids=input_ids, attention_mask=attention_mask)
-
+    def _forward_cross_encoder(
+        self,
+        input_ids: torch.Tensor,
+        attention_mask: torch.Tensor,
+        labels: Optional[torch.Tensor],
+        **kwargs,
+    ) -> Dict[str, torch.Tensor]:
+        """Forward pass for cross-encoder models."""
+        features = self.encode(input_ids, attention_mask)
         if self.temperature is not None:
             features = features / self.temperature
-
         if not self.training:
             return features
-
         logits = features.logits
         scores = logits.view(-1, self.train_group_size)
-
-        if return_dict:
-            outputs_dict: Dict[str, Union[float, torch.Tensor]] = dict()
-            outputs_dict['logits'] = logits
-
         if labels is not None:
-            if not self.loss_fn:
-                if self.loss_type == 'regression':
-                    logits = torch.sigmoid(logits)
-                    self.loss_fn = nn.MSELoss()
+            loss = self._compute_loss(scores, labels)
+            return {'logits': logits, 'loss': loss}
+        return {'logits': logits}
 
-                elif self.loss_type == 'classification':
-                    self.loss_fn = nn.BCEWithLogitsLoss(reduction='mean')
-
-            loss = self.loss_fn(scores.squeeze(), labels.squeeze().float())
-            if return_dict:
-                outputs_dict['loss'] = loss
-                return outputs_dict
-            else:
-                return logits, loss
-        else:
-            if return_dict:
-                return outputs_dict
-            return logits
+    def _compute_loss(self, scores: torch.Tensor, labels: torch.Tensor) -> torch.Tensor:
+        """Compute the loss based on the scores and labels."""
+        if not self.loss_fn:
+            self.loss_fn = nn.MSELoss() if self.loss_type == 'regression' else nn.BCEWithLogitsLoss(reduction='mean')
+        return self.loss_fn(scores.squeeze(), labels.squeeze().float())
 
     def set_model_type(self, model_type: Literal['cross-encoder', 'colbert'], **kwargs):
         logger.info(f'Set model type to: {model_type}')
@@ -476,7 +454,7 @@ class AutoModelForRanking(Base):
         return all_scores
 
 
-class ColBERT(Base):
+class ColBERT(BaseRanker):
     def __init__(
         self,
         model: Optional[nn.Module] = None,
@@ -488,7 +466,7 @@ class ColBERT(Base):
         device: Optional[str] = None,
         **kwargs,
     ):
-        super().__init__()
+        super().__init__(**kwargs)
         self.model = model
         self.tokenizer = tokenizer
         self.linear = linear_layer
@@ -507,34 +485,45 @@ class ColBERT(Base):
         pos_attention_mask: Optional[torch.Tensor],
         neg_input_ids: Optional[torch.Tensor] = None,
         neg_attention_mask: Optional[torch.Tensor] = None,
-        return_dict: Optional[bool] = True,
+        return_dict: bool = True,
         **kwargs,
     ):
         query_embedding = self._encode(query_input_ids, attention_mask=query_attention_mask, normalize_embeddings=True)
         positive_embedding = self._encode(pos_input_ids, attention_mask=pos_attention_mask, normalize_embeddings=True)
 
         if self.training:
-            if not self.loss_fn:
-                self.loss_fn = ColbertLoss(temperature=self.temperature, use_inbatch_negative=False)
-
             negative_embedding = None
             if neg_input_ids is not None:
                 negative_embedding = self._encode(
                     neg_input_ids, attention_mask=neg_attention_mask, normalize_embeddings=True
                 )
+            loss = self._compute_loss(query_embedding, positive_embedding, negative_embedding, query_attention_mask)
+            return {'loss': loss}
+        return self.score(query_embedding, positive_embedding, query_attention_mask)
 
-            loss = self.loss_fn(
-                query_embedding, positive_embedding, negative_embedding, query_attention_mask=query_attention_mask
-            )
+    def _encode(
+        self, input_ids: torch.Tensor, attention_mask: torch.Tensor, normalize_embeddings: bool = True
+    ) -> torch.Tensor:
+        """Encode input IDs and attention masks into embeddings."""
+        outputs = self.model(input_ids, attention_mask=attention_mask, output_hidden_states=True)
+        hidden_state = outputs.last_hidden_state if hasattr(outputs, 'last_hidden_state') else outputs.hidden_states[1]
+        embeddings = self.linear(hidden_state[:, 1:])
+        embeddings = embeddings * attention_mask[:, 1:].unsqueeze(-1).float()
+        if normalize_embeddings:
+            embeddings = torch.nn.functional.normalize(embeddings, p=2, dim=-1)
+        return embeddings
 
-            if return_dict:
-                outputs_dict = dict()
-                outputs_dict['loss'] = loss
-                return outputs_dict
-            return loss
-
-        scores = self.score(query_embedding, positive_embedding, query_attention_mask=query_attention_mask)
-        return scores
+    def _compute_loss(
+        self,
+        query_embedding: torch.Tensor,
+        positive_embedding: torch.Tensor,
+        negative_embedding: Optional[torch.Tensor],
+        attention_mask: Optional[torch.Tensor] = None,
+    ) -> torch.Tensor:
+        """Compute the loss for ColBERT."""
+        if not self.loss_fn:
+            self.loss_fn = ColbertLoss(temperature=self.temperature, use_inbatch_negative=False)
+        return self.loss_fn(query_embedding, positive_embedding, negative_embedding, attention_mask)
 
     def preprocess_pair(
         self,
@@ -561,30 +550,6 @@ class ColBERT(Base):
             "doc_input_ids": document_batch_tokens_on_device['input_ids'],
             "doc_attention_mask": document_batch_tokens_on_device['attention_mask'],
         }
-
-    def _encode(
-        self, input_ids: torch.Tensor, attention_mask: torch.Tensor, normalize_embeddings: bool = True
-    ) -> torch.Tensor:
-        """encode the ids and mask to embedding"""
-        outputs: SequenceClassifierOutput = self.model(
-            input_ids,
-            attention_mask=attention_mask,
-            output_hidden_states=True,
-            return_dict=True,
-        )
-        if hasattr(outputs, 'last_hidden_state'):
-            # hidden_state shape: [batch, sequence_length, attention_dim]
-            hidden_state = outputs.last_hidden_state
-        else:
-            hidden_state = outputs.hidden_states[1]
-
-        # without the first the [CLS] token
-        embeddings = self.linear(hidden_state[:, 1:])
-        embeddings = embeddings * attention_mask[:, 1:].unsqueeze(-1).float()
-
-        if normalize_embeddings:
-            embeddings = torch.nn.functional.normalize(embeddings, p=2, dim=-1)
-        return embeddings
 
     def encode(
         self,
@@ -886,13 +851,6 @@ class LLMRanker(AutoModelForRanking):
 
     def score(self, logits: torch.Tensor):
         scores = logits[:, -1, self.target_token_loc]  # for left_padding
-        # left_padding = (attention_mask[:, -1].sum() == attention_mask.shape[0])
-        # if left_padding:
-        #     return logits[:, -1, :]
-        # else:
-        #     sequence_lengths = attention_mask.sum(dim=1) - 1
-        #     batch_size = logits.shape[0]
-        #     return torch.stack([logits[i, sequence_lengths[i], :] for i in range(batch_size)], dim=0)
         return scores
 
 
