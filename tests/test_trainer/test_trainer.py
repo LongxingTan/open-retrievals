@@ -128,11 +128,10 @@ class TestRerankTrainer(TestCase):
     def test_compute_loss(self):
         inputs = {'input_ids': torch.tensor([[1, 2, 3]]), 'attention_mask': torch.tensor([[1, 1, 1]])}
 
-        loss, outputs = self.trainer.compute_loss(self.model, inputs, return_outputs=True)
-
-        self.assertIsInstance(loss, torch.Tensor)
-        self.assertGreater(loss.item(), 0)
+        outputs = self.trainer.compute_loss(self.model, inputs, return_outputs=True)
         self.assertIn('loss', outputs)
+        self.assertIsInstance(outputs['loss'], torch.Tensor)
+        self.assertGreater(outputs['loss'].item(), 0)
 
     def test_save_model(self):
         self.trainer._save(output_dir=self.output_dir)

@@ -1,6 +1,6 @@
 import logging
 import os
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Optional
 
 import torch
 import torch.distributed as dist
@@ -134,9 +134,9 @@ class DistilTrainer(Trainer):
         self._dist_loss_scale_factor = 1
 
     def compute_loss(self, model: nn.Module, inputs, return_outputs=False, **kwargs):
-        student_scores = model(**inputs)
+        student_scores = model(**inputs).scores
         with torch.no_grad():
-            teacher_scores = self.teacher_model(**inputs)
+            teacher_scores = self.teacher_model(**inputs).scores
 
         teacher_mat = torch.zeros(student_scores.shape, dtype=student_scores.dtype, device=teacher_scores.device)
         index = torch.arange(teacher_scores.size(0), device=teacher_scores.device)
