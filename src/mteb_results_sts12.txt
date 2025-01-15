@@ -1,0 +1,2 @@
+Results for STS12:
+[MTEBResults(task_name=STS12, scores=...)]
