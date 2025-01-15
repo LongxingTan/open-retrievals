@@ -6,12 +6,13 @@
 from typing import Optional
 
 import torch
-import torch.distributed as dist
 import torch.nn as nn
 import torch.nn.functional as F
 
+from .base import Base
 
-class TripletLoss(nn.Module):
+
+class TripletLoss(Base):
     """
     https://omoindrot.github.io/triplet-loss
     """
@@ -24,16 +25,11 @@ class TripletLoss(nn.Module):
         use_inbatch_negative: bool = False,
         **kwargs
     ):
-        super().__init__()
+        super().__init__(negatives_cross_device)
         self.temperature = temperature
         self.margin = margin
         self.negatives_cross_device = negatives_cross_device
         self.use_inbatch_negative = use_inbatch_negative
-        if self.negatives_cross_device:
-            if not dist.is_initialized():
-                raise ValueError("Cannot do negatives_cross_device without distributed training")
-            self.rank = dist.get_rank()
-            self.world_size = dist.get_world_size()
 
     def forward(
         self,
@@ -45,7 +41,7 @@ class TripletLoss(nn.Module):
         if margin:
             self.set_margin(margin=margin)
 
-        if self.negatives_cross_device and self.use_inbatch_negative:
+        if self.negatives_cross_device:
             query_embeddings = self._dist_gather_tensor(query_embeddings)
             positive_embeddings = self._dist_gather_tensor(positive_embeddings)
             negative_embeddings = self._dist_gather_tensor(negative_embeddings)
@@ -64,19 +60,6 @@ class TripletLoss(nn.Module):
 
     def set_margin(self, margin: float):
         self.margin = margin
-
-    def _dist_gather_tensor(self, t: Optional[torch.Tensor]):
-        if t is None:
-            return None
-        t = t.contiguous()
-
-        all_tensors = [torch.empty_like(t) for _ in range(self.world_size)]
-        dist.all_gather(all_tensors, t)
-
-        all_tensors[self.rank] = t
-        all_tensors = torch.cat(all_tensors, dim=0)
-
-        return all_tensors
 
 
 class TripletCosineSimilarity(nn.Module):

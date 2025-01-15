@@ -2,10 +2,12 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from .base import Base
 
-class CoSentLoss(nn.Module):
-    def __init__(self, temperature: float = 0.05, **kwargs):
-        super().__init__()
+
+class CoSentLoss(Base):
+    def __init__(self, temperature: float = 0.05, negatives_cross_device: bool = False, **kwargs):
+        super().__init__(negatives_cross_device)
         self.temperature = temperature
 
     def forward(self, embed1: torch.Tensor, embed2: torch.Tensor, labels=None):

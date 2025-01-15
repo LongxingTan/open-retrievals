@@ -10,10 +10,12 @@ import torch
 import torch.nn.functional as F
 from torch import nn
 
+from .base import Base
+
 logger = logging.getLogger(__name__)
 
 
-class SimCSE(nn.Module):
+class SimCSE(Base):
     """Cosine similarity = normalize + inner product"""
 
     def __init__(
@@ -21,9 +23,10 @@ class SimCSE(nn.Module):
         criterion: Union[nn.Module, Callable] = nn.CrossEntropyLoss(label_smoothing=0.0, reduction='mean'),
         temperature: float = 0.05,
         dynamic_temperature: bool = False,
+        negatives_cross_device: bool = False,
         **kwargs
     ):
-        super().__init__()
+        super().__init__(negatives_cross_device)
         self.criterion = criterion
         self.temperature = temperature
         if dynamic_temperature:
@@ -36,6 +39,11 @@ class SimCSE(nn.Module):
         positive_embeddings: torch.Tensor,
         negative_embeddings: Optional[torch.Tensor] = None,
     ):
+        if self.negatives_cross_device:
+            query_embeddings = self._dist_gather_tensor(query_embeddings)
+            positive_embeddings = self._dist_gather_tensor(positive_embeddings)
+            negative_embeddings = self._dist_gather_tensor(negative_embeddings)
+
         similarity = F.cosine_similarity(query_embeddings.unsqueeze(1), positive_embeddings.unsqueeze(0), dim=-1)
 
         if negative_embeddings is not None:

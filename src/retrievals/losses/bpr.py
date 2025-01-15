@@ -1,12 +1,14 @@
 import torch
 import torch.nn as nn
 
+from .base import Base
 
-class BPRLoss(nn.Module):
+
+class BPRLoss(Base):
     """Bayesian Personalized Ranking"""
 
-    def __init__(self):
-        super(BPRLoss, self).__init__()
+    def __init__(self, negatives_cross_device: bool = False):
+        super(BPRLoss, self).__init__(negatives_cross_device)
 
     def forward(
         self,

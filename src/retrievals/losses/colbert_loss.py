@@ -3,15 +3,18 @@ from typing import Callable, Optional, Union
 import torch
 import torch.nn as nn
 
+from .base import Base
 
-class ColbertLoss(nn.Module):
+
+class ColbertLoss(Base):
     def __init__(
         self,
         criterion: Union[nn.Module, Callable] = nn.CrossEntropyLoss(label_smoothing=0.0, reduction='mean'),
         temperature: float = 0.02,
         use_inbatch_negative: bool = False,
+        negatives_cross_device: bool = False,
     ):
-        super(ColbertLoss, self).__init__()
+        super(ColbertLoss, self).__init__(negatives_cross_device)
         self.criterion = criterion
         self.temperature = temperature
         self.use_inbatch_negative = use_inbatch_negative
@@ -28,6 +31,10 @@ class ColbertLoss(nn.Module):
             raise ValueError(
                 "No negative samples for ColBERT, either provide negative_embeddings or use_inbatch_negative=True"
             )
+        if self.negatives_cross_device:
+            query_embeddings = self._dist_gather_tensor(query_embeddings)
+            positive_embeddings = self._dist_gather_tensor(positive_embeddings)
+            negative_embeddings = self._dist_gather_tensor(negative_embeddings)
 
         scores = self.similarity(query_embeddings, positive_embeddings)
 

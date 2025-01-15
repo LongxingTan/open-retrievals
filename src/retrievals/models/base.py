@@ -12,7 +12,7 @@ from transformers import PreTrainedTokenizer
 logger = logging.getLogger(__name__)
 
 
-class Base(ABC, torch.nn.Module):
+class Base(ABC, nn.Module):
     """Base class for embedding and reranking model"""
 
     def __init__(
@@ -60,6 +60,7 @@ class Base(ABC, torch.nn.Module):
         self.backbone.push_to_hub(hub_model_id, private=private, **kwargs)
 
     def _dist_gather_tensor(self, tensor: Optional[torch.Tensor]):
+        """negatives cross device"""
         if tensor is None:
             return None
         tensor = tensor.contiguous()
