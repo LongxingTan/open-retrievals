@@ -219,6 +219,34 @@ def main():
             lora_path=model_args.lora_path,
         )
 
+
+        import inspect
+        base_model = model
+        original_forward = base_model.forward
+
+        # 获取原始 forward 方法的参数
+        original_forward_signature = inspect.signature(original_forward)
+        original_forward_parameters = original_forward_signature.parameters
+
+        # 定义新的 forward 方法
+        def new_forward(
+            self,
+            *args,
+            output_attentions=None,  # 添加 output_attentions 参数
+            output_hidden_states=None,  # 添加 output_attentions 参数
+            **kwargs,
+        ):
+            # 移除 output_attentions 参数
+            kwargs.pop("output_attentions", None)
+            kwargs.pop("output_hidden_states", None)
+
+            # 调用原始的 forward 方法
+            return original_forward(*args, **kwargs)
+
+        # 替换 base_model 的 forward 方法
+        base_model.forward = new_forward.__get__(base_model)
+        model = base_model
+
         max_length = data_args.query_max_length if data_args.is_query else data_args.document_max_length
         logger.info(f'Encoding will be saved in {training_args.output_dir}')
 
