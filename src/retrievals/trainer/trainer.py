@@ -124,15 +124,19 @@ class RerankTrainer(Trainer):
 
 class DistilTrainer(Trainer):
     # https://github.com/texttron/tevatron/blob/tevatron-v1/src/tevatron/distillation/trainer.py
-    def __init__(self, teacher_model):
-        super(DistilTrainer, self).__init__()
+    def __init__(
+        self,
+        teacher_model,
+        **kwargs,
+    ):
+        super(DistilTrainer, self).__init__(**kwargs)
         self.teacher_model = teacher_model
         self._dist_loss_scale_factor = 1
 
-    def compute_loss(self, model, inputs, return_outputs=False, **kwargs):
-        student_scores = model(inputs)
+    def compute_loss(self, model: nn.Module, inputs, return_outputs=False, **kwargs):
+        student_scores = model(**inputs)
         with torch.no_grad():
-            teacher_scores = self.teacher_model(inputs)
+            teacher_scores = self.teacher_model(**inputs)
 
         teacher_mat = torch.zeros(student_scores.shape, dtype=student_scores.dtype, device=teacher_scores.device)
         index = torch.arange(teacher_scores.size(0), device=teacher_scores.device)

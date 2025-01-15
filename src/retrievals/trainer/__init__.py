@@ -1,3 +1,3 @@
 from .adversarial import AWP, EMA, FGM, PGD
-from .custom_trainer import CustomTrainer, train_fn
+from .custom_trainer import NLPTrainer, TrainingArguments
 from .trainer import RerankTrainer, RetrievalTrainer

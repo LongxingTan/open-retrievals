@@ -1,3 +1,4 @@
+import os
 import shutil
 import tempfile
 from dataclasses import dataclass, field
@@ -9,7 +10,11 @@ import torch
 import transformers
 from torch import nn
 from torch.utils.data import DataLoader, Dataset
-from transformers import AutoTokenizer, HfArgumentParser
+from transformers import (
+    AutoModelForSequenceClassification,
+    AutoTokenizer,
+    HfArgumentParser,
+)
 
 from src.retrievals import (
     AutoModelForEmbedding,
@@ -18,7 +23,11 @@ from src.retrievals import (
     RetrievalCollator,
 )
 from src.retrievals.losses import TripletLoss
-from src.retrievals.trainer.trainer import RerankTrainer, RetrievalTrainer
+from src.retrievals.trainer.trainer import (
+    DistilTrainer,
+    RerankTrainer,
+    RetrievalTrainer,
+)
 
 
 class PseudoDataset(Dataset):
@@ -65,19 +74,6 @@ class TrainerTest(TestCase):
     def tearDown(self):
         shutil.rmtree(self.output_dir)
 
-    # @patch("src.retrievals.losses.TripletLoss")
-    # def test_compute_loss(self, mock_loss_fn):
-    #     inputs = {
-    #         "query": torch.tensor([[1.0, 2.0]]),
-    #         "pos": torch.tensor([[1.0, 2.0]]),
-    #         "neg": torch.tensor([[3.0, 4.0]]),
-    #     }
-    #     model = MagicMock()
-    #     trainer = RetrievalTrainer(loss_fn=mock_loss_fn)
-    #     loss = trainer.compute_loss(model, inputs, return_outputs=False)
-    #     self.assertIsNotNone(loss)  # or other assertions based on expected behavior
-    #     mock_loss_fn.assert_called()
-
     def test_trainer(self):
         parser = HfArgumentParser((TrainingArguments))
         training_args, _ = parser.parse_args_into_dataclasses(return_remaining_strings=True)
@@ -91,16 +87,6 @@ class TrainerTest(TestCase):
             ),
         )
         trainer.train()
-
-    # def test_custom_trainer(self):
-    #     train_loader = DataLoader(self.train_dataset)
-    #     optimizer = AdamW(
-    #         self.model.parameters(),
-    #         lr=1e-5,
-    #     )
-    #     trainer = CustomTrainer(model=self.model)
-    #
-    #     trainer.train(train_loader, optimizer=optimizer, epochs=1, criterion=None)
 
     def test_example(self):
         sentences = ["Hello world", "How are you?"]
@@ -132,24 +118,52 @@ class TestRerankTrainer(TestCase):
         self.model = AutoModelForRanking.from_pretrained(model_name_or_path)
         self.train_dataset = PseudoRerankTrainDataset()
         self.tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, cache_dir=self.output_dir)
+        self.trainer = RerankTrainer(
+            model=self.model, train_dataset=self.train_dataset, tokenizer=self.tokenizer, loss_fn=nn.BCEWithLogitsLoss()
+        )
 
     def tearDown(self):
         shutil.rmtree(self.output_dir)
 
-    # def test_init_with_default_loss_fn(self):
-    #     model = None
-    #
-    #     trainer = RerankTrainer(model)
-    #     self.assertIsInstance(trainer.loss_fn, nn.BCEWithLogitsLoss)
+    def test_compute_loss(self):
+        inputs = {'input_ids': torch.tensor([[1, 2, 3]]), 'attention_mask': torch.tensor([[1, 1, 1]])}
 
-    # def test_train(self):
-    #     parser = HfArgumentParser((TrainingArguments))
-    #     training_args, _ = parser.parse_args_into_dataclasses(return_remaining_strings=True)
-    #
-    #     trainer = RerankTrainer(
-    #         model=self.model,
-    #         args=training_args,
-    #         train_dataset=self.train_dataset,
-    #         data_collator=RerankCollator(tokenizer=self.tokenizer, max_length=64),
-    #     )
-    #     trainer.train()
+        loss, outputs = self.trainer.compute_loss(self.model, inputs, return_outputs=True)
+
+        self.assertIsInstance(loss, torch.Tensor)
+        self.assertGreater(loss.item(), 0)
+        self.assertIn('loss', outputs)
+
+    def test_save_model(self):
+        self.trainer._save(output_dir=self.output_dir)
+
+
+class TestDistilTrainer(TestCase):
+    def setUp(self) -> None:
+        self.output_dir = tempfile.mkdtemp()
+        model_name_or_path = "distilbert-base-uncased"
+        self.model = AutoModelForSequenceClassification.from_pretrained(model_name_or_path)
+        self.teacher_model = AutoModelForSequenceClassification.from_pretrained(model_name_or_path)
+        self.tokenizer = AutoTokenizer.from_pretrained(model_name_or_path)
+
+        self.train_dataset = PseudoRerankTrainDataset()
+        self.trainer = DistilTrainer(
+            model=self.model,
+            teacher_model=self.teacher_model,
+            train_dataset=self.train_dataset,
+            tokenizer=self.tokenizer,
+        )
+
+    def tearDown(self):
+        shutil.rmtree(self.output_dir)
+
+    def test_compute_loss(self):
+        inputs = {'input_ids': torch.tensor([[101, 201, 301]]), 'attention_mask': torch.tensor([[1, 1, 1]])}
+
+        loss = self.trainer.compute_loss(self.model, inputs)
+
+        self.assertIsInstance(loss, torch.Tensor)
+        self.assertGreater(loss.item(), 0)
+
+    def test_save_model(self):
+        self.trainer._save(output_dir=self.output_dir)
