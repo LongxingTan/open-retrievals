@@ -109,10 +109,10 @@ class RerankTrainer(Trainer):
             loss_fn = nn.BCEWithLogitsLoss()
         self.loss_fn = loss_fn
 
-    def compute_loss(self, model: nn.Module, inputs, return_outputs=False, **kwargs):
-        outputs: dict = model(**inputs)
-        loss = outputs['loss']
-        return (loss, outputs) if return_outputs else loss
+    # def compute_loss(self, model: nn.Module, inputs, return_outputs=False, **kwargs):
+    #     outputs: dict = model(**inputs)
+    #     loss = outputs['loss']
+    #     return (loss, outputs) if return_outputs else loss
 
     def _save(self, output_dir: Optional[str] = None, state_dict=None):
         output_dir = output_dir if output_dir is not None else self.args.output_dir
