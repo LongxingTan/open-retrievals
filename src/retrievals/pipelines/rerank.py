@@ -29,7 +29,7 @@ from ..losses import ColbertLoss, TokenLoss
 from ..models.rerank import AutoModelForRanking, ColBERT
 from ..trainer import RerankTrainer
 
-# os.environ["WANDB_LOG_MODEL"] = "false"
+os.environ["WANDB_DISABLED"] = "true"
 transformers.logging.set_verbosity_error()
 logger = logging.getLogger(__name__)
 
