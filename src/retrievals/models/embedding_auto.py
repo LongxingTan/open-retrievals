@@ -443,7 +443,7 @@ class AutoModelForEmbedding(Base):
         )
 
 
-class PairwiseModel(AutoModelForEmbedding):
+class PairwiseModel(nn.Module):
     """Pairwise Model wrapper
     - bi_encoder
         - shared_weights or not
@@ -454,26 +454,21 @@ class PairwiseModel(AutoModelForEmbedding):
 
     def __init__(
         self,
-        model: Optional[nn.Module] = None,
+        model: AutoModelForEmbedding,
         loss_fn: Optional[Callable] = None,
         shared_weights: bool = True,
         **kwargs,
     ) -> None:
-        super().__init__(model=model, tokenizer=model.tokenzier, loss_fn=loss_fn)
+        super().__init__()
         self.model = model
+        self.model.loss_fn = loss_fn
         self.loss_fn = loss_fn
         self.shared_weights = shared_weights
         if not shared_weights:
             self.document_model = copy.deepcopy(self.model)
 
     def forward(
-        self,
-        inputs: Union[Dict[str, torch.Tensor], list],
-        inputs_pair: Optional[Dict[str, torch.Tensor]] = None,
-        labels: Optional[torch.LongTensor] = None,
-        output_attentions: Optional[bool] = None,
-        output_hidden_states: Optional[bool] = None,
-        return_dict: Optional[bool] = None,
+        self, inputs: Union[Dict[str, torch.Tensor], list], inputs_pair: Optional[Dict[str, torch.Tensor]] = None
     ):
 
         if isinstance(inputs, (list, tuple, dict)) and 2 <= len(inputs) <= 3 or inputs_pair is not None:
@@ -492,10 +487,10 @@ class PairwiseModel(AutoModelForEmbedding):
             ids2, mask2 = input2['input_ids'], input2['attention_mask']
 
             if self.shared_weights:  # bi-encoder, pooling in each
-                pooled_output1 = super().forward_from_tensor(ids1, attention_mask=mask1)
-                pooled_output2 = super().forward_from_tensor(ids2, attention_mask=mask2)
+                pooled_output1 = self.model.forward_from_tensor(ids1, attention_mask=mask1)
+                pooled_output2 = self.model.forward_from_tensor(ids2, attention_mask=mask2)
                 if len(inputs) == 3:
-                    pooled_output3 = super().forward_from_tensor(
+                    pooled_output3 = self.model.forward_from_tensor(
                         input3['input_ids'], attention_mask=input3['attention_mask']
                     )
                     if self.loss_fn is None:
@@ -507,7 +502,7 @@ class PairwiseModel(AutoModelForEmbedding):
                     return outputs
 
             else:
-                pooled_output1 = super().forward_from_tensor(ids1, attention_mask=mask1)
+                pooled_output1 = self.model.forward_from_tensor(ids1, attention_mask=mask1)
                 pooled_output2 = self.document_model(ids2, mask2)
 
             if self.loss_fn is None:
@@ -522,7 +517,7 @@ class PairwiseModel(AutoModelForEmbedding):
             # if the example data pair/triplet is already concat into one group. The Sentence-transformer style
             ids = inputs['input_ids']
             mask = inputs['attention_mask']
-            transformer_out = super().forward_from_tensor(input_ids=ids, attention_mask=mask, without_pooling=True)
+            transformer_out = self.model.forward_from_tensor(input_ids=ids, attention_mask=mask, without_pooling=True)
             pooled_output = self.pooling(transformer_out[0], mask)
             # pooled_output1 = pooled_output[: len(ids1), :]
             # pooled_output2 = pooled_output[len(ids1):, :]
