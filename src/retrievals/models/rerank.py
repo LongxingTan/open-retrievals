@@ -110,12 +110,13 @@ class AutoModelForRanking(BaseRanker):
     ) -> Dict[str, torch.Tensor]:
         """Forward pass for cross-encoder models."""
         features = self.encode(input_ids, attention_mask)
+        logits = features.logits
 
         if self.temperature is not None:
-            features = features / self.temperature
+            logits = logits / self.temperature
         if not self.training:
-            return features
-        logits = features.logits
+            return logits
+
         scores = logits.view(-1, self.train_group_size)
         if labels is not None:
             loss = self._compute_loss(scores, labels)

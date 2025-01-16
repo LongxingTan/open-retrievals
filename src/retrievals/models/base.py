@@ -204,26 +204,34 @@ class BaseRanker(Base):
         documents: List[str],
         batch_size: int = 16,
         show_progress_bar: bool = None,
-        chunk_max_length: int = 256,
-        chunk_overlap: int = 48,
-        max_chunks_per_doc: int = 100,
         return_dict: bool = True,
         normalize: bool = False,
         data_collator: Optional[RerankCollator] = None,
-        long_documents=None,
+        long_documents_split: bool = False,
+        chunk_max_length: int = 256,
+        chunk_overlap: int = 48,
+        max_chunks_per_doc: int = 100,
         **kwargs,
     ) -> Union[Dict[str, List[str]], List[str]]:
+        """
+        query: single string text
+        documents: list of string
+        """
         if query is None or len(query) == 0 or len(documents) == 0:
             return {'rerank_documents': [], 'rerank_scores': []}
 
-        splitter = DocumentSplitter(
-            chunk_size=chunk_max_length, chunk_overlap=chunk_overlap, max_chunks_per_doc=max_chunks_per_doc
-        )
-        text_pairs, sentence_pairs_pids = splitter.create_documents(
-            query,
-            documents,
-            tokenizer=self.tokenizer,
-        )
+        if long_documents_split:
+            splitter = DocumentSplitter(
+                chunk_size=chunk_max_length, chunk_overlap=chunk_overlap, max_chunks_per_doc=max_chunks_per_doc
+            )
+            text_pairs, sentence_pairs_pids = splitter.create_documents(
+                query,
+                documents,
+                tokenizer=self.tokenizer,
+            )
+        else:
+            text_pairs = [[query, doc] for doc in documents]
+            sentence_pairs_pids = list(range(len(documents)))
 
         scores = self.compute_score(
             sentence_pairs=text_pairs,
