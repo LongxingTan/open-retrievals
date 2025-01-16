@@ -11,7 +11,6 @@ from typing import Callable, Dict, List, Literal, Optional, Tuple, Union
 import numpy as np
 import torch
 import torch.nn as nn
-from paddle.base.libpaddle.eager.ops.legacy import segment_pool
 from torch.utils.data import DataLoader
 from tqdm.auto import tqdm, trange
 from transformers import (
