@@ -234,7 +234,7 @@ from retrievals import AutoModelForEmbedding
 model = AutoModelForEmbedding.from_pretrained(
     "mistralai/Mistral-7B-v0.1",
     pooling_method='last',
-    query_instruction=f'Instruct: Retrieve semantically similar text\nQuery: '
+    query_instruction=f'Instruct: Retrieve semantically similar text\nQuery: {}'
 )
 ```
 

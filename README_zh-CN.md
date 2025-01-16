@@ -251,15 +251,15 @@ from retrievals.losses import InfoNCE, SimCSE, TripletLoss
 os.environ['HF_ENDPOINT'] = 'https://hf-mirror.com'
 
 def add_instructions(example):
-    example['query'] = query_instruction + example['query']
-    example['positive'] = document_instruction + example['positive']
+    example['query'] = query_instruction.format(example['query'])
+    example['positive'] = document_instruction.format(example['positive'])
     return example
 
 model_name_or_path: str = "Qwen/Qwen2-1.5B-Instruct"
 batch_size: int = 8
 epochs: int = 3
-query_instruction = "Retrieve relevant passages that answer the query\nQuery: "
-document_instruction = "Document: "
+query_instruction = "Retrieve relevant passages that answer the query\nQuery: {}"
+document_instruction = "Document: {}"
 
 train_dataset = load_dataset('shibing624/nli_zh', 'STS-B')['train']
 train_dataset = train_dataset.rename_columns({'sentence1': 'query', 'sentence2': 'positive'})
@@ -439,8 +439,8 @@ train_dataset = RetrievalTrainDataset(
     data_name_or_path='C-MTEB/T2Reranking',
     positive_key='positive',
     negative_key='negative',
-    query_instruction='A: ',
-    document_instruction='B: ',
+    query_instruction='A: {}',
+    document_instruction='B: {}',
     dataset_split='dev',
 )
 data_collator = LLMRerankCollator(
