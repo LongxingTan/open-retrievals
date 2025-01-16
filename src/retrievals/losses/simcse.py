@@ -54,8 +54,15 @@ class SimCSE(Base):
             similarity = torch.cat([similarity, neg_similarity], dim=1)
 
         similarity = similarity / self.temperature
+        if mask is not None:
+            # Mask the similarity matrix, zero out the masked positions
+            similarity = similarity * mask
+            mask_sum = mask.sum() if mask.sum() > 0 else 1  # Avoid division by zero
+            target = torch.arange(0, query_embeddings.size(0), dtype=torch.long, device=query_embeddings.device)
+            loss = self.criterion(similarity, target)
+            loss = loss.sum() / mask_sum  # Normalize loss by the number of unmasked elements
+        else:
+            target = torch.arange(0, query_embeddings.size(0), dtype=torch.long, device=query_embeddings.device)
+            loss = self.criterion(similarity, target)
 
-        target = torch.arange(0, query_embeddings.size(0), dtype=torch.long, device=query_embeddings.device)
-
-        loss = self.criterion(similarity, target)
         return loss

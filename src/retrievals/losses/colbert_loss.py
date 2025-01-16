@@ -53,7 +53,7 @@ class ColbertLoss(Base):
         loss = self.criterion(scores, labels)
         return loss
 
-    def similarity(self, query_embeddings, document_embeddings, query_mask: Optional[torch.Tensor] = None):
+    def similarity(self, query_embeddings, document_embeddings, mask: Optional[torch.Tensor] = None):
         if self.use_inbatch_negative:  # query_embeddings.size(0) != document_embeddings.size(0) and
             late_interactions = torch.einsum(
                 "bsh,cdh->bcsd",
@@ -72,8 +72,8 @@ class ColbertLoss(Base):
             )
         late_interactions = late_interactions.max(-1).values.sum(-1)
 
-        # if query_attention_mask is not None:
-        #     query_sequence_length = query_attention_mask[:, 1:].sum(-1, keepdim=False)
+        # if mask is not None:
+        #     query_sequence_length = mask[:, 1:].sum(-1, keepdim=False)
         #     if late_interactions.dim() == 2:  # if the train_group_size > 2, the late_interactions shape: batch * neg
         #         query_sequence_length = query_sequence_length.unsqueeze(1)
         #

@@ -57,6 +57,7 @@ class InfoNCE(Base):
         query_embeddings = F.normalize(query_embeddings, dim=-1)
         positive_embeddings = F.normalize(positive_embeddings, dim=-1)
         device = query_embeddings.device
+
         if negative_embeddings is None:
             if self.negative_mode == 'unpaired':
                 logits = query_embeddings @ positive_embeddings.transpose(-2, -1)
@@ -90,4 +91,12 @@ class InfoNCE(Base):
                 similarity = similarity / self.temperature
                 target = torch.zeros(query_embeddings.size(0), dtype=torch.long, device=device)
 
-            return self.criterion(similarity, target)
+            if mask is not None:
+                similarity = similarity * mask
+                mask_sum = mask.sum() if mask.sum() > 0 else 1  # Avoid division by zero
+                loss = self.criterion(similarity, target)
+                loss = loss.sum() / mask_sum
+            else:
+                loss = self.criterion(similarity, target)
+
+            return loss

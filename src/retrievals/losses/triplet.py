@@ -21,8 +21,8 @@ class TripletLoss(Base):
         self,
         temperature: float = 0.05,
         margin: float = 0.0,
-        negatives_cross_device: bool = False,
         use_inbatch_negative: bool = False,
+        negatives_cross_device: bool = False,
         **kwargs
     ):
         super().__init__(negatives_cross_device)
@@ -56,7 +56,13 @@ class TripletLoss(Base):
         )
         neg_similarity = neg_similarity / self.temperature
         similarity_diff = pos_similarity.unsqueeze(1) - neg_similarity
-        loss = -torch.log(torch.sigmoid(similarity_diff) + self.margin).mean()
+        if mask is not None:
+            similarity_diff = similarity_diff * mask
+            mask_sum = mask.sum() if mask.sum() > 0 else 1  # Avoid division by zero
+            loss = -torch.log(torch.sigmoid(similarity_diff) + self.margin).sum() / mask_sum
+        else:
+            loss = -torch.log(torch.sigmoid(similarity_diff) + self.margin).mean()
+
         return loss
 
     def set_margin(self, margin: float):
@@ -70,7 +76,13 @@ class TripletCosineSimilarity(nn.Module):
         self.margin = margin
         self.distance_metric = lambda x, y: F.pairwise_distance(x, y, p=2)
 
-    def forward(self, query_embedding: torch.Tensor, pos_embedding: torch.Tensor, neg_embedding: torch.Tensor):
+    def forward(
+        self,
+        query_embedding: torch.Tensor,
+        pos_embedding: torch.Tensor,
+        neg_embedding: torch.Tensor,
+        mask: Optional[torch.Tensor] = None,
+    ):
         distance_pos = self.distance_metric(query_embedding, pos_embedding)
         distance_neg = self.distance_metric(query_embedding, neg_embedding)
 
