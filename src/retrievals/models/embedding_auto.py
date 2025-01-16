@@ -56,16 +56,12 @@ class AutoModelForEmbedding(Base):
         Loads or creates an Embedding model that can be used to map sentences / text.
         """
         super().__init__(model, tokenizer)
-        if isinstance(model, str):
-            assert ValueError("Please use AutoModelForEmbedding.from_pretrained(model_name_or_path)")
         self.model = model
         self.tokenizer = tokenizer
         self.pooling_method = pooling_method
         self.pooling = AutoPooling(pooling_method) if pooling_method else None
         self.loss_fn = loss_fn
-
         self.max_length = max_length or self._determine_max_length()
-
         self.query_instruction = query_instruction or ''
         self.document_instruction = document_instruction or ''
         self.use_fp16 = use_fp16
@@ -382,7 +378,6 @@ class AutoModelForEmbedding(Base):
         pretrained: bool = True,
         config_path: Optional[str] = None,
         trust_remote_code: bool = True,
-        custom_config_dict: Optional[Dict] = None,
         use_fp16: bool = False,
         use_lora: bool = False,
         use_qlora: bool = False,
@@ -403,12 +398,6 @@ class AutoModelForEmbedding(Base):
         config = AutoConfig.from_pretrained(
             config_path or model_name_or_path, output_hidden_states=True, trust_remote_code=trust_remote_code
         )
-
-        if custom_config_dict:
-            config.update(custom_config_dict)
-
-        # if quantization_config is None and hasattr(config, 'quantization_config'):
-        #     quantization_config = config.quantization_config
 
         if check_causal_lm(model_name_or_path) and pooling_method != 'last':
             logger.warning('You are using a LLM model, while pooling_method is not last, is that right?')
@@ -442,38 +431,10 @@ class AutoModelForEmbedding(Base):
 
         if (use_lora or use_qlora) and lora_path is None:
             logger.info('Set fine-tuning to LoRA')
-            from peft import (
-                LoraConfig,
-                TaskType,
-                get_peft_model,
-                prepare_model_for_kbit_training,
-            )
-
-            if lora_config is None:
-                lora_r = 64
-                lora_alpha = 128
-                lora_dropout = 0.05
-                target_modules = find_all_linear_names(model)
-                logger.info(f'Set Lora target module to {target_modules}, r to {lora_r}, lora_alpha to {lora_alpha}')
-                lora_config = LoraConfig(
-                    r=lora_r,
-                    lora_alpha=lora_alpha,
-                    lora_dropout=lora_dropout,
-                    target_modules=target_modules,
-                    bias='none',
-                    task_type='FEATURE_EXTRACTION',
-                )
-            if use_qlora:
-                model = prepare_model_for_kbit_training(model)
-            model = get_peft_model(model, lora_config)
-            model.print_trainable_parameters()
+            model = cls.setup_lora(model, lora_config, use_qlora)
 
         if lora_path is not None:
-            logger.info(f'Load pretrained with LoRA adapter {lora_path}')
-            from peft import LoraConfig, PeftModel
-
-            model = PeftModel.from_pretrained(model, lora_path)
-            model = model.merge_and_unload()
+            model = cls.load_lora_weights(model, lora_path)
 
         return cls(
             model=model,
