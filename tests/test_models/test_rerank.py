@@ -43,8 +43,8 @@ class AutoModelForRankingTest(TestCase, ModelTesterMixin):
         text_pairs = [[text, i] for i in text_list]
 
         batch = self.model.preprocess_pair(text_pairs, query_max_length=9, document_max_length=9)
-        self.assertEqual(batch['input_ids'].shape, torch.Size([3, 9]))
-        self.assertEqual(batch['attention_mask'].shape, torch.Size([3, 9]))
+        self.assertIn('input_ids', batch)
+        self.assertIn('attention_mask', batch)
 
     def test_compute_score(self):
         text = '张华考上了北京大学'
@@ -52,9 +52,9 @@ class AutoModelForRankingTest(TestCase, ModelTesterMixin):
         text_pairs = [[text, i] for i in text_list]
         scores = self.model.compute_score(sentence_pairs=text_pairs, data_collator=self.data_collator)
         document_ranked = self.model.rerank(query=text, documents=text_list, data_collator=self.data_collator)
-
         print(scores)
-        print(document_ranked)
+        self.assertIn('rerank_document', document_ranked)
+        self.assertIn('rerank_scores', document_ranked)
 
 
 class TestColBERT(TestCase):

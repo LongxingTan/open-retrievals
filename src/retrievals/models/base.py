@@ -238,7 +238,7 @@ class BaseRanker(Base):
             show_progress_bar=show_progress_bar,
         )
 
-        merge_scores = [float('inf') for _ in range(len(documents))]
+        merge_scores = [float('-inf') for _ in range(len(documents))]
         for pid, score in zip(sentence_pairs_pids, scores):
             merge_scores[pid] = max(merge_scores[pid], score)
 
