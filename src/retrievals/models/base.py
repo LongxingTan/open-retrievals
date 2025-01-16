@@ -2,7 +2,7 @@
 
 import logging
 from abc import ABC, abstractmethod
-from typing import List, Optional, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 import numpy as np
 import torch
@@ -10,6 +10,9 @@ import torch.distributed as dist
 import torch.nn as nn
 from tqdm.auto import tqdm, trange
 from transformers import PreTrainedTokenizer
+
+from ..data.collator import LLMRerankCollator, RerankCollator
+from .utils import DocumentSplitter
 
 logger = logging.getLogger(__name__)
 
@@ -28,6 +31,8 @@ class Base(ABC, torch.nn.Module):
             assert ValueError("Please use AutoModelForEmbedding.from_pretrained(model_name_or_path)")
         self.model = model
         self.tokenizer = tokenizer
+        self.device = kwargs.get('device', 'cuda' if torch.cuda.is_available() else 'cpu')
+        self.to(self.device)
 
     @abstractmethod
     def forward(self, *args, **kwargs):
@@ -105,34 +110,49 @@ class BaseRanker(Base):
     def __init__(self, model: Optional[nn.Module] = None, tokenizer: Optional[PreTrainedTokenizer] = None, **kwargs):
         super().__init__(model, tokenizer)
 
-    def score(self):
-        """score for ranking"""
-
     def preprocess_pair(
         self,
-        batch_sentence_pair: List[List[str, str]],
+        batch_sentence_pair: List[Tuple[str, str]],
         query_max_length: int,
         document_max_length: int,
         padding='max_length',
+        **kwargs,
     ):
         """Preprocesses the pair of sentences (query, document) for the model."""
-        query_list = [item[0] for item in batch_sentence_pair]
-        document_list = [item[1] for item in batch_sentence_pair]
+        query_list = [pair[0] for pair in batch_sentence_pair]
+        document_list = [pair[1] for pair in batch_sentence_pair]
+        queries_inputs_batch = self.tokenizer(
+            query_list,
+            return_tensors=None,
+            add_special_tokens=False,
+            max_length=query_max_length,
+            truncation=True,
+            **kwargs,
+        )['input_ids']
+        passages_inputs_batch = self.tokenizer(
+            document_list,
+            return_tensors=None,
+            add_special_tokens=False,
+            max_length=document_max_length,
+            truncation=True,
+            **kwargs,
+        )['input_ids']
 
-        query_batch_tokens = self.tokenizer(
-            query_list, padding=padding, truncation=True, max_length=query_max_length, return_tensors='pt'
-        )
-        document_batch_tokens = self.tokenizer(
-            document_list, padding=padding, truncation=True, max_length=document_max_length, return_tensors='pt'
-        )
+        inputs_batch = []
+        for q_inp, d_inp in zip(queries_inputs_batch, passages_inputs_batch):
+            item = self.tokenizer.prepare_for_model(
+                q_inp,
+                d_inp,
+                truncation='only_second',
+                max_length=query_max_length + document_max_length,
+                padding=False,
+            )
+            inputs_batch.append(item)
 
-        return {
-            "query_input_ids": query_batch_tokens['input_ids'].to(self.device),
-            "query_attention_mask": query_batch_tokens['attention_mask'].to(self.device),
-            "doc_input_ids": document_batch_tokens['input_ids'].to(self.device),
-            "doc_attention_mask": document_batch_tokens['attention_mask'].to(self.device),
-        }
+        return self.tokenizer.pad(inputs_batch, padding=True, return_tensors='pt', **kwargs).to(self.device)
 
+    @abstractmethod
+    @torch.no_grad()
     def compute_score(
         self,
         sentence_pairs: Union[List[Tuple[str, str]], Tuple[str, str]],
@@ -142,7 +162,7 @@ class BaseRanker(Base):
         show_progress_bar: bool = None,
         **kwargs,
     ) -> Union[List[float], float]:
-        """compute scores for a list of sentence pairs."""
+        """compute scores for a list of sentence pairs.[(q1, d1), (q2, d2), ...]"""
         self.model.eval()
         if isinstance(sentence_pairs[0], str):
             sentence_pairs = [sentence_pairs]
@@ -151,7 +171,8 @@ class BaseRanker(Base):
 
         if self.query_instruction or self.document_instruction:
             sentences_sorted = [
-                (self.query_instruction + pair[0], self.document_instruction + pair[1]) for pair in sentences_sorted
+                (self.query_instruction.format(pair[0]), self.document_instruction.format(pair[1]))
+                for pair in sentences_sorted
             ]
 
         all_scores: List[float] = []
@@ -163,12 +184,12 @@ class BaseRanker(Base):
                 batch_sentences, query_max_length=max_length, document_max_length=max_length
             )
 
-            scores = self._encode_and_score(batch_on_device)
+            scores = self.forward(**batch_on_device)
 
             if normalize:
                 scores = torch.sigmoid(scores)
 
-            all_scores.extend(scores.cpu().float().tolist())
+            all_scores.extend(scores.detach().cpu().float().tolist())
 
         all_scores = [
             all_scores[idx]
@@ -176,3 +197,56 @@ class BaseRanker(Base):
         ]
 
         return all_scores[0] if len(all_scores) == 1 else all_scores
+
+    @torch.no_grad()
+    def rerank(
+        self,
+        query: str,
+        documents: List[str],
+        batch_size: int = 16,
+        show_progress_bar: bool = None,
+        chunk_max_length: int = 256,
+        chunk_overlap: int = 48,
+        max_chunks_per_doc: int = 100,
+        return_dict: bool = True,
+        normalize: bool = False,
+        data_collator: Optional[RerankCollator] = None,
+        long_documents=None,
+        **kwargs,
+    ) -> Union[Dict[str, List[str]], List[str]]:
+        if query is None or len(query) == 0 or len(documents) == 0:
+            return {'rerank_documents': [], 'rerank_scores': []}
+
+        splitter = DocumentSplitter(
+            chunk_size=chunk_max_length, chunk_overlap=chunk_overlap, max_chunks_per_doc=max_chunks_per_doc
+        )
+        text_pairs, sentence_pairs_pids = splitter.create_documents(
+            query,
+            documents,
+            tokenizer=self.tokenizer,
+        )
+
+        scores = self.compute_score(
+            sentence_pairs=text_pairs,
+            data_collator=data_collator,
+            batch_size=batch_size,
+            normalize=normalize,
+            show_progress_bar=show_progress_bar,
+        )
+
+        merge_scores = [0.0 for _ in range(len(documents))]
+        for pid, score in zip(sentence_pairs_pids, scores):
+            merge_scores[pid] = max(merge_scores[pid], score)
+
+        merge_scores_argsort = np.argsort(merge_scores)[::-1]
+        sorted_documents = [documents[i] for i in merge_scores_argsort]
+        sorted_scores = [merge_scores[i] for i in merge_scores_argsort]
+
+        if return_dict:
+            return {
+                'rerank_document': sorted_documents,
+                'rerank_scores': sorted_scores,
+                'rerank_ids': merge_scores_argsort.tolist(),
+            }
+        else:
+            return sorted_documents

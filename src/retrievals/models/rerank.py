@@ -3,7 +3,6 @@
 import json
 import logging
 import os
-from copy import deepcopy
 from typing import Callable, Dict, List, Literal, Optional, Tuple, Union
 
 import numpy as np
@@ -52,7 +51,7 @@ class AutoModelForRanking(BaseRanker):
         device: Optional[str] = None,
         **kwargs,
     ):
-        super().__init__()
+        super().__init__(model, tokenizer)
         if isinstance(model, str):
             assert ValueError("Please use AutoModelForRanking.from_pretrained(model_name_or_path)")
 
@@ -69,51 +68,10 @@ class AutoModelForRanking(BaseRanker):
         self.task_prompt = task_prompt
         self.query_instruction = query_instruction if query_instruction else ""
         self.document_instruction = document_instruction if document_instruction else ""
-
         self.max_length = max_length or self._determine_max_length()
         self.temperature = temperature
         self.device = device or get_device_name()
-
-        # self._post_init()
         self.to(self.device)
-
-    # def _post_init(self):
-    #     num_features: int = self.model.config.hidden_size
-    #     self.classifier = nn.Linear(num_features, 1)
-    #     try:
-    #         state_dict = torch.load(os.path.join('./', "colbert_linear"), map_location=self.device)
-    #         self.dense_pooler.load_state_dict(state_dict)
-    #     except FileNotFoundError:
-    #         self._init_weights(self.classifier)
-    #         logger.warning("Could not find dense weight, initialize it randomly")
-
-    def _init_weights(self, module: nn.Module):
-        if isinstance(module, nn.Linear):
-            module.weight.data.normal_(mean=0.0, std=self.model.config.initializer_range)
-            if module.bias is not None:
-                module.bias.data.zero_()
-        elif isinstance(module, nn.Embedding):
-            module.weight.data.normal_(mean=0.0, std=self.model.config.initializer_range)
-            if module.padding_idx is not None:
-                module.weight.data[module.padding_idx].zero_()
-        elif isinstance(module, nn.LayerNorm):
-            module.bias.data.zero_()
-            module.weight.data.fill_(1.0)
-
-    def encode(
-        self, input_ids: torch.Tensor, attention_mask: torch.Tensor
-    ) -> Union[torch.Tensor, SequenceClassifierOutput]:
-        """Encode input IDs and attention masks into embeddings."""
-        model_output: SequenceClassifierOutput = self.model(input_ids, attention_mask, output_hidden_states=True)
-
-        if not self.pooling_method:
-            return model_output
-        last_hidden_state = model_output.get('last_hidden_state', model_output[0])
-        if self.pooling_method:
-            embeddings = self.pooling(last_hidden_state, attention_mask)
-        else:
-            embeddings = self.classifier(last_hidden_state)
-        return embeddings
 
     def forward(
         self,
@@ -150,6 +108,7 @@ class AutoModelForRanking(BaseRanker):
     ) -> Dict[str, torch.Tensor]:
         """Forward pass for cross-encoder models."""
         features = self.encode(input_ids, attention_mask)
+
         if self.temperature is not None:
             features = features / self.temperature
         if not self.training:
@@ -160,6 +119,19 @@ class AutoModelForRanking(BaseRanker):
             loss = self._compute_loss(scores, labels)
             return {'logits': logits, 'loss': loss}
         return {'logits': logits}
+
+    def encode(
+        self, input_ids: torch.Tensor, attention_mask: torch.Tensor
+    ) -> Union[torch.Tensor, SequenceClassifierOutput]:
+        """Encode input IDs and attention masks into embeddings."""
+        model_output: SequenceClassifierOutput = self.model(input_ids, attention_mask, output_hidden_states=True)
+
+        if not self.pooling_method:
+            return model_output
+
+        last_hidden_state = model_output.get('last_hidden_state', model_output[0])
+        embeddings = self.pooling(last_hidden_state, attention_mask)
+        return embeddings
 
     def _compute_loss(self, scores: torch.Tensor, labels: torch.Tensor) -> torch.Tensor:
         """Compute the loss based on the scores and labels."""
@@ -178,133 +150,6 @@ class AutoModelForRanking(BaseRanker):
             loss_fn=self.loss_fn,
             **kwargs,
         )
-
-    def preprocess_pair(
-        self,
-        batch_sentence_pair: List[List[str]],
-        max_length: int,
-        padding: Union[str, bool] = 'max_length',
-        pairs: bool = True,
-    ):
-        if (pairs and isinstance(batch_sentence_pair[0][0], str)) or (
-            not pairs and isinstance(batch_sentence_pair[0], str)
-        ):
-            batch = self.tokenizer(
-                batch_sentence_pair,
-                padding=True,
-                truncation=True,
-                max_length=max_length,
-                return_tensors="pt",
-            )
-        else:
-            batch = self.tokenizer.pad(
-                batch_sentence_pair,
-                padding=True,
-                max_length=None,
-                pad_to_multiple_of=None,
-                return_tensors='pt',
-            )
-        batch_on_device = {k: v.to(self.device) for k, v in batch.items()}
-        return batch_on_device
-
-    @torch.no_grad()
-    def compute_score(
-        self,
-        sentence_pairs: Union[List[Tuple[str]], Tuple[str], List[str]],
-        batch_size: int = 16,
-        max_length: int = 512,
-        normalize: bool = False,
-        show_progress_bar: bool = None,
-        **kwargs,
-    ) -> Union[List[float], float]:
-        """
-        preprocess -> score -> output
-        """
-        self.model.eval()
-        if isinstance(sentence_pairs[0], str):
-            sentence_pairs = [sentence_pairs]
-
-        length_sorted_idx = np.argsort([-self._text_length(q) - self._text_length(p) for q, p in sentence_pairs])
-        sentences_sorted = [sentence_pairs[idx] for idx in length_sorted_idx]
-
-        all_scores: List[float] = []
-        for batch_start in tqdm(
-            range(0, len(sentences_sorted), batch_size), desc='Scoring', disable=not show_progress_bar
-        ):
-            batch_sentences = sentences_sorted[batch_start : batch_start + batch_size]
-            batch_on_device = self.preprocess_pair(batch_sentences, max_length=max_length)
-            scores = self.model(**batch_on_device, return_dict=True).logits.view(-1)
-
-            if normalize:
-                scores = torch.sigmoid(scores)
-            all_scores.extend(scores.cpu().float().tolist())
-
-        # only works for two class comparison
-        all_scores = [all_scores[idx] for idx in np.argsort(length_sorted_idx)]
-
-        if len(all_scores) == 1:
-            return all_scores[0]
-
-        return all_scores
-
-    @torch.no_grad()
-    def rerank(
-        self,
-        query: str,
-        documents: List[str],
-        top_k: Optional[int] = None,
-        return_documents: bool = False,
-        batch_size: int = 16,
-        show_progress_bar: bool = None,
-        num_workers: int = 0,
-        activation_fct=None,
-        apply_softmax=False,
-        convert_to_numpy: bool = True,
-        convert_to_tensor: bool = False,
-        chunk_max_length: int = 256,
-        chunk_overlap: int = 48,
-        max_chunks_per_doc: int = 100,
-        return_dict: bool = True,
-        normalize: bool = False,
-        data_collator: Optional[RerankCollator] = None,
-        **kwargs,
-    ) -> Union[Dict[str, List[str]], List[str]]:
-        if query is None or len(query) == 0 or len(documents) == 0:
-            return {'rerank_documents': [], 'rerank_scores': []}
-
-        splitter = DocumentSplitter(
-            chunk_size=chunk_max_length, chunk_overlap=chunk_overlap, max_chunks_per_doc=max_chunks_per_doc
-        )
-        text_pairs, sentence_pairs_pids = splitter.create_documents(
-            query,
-            documents,
-            tokenizer=self.tokenizer,
-        )
-
-        scores = self.compute_score(
-            sentence_pairs=text_pairs,
-            data_collator=data_collator,
-            batch_size=batch_size,
-            normalize=normalize,
-            show_progress_bar=show_progress_bar,
-        )
-
-        merge_scores = [0.0 for _ in range(len(documents))]
-        for pid, score in zip(sentence_pairs_pids, scores):
-            merge_scores[pid] = max(merge_scores[pid], score)
-
-        merge_scores_argsort = np.argsort(merge_scores)[::-1]
-        sorted_documents = [documents[i] for i in merge_scores_argsort]
-        sorted_scores = [merge_scores[i] for i in merge_scores_argsort]
-
-        if return_dict:
-            return {
-                'rerank_document': sorted_documents,
-                'rerank_scores': sorted_scores,
-                'rerank_ids': merge_scores_argsort.tolist(),
-            }
-        else:
-            return sorted_documents
 
     @classmethod
     def from_pretrained(
@@ -852,59 +697,3 @@ class LLMRanker(AutoModelForRanking):
     def score(self, logits: torch.Tensor):
         scores = logits[:, -1, self.target_token_loc]  # for left_padding
         return scores
-
-
-class DocumentSplitter(object):
-    """
-    Rerank the long document
-    - https://github.com/netease-youdao/BCEmbedding/blob/master/BCEmbedding/models/utils.py
-    """
-
-    def __init__(self, chunk_size: int, chunk_overlap: int = 0, max_chunks_per_doc: int = 32):
-        self.chunk_size = chunk_size
-        self.chunk_overlap = chunk_overlap
-        self.max_chunks_per_doc = max_chunks_per_doc
-
-    def create_documents(self, query, documents, tokenizer):
-        res_merge_inputs = []
-        res_merge_inputs_pids = []
-
-        query_inputs = tokenizer.encode_plus(query, truncation=False, padding=False)
-        sep_id = tokenizer.sep_token_id
-        doc_max_length = self.chunk_size - len(query_inputs['input_ids']) - 2
-
-        for pid, document in enumerate(documents):
-            document_inputs = tokenizer.encode_plus(document, truncation=False, padding=False, add_special_tokens=False)
-            doc_inputs_length = len(document_inputs['input_ids'])
-
-            if doc_inputs_length <= doc_max_length:
-                qc_merge_inputs = self._merge_inputs(query_inputs, document_inputs, sep_id)
-                res_merge_inputs.append(qc_merge_inputs)
-                res_merge_inputs_pids.append(pid)
-            else:
-                start_id = 0
-                while start_id < doc_inputs_length:
-                    end_id = start_id + doc_max_length
-                    sub_document_inputs = {k: v[start_id:end_id] for k, v in document_inputs.items()}
-                    start_id = end_id - self.chunk_overlap if end_id < doc_inputs_length else end_id
-
-                    qp_merge_inputs = self._merge_inputs(query_inputs, sub_document_inputs, sep_id)
-                    res_merge_inputs.append(qp_merge_inputs)
-                    res_merge_inputs_pids.append(pid)
-        return res_merge_inputs, res_merge_inputs_pids
-
-    def _merge_inputs(self, chunk1_raw, chunk2, sep_id: int):
-        chunk1 = deepcopy(chunk1_raw)
-
-        chunk1['input_ids'].append(sep_id)
-        chunk1['input_ids'].extend(chunk2['input_ids'])
-        chunk1['input_ids'].append(sep_id)
-
-        chunk1['attention_mask'].append(chunk2['attention_mask'][0])
-        chunk1['attention_mask'].extend(chunk2['attention_mask'])
-        chunk1['attention_mask'].append(chunk2['attention_mask'][0])
-
-        if 'token_type_ids' in chunk1:
-            token_type_ids = [1 for _ in range(len(chunk2['token_type_ids']) + 2)]
-            chunk1['token_type_ids'].extend(token_type_ids)
-        return chunk1
