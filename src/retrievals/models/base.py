@@ -38,12 +38,13 @@ class Base(ABC, nn.Module):
     def forward(self, *args, **kwargs):
         """Pytorch forward method."""
 
-    def setup_lora(self, model, lora_config, use_qlora: bool = False):
+    @staticmethod
+    def setup_lora(model, lora_config, use_qlora: bool = False):
         """Setup LoRA for the model."""
         from peft import get_peft_model, prepare_model_for_kbit_training
 
-        if lora_config is None:
-            lora_config = self.create_default_lora_config(model, lora_r=32, lora_alpha=64, lora_dropout=0.05)
+        if not lora_config:
+            lora_config = Base._create_default_lora_config(model, lora_r=32, lora_alpha=64, lora_dropout=0.05)
 
         if use_qlora:
             model = prepare_model_for_kbit_training(model)
@@ -51,7 +52,8 @@ class Base(ABC, nn.Module):
         model.print_trainable_parameters()
         return model
 
-    def load_lora_weights(self, model, lora_path: str):
+    @staticmethod
+    def load_lora_weights(model, lora_path: str):
         """Load pre-trained LoRA weights."""
         from peft import PeftModel
 
@@ -59,7 +61,8 @@ class Base(ABC, nn.Module):
         model = PeftModel.from_pretrained(model, lora_path)
         return model.merge_and_unload()
 
-    def create_default_lora_config(self, model, lora_r: int, lora_alpha: int, lora_dropout: float):
+    @staticmethod
+    def _create_default_lora_config(model, lora_r: int, lora_alpha: int, lora_dropout: float):
         """Create default LoRA configuration."""
         from peft import LoraConfig
 
