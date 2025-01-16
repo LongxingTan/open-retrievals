@@ -1,5 +1,3 @@
-from paddle.base.incubate.checkpoint.checkpoint_saver import PaddleModel
-
 [license-image]: https://img.shields.io/badge/License-Apache%202.0-blue.svg
 [license-url]: https://opensource.org/licenses/Apache-2.0
 [pypi-image]: https://badge.fury.io/py/open-retrievals.svg

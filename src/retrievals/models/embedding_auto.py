@@ -11,6 +11,7 @@ from typing import Callable, Dict, List, Literal, Optional, Tuple, Union
 import numpy as np
 import torch
 import torch.nn as nn
+from paddle.base.libpaddle.eager.ops.legacy import segment_pool
 from torch.utils.data import DataLoader
 from tqdm.auto import tqdm, trange
 from transformers import (
@@ -503,14 +504,9 @@ class PairwiseModel(AutoModelForEmbedding):
         shared_weights: bool = True,
         **kwargs,
     ) -> None:
-        super().__init__(
-            model=model,
-            tokenizer=model.tokenizer,
-            pooling_method=model.pooling_method,
-            loss_fn=loss_fn,
-            **kwargs,
-        )
-
+        super().__init__(model=model, loss_fn=loss_fn)
+        self.model = model
+        self.loss_fn = loss_fn
         self.shared_weights = shared_weights
         if not shared_weights:
             self.document_model = copy.deepcopy(self.model)
@@ -586,22 +582,16 @@ class ListwiseModel(AutoModelForEmbedding):
     def __init__(
         self,
         model: Optional[nn.Module] = None,
-        tokenizer: Optional[PreTrainedTokenizer] = None,
-        pooling_method: str = 'cls',
         loss_fn: Optional[Callable] = None,
-        listwise_pooling: bool = False,
+        segment_pooling: str = 'mean',
         num_segments: Optional[int] = None,
         **kwargs,
     ) -> None:
         super().__init__(
             model=model,
-            tokenizer=tokenizer,
-            pooling_method=pooling_method,
             loss_fn=loss_fn,
-            **kwargs,
         )
-        self.pooling_method = pooling_method
-        self.listwise_pooling = listwise_pooling
+        self.segment_pooling = self._get_segment_pooling(segment_pooling)
         self.num_segments = num_segments
 
     def forward(
@@ -612,33 +602,31 @@ class ListwiseModel(AutoModelForEmbedding):
         output_hidden_states: Optional[bool] = None,
         return_dict: Optional[bool] = None,
     ):
-        encoding = super().forward(inputs)
+        outputs = self.model(input_ids=inputs['input_ids'], attention_mask=inputs['attention_mask'], return_dict=True)
 
-        res = dict()
-        if self.pooling_method == 'unsorted_segment_mean':
-            encoding = self._unsorted_segment_mean(
-                encoding, segment_ids=inputs['segment_ids'], num_segments=self.num_segments
-            )
-            res['pred'] = self.fc(encoding[:, 1:])
-        else:
-            encodings = []
-            for i in range(self.num_segments):
-                mask_ = (inputs['segment_ids'] == i + 1).int()
-                encoding_ = self.pooling(encoding, mask_)
-                encoding_ = self.fc(encoding_)
-                encodings.append(encoding_)
-            res['pred'] = torch.stack(encodings, 1)
+        pooled = self.pooling(outputs.last_hidden_state, inputs['attention_mask'])
+        segment_pooled = self.segment_pooling(pooled, inputs['segment_ids'], self.num_segments)
 
-        res['pred'] = res['pred'].squeeze(-1)
-        return res
+        projected = self.projection(segment_pooled)
+        loss = self.loss_fn(projected) if self.loss_fn else None
+        return loss
+
+    def _get_segment_pooling(self, method: str) -> Callable:
+        if method == 'mean':
+            return self._unsorted_segment_mean
+        elif method == 'sorted_mean':
+            return self._sorted_segment_mean
+        raise ValueError(f"Unknown segment pooling method: {method}")
 
     def _unsorted_segment_mean(self, data: torch.Tensor, segment_ids: torch.Tensor, num_segments: int) -> torch.Tensor:
-        result_shape = (num_segments, data.size(1))
-        segment_ids = segment_ids.unsqueeze(-1).expand(-1, data.size(1))  # (batch, num_embedding)
-        result = data.new_full(result_shape, 0)  # init empty result tensor
-        count = data.new_full(result_shape, 0)
-        result.scatter_add_(0, segment_ids, data)  # fill the result from data to organized segment result
+        """Compute mean embeddings for unsorted segments"""
+        segment_ids = segment_ids.unsqueeze(-1).expand(-1, data.size(-1))
+        result = data.new_zeros((num_segments, data.size(-1)))
+        count = data.new_zeros((num_segments, data.size(-1)))
+
+        result.scatter_add_(0, segment_ids, data)
         count.scatter_add_(0, segment_ids, torch.ones_like(data))
+
         return result / count.clamp(min=1)
 
     def _sorted_segment_mean(self, data: torch.Tensor, segment_ids: torch.Tensor, num_segments: int) -> torch.Tensor:
