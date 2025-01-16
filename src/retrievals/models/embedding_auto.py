@@ -468,7 +468,10 @@ class PairwiseModel(nn.Module):
             self.document_model = copy.deepcopy(self.model)
 
     def forward(
-        self, inputs: Union[Dict[str, torch.Tensor], list], inputs_pair: Optional[Dict[str, torch.Tensor]] = None
+        self,
+        inputs: Union[Dict[str, torch.Tensor], list],
+        inputs_pair: Optional[Dict[str, torch.Tensor]] = None,
+        return_dict: bool = True,
     ):
 
         if isinstance(inputs, (list, tuple, dict)) and 2 <= len(inputs) <= 3 or inputs_pair is not None:
