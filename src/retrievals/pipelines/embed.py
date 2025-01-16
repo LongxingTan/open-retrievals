@@ -11,6 +11,8 @@ import torch
 from torch.utils.data import DataLoader
 from transformers import AutoTokenizer, HfArgumentParser, TrainingArguments, set_seed
 
+from retrievals import PairwiseModel
+
 from ..data import (
     EncodeCollator,
     EncodeDataset,
@@ -177,10 +179,7 @@ def main():
             },
         )
 
-        model = model.set_train_type(
-            "pairwise",
-            loss_fn=loss_fn,
-        )
+        train_model = PairwiseModel(model, loss_fn=loss_fn)
 
         train_dataset = RetrievalTrainDataset(
             args=data_args,
@@ -191,7 +190,7 @@ def main():
         logger.info(f"Total training examples: {len(train_dataset)}")
 
         trainer = RetrievalTrainer(
-            model=model,
+            model=train_model,
             args=training_args,
             train_dataset=train_dataset,
             data_collator=RetrievalCollator(
@@ -205,7 +204,7 @@ def main():
 
         trainer.train()
         # trainer.save_model(training_args.output_dir)
-        model.save_pretrained(training_args.output_dir)
+        train_model.save_pretrained(training_args.output_dir)
 
         if trainer.is_world_process_zero():
             tokenizer.save_pretrained(training_args.output_dir)

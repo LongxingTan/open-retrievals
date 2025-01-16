@@ -366,22 +366,6 @@ class AutoModelForEmbedding(Base):
         logger.info(f'Build index successfully, saved in {index_path}, elapsed: {time.time() - start_time:.2}s')
         return index
 
-    def set_train_type(self, train_type: Literal['pointwise', 'pairwise', 'listwise'], **kwargs):
-        train_type = train_type.lower().replace('-', '')
-        logger.info(f'Set train type to {train_type}')
-        model_class = {'pointwise': self, 'pairwise': PairwiseModel, 'listwise': ListwiseModel}
-        model_class = model_class.get(train_type)
-
-        return model_class(
-            model=self.model,
-            tokenizer=self.tokenizer,
-            pooling_method=self.pooling_method,
-            query_instruction=self.query_instruction,
-            document_instruction=self.document_instruction,
-            device=self.device,
-            **kwargs,
-        )
-
     @classmethod
     def as_retriever(cls, retrieval_args, **kwargs):
         from .retrieval_auto import AutoModelForRetrieval
@@ -515,16 +499,14 @@ class PairwiseModel(AutoModelForEmbedding):
     def __init__(
         self,
         model: Optional[nn.Module] = None,
-        tokenizer: Optional[PreTrainedTokenizer] = None,
-        pooling_method: str = 'cls',
         loss_fn: Optional[Callable] = None,
         shared_weights: bool = True,
         **kwargs,
     ) -> None:
         super().__init__(
             model=model,
-            tokenizer=tokenizer,
-            pooling_method=pooling_method,
+            tokenizer=model.tokenizer,
+            pooling_method=model.pooling_method,
             loss_fn=loss_fn,
             **kwargs,
         )

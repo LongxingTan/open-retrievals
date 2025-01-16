@@ -244,9 +244,9 @@ def main():
         pooling_method=training_args.pooling_method,
         lora_config=lora_config,
     )
-    model = model.set_train_type("pairwise", loss_fn=TripletRankingLoss())
+    train_model = PairwiseModel(model, loss_fn=TripletRankingLoss())
 
-    optimizer = get_optimizer(model, lr=5e-5, weight_decay=1e-3)
+    optimizer = get_optimizer(train_model, lr=5e-5, weight_decay=1e-3)
 
     lr_scheduler = get_scheduler(
         optimizer,
@@ -256,7 +256,7 @@ def main():
     )
 
     trainer = RetrievalTrainer(
-        model=model,
+        model=train_model,
         args=training_args,
         train_dataset=train_dataset,
         data_collator=RetrievalCollator(
