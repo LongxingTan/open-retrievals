@@ -39,7 +39,8 @@ Embedding from the pretrained model
 
 .. note::
 
-    Use the write pooling_method while calling, add the query_instruction if it's not embedding into the data already.
+    - Use the right pooling_method while calling, add the query_instruction if it's not embedding into the data already.
+    - Don't forget set remove_unused_columns=False in TrainingArguments
 
 
 1.1 Fine-tune embedding

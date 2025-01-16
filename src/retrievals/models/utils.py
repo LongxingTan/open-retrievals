@@ -1,5 +1,6 @@
 import re
-from typing import Dict, List, Literal, Optional
+from copy import deepcopy
+from typing import Dict, List, Optional
 
 import torch
 from torch import nn
@@ -124,3 +125,59 @@ def freeze_layers(model, n_layers: int = 6):
             param.requires_grad = False
 
     return model
+
+
+class DocumentSplitter(object):
+    """
+    Rerank the long document
+    - https://github.com/netease-youdao/BCEmbedding/blob/master/BCEmbedding/models/utils.py
+    """
+
+    def __init__(self, chunk_size: int, chunk_overlap: int = 0, max_chunks_per_doc: int = 32):
+        self.chunk_size = chunk_size
+        self.chunk_overlap = chunk_overlap
+        self.max_chunks_per_doc = max_chunks_per_doc
+
+    def create_documents(self, query, documents, tokenizer):
+        res_merge_inputs = []
+        res_merge_inputs_pids = []
+
+        query_inputs = tokenizer.encode_plus(query, truncation=False, padding=False)
+        sep_id = tokenizer.sep_token_id
+        doc_max_length = self.chunk_size - len(query_inputs['input_ids']) - 2
+
+        for pid, document in enumerate(documents):
+            document_inputs = tokenizer.encode_plus(document, truncation=False, padding=False, add_special_tokens=False)
+            doc_inputs_length = len(document_inputs['input_ids'])
+
+            if doc_inputs_length <= doc_max_length:
+                qc_merge_inputs = self._merge_inputs(query_inputs, document_inputs, sep_id)
+                res_merge_inputs.append(qc_merge_inputs)
+                res_merge_inputs_pids.append(pid)
+            else:
+                start_id = 0
+                while start_id < doc_inputs_length:
+                    end_id = start_id + doc_max_length
+                    sub_document_inputs = {k: v[start_id:end_id] for k, v in document_inputs.items()}
+                    start_id = end_id - self.chunk_overlap if end_id < doc_inputs_length else end_id
+
+                    qp_merge_inputs = self._merge_inputs(query_inputs, sub_document_inputs, sep_id)
+                    res_merge_inputs.append(qp_merge_inputs)
+                    res_merge_inputs_pids.append(pid)
+        return res_merge_inputs, res_merge_inputs_pids
+
+    def _merge_inputs(self, chunk1_raw, chunk2, sep_id: int):
+        chunk1 = deepcopy(chunk1_raw)
+
+        chunk1['input_ids'].append(sep_id)
+        chunk1['input_ids'].extend(chunk2['input_ids'])
+        chunk1['input_ids'].append(sep_id)
+
+        chunk1['attention_mask'].append(chunk2['attention_mask'][0])
+        chunk1['attention_mask'].extend(chunk2['attention_mask'])
+        chunk1['attention_mask'].append(chunk2['attention_mask'][0])
+
+        if 'token_type_ids' in chunk1:
+            token_type_ids = [1 for _ in range(len(chunk2['token_type_ids']) + 2)]
+            chunk1['token_type_ids'].extend(token_type_ids)
+        return chunk1
