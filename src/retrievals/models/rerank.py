@@ -19,14 +19,13 @@ from transformers import (
 )
 from transformers.modeling_outputs import SequenceClassifierOutput
 
-from ..data.collator import LLMRerankCollator, RerankCollator
+from ..data.collator import LLMRerankCollator
 from ..losses.colbert_loss import ColbertLoss
 from .base import BaseRanker
 from .pooling import AutoPooling
 from .utils import (
     batch_to_device,
     check_causal_lm,
-    find_all_linear_names,
     get_device_name,
 )
 
