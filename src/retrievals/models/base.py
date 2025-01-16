@@ -44,6 +44,7 @@ class Base(ABC, nn.Module):
 
         if lora_config is None:
             lora_config = self.create_default_lora_config(model, lora_r=32, lora_alpha=64, lora_dropout=0.05)
+
         if use_qlora:
             model = prepare_model_for_kbit_training(model)
         model = get_peft_model(model, lora_config)

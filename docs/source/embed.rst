@@ -172,8 +172,8 @@ If the positive and negative examples have some noise in label, the directly poi
       --positive_key positive \
       --negative_key negative \
       --use_lora True \
-      --query_instruction "Retrieve the possible answer for query.\nQuery: " \
-      --document_instruction 'Document: ' \
+      --query_instruction "Retrieve the possible answer for query.\nQuery: {}" \
+      --document_instruction 'Document: {}' \
       --learning_rate 2e-4 \
       --bf16 \
       --num_train_epochs 3 \

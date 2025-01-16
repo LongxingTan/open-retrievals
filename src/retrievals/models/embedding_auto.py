@@ -376,7 +376,7 @@ class AutoModelForEmbedding(Base):
         use_lora: bool = False,
         use_qlora: bool = False,
         lora_path: Optional[str] = None,
-        lora_config=None,
+        lora_config: Optional["LoraConfig"] = None,  # noqa: F821
         quantization_config=None,
         device: Optional[str] = None,
         query_instruction: Optional[str] = None,
