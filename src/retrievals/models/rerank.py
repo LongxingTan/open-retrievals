@@ -78,18 +78,19 @@ class AutoModelForRanking(BaseRanker):
         input_ids: torch.Tensor,
         attention_mask: torch.Tensor,
         labels: Optional[torch.Tensor] = None,
-        return_dict: Optional[bool] = True,
+        return_dict: bool = False,
         **kwargs,
     ) -> Union[Dict[str, torch.Tensor], Tuple[torch.Tensor, torch.Tensor], torch.Tensor]:
         if self.causal_lm:
-            return self._forward_causal_lm(input_ids, attention_mask, labels, **kwargs)
-        return self._forward_cross_encoder(input_ids, attention_mask, labels, **kwargs)
+            return self._forward_causal_lm(input_ids, attention_mask, labels, return_dict, **kwargs)
+        return self._forward_cross_encoder(input_ids, attention_mask, labels, return_dict, **kwargs)
 
     def _forward_causal_lm(
         self,
         input_ids: torch.Tensor,
         attention_mask: torch.Tensor,
         labels: Optional[torch.Tensor],
+        return_dict: bool = False,
         **kwargs,
     ) -> Dict[str, torch.Tensor]:
         """Forward pass for causal language models."""
@@ -97,13 +98,14 @@ class AutoModelForRanking(BaseRanker):
         result = {"logits": outputs.logits}
         if labels is not None:
             result["loss"] = self._compute_loss(outputs.logits, labels)
-        return result
+        return result if return_dict else outputs.logits
 
     def _forward_cross_encoder(
         self,
         input_ids: torch.Tensor,
         attention_mask: torch.Tensor,
         labels: Optional[torch.Tensor],
+        return_dict: bool = False,
         **kwargs,
     ) -> Dict[str, torch.Tensor]:
         """Forward pass for cross-encoder models."""
@@ -118,7 +120,7 @@ class AutoModelForRanking(BaseRanker):
         if labels is not None:
             loss = self._compute_loss(scores, labels)
             return {'logits': logits, 'loss': loss}
-        return {'logits': logits}
+        return {'logits': logits} if return_dict else logits
 
     def encode(
         self, input_ids: torch.Tensor, attention_mask: torch.Tensor
