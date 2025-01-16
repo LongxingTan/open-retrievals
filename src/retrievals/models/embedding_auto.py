@@ -56,8 +56,8 @@ class AutoModelForEmbedding(Base):
         self.pooling = AutoPooling(pooling_method) if pooling_method else None
         self.loss_fn = loss_fn
         self.max_length = max_length or self._determine_max_length()
-        self.query_instruction = query_instruction or ''
-        self.document_instruction = document_instruction or ''
+        self.query_instruction = query_instruction or '{}'
+        self.document_instruction = document_instruction or '{}'
         self.use_fp16 = use_fp16
         self.device = device or get_device_name()
         try:
@@ -243,10 +243,10 @@ class AutoModelForEmbedding(Base):
         sentences_sorted = [sentences[idx] for idx in length_sorted_idx]
         if is_query and self.query_instruction:
             logger.info("Encoding query")
-            sentences_sorted = [self.query_instruction + sentence for sentence in sentences_sorted]
+            sentences_sorted = [self.query_instruction.format(sentence) for sentence in sentences_sorted]
         if not is_query and self.document_instruction:
             logger.info('Encoding document')
-            sentences_sorted = [self.document_instruction + sentence for sentence in sentences_sorted]
+            sentences_sorted = [self.document_instruction.format(sentence) for sentence in sentences_sorted]
 
         for start_index in trange(0, len(sentences), batch_size, desc="Batches", disable=not show_progress_bar):
             sentences_batch = sentences_sorted[start_index : start_index + batch_size]
@@ -472,6 +472,7 @@ class PairwiseModel(nn.Module):
         inputs: Union[Dict[str, torch.Tensor], list],
         inputs_pair: Optional[Dict[str, torch.Tensor]] = None,
         return_dict: bool = True,
+        **kwargs,
     ):
 
         if isinstance(inputs, (list, tuple, dict)) and 2 <= len(inputs) <= 3 or inputs_pair is not None:

@@ -58,8 +58,8 @@ class AutoModelForRanking(BaseRanker):
         self.loss_type = loss_type
         self.causal_lm = causal_lm
         self.task_prompt = task_prompt
-        self.query_instruction = query_instruction if query_instruction else ""
-        self.document_instruction = document_instruction if document_instruction else ""
+        self.query_instruction = query_instruction if query_instruction else "{}"
+        self.document_instruction = document_instruction if document_instruction else "{}"
         self.max_length = max_length or self._determine_max_length()
         self.temperature = temperature
         self.device = device or get_device_name()
@@ -558,8 +558,8 @@ class LLMRanker(AutoModelForRanking):
         task_prompt: Optional[str] = None,
         target_token: str = 'Yes',
         sep_token: str = '\n',
-        query_instruction: Optional[str] = 'A: ',
-        document_instruction: Optional[str] = 'B: ',
+        query_instruction: Optional[str] = 'A: {}',
+        document_instruction: Optional[str] = 'B: {}',
         **kwargs,
     ):
         super().__init__(**kwargs)
@@ -608,8 +608,8 @@ class LLMRanker(AutoModelForRanking):
         lora_path: Optional[str] = None,
         # quantization_config=None,
         task_prompt: Optional[str] = None,
-        query_instruction: Optional[str] = 'A: ',
-        document_instruction: Optional[str] = 'B: ',
+        query_instruction: Optional[str] = 'A: {}',
+        document_instruction: Optional[str] = 'B: {}',
         device: Optional[str] = None,
         temperature: Optional[float] = None,
         **kwargs,
@@ -707,7 +707,8 @@ class LLMRanker(AutoModelForRanking):
 
         if self.query_instruction or self.document_instruction:
             sentences_sorted = [
-                (self.query_instruction + pair[0], self.document_instruction + pair[1]) for pair in sentences_sorted
+                (self.query_instruction.format(pair[0]), self.document_instruction.format(pair[1]))
+                for pair in sentences_sorted
             ]
 
         all_scores: List[float] = []
