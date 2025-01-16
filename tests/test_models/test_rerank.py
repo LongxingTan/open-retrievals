@@ -37,9 +37,9 @@ from .test_modeling_common import (
 class PseudoRerankTrainDataset(Dataset):
     def __init__(self):
         self.examples = [
-            {'query': 'how are you', 'document': 'fine', 'labels': 1},
+            {'query': 'how are you, fans', 'document': 'I am fine', 'labels': 1},
             {'query': 'hallo?', 'document': 'what is your problem', 'labels': 1},
-            {'query': 'how are you doing', 'document': 'survive', 'labels': 0},
+            {'query': 'how are you doing', 'document': 'be survive', 'labels': 0},
         ]
 
     def __len__(self):
@@ -53,15 +53,9 @@ class AutoModelForRankingTest(TestCase, ModelTesterMixin):
     def setUp(self) -> None:
         self.output_dir = tempfile.mkdtemp()
         model_name_or_path = 'BAAI/bge-reranker-base'
-        self.data_collator = RerankCollator(AutoTokenizer.from_pretrained(model_name_or_path))
+        self.tokenizer = AutoTokenizer.from_pretrained(model_name_or_path)
         self.model = AutoModelForRanking.from_pretrained(model_name_or_path, device='cpu', temperature=0.05)
-
-        vocab_tokens = ["[UNK]", "[CLS]", "[SEP]", "[PAD]", "[MASK]"]
-        self.vocab_file = os.path.join(self.output_dir, "vocab.txt")
-        with open(self.vocab_file, "w", encoding="utf-8") as vocab_writer:
-            vocab_writer.write("".join([x + "\n" for x in vocab_tokens]))
-
-        self.tokenizer = BertTokenizer(self.vocab_file)
+        self.data_collator = RerankCollator(self.tokenizer, max_length=32)
 
         self.text = '张华考上了北京大学'
         self.text_list = ['李萍进了中等技术学校', '我在百货公司当售货员', '我们都有光明的前途']
@@ -71,13 +65,11 @@ class AutoModelForRankingTest(TestCase, ModelTesterMixin):
         shutil.rmtree(self.output_dir)
 
     def test_preprocess(self):
-
         batch = self.model.preprocess_pair(self.text_pairs, query_max_length=9, document_max_length=9)
         self.assertIn('input_ids', batch)
         self.assertIn('attention_mask', batch)
 
     def test_compute_score(self):
-
         scores = self.model.compute_score(sentence_pairs=self.text_pairs, data_collator=self.data_collator)
         document_ranked = self.model.rerank(query=self.text, documents=self.text_list, data_collator=self.data_collator)
 
@@ -86,25 +78,17 @@ class AutoModelForRankingTest(TestCase, ModelTesterMixin):
         self.assertIn('rerank_scores', document_ranked)
 
     def test_trainer(self):
-        # Use a mock dataset for testing
         train_dataset = PseudoRerankTrainDataset()
-        training_args = TrainingArguments(output_dir=self.output_dir, per_device_train_batch_size=2, num_train_epochs=1)
-
-        self.trainer = RerankTrainer(
-            model=self.model, args=training_args, train_dataset=train_dataset, loss_fn=nn.BCEWithLogitsLoss()
+        training_args = TrainingArguments(
+            output_dir=self.output_dir, remove_unused_columns=False, per_device_train_batch_size=2, num_train_epochs=1
         )
 
-        inputs = {
-            'input_ids': torch.tensor([[1, 2, 3]]),  # Batch of size 1, sequence length 3
-            'attention_mask': torch.tensor([[1, 1, 1]]),  # Attention mask (all tokens are attended to)
-            'labels': torch.tensor([1]),  # Labels for loss computation (assuming binary classification)
-        }
-
-        loss, outputs = self.trainer.compute_loss(self.model, inputs, return_outputs=True)
-        self.assertIsInstance(loss, torch.Tensor)
-
-        self.assertIn('logits', outputs, "Model outputs should contain 'logits'.")
-
+        self.trainer = RerankTrainer(
+            model=self.model,
+            args=training_args,
+            train_dataset=train_dataset,
+            data_collator=self.data_collator,
+        )
         self.trainer.train()
         self.trainer.save_model(self.output_dir)
 
