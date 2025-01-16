@@ -65,7 +65,7 @@ class DataArguments:
     )
     query_instruction: str = field(default=None, metadata={"help": "instruction for query"})
     document_instruction: str = field(default=None, metadata={"help": "instruction for document"})
-    query_key: str = field(default=None)
+    query_key: str = field(default='query')
     positive_key: str = field(default='positive')
     negative_key: str = field(default='negative')
     is_query: bool = field(default=False)
