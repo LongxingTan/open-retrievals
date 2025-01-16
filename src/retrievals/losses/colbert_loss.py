@@ -24,7 +24,7 @@ class ColbertLoss(Base):
         query_embeddings: torch.Tensor,
         positive_embeddings: torch.Tensor,
         negative_embeddings: Optional[torch.Tensor] = None,
-        query_mask: Optional[torch.Tensor] = None,
+        mask: Optional[torch.Tensor] = None,
     ):
 
         if negative_embeddings is None and self.use_inbatch_negative is False:
@@ -39,7 +39,7 @@ class ColbertLoss(Base):
         scores = self.similarity(query_embeddings, positive_embeddings)
 
         if negative_embeddings is not None:
-            negative_scores = self.similarity(query_embeddings, negative_embeddings, query_mask=query_mask)
+            negative_scores = self.similarity(query_embeddings, negative_embeddings, mask=mask)
             scores = torch.cat([scores, negative_scores], dim=-1)
 
         if self.temperature is not None:
