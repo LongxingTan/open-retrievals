@@ -12,7 +12,7 @@ from tqdm.auto import tqdm, trange
 from transformers import PreTrainedTokenizer
 
 from ..data.collator import LLMRerankCollator, RerankCollator
-from .utils import DocumentSplitter, find_all_linear_names
+from .utils import DocumentSplitter, find_all_linear_names, get_device_name
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +31,7 @@ class Base(ABC, nn.Module):
             assert ValueError("Please use AutoModelForEmbedding.from_pretrained(model_name_or_path)")
         self.model = model
         self.tokenizer = tokenizer
-        self.device = kwargs.get('device', 'cuda' if torch.cuda.is_available() else 'cpu')
+        self.device = get_device_name()
         self.to(self.device)
 
     @abstractmethod
