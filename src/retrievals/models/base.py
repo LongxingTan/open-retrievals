@@ -100,11 +100,6 @@ class Base(ABC, torch.nn.Module):
             return min(self.model.config.max_position_embeddings, self.tokenizer.model_max_length)
         return self.tokenizer.model_max_length
 
-    def _sort_by_length(self, sentence_pairs: Union[List[Tuple[str, str]], Tuple[str, str]]) -> List[Tuple[str, str]]:
-        """Sorts sentence pairs by total length."""
-        length_sorted_idx = np.argsort([-self._text_length(q) - self._text_length(p) for q, p in sentence_pairs])
-        return [sentence_pairs[idx] for idx in length_sorted_idx]
-
 
 class BaseRanker(Base):
     def __init__(self, model: Optional[nn.Module] = None, tokenizer: Optional[PreTrainedTokenizer] = None, **kwargs):
@@ -163,14 +158,19 @@ class BaseRanker(Base):
     ) -> Union[List[float], float]:
         """compute scores for a list of sentence pairs.[(q1, d1), (q2, d2), ...]"""
         self.model.eval()
+
         if isinstance(sentence_pairs[0], str):
             sentence_pairs = [sentence_pairs]
 
-        sentences_sorted = self._sort_by_length(sentence_pairs)
+        length_sorted_idx = np.argsort([-self._text_length(q) - self._text_length(p) for q, p in sentence_pairs])
+        sentences_sorted = [sentence_pairs[idx] for idx in length_sorted_idx]
 
         if self.query_instruction or self.document_instruction:
             sentences_sorted = [
-                (self.query_instruction.format(pair[0]), self.document_instruction.format(pair[1]))
+                (
+                    self.query_instruction.format(pair[0]) if self.query_instruction else pair[0],
+                    self.document_instruction.format(pair[1]) if self.document_instruction else pair[1],
+                )
                 for pair in sentences_sorted
             ]
 
@@ -183,17 +183,14 @@ class BaseRanker(Base):
                 batch_sentences, query_max_length=max_length, document_max_length=max_length
             )
 
-            scores = self.forward(**batch_on_device)
+            scores = self.forward(**batch_on_device).flatten().float()
 
             if normalize:
                 scores = torch.sigmoid(scores)
 
-            all_scores.extend(scores.detach().cpu().float().tolist())
+            all_scores.extend(scores.cpu().tolist())
 
-        all_scores = [
-            all_scores[idx]
-            for idx in np.argsort(np.argsort([-self._text_length(q) - self._text_length(p) for q, p in sentence_pairs]))
-        ]
+        all_scores = [all_scores[idx] for idx in np.argsort(length_sorted_idx)]
 
         return all_scores[0] if len(all_scores) == 1 else all_scores
 
@@ -241,7 +238,7 @@ class BaseRanker(Base):
             show_progress_bar=show_progress_bar,
         )
 
-        merge_scores = [0.0 for _ in range(len(documents))]
+        merge_scores = [float('inf') for _ in range(len(documents))]
         for pid, score in zip(sentence_pairs_pids, scores):
             merge_scores[pid] = max(merge_scores[pid], score)
 
