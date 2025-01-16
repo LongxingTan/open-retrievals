@@ -103,9 +103,9 @@ class RetrievalTrainer(Trainer):
 
 
 class RerankTrainer(Trainer):
-    def __init__(self, loss_fn: Callable = None, **kwargs):
+    def __init__(self, loss_fn: Optional[Callable] = None, **kwargs):
         super().__init__(**kwargs)
-        if not loss_fn:
+        if loss_fn is None:
             loss_fn = nn.BCEWithLogitsLoss()
         self.loss_fn = loss_fn
 

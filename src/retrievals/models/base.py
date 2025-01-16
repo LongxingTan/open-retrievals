@@ -12,12 +12,12 @@ from tqdm.auto import tqdm, trange
 from transformers import PreTrainedTokenizer
 
 from ..data.collator import LLMRerankCollator, RerankCollator
-from .utils import DocumentSplitter
+from .utils import DocumentSplitter, find_all_linear_names, get_device_name
 
 logger = logging.getLogger(__name__)
 
 
-class Base(ABC, torch.nn.Module):
+class Base(ABC, nn.Module):
     """Base class for embedding and reranking model"""
 
     def __init__(
@@ -31,12 +31,47 @@ class Base(ABC, torch.nn.Module):
             assert ValueError("Please use AutoModelForEmbedding.from_pretrained(model_name_or_path)")
         self.model = model
         self.tokenizer = tokenizer
-        self.device = kwargs.get('device', 'cuda' if torch.cuda.is_available() else 'cpu')
+        self.device = get_device_name()
         self.to(self.device)
 
     @abstractmethod
     def forward(self, *args, **kwargs):
         """Pytorch forward method."""
+
+    def setup_lora(self, model, lora_config, use_qlora: bool = False):
+        """Setup LoRA for the model."""
+        from peft import get_peft_model, prepare_model_for_kbit_training
+
+        if lora_config is None:
+            lora_config = self.create_default_lora_config(model, lora_r=32, lora_alpha=64, lora_dropout=0.05)
+        if use_qlora:
+            model = prepare_model_for_kbit_training(model)
+        model = get_peft_model(model, lora_config)
+        model.print_trainable_parameters()
+        return model
+
+    def load_lora_weights(self, model, lora_path: str):
+        """Load pre-trained LoRA weights."""
+        from peft import PeftModel
+
+        logger.info(f'Loading LoRA adapter from {lora_path}')
+        model = PeftModel.from_pretrained(model, lora_path)
+        return model.merge_and_unload()
+
+    def create_default_lora_config(self, model, lora_r: int, lora_alpha: int, lora_dropout: float):
+        """Create default LoRA configuration."""
+        from peft import LoraConfig
+
+        target_modules = find_all_linear_names(model)
+        logger.info(f'Setting LoRA target modules to {target_modules}, r={lora_r}, alpha={lora_alpha}')
+        return LoraConfig(
+            r=lora_r,
+            lora_alpha=lora_alpha,
+            lora_dropout=lora_dropout,
+            target_modules=target_modules,
+            bias='none',
+            task_type='FEATURE_EXTRACTION',
+        )
 
     def save_pretrained(self, path: str, safe_serialization: bool = True):
         """Saves all model and tokenizer to path"""
@@ -67,6 +102,7 @@ class Base(ABC, torch.nn.Module):
         self.backbone.push_to_hub(hub_model_id, private=private, **kwargs)
 
     def _dist_gather_tensor(self, tensor: Optional[torch.Tensor]):
+        """negatives cross device"""
         if tensor is None:
             return None
         tensor = tensor.contiguous()

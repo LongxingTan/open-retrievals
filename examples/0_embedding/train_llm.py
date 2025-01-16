@@ -98,7 +98,6 @@ class TrainingArguments(transformers.TrainingArguments):
     per_device_train_batch_size: int = 1
     remove_unused_columns: bool = False
     cache_dir: Optional[str] = None
-    negatives_cross_device: bool = field(default=False, metadata={"help": "share negatives across devices"})
     temperature: Optional[float] = field(default=0.02)
     fix_position_embedding: bool = field(
         default=False, metadata={"help": "Freeze the parameters of position embeddings"}
@@ -106,6 +105,7 @@ class TrainingArguments(transformers.TrainingArguments):
     pooling_method: str = field(default="cls", metadata={"help": "the pooling method, should be cls or mean"})
     normalized: bool = field(default=True)
     use_inbatch_neg: bool = field(default=True, metadata={"help": "Freeze the parameters of position embeddings"})
+    negatives_cross_device: bool = field(default=False, metadata={"help": "share negatives across devices"})
     gradient_accumulation_steps: int = field(default=1)
     bf16: bool = field(default=True)
     logging_steps: int = field(default=100)
@@ -244,7 +244,14 @@ def main():
         pooling_method=training_args.pooling_method,
         lora_config=lora_config,
     )
-    train_model = PairwiseModel(model, loss_fn=TripletRankingLoss())
+
+    train_model = PairwiseModel(
+        model,
+        loss_fn=TripletLoss(
+            use_inbatch_negative=training_args.use_inbatch_neg,
+            negatives_cross_device=training_args.negatives_cross_device,
+        ),
+    )
 
     optimizer = get_optimizer(train_model, lr=5e-5, weight_decay=1e-3)
 

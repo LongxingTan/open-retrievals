@@ -21,9 +21,9 @@ The Transformer model could get a representation vector from a sentence.
 
     model = AutoModelForEmbedding.from_pretrained('moka-ai/m3e-base', pooling_method='mean')
     sentences = [
-        '* Moka 此文本嵌入模型由 MokaAI 训练并开源，训练脚本使用 uniem',
-        '* Massive 此文本嵌入模型通过**千万级**的中文句对数据集进行训练',
-        '* Mixed 此文本嵌入模型支持中英双语的同质文本相似度计算，异质文本检索等功能，未来还会支持代码检索，ALL in one'
+        'The cat is sleeping on the couch.',
+        'He decided to take a walk after dinner.',
+        'I want to attend Kaggle'
     ]
     embeddings = model.encode(sentences)
 
@@ -113,7 +113,7 @@ If the positive and negative examples have some noise in label, the directly poi
         args=training_arguments,
         train_dataset=train_dataset,
         data_collator=RetrievalCollator(tokenizer, keys=['sentence1', 'sentence2'], max_lengths=[64, 128]),,
-        loss_fn=InfoNCE(nn.CrossEntropyLoss(label_smoothing=0.05)),
+        loss_fn=InfoNCE(nn.CrossEntropyLoss(label_smoothing=0.05), use_inbatch_negative=True, negatives_cross_device=False),
     )
     trainer.optimizer = optimizer
     trainer.scheduler = scheduler
@@ -148,7 +148,8 @@ If the positive and negative examples have some noise in label, the directly poi
       --train_group_size 4 \
       --logging_steps 100 \
       --temperature 0.02 \
-      --use_inbatch_negative false
+      --use_inbatch_negative false \
+      --negatives_cross_device false
 
 
 **Pairwise fine-tune LLM embedding**
@@ -276,6 +277,10 @@ cosent loss
 
 Sampling
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+Multi-gpu training
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
 4. Embedding serving

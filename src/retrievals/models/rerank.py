@@ -19,16 +19,11 @@ from transformers import (
 )
 from transformers.modeling_outputs import SequenceClassifierOutput
 
-from ..data.collator import LLMRerankCollator, RerankCollator
+from ..data.collator import LLMRerankCollator
 from ..losses.colbert_loss import ColbertLoss
 from .base import BaseRanker
 from .pooling import AutoPooling
-from .utils import (
-    batch_to_device,
-    check_causal_lm,
-    find_all_linear_names,
-    get_device_name,
-)
+from .utils import batch_to_device, check_causal_lm, get_device_name
 
 logger = logging.getLogger(__name__)
 
@@ -187,29 +182,16 @@ class AutoModelForRanking(BaseRanker):
             model_name_or_path, return_tensors=False, trust_remote_code=trust_remote_code
         )
 
-        if generative_llm_reranking:
-            logger.info("Set model to AutoModelForCausalLM, LLM generative reranking")
-            model = AutoModelForCausalLM.from_pretrained(
-                model_name_or_path,
-                # quantization_config=quantization_config,
-                trust_remote_code=trust_remote_code,
-                **kwargs,
-            )
-            query_instruction = 'A: '
-            document_instruction = 'B: '
-        else:
-            logger.info('Set model to AutoModelForSequenceClassification, representation reranking')
-            model = AutoModelForSequenceClassification.from_pretrained(
-                model_name_or_path,
-                num_labels=num_labels,
-                # config=config,
-                trust_remote_code=trust_remote_code,
-                # quantization_config=quantization_config,
-                **kwargs,
-            )
-            if causal_lm or check_causal_lm(model_name_or_path):
-                tokenizer.padding_side = "right"
-                tokenizer.add_eos_token = True
+        logger.info('Set model to AutoModelForSequenceClassification, representation reranking')
+        model = AutoModelForSequenceClassification.from_pretrained(
+            model_name_or_path,
+            num_labels=num_labels,
+            trust_remote_code=trust_remote_code,
+            **kwargs,
+        )
+        if causal_lm or check_causal_lm(model_name_or_path):
+            tokenizer.padding_side = "right"
+            tokenizer.add_eos_token = True
 
         if device is None:
             device = get_device_name()
@@ -220,38 +202,10 @@ class AutoModelForRanking(BaseRanker):
 
         if use_lora or use_qlora:
             logger.info('Set fine-tuning to LoRA')
-            from peft import (
-                LoraConfig,
-                TaskType,
-                get_peft_model,
-                prepare_model_for_kbit_training,
-            )
-
-            if lora_config is None:
-                lora_r = 32
-                lora_alpha = 64
-                lora_dropout = 0.05
-                target_modules = find_all_linear_names(model)
-                logger.info(f'Set Lora target module to {target_modules}, r to {lora_r}, lora_alpha to {lora_alpha}')
-                lora_config = LoraConfig(
-                    r=lora_r,
-                    lora_alpha=lora_alpha,
-                    lora_dropout=lora_dropout,
-                    target_modules=target_modules,
-                    bias='none',
-                    task_type=TaskType.CAUSAL_LM,
-                )
-            if use_qlora:
-                model = prepare_model_for_kbit_training(model)
-            model = get_peft_model(model, lora_config)
-            model.print_trainable_parameters()
+            model = cls.setup_lora(model, lora_config, use_qlora)
 
         if lora_path is not None:
-            logger.info(f'Load LoRA adapter from {lora_path}')
-            from peft import LoraConfig, PeftModel
-
-            model = PeftModel.from_pretrained(model, lora_path)
-            model = model.merge_and_unload()
+            model = cls.load_lora_weights(model, lora_path)
 
         reranker = cls(
             model=model,
@@ -636,6 +590,87 @@ class LLMRanker(AutoModelForRanking):
             loss = self.loss_fn(model_output.logits, labels)
             outputs_dict['loss'] = loss
         return outputs_dict
+
+    def from_pretrained(
+        cls,
+        model_name_or_path: str,
+        pooling_method: Optional[str] = None,
+        num_labels: int = 1,
+        loss_fn: Union[nn.Module, Callable] = None,
+        loss_type: Literal['classification', 'regression'] = 'classification',
+        causal_lm: bool = False,
+        generative_llm_reranking: bool = False,
+        trust_remote_code: bool = True,
+        use_fp16: bool = False,
+        use_lora: bool = False,
+        use_qlora: bool = False,
+        lora_config=None,
+        lora_path: Optional[str] = None,
+        # quantization_config=None,
+        task_prompt: Optional[str] = None,
+        query_instruction: Optional[str] = 'A: ',
+        document_instruction: Optional[str] = 'B: ',
+        device: Optional[str] = None,
+        temperature: Optional[float] = None,
+        **kwargs,
+    ):
+
+        config = AutoConfig.from_pretrained(
+            model_name_or_path, output_hidden_states=True, trust_remote_code=trust_remote_code
+        )
+
+        tokenizer = AutoTokenizer.from_pretrained(
+            model_name_or_path, return_tensors=False, trust_remote_code=trust_remote_code
+        )
+        tokenizer.padding_side = "right"
+        tokenizer.add_eos_token = True
+
+        logger.info("Loading the model as AutoModelForCausalLM for LLM generative reranking.")
+        model = AutoModelForCausalLM.from_pretrained(
+            model_name_or_path,
+            trust_remote_code=trust_remote_code,
+            **kwargs,
+        )
+
+        if device is None:
+            device = get_device_name()
+
+        if use_fp16 and device != 'cpu' and not hasattr(config, 'quantization_config'):
+            logger.info('Set model to fp16')
+            model.half()
+
+        if use_lora or use_qlora:
+            logger.info('Set fine-tuning to LoRA')
+            model = cls.setup_lora(model, lora_config, use_qlora)
+
+        if lora_path is not None:
+            model = cls.load_lora_weights(model, lora_path)
+
+        reranker = cls(
+            model=model,
+            tokenizer=tokenizer,
+            pooling_method=pooling_method,
+            loss_fn=loss_fn,
+            loss_type=loss_type,
+            temperature=temperature,
+            causal_lm=causal_lm,
+            task_prompt=task_prompt,
+            query_instruction=query_instruction,
+            document_instruction=document_instruction,
+            device=device,
+            **kwargs,
+        )
+
+        if reranker.task_prompt is None:
+            reranker.task_prompt = (
+                """Given a query A and a passage B, determine whether the passage contains an answer to the query """
+                """by providing a prediction of either 'Yes' or 'No'."""
+            )
+
+        reranker.target_token_loc = reranker.tokenizer('Yes', add_special_tokens=False)['input_ids'][0]
+        reranker.sep_token = '\n'
+
+        return reranker
 
     def preprocess_pair(self, batch_sentence_pair: List[List[str]], max_length: int, **kwargs):
         collator = LLMRerankCollator(

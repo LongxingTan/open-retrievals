@@ -1,4 +1,3 @@
-import os
 import shutil
 import tempfile
 from dataclasses import dataclass, field
@@ -8,7 +7,6 @@ from unittest.mock import MagicMock, patch
 
 import torch
 import transformers
-from torch import nn
 from torch.utils.data import DataLoader, Dataset
 from transformers import (
     AutoModelForSequenceClassification,
@@ -111,31 +109,6 @@ class PseudoRerankTrainDataset(Dataset):
 
     def __getitem__(self, item):
         return self.examples[item]
-
-
-class TestRerankTrainer(TestCase):
-    def setUp(self) -> None:
-        self.output_dir = tempfile.mkdtemp()
-        model_name_or_path = "distilbert/distilbert-base-uncased"
-        self.model = AutoModelForRanking.from_pretrained(model_name_or_path)
-        self.train_dataset = PseudoRerankTrainDataset()
-        self.tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, cache_dir=self.output_dir)
-        self.trainer = RerankTrainer(
-            model=self.model, train_dataset=self.train_dataset, tokenizer=self.tokenizer, loss_fn=nn.BCEWithLogitsLoss()
-        )
-
-    def tearDown(self):
-        shutil.rmtree(self.output_dir)
-
-    # def test_compute_loss(self):
-    #     inputs = {'input_ids': torch.tensor([[1, 2, 3]]), 'attention_mask': torch.tensor([[1, 1, 1]])}
-    #
-    #     loss, outputs = self.trainer.compute_loss(self.model, inputs, return_outputs=True)
-    #     self.assertIsInstance(loss.item(), torch.Tensor)
-    #     self.assertGreater(loss.item(), 0)
-
-    def test_save_model(self):
-        self.trainer._save(output_dir=self.output_dir)
 
 
 class TestDistilTrainer(TestCase):

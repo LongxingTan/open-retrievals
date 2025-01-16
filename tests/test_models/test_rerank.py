@@ -1,60 +1,76 @@
-import os
 import shutil
 import tempfile
 from unittest import TestCase
 
 import torch
 from torch import nn
-from transformers import AutoConfig, AutoModel, AutoTokenizer, BertTokenizer
+from torch.utils.data import DataLoader, Dataset
+from transformers import AutoModel, AutoTokenizer, TrainingArguments
 
 from src.retrievals.data.collator import RerankCollator
 from src.retrievals.models.rerank import AutoModelForRanking, ColBERT
+from src.retrievals.trainer.trainer import RerankTrainer
 
-from .test_modeling_common import (
-    ModelTesterMixin,
-    device,
-    floats_tensor,
-    ids_tensor,
-    random_attention_mask,
-)
+from .test_modeling_common import ModelTesterMixin
+
+
+class PseudoRerankTrainDataset(Dataset):
+    def __init__(self):
+        self.examples = [
+            {'query': 'how are you, fans', 'document': 'I am fine', 'labels': 1},
+            {'query': 'hallo?', 'document': 'what is your problem', 'labels': 1},
+            {'query': 'how are you doing', 'document': 'be survive', 'labels': 0},
+        ]
+
+    def __len__(self):
+        return len(self.examples)
+
+    def __getitem__(self, item):
+        return self.examples[item]
 
 
 class AutoModelForRankingTest(TestCase, ModelTesterMixin):
     def setUp(self) -> None:
         self.output_dir = tempfile.mkdtemp()
-        # self.config_tester = ConfigTester()
         model_name_or_path = 'BAAI/bge-reranker-base'
-        self.data_collator = RerankCollator(AutoTokenizer.from_pretrained(model_name_or_path))
-        self.model = AutoModelForRanking.from_pretrained(model_name_or_path, temperature=0.05)
+        self.tokenizer = AutoTokenizer.from_pretrained(model_name_or_path)
+        self.model = AutoModelForRanking.from_pretrained(model_name_or_path, device='cpu', temperature=0.05)
+        self.data_collator = RerankCollator(self.tokenizer, max_length=32)
 
-        vocab_tokens = ["[UNK]", "[CLS]", "[SEP]", "[PAD]", "[MASK]"]
-        self.vocab_file = os.path.join(self.output_dir, "vocab.txt")
-        with open(self.vocab_file, "w", encoding="utf-8") as vocab_writer:
-            vocab_writer.write("".join([x + "\n" for x in vocab_tokens]))
-
-        self.tokenizer = BertTokenizer(self.vocab_file)
+        self.text = '张华考上了北京大学'
+        self.text_list = ['李萍进了中等技术学校', '我在百货公司当售货员', '我们都有光明的前途']
+        self.text_pairs = [[self.text, i] for i in self.text_list]
 
     def tearDown(self):
         shutil.rmtree(self.output_dir)
 
     def test_preprocess(self):
-        text = '张华考上了北京大学'
-        text_list = ['李萍进了中等技术学校', '我在百货公司当售货员', '我们都有光明的前途']
-        text_pairs = [[text, i] for i in text_list]
-
-        batch = self.model.preprocess_pair(text_pairs, query_max_length=9, document_max_length=9)
+        batch = self.model.preprocess_pair(self.text_pairs, query_max_length=9, document_max_length=9)
         self.assertIn('input_ids', batch)
         self.assertIn('attention_mask', batch)
 
     def test_compute_score(self):
-        text = '张华考上了北京大学'
-        text_list = ['李萍进了中等技术学校', '我在百货公司当售货员', '我们都有光明的前途']
-        text_pairs = [[text, i] for i in text_list]
-        scores = self.model.compute_score(sentence_pairs=text_pairs, data_collator=self.data_collator)
-        document_ranked = self.model.rerank(query=text, documents=text_list, data_collator=self.data_collator)
-        print(scores)
+        scores = self.model.compute_score(sentence_pairs=self.text_pairs, data_collator=self.data_collator)
+        document_ranked = self.model.rerank(query=self.text, documents=self.text_list, data_collator=self.data_collator)
+
+        self.assertEqual(len(scores), len(self.text_pairs))
         self.assertIn('rerank_document', document_ranked)
         self.assertIn('rerank_scores', document_ranked)
+
+    def test_trainer(self):
+        train_dataset = PseudoRerankTrainDataset()
+        training_args = TrainingArguments(
+            output_dir=self.output_dir, remove_unused_columns=False, per_device_train_batch_size=2, num_train_epochs=1
+        )
+
+        self.trainer = RerankTrainer(
+            model=self.model,
+            args=training_args,
+            train_dataset=train_dataset,
+            data_collator=self.data_collator,
+        )
+        self.trainer.train()
+        self.trainer.save_model(self.output_dir)
 
 
 class TestColBERT(TestCase):
@@ -64,7 +80,7 @@ class TestColBERT(TestCase):
         self.tokenizer = AutoTokenizer.from_pretrained("bert-base-uncased")
         self.linear_layer = nn.Linear(768, 256)
         self.colbert = ColBERT(
-            model=self.model, tokenizer=self.tokenizer, linear_layer=self.linear_layer, max_length=128
+            model=self.model, tokenizer=self.tokenizer, linear_layer=self.linear_layer, max_length=128, device='cpu'
         )
 
     def test_forward(self):
