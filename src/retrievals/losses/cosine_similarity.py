@@ -3,6 +3,7 @@ trainable temperature parameter: Text and Code Embeddings by Contrastive Pre-Tra
 """
 
 import logging
+from typing import Optional
 
 import torch
 from torch import nn
@@ -23,7 +24,9 @@ class CosineSimilarity(Base):
         self.temperature = temperature
         self.dynamic_temperature = dynamic_temperature
 
-    def forward(self, query_embeddings: torch.Tensor, document_embeddings: torch.Tensor):
+    def forward(
+        self, query_embeddings: torch.Tensor, document_embeddings: torch.Tensor, mask: Optional[torch.Tensor] = None
+    ):
         if self.negatives_cross_device:
             query_embeddings = self._dist_gather_tensor(query_embeddings)
             document_embeddings = self._dist_gather_tensor(document_embeddings)

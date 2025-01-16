@@ -1,3 +1,5 @@
+from typing import Optional
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -10,7 +12,7 @@ class CoSentLoss(Base):
         super().__init__(negatives_cross_device)
         self.temperature = temperature
 
-    def forward(self, embed1: torch.Tensor, embed2: torch.Tensor, labels=None):
+    def forward(self, embed1: torch.Tensor, embed2: torch.Tensor, labels: Optional[torch.Tensor] = None):
         """
         https://github.com/bojone/CoSENT/blob/124c368efc8a4b179469be99cb6e62e1f2949d39/cosent.py
         """

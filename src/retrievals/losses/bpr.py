@@ -1,5 +1,6 @@
+from typing import Optional
+
 import torch
-import torch.nn as nn
 
 from .base import Base
 
@@ -11,8 +12,6 @@ class BPRLoss(Base):
         super(BPRLoss, self).__init__(negatives_cross_device)
 
     def forward(
-        self,
-        query_embeddings: torch.Tensor,
-        positive_embeddings: torch.Tensor,
+        self, query_embeddings: torch.Tensor, positive_embeddings: torch.Tensor, mask: Optional[torch.Tensor] = None
     ):
         return -(query_embeddings - positive_embeddings).sigmoid().log().sum()

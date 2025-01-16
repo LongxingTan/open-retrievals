@@ -36,6 +36,7 @@ class TripletLoss(Base):
         query_embeddings: torch.Tensor,
         positive_embeddings: torch.Tensor,
         negative_embeddings: torch.Tensor,
+        mask: Optional[torch.Tensor] = None,
         margin: float = 0.0,
     ):
         if margin:

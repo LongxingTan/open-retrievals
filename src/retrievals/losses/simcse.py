@@ -38,6 +38,7 @@ class SimCSE(Base):
         query_embeddings: torch.Tensor,
         positive_embeddings: torch.Tensor,
         negative_embeddings: Optional[torch.Tensor] = None,
+        mask: Optional[torch.Tensor] = None,
     ):
         if self.negatives_cross_device:
             query_embeddings = self._dist_gather_tensor(query_embeddings)
