@@ -87,7 +87,6 @@ class DataArguments:
 @dataclass
 class RetrieverTrainingArguments(TrainingArguments):
     train_type: str = field(default='pairwise', metadata={'help': "train type of point, pair, or list"})
-    negatives_cross_device: bool = field(default=False, metadata={"help": "share negatives across devices"})
     temperature: Optional[float] = field(default=0.02)
     fix_position_embedding: bool = field(
         default=False, metadata={"help": "Freeze the parameters of position embeddings"}
@@ -96,6 +95,7 @@ class RetrieverTrainingArguments(TrainingArguments):
     normalized: bool = field(default=True)
     loss_fn: str = field(default='infonce')
     use_inbatch_negative: bool = field(default=True, metadata={"help": "use documents in the same batch as negatives"})
+    negatives_cross_device: bool = field(default=False, metadata={"help": "share negatives across devices"})
     remove_unused_columns: bool = field(default=False)
     use_lora: bool = field(default=False)
     use_quantization_config: bool = field(default=False)

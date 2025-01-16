@@ -523,9 +523,7 @@ class ColBERT(Base):
                     neg_input_ids, attention_mask=neg_attention_mask, normalize_embeddings=True
                 )
 
-            loss = self.loss_fn(
-                query_embedding, positive_embedding, negative_embedding, query_attention_mask=query_attention_mask
-            )
+            loss = self.loss_fn(query_embedding, positive_embedding, negative_embedding, mask=query_attention_mask)
 
             if return_dict:
                 outputs_dict = dict()

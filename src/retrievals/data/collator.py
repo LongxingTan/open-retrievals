@@ -60,6 +60,16 @@ class RetrievalCollator(DataCollatorWithPadding):
         }
         return tokenize_fn(texts, **tokenize_args)
 
+    def _mask_pad_token(self, q):
+        if random.random() > 0.9:
+            tensor = q['input_ids'].float()
+            mask = torch.rand(tensor.shape)
+            mask = (mask > 0.9).float()
+            tensor = tensor * (1 - mask) + 2 * mask
+            tensor = tensor.long()
+            q['input_ids'] = tensor
+        return q
+
 
 class RerankCollator(DataCollatorWithPadding):
     def __init__(

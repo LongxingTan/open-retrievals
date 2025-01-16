@@ -3,23 +3,34 @@ trainable temperature parameter: Text and Code Embeddings by Contrastive Pre-Tra
 """
 
 import logging
+from typing import Optional
 
 import torch
 from torch import nn
 
+from .base import Base
+
 logger = logging.getLogger(__name__)
 
 
-class CosineSimilarity(nn.Module):
-    def __init__(self, temperature: float = 0.05, dynamic_temperature=False, **kwargs):
+class CosineSimilarity(Base):
+    def __init__(
+        self, temperature: float = 0.05, dynamic_temperature=False, negatives_cross_device: bool = False, **kwargs
+    ):
         """
         Temperature should be smaller than 1 when use cosine similarity (normalized=True). Recommend to set it 0.01-0.1
         """
-        super().__init__()
+        super().__init__(negatives_cross_device)
         self.temperature = temperature
         self.dynamic_temperature = dynamic_temperature
 
-    def forward(self, query_embeddings: torch.Tensor, document_embeddings: torch.Tensor):
+    def forward(
+        self, query_embeddings: torch.Tensor, document_embeddings: torch.Tensor, mask: Optional[torch.Tensor] = None
+    ):
+        if self.negatives_cross_device:
+            query_embeddings = self._dist_gather_tensor(query_embeddings)
+            document_embeddings = self._dist_gather_tensor(document_embeddings)
+
         sim_pos_vector = torch.cosine_similarity(query_embeddings, document_embeddings, dim=-1)
         sim_pos_vector = sim_pos_vector / self.temperature
         sim_neg_matrix = torch.cosine_similarity(
