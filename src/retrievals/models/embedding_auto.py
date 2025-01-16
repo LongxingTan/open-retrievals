@@ -23,12 +23,7 @@ from transformers import (
 
 from .base import Base
 from .pooling import AutoPooling
-from .utils import (
-    batch_to_device,
-    check_causal_lm,
-    find_all_linear_names,
-    get_device_name,
-)
+from .utils import batch_to_device, check_causal_lm, get_device_name
 
 logger = logging.getLogger(__name__)
 
@@ -464,7 +459,7 @@ class PairwiseModel(AutoModelForEmbedding):
         shared_weights: bool = True,
         **kwargs,
     ) -> None:
-        super().__init__(model=model, loss_fn=loss_fn)
+        super().__init__(model=model, tokenizer=model.tokenzier, loss_fn=loss_fn)
         self.model = model
         self.loss_fn = loss_fn
         self.shared_weights = shared_weights
