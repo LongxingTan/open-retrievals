@@ -144,14 +144,13 @@ class BaseRanker(Base):
                 q_inp,
                 d_inp,
                 truncation='only_second',
-                max_length=query_max_length + document_max_length,
+                max_length=document_max_length,
                 padding=False,
             )
             inputs_batch.append(item)
 
         return self.tokenizer.pad(inputs_batch, padding=True, return_tensors='pt', **kwargs).to(self.device)
 
-    @abstractmethod
     @torch.no_grad()
     def compute_score(
         self,
