@@ -9,11 +9,9 @@ from torch import nn
 class MRLLayer(nn.Module):
     def __init__(self, mrl_nested_dim: List[int]):
         super().__init__()
-        # self.projection = nn.Linear()
         self.mrl_nested_dim = mrl_nested_dim
 
     def forward(self, x):
-        # x = self.projection(x)
         nested_x = []
         for dim in self.mrl_nested_dim:
             nested_x.append(x[:, :dim])

@@ -6,12 +6,13 @@
 from typing import Optional
 
 import torch
-import torch.distributed as dist
 import torch.nn as nn
 import torch.nn.functional as F
 
+from .base import Base
 
-class TripletLoss(nn.Module):
+
+class TripletLoss(Base):
     """
     https://omoindrot.github.io/triplet-loss
     """
@@ -20,32 +21,28 @@ class TripletLoss(nn.Module):
         self,
         temperature: float = 0.05,
         margin: float = 0.0,
-        negatives_cross_device: bool = False,
         use_inbatch_negative: bool = False,
+        negatives_cross_device: bool = False,
         **kwargs
     ):
-        super().__init__()
+        super().__init__(negatives_cross_device)
         self.temperature = temperature
         self.margin = margin
         self.negatives_cross_device = negatives_cross_device
         self.use_inbatch_negative = use_inbatch_negative
-        if self.negatives_cross_device:
-            if not dist.is_initialized():
-                raise ValueError("Cannot do negatives_cross_device without distributed training")
-            self.rank = dist.get_rank()
-            self.world_size = dist.get_world_size()
 
     def forward(
         self,
         query_embeddings: torch.Tensor,
         positive_embeddings: torch.Tensor,
         negative_embeddings: torch.Tensor,
+        mask: Optional[torch.Tensor] = None,
         margin: float = 0.0,
     ):
         if margin:
             self.set_margin(margin=margin)
 
-        if self.negatives_cross_device and self.use_inbatch_negative:
+        if self.negatives_cross_device:
             query_embeddings = self._dist_gather_tensor(query_embeddings)
             positive_embeddings = self._dist_gather_tensor(positive_embeddings)
             negative_embeddings = self._dist_gather_tensor(negative_embeddings)
@@ -59,24 +56,17 @@ class TripletLoss(nn.Module):
         )
         neg_similarity = neg_similarity / self.temperature
         similarity_diff = pos_similarity.unsqueeze(1) - neg_similarity
-        loss = -torch.log(torch.sigmoid(similarity_diff) + self.margin).mean()
+        if mask is not None:
+            similarity_diff = similarity_diff * mask
+            mask_sum = mask.sum() if mask.sum() > 0 else 1  # Avoid division by zero
+            loss = -torch.log(torch.sigmoid(similarity_diff) + self.margin).sum() / mask_sum
+        else:
+            loss = -torch.log(torch.sigmoid(similarity_diff) + self.margin).mean()
+
         return loss
 
     def set_margin(self, margin: float):
         self.margin = margin
-
-    def _dist_gather_tensor(self, t: Optional[torch.Tensor]):
-        if t is None:
-            return None
-        t = t.contiguous()
-
-        all_tensors = [torch.empty_like(t) for _ in range(self.world_size)]
-        dist.all_gather(all_tensors, t)
-
-        all_tensors[self.rank] = t
-        all_tensors = torch.cat(all_tensors, dim=0)
-
-        return all_tensors
 
 
 class TripletCosineSimilarity(nn.Module):
@@ -86,7 +76,13 @@ class TripletCosineSimilarity(nn.Module):
         self.margin = margin
         self.distance_metric = lambda x, y: F.pairwise_distance(x, y, p=2)
 
-    def forward(self, query_embedding: torch.Tensor, pos_embedding: torch.Tensor, neg_embedding: torch.Tensor):
+    def forward(
+        self,
+        query_embedding: torch.Tensor,
+        pos_embedding: torch.Tensor,
+        neg_embedding: torch.Tensor,
+        mask: Optional[torch.Tensor] = None,
+    ):
         distance_pos = self.distance_metric(query_embedding, pos_embedding)
         distance_neg = self.distance_metric(query_embedding, neg_embedding)
 
