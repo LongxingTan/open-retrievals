@@ -100,6 +100,19 @@ class Base(ABC, torch.nn.Module):
             return min(self.model.config.max_position_embeddings, self.tokenizer.model_max_length)
         return self.tokenizer.model_max_length
 
+    def _init_weights(self, module: nn.Module):
+        if isinstance(module, nn.Linear):
+            module.weight.data.normal_(mean=0.0, std=self.config.initializer_range)
+            if module.bias is not None:
+                module.bias.data.zero_()
+        elif isinstance(module, nn.Embedding):
+            module.weight.data.normal_(mean=0.0, std=self.config.initializer_range)
+            if module.padding_idx is not None:
+                module.weight.data[module.padding_idx].zero_()
+        elif isinstance(module, nn.LayerNorm):
+            module.bias.data.zero_()
+            module.weight.data.fill_(1.0)
+
 
 class BaseRanker(Base):
     def __init__(self, model: Optional[nn.Module] = None, tokenizer: Optional[PreTrainedTokenizer] = None, **kwargs):

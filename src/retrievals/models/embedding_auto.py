@@ -36,10 +36,6 @@ logger = logging.getLogger(__name__)
 class AutoModelForEmbedding(Base):
     """
     Loads or creates an Embedding model that can be used to map sentences / text.
-
-    :param model_name_or_path: If it is a filepath on disc, it loads the model from that path. If it is not a path,
-        it first tries to download a pre-trained SentenceTransformer model. If that fails, tries to construct a model
-        from the Hugging Face Hub with that name.
     """
 
     def __init__(
@@ -58,7 +54,7 @@ class AutoModelForEmbedding(Base):
         """
         Loads or creates an Embedding model that can be used to map sentences / text.
         """
-        super().__init__()
+        super().__init__(model, tokenizer)
         if isinstance(model, str):
             assert ValueError("Please use AutoModelForEmbedding.from_pretrained(model_name_or_path)")
         self.model = model
@@ -67,20 +63,10 @@ class AutoModelForEmbedding(Base):
         self.pooling = AutoPooling(pooling_method) if pooling_method else None
         self.loss_fn = loss_fn
 
-        if max_length is None:
-            if (
-                hasattr(self.model, "config")
-                and hasattr(self.model.config, "max_position_embeddings")
-                and hasattr(self.tokenizer, "model_max_length")
-            ):
-                max_length = min(self.model.config.max_position_embeddings, self.tokenizer.model_max_length)
-        else:
-            logger.info('max_length will only work if the encode or forward function input text directly')
+        self.max_length = max_length or self._determine_max_length()
 
-        self.max_length = max_length
-
-        self.query_instruction = query_instruction if query_instruction else ''
-        self.document_instruction = document_instruction if document_instruction else ''
+        self.query_instruction = query_instruction or ''
+        self.document_instruction = document_instruction or ''
         self.use_fp16 = use_fp16
         self.device = device or get_device_name()
         try:
@@ -88,19 +74,6 @@ class AutoModelForEmbedding(Base):
         except ValueError:
             # `4-bit` or `8-bit` bitsandbytes models have already been set to the correct devices
             pass
-
-    def _init_weights(self, module: nn.Module):
-        if isinstance(module, nn.Linear):
-            module.weight.data.normal_(mean=0.0, std=self.config.initializer_range)
-            if module.bias is not None:
-                module.bias.data.zero_()
-        elif isinstance(module, nn.Embedding):
-            module.weight.data.normal_(mean=0.0, std=self.config.initializer_range)
-            if module.padding_idx is not None:
-                module.weight.data[module.padding_idx].zero_()
-        elif isinstance(module, nn.LayerNorm):
-            module.bias.data.zero_()
-            module.weight.data.fill_(1.0)
 
     def forward(
         self,
@@ -115,31 +88,19 @@ class AutoModelForEmbedding(Base):
         elif isinstance(inputs, str) or (isinstance(inputs, Iterable) and isinstance(inputs[0], str)):
             embeddings = self.forward_from_text(inputs)
         else:
-            raise ValueError
+            raise ValueError("Invalid input type.")
 
         if labels is None or self.loss_fn is None:
-            if return_dict:
-                return {"sentence_embedding": embeddings}
-            return embeddings
+            return {"sentence_embedding": embeddings} if return_dict else embeddings
         else:
-            outputs = dict()
             loss_output = self.loss_fn(embeddings, labels)
-            outputs["loss"] = loss_output["loss"]
-            outputs["sentence_embedding"] = loss_output["sentence_embedding"]
-            return outputs
+            return {"loss": loss_output["loss"], "sentence_embedding": loss_output["sentence_embedding"]}
 
     def forward_from_tensor(self, input_ids: torch.Tensor, attention_mask: torch.Tensor, without_pooling: bool = False):
         model_output = self.model(input_ids, attention_mask=attention_mask, return_dict=True)
         if self.pooling is not None and not without_pooling:
-            if 'last_hidden_state' in model_output:
-                last_hidden_state = model_output['last_hidden_state']
-            elif 'hidden_states' not in model_output:
-                last_hidden_state = model_output[0]
-            else:
-                hidden_states = model_output['hidden_states']
-                last_hidden_state = hidden_states[-1]
+            last_hidden_state = model_output.get('last_hidden_state', model_output[0])
             embeddings = self.pooling(last_hidden_state, attention_mask=attention_mask)
-
             return embeddings
         return model_output
 
@@ -191,7 +152,7 @@ class AutoModelForEmbedding(Base):
                 normalize_embeddings=normalize_embeddings,
             )
         else:
-            raise ValueError(f'Input type: {type(inputs)}')
+            raise ValueError(f'Invalid input type: {type(inputs)}')
 
     def _encode_from_loader(
         self,
@@ -454,20 +415,11 @@ class AutoModelForEmbedding(Base):
         if not model_name_or_path or not isinstance(model_name_or_path, str):
             assert ValueError(f'Please input valid model_name_or_path, instead of {model_name_or_path}')
 
-        if config_path:
-            config = AutoConfig.from_pretrained(
-                config_path, output_hidden_states=True, trust_remote_code=trust_remote_code
-            )
-        else:
-            config = AutoConfig.from_pretrained(
-                model_name_or_path, output_hidden_states=True, trust_remote_code=trust_remote_code
-            )
+        config = AutoConfig.from_pretrained(
+            config_path or model_name_or_path, output_hidden_states=True, trust_remote_code=trust_remote_code
+        )
 
         if custom_config_dict:
-            if not config:
-                config = AutoConfig.from_pretrained(
-                    model_name_or_path, output_hidden_states=True, trust_remote_code=trust_remote_code
-                )
             config.update(custom_config_dict)
 
         # if quantization_config is None and hasattr(config, 'quantization_config'):
