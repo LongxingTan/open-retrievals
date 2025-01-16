@@ -58,10 +58,7 @@ class AutoModelForRanking(BaseRanker):
         self.model: Optional[nn.Module] = model
         self.tokenizer = tokenizer
         self.train_group_size = train_group_size
-        self.pooling_method = pooling_method
-        if pooling_method:
-            self.pooling = AutoPooling(self.pooling_method)
-
+        self.pooling = AutoPooling(self.pooling_method) if pooling_method else None
         self.loss_fn = loss_fn
         self.loss_type = loss_type
         self.causal_lm = causal_lm
@@ -129,7 +126,7 @@ class AutoModelForRanking(BaseRanker):
         """Encode input IDs and attention masks into embeddings."""
         model_output: SequenceClassifierOutput = self.model(input_ids, attention_mask, output_hidden_states=True)
 
-        if not self.pooling_method:
+        if not self.pooling:
             return model_output
 
         last_hidden_state = model_output.get('last_hidden_state', model_output[0])
@@ -375,10 +372,11 @@ class ColBERT(BaseRanker):
 
     def preprocess_pair(
         self,
-        batch_sentence_pair: List[List[str]],
+        batch_sentence_pair: List[Tuple[str, str]],
         query_max_length: int,
         document_max_length: int,
         padding='max_length',
+        **kwargs,
     ):
         query_list = [item[0] for item in batch_sentence_pair]
         document_list = [item[1] for item in batch_sentence_pair]
