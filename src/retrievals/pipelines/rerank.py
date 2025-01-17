@@ -232,7 +232,7 @@ def main():
         )
         token_index = tokenizer('Yes', add_special_tokens=False)['input_ids'][-1]
         model = LLMRanker.from_pretrained(
-            model_args.model_name_or_path,
+            model_name_or_path=model_args.model_name_or_path,
             num_labels=1,
             loss_fn=TokenLoss(token_index=token_index, train_group_size=data_args.train_group_size),
             causal_lm=True,
