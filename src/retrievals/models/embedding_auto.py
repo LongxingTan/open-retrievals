@@ -386,9 +386,6 @@ class AutoModelForEmbedding(Base):
         max_length: Optional[int] = None,
         **kwargs,
     ):
-        if not model_name_or_path or not isinstance(model_name_or_path, str):
-            assert ValueError(f'Please input valid model_name_or_path, instead of {model_name_or_path}')
-
         config = AutoConfig.from_pretrained(
             config_path or model_name_or_path, output_hidden_states=True, trust_remote_code=trust_remote_code
         )
@@ -462,7 +459,7 @@ class PairwiseModel(nn.Module):
         super().__init__()
         self.model = model
         self.model.loss_fn = loss_fn
-        self.tokenizer = model.tokenizer
+        self.tokenizer = model.tokenizer  # for model save
         self.loss_fn = loss_fn
         self.shared_weights = shared_weights
         if not shared_weights:

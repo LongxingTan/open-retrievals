@@ -162,7 +162,7 @@ class AutoModelForRanking(BaseRanker):
         use_qlora: bool = False,
         lora_config=None,
         lora_path: Optional[str] = None,
-        # quantization_config=None,
+        quantization_config=None,
         task_prompt: Optional[str] = None,
         query_instruction: Optional[str] = None,
         document_instruction: Optional[str] = None,
@@ -196,8 +196,8 @@ class AutoModelForRanking(BaseRanker):
         if device is None:
             device = get_device_name()
 
-        if use_fp16 and device != 'cpu' and not hasattr(config, 'quantization_config'):
-            logger.info('Set model to fp16, please note that if you want fp16 during training, set training_args fp16')
+        if use_fp16 and device != 'cpu' and quantization_config is None and not hasattr(config, 'quantization_config'):
+            logger.info('Set model to fp16 in inference, if you want fp16 during training, training_args fp16=True')
             model.half()
 
         if use_lora or use_qlora:
