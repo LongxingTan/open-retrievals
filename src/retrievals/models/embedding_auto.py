@@ -462,6 +462,7 @@ class PairwiseModel(nn.Module):
         super().__init__()
         self.model = model
         self.model.loss_fn = loss_fn
+        self.tokenizer = model.tokenizer
         self.loss_fn = loss_fn
         self.shared_weights = shared_weights
         if not shared_weights:
