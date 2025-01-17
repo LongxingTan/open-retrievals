@@ -591,6 +591,7 @@ class LLMRanker(AutoModelForRanking):
             outputs_dict['loss'] = loss
         return outputs_dict
 
+    @classmethod
     def from_pretrained(
         cls,
         model_name_or_path: str,
