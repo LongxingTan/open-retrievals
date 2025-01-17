@@ -8,7 +8,7 @@ import numpy as np
 import torch
 import torch.distributed as dist
 import torch.nn as nn
-from tqdm.auto import tqdm, trange
+from tqdm.auto import tqdm
 from transformers import PreTrainedTokenizer
 
 from ..data.collator import LLMRerankCollator, RerankCollator
@@ -28,7 +28,7 @@ class Base(ABC, nn.Module):
     ):
         super().__init__()
         if isinstance(model, str):
-            assert ValueError("Please use AutoModelForEmbedding.from_pretrained(model_name_or_path)")
+            assert ValueError("Model should be like: AutoModelForEmbedding.from_pretrained(model_name_or_path)")
         self.model = model
         self.tokenizer = tokenizer
         self.device = get_device_name()
@@ -38,19 +38,22 @@ class Base(ABC, nn.Module):
     def forward(self, *args, **kwargs):
         """Pytorch forward method."""
 
-    def setup_lora(self, model, lora_config, use_qlora: bool = False):
+    @staticmethod
+    def setup_lora(model, lora_config, use_qlora: bool = False):
         """Setup LoRA for the model."""
         from peft import get_peft_model, prepare_model_for_kbit_training
 
-        if lora_config is None:
-            lora_config = self.create_default_lora_config(model, lora_r=32, lora_alpha=64, lora_dropout=0.05)
+        if not lora_config:
+            lora_config = Base._create_default_lora_config(model, lora_r=16, lora_alpha=64, lora_dropout=0.05)
+
         if use_qlora:
             model = prepare_model_for_kbit_training(model)
         model = get_peft_model(model, lora_config)
         model.print_trainable_parameters()
         return model
 
-    def load_lora_weights(self, model, lora_path: str):
+    @staticmethod
+    def load_lora_weights(model, lora_path: str):
         """Load pre-trained LoRA weights."""
         from peft import PeftModel
 
@@ -58,7 +61,8 @@ class Base(ABC, nn.Module):
         model = PeftModel.from_pretrained(model, lora_path)
         return model.merge_and_unload()
 
-    def create_default_lora_config(self, model, lora_r: int, lora_alpha: int, lora_dropout: float):
+    @staticmethod
+    def _create_default_lora_config(model, lora_r: int, lora_alpha: int, lora_dropout: float):
         """Create default LoRA configuration."""
         from peft import LoraConfig
 
@@ -135,6 +139,19 @@ class Base(ABC, nn.Module):
         if hasattr(self.model, "config") and hasattr(self.model.config, "max_position_embeddings"):
             return min(self.model.config.max_position_embeddings, self.tokenizer.model_max_length)
         return self.tokenizer.model_max_length
+
+    def _init_weights(self, module: nn.Module):
+        if isinstance(module, nn.Linear):
+            module.weight.data.normal_(mean=0.0, std=self.config.initializer_range)
+            if module.bias is not None:
+                module.bias.data.zero_()
+        elif isinstance(module, nn.Embedding):
+            module.weight.data.normal_(mean=0.0, std=self.config.initializer_range)
+            if module.padding_idx is not None:
+                module.weight.data[module.padding_idx].zero_()
+        elif isinstance(module, nn.LayerNorm):
+            module.bias.data.zero_()
+            module.weight.data.fill_(1.0)
 
 
 class BaseRanker(Base):

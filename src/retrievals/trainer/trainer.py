@@ -15,14 +15,15 @@ class RetrievalTrainer(Trainer):
         self,
         loss_fn: Optional[Callable] = None,
         train_type: str = 'normal',
-        negatives_x_device: bool = False,
+        negatives_cross_device: bool = False,
         *args,
         **kwargs,
     ):
         super(RetrievalTrainer, self).__init__(*args, **kwargs)
         self.loss_fn = loss_fn
         self.train_type = train_type
-        self._dist_loss_scale_factor = dist.get_world_size() if negatives_x_device else 1
+        self.negative_cross_device = negatives_cross_device
+        self._dist_loss_scale_factor = dist.get_world_size() if negatives_cross_device else 1
 
     def training_step(self, *args):
         return super().training_step(*args) / self._dist_loss_scale_factor
@@ -35,7 +36,7 @@ class RetrievalTrainer(Trainer):
         if isinstance(outputs, dict) and 'loss' in outputs:
             return outputs['loss']
         else:
-            return self.loss_fn(*outputs)
+            return self.loss_fn(*outputs, negatives_cross_device=self.negatives_cross_device)
 
     def compute_pair_loss(self, model: nn.Module, inputs: Any, return_outputs: bool = False):
         query = inputs["query"]
@@ -51,7 +52,9 @@ class RetrievalTrainer(Trainer):
         else:
             neg_embeddings = None
 
-        loss = self.loss_fn(query_embeddings, pos_embeddings, neg_embeddings)
+        loss = self.loss_fn(
+            query_embeddings, pos_embeddings, neg_embeddings, negatives_cross_device=self.negatives_cross_device
+        )
         if not return_outputs:
             return loss
 

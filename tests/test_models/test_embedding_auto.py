@@ -2,7 +2,7 @@ import tempfile
 from unittest import TestCase
 
 import torch
-from transformers import AutoConfig
+from transformers import AutoConfig, AutoModel
 
 from src.retrievals.models.embedding_auto import (
     AutoModelForEmbedding,

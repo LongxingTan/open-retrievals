@@ -1,37 +1,17 @@
-import os
 import shutil
 import tempfile
-from dataclasses import dataclass, field
 from unittest import TestCase
 
 import torch
-import transformers
 from torch import nn
 from torch.utils.data import DataLoader, Dataset
-from transformers import (
-    AutoConfig,
-    AutoModel,
-    AutoTokenizer,
-    BertTokenizer,
-    HfArgumentParser,
-    TrainingArguments,
-)
+from transformers import AutoModel, AutoTokenizer, TrainingArguments
 
 from src.retrievals.data.collator import RerankCollator
 from src.retrievals.models.rerank import AutoModelForRanking, ColBERT
-from src.retrievals.trainer.trainer import (
-    DistilTrainer,
-    RerankTrainer,
-    RetrievalTrainer,
-)
+from src.retrievals.trainer.trainer import RerankTrainer
 
-from .test_modeling_common import (
-    ModelTesterMixin,
-    device,
-    floats_tensor,
-    ids_tensor,
-    random_attention_mask,
-)
+from .test_modeling_common import ModelTesterMixin
 
 
 class PseudoRerankTrainDataset(Dataset):

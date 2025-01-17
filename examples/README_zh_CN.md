@@ -30,7 +30,7 @@ export HF_ENDPOINT=https://hf-mirror.com
 - [向量模型pairwise微调](./0_embedding/train_pairwise.py)
 - [decoder大模型向量模型pairwise微调](./0_embedding/train_llm.py)
   - 设置 `query_instruction`
-    - "给定一个查询和一个相关文档，检索与查询相关的文档\n查询: "
+    - "给定一个查询和一个相关文档，检索与查询相关的文档\n查询: {}"
   - 使用适当的 `pooling_method`
     - `last`
   - 由于模型尺寸较大，可能需要减少批次大小

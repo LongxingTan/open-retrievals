@@ -201,7 +201,7 @@ print(response)
 import torch.nn as nn
 from datasets import load_dataset
 from transformers import AutoTokenizer, AdamW, get_linear_schedule_with_warmup, TrainingArguments
-from retrievals import AutoModelForEmbedding, RetrievalTrainer, RetrievalCollator
+from retrievals import AutoModelForEmbedding, RetrievalTrainer, RetrievalCollator, PairwiseModel
 from retrievals.losses import ArcFaceAdaptiveMarginLoss, InfoNCE, SimCSE, TripletLoss
 
 model_name_or_path: str = "sentence-transformers/paraphrase-multilingual-mpnet-base-v2"
@@ -211,9 +211,9 @@ epochs: int = 3
 train_dataset = load_dataset('shibing624/nli_zh', 'STS-B')['train']
 tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, use_fast=False)
 model = AutoModelForEmbedding.from_pretrained(model_name_or_path, pooling_method="mean")
-model = model.set_train_type('pairwise')
+train_model = PairwiseModel(model)
 
-optimizer = AdamW(model.parameters(), lr=5e-5)
+optimizer = AdamW(train_model.parameters(), lr=5e-5)
 num_train_steps = int(len(train_dataset) / batch_size * epochs)
 scheduler = get_linear_schedule_with_warmup(
     optimizer, num_warmup_steps=0.05 * num_train_steps, num_training_steps=num_train_steps
@@ -227,7 +227,7 @@ training_arguments = TrainingArguments(
     logging_steps=100,
 )
 trainer = RetrievalTrainer(
-    model=model,
+    model=train_model,
     args=training_arguments,
     train_dataset=train_dataset,
     data_collator=RetrievalCollator(tokenizer, keys=['sentence1', 'sentence2'], max_lengths=[32, 128]),
@@ -246,28 +246,28 @@ import os
 import torch.nn as nn
 from datasets import load_dataset
 from transformers import AutoTokenizer, AdamW, get_linear_schedule_with_warmup, TrainingArguments
-from retrievals import AutoModelForEmbedding, RetrievalTrainer, RetrievalCollator
+from retrievals import AutoModelForEmbedding, RetrievalTrainer, RetrievalCollator, PairwiseModel
 from retrievals.losses import InfoNCE, SimCSE, TripletLoss
 os.environ['HF_ENDPOINT'] = 'https://hf-mirror.com'
 
 def add_instructions(example):
-    example['query'] = query_instruction + example['query']
-    example['positive'] = document_instruction + example['positive']
+    example['query'] = query_instruction.format(example['query'])
+    example['positive'] = document_instruction.format(example['positive'])
     return example
 
 model_name_or_path: str = "Qwen/Qwen2-1.5B-Instruct"
 batch_size: int = 8
 epochs: int = 3
-query_instruction = "Retrieve relevant passages that answer the query\nQuery: "
-document_instruction = "Document: "
+query_instruction = "Retrieve relevant passages that answer the query\nQuery: {}"
+document_instruction = "Document: {}"
 
 train_dataset = load_dataset('shibing624/nli_zh', 'STS-B')['train']
 train_dataset = train_dataset.rename_columns({'sentence1': 'query', 'sentence2': 'positive'})
 train_dataset = train_dataset.map(add_instructions)
 tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, use_fast=False)
 model = AutoModelForEmbedding.from_pretrained(model_name_or_path, pooling_method="last", use_lora=True)
-model = model.set_train_type('pairwise', loss_fn=InfoNCE(nn.CrossEntropyLoss(label_smoothing=0.05)))
-optimizer = AdamW(model.parameters(), lr=5e-5)
+train_model = PairwiseModel(model, loss_fn=InfoNCE(nn.CrossEntropyLoss(label_smoothing=0.05)))
+optimizer = AdamW(train_model.parameters(), lr=5e-5)
 num_train_steps = int(len(train_dataset) / batch_size * epochs)
 scheduler = get_linear_schedule_with_warmup(optimizer, num_warmup_steps=0.05 * num_train_steps, num_training_steps=num_train_steps)
 
@@ -279,7 +279,7 @@ training_arguments = TrainingArguments(
     logging_steps=100,
 )
 trainer = RetrievalTrainer(
-    model=model,
+    model=train_model,
     args=training_arguments,
     train_dataset=train_dataset,
     data_collator=RetrievalCollator(tokenizer, keys=['query', 'positive'], max_lengths=[64, 128]),
@@ -439,8 +439,8 @@ train_dataset = RetrievalTrainDataset(
     data_name_or_path='C-MTEB/T2Reranking',
     positive_key='positive',
     negative_key='negative',
-    query_instruction='A: ',
-    document_instruction='B: ',
+    query_instruction='A: {}',
+    document_instruction='B: {}',
     dataset_split='dev',
 )
 data_collator = LLMRerankCollator(

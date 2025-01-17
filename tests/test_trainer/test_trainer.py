@@ -17,6 +17,7 @@ from transformers import (
 from src.retrievals import (
     AutoModelForEmbedding,
     AutoModelForRanking,
+    PairwiseModel,
     RerankCollator,
     RetrievalCollator,
 )
@@ -76,8 +77,9 @@ class TrainerTest(TestCase):
         parser = HfArgumentParser((TrainingArguments))
         training_args, _ = parser.parse_args_into_dataclasses(return_remaining_strings=True)
 
+        train_model = PairwiseModel(self.model, loss_fn=TripletLoss())
         trainer = RetrievalTrainer(
-            model=self.model.set_train_type('pairwise', loss_fn=TripletLoss()),
+            model=train_model,
             args=training_args,
             train_dataset=self.train_dataset,
             data_collator=RetrievalCollator(

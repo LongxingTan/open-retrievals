@@ -22,13 +22,14 @@ class RetrievalTrainDataset(Dataset):
         query_key: str = 'query',
         positive_key: str = 'positive',
         negative_key: str = 'negative',
-        query_instruction: str = '',
-        document_instruction: str = '',
+        query_instruction: str = '{}',
+        document_instruction: str = '{}',
         separator: str = ' ',
         args: Optional = None,
         tokenizer: PreTrainedTokenizer = None,
         dataset_split: str = 'train',
         dataset_language: str = 'default',
+        **kwargs,
     ):
         if not args and not data_name_or_path:
             raise ValueError('Provide the data_name_or_path or args')
@@ -48,10 +49,10 @@ class RetrievalTrainDataset(Dataset):
             )
             self.query_instruction = args.query_instruction if args.query_instruction else query_instruction
             if self.query_instruction is None:
-                self.query_instruction = ''
+                self.query_instruction = '{}'
             self.document_instruction = args.document_instruction if args.document_instruction else document_instruction
             if self.document_instruction is None:
-                self.document_instruction = ''
+                self.document_instruction = '{}'
             self.query_key = args.query_key or query_key
             self.positive_key = args.positive_key or positive_key
             self.negative_key = args.negative_key or negative_key
@@ -120,17 +121,17 @@ class RetrievalTrainDataset(Dataset):
         data = self.dataset[item]
         query = data[self.query_key]
         if self.query_instruction:
-            query = self.query_instruction + query
+            query = self.query_instruction.format(query)
 
         if isinstance(data[self.positive_key], (list, tuple)):
             if isinstance(data[self.positive_key][0], dict):
                 pos = random.choice(data[self.positive_key])
                 pos_text = pos['title'] + self.separator + pos['text'] if 'title' in pos else pos['text']
-                pos = self.document_instruction + pos_text
+                pos = self.document_instruction.format(pos_text)
             else:
-                pos = self.document_instruction + random.choice(data[self.positive_key])
+                pos = self.document_instruction.format(random.choice(data[self.positive_key]))
         else:
-            pos = self.document_instruction + data[self.positive_key]
+            pos = self.document_instruction.format(data[self.positive_key])
 
         sample = {self.query_key: query, self.positive_key: pos}
         if self.negative_key in data:
@@ -147,7 +148,7 @@ class RetrievalTrainDataset(Dataset):
             if isinstance(negs[0], dict):
                 negs = [neg['title'] + self.separator + neg['text'] if 'title' in neg else neg['text'] for neg in negs]
 
-            sample.update({self.negative_key: [self.document_instruction + neg for neg in negs]})
+            sample.update({self.negative_key: [self.document_instruction.format(neg) for neg in negs]})
         return sample
 
     def generate_unfold_samples(self, dataset):
@@ -155,8 +156,8 @@ class RetrievalTrainDataset(Dataset):
         for data in dataset:
             for pos_text in data[self.positive_key]:
                 sample = {
-                    self.query_key: self.query_instruction + data[self.query_key],
-                    self.positive_key: self.document_instruction + pos_text,
+                    self.query_key: self.query_instruction.format(data[self.query_key]),
+                    self.positive_key: self.document_instruction.format(pos_text),
                 }
 
                 if self.negative_key in data:
@@ -168,7 +169,7 @@ class RetrievalTrainDataset(Dataset):
                             negs = random.sample(data[self.negative_key], self.train_group_size - 1)
                     else:
                         negs = data[self.negative_key]
-                    sample.update({self.negative_key: [self.document_instruction + neg for neg in negs]})
+                    sample.update({self.negative_key: [self.document_instruction.format(neg) for neg in negs]})
                 samples.append(sample)
 
         return samples
@@ -191,6 +192,8 @@ class RerankTrainDataset(Dataset):
         negative_key: Optional[str] = 'negative',
         args: Optional = None,
         dataset_split: str = 'train',
+        tokenizer: PreTrainedTokenizer = None,
+        **kwargs,
     ):
         """
         train_group_size = 1(positive) + max_negative_samples
@@ -247,6 +250,7 @@ class RerankTrainDataset(Dataset):
             dataset = self.generate_samples(dataset)
 
         self.dataset = dataset
+        self.tokenizer = tokenizer
         logger.info(f"Generate total {len(self.dataset)} rerank data.")
 
     def __len__(self):
@@ -296,11 +300,12 @@ class EncodeDataset(Dataset):
         max_length: int = 128,
         id_key: Optional[str] = None,
         text_key: str = 'query',
-        instruction: str = '',
+        instruction: str = '{}',
         args: Optional = None,
         tokenizer: PreTrainedTokenizer = None,
         dataset_split: str = 'train',
         dataset_language: str = 'default',
+        **kwargs,
     ):
         if args:
             data_name_or_path = args.data_name_or_path
@@ -334,7 +339,7 @@ class EncodeDataset(Dataset):
     def __getitem__(self, item) -> [str, BatchEncoding]:
         if self.id_key is not None:
             text_id, text = (self.encode_data[item][f] for f in [self.id_key, self.text_key])
-            text = self.instruction + text
+            text = self.instruction.format(text)
             encoded_text = self.tokenizer.encode_plus(
                 text,
                 max_length=self.max_length,
@@ -345,7 +350,7 @@ class EncodeDataset(Dataset):
             return text_id, encoded_text
         else:
             text = self.encode_data[item][self.text_key]
-            text = self.instruction + text
+            text = self.instruction.format(text)
             encoded_text = self.tokenizer.encode_plus(
                 text,
                 max_length=self.max_length,

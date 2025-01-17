@@ -190,7 +190,7 @@ print(response)
 import torch.nn as nn
 from datasets import load_dataset
 from transformers import AutoTokenizer, AdamW, get_linear_schedule_with_warmup, TrainingArguments
-from retrievals import AutoModelForEmbedding, RetrievalTrainer, RetrievalCollator
+from retrievals import AutoModelForEmbedding, RetrievalTrainer, RetrievalCollator, PairwiseModel
 from retrievals.losses import ArcFaceAdaptiveMarginLoss, InfoNCE, SimCSE, TripletLoss
 
 model_name_or_path: str = "sentence-transformers/paraphrase-multilingual-mpnet-base-v2"
@@ -200,9 +200,9 @@ epochs: int = 3
 train_dataset = load_dataset('shibing624/nli_zh', 'STS-B')['train']
 tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, use_fast=False)
 model = AutoModelForEmbedding.from_pretrained(model_name_or_path, pooling_method="mean")
-model = model.set_train_type('pairwise')
+train_model = PairwiseModel(model)
 
-optimizer = AdamW(model.parameters(), lr=5e-5)
+optimizer = AdamW(train_model.parameters(), lr=5e-5)
 num_train_steps = int(len(train_dataset) / batch_size * epochs)
 scheduler = get_linear_schedule_with_warmup(
     optimizer, num_warmup_steps=0.05 * num_train_steps, num_training_steps=num_train_steps
@@ -216,7 +216,7 @@ training_arguments = TrainingArguments(
     logging_steps=100,
 )
 trainer = RetrievalTrainer(
-    model=model,
+    model=train_model,
     args=training_arguments,
     train_dataset=train_dataset,
     data_collator=RetrievalCollator(tokenizer, keys=['sentence1', 'sentence2'], max_lengths=[32, 128]),
@@ -234,7 +234,7 @@ from retrievals import AutoModelForEmbedding
 model = AutoModelForEmbedding.from_pretrained(
     "mistralai/Mistral-7B-v0.1",
     pooling_method='last',
-    query_instruction=f'Instruct: Retrieve semantically similar text\nQuery: '
+    query_instruction=f'Instruct: Retrieve semantically similar text\nQuery: {}'
 )
 ```
 

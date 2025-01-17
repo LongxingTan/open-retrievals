@@ -20,7 +20,7 @@ def parse_args():
     parser.add_argument('--model_name_or_path', default="BAAI/bge-base-en", type=str)
     parser.add_argument('--range_for_sampling', default="10-210", type=str, help="range to sample negatives")
     parser.add_argument('--negative_number', default=15, type=int, help='the number of negatives')
-    parser.add_argument('--query_instruction_for_retrieval', default="")
+    parser.add_argument('--query_instruction_for_retrieval', default="{}")
     parser.add_argument('--positive_key', type=str, default="positive")
     parser.add_argument('--negative_key', type=str, default="negative")
     return parser.parse_args()
