@@ -534,15 +534,13 @@ class ListwiseModel(AutoModelForEmbedding):
     def __init__(
         self,
         model: Optional[nn.Module] = None,
+        tokenizer: Optional[PreTrainedTokenizer] = None,
         loss_fn: Optional[Callable] = None,
         segment_pooling: str = 'mean',
         num_segments: Optional[int] = None,
         **kwargs,
     ) -> None:
-        super().__init__(
-            model=model,
-            loss_fn=loss_fn,
-        )
+        super().__init__(model=model, tokenizer=tokenizer, loss_fn=loss_fn, **kwargs)
         self.segment_pooling = self._get_segment_pooling(segment_pooling)
         self.num_segments = num_segments
 
