@@ -22,8 +22,17 @@ class Base(ABC, nn.Module):
     def _dist_gather_tensor(self, t: Optional[torch.Tensor]) -> Optional[torch.Tensor]:
         """negatives cross device"""
         if t is None:
-            return
+            return None
 
+        try:
+            return self._dist_gather_tensor1(t)
+        except RuntimeError:
+            return self._dist_gather_tensor2(t)
+
+    def _dist_gather_tensor1(self, t: Optional[torch.Tensor]) -> Optional[torch.Tensor]:
+        """negatives cross device"""
+        if t is None:
+            return
         t = t.contiguous()
         all_tensors = [torch.empty_like(t) for _ in range(self.world_size)]
         dist.all_gather(all_tensors, t)

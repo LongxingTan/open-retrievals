@@ -175,6 +175,7 @@ def main():
             loss_name=training_args.loss_fn,
             loss_kwargs={
                 'use_inbatch_negative': training_args.use_inbatch_negative,
+                'negatives_cross_device': training_args.negatives_cross_device,
                 'temperature': training_args.temperature,
             },
         )

@@ -8,7 +8,7 @@ import numpy as np
 import torch
 import torch.distributed as dist
 import torch.nn as nn
-from tqdm.auto import tqdm, trange
+from tqdm.auto import tqdm
 from transformers import PreTrainedTokenizer
 
 from ..data.collator import LLMRerankCollator, RerankCollator
@@ -44,7 +44,7 @@ class Base(ABC, nn.Module):
         from peft import get_peft_model, prepare_model_for_kbit_training
 
         if not lora_config:
-            lora_config = Base._create_default_lora_config(model, lora_r=32, lora_alpha=64, lora_dropout=0.05)
+            lora_config = Base._create_default_lora_config(model, lora_r=16, lora_alpha=64, lora_dropout=0.05)
 
         if use_qlora:
             model = prepare_model_for_kbit_training(model)

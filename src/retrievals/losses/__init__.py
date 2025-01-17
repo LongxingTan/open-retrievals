@@ -1,3 +1,5 @@
+from typing import Dict
+
 from torch import nn
 
 from .arcface import ArcFaceAdaptiveMarginLoss
@@ -13,7 +15,7 @@ from .triplet import TripletLoss, TripletRankingLoss
 
 
 class AutoLoss(nn.Module):
-    def __init__(self, loss_name, loss_kwargs={}):
+    def __init__(self, loss_name: str, loss_kwargs: Dict):
         super(AutoLoss, self).__init__()
         if loss_name == 'simcse':
             self.loss_fn = SimCSE(**loss_kwargs)
