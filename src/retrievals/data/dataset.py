@@ -29,6 +29,7 @@ class RetrievalTrainDataset(Dataset):
         tokenizer: PreTrainedTokenizer = None,
         dataset_split: str = 'train',
         dataset_language: str = 'default',
+        **kwargs,
     ):
         if not args and not data_name_or_path:
             raise ValueError('Provide the data_name_or_path or args')
@@ -191,6 +192,7 @@ class RerankTrainDataset(Dataset):
         negative_key: Optional[str] = 'negative',
         args: Optional = None,
         dataset_split: str = 'train',
+        **kwargs,
     ):
         """
         train_group_size = 1(positive) + max_negative_samples
@@ -301,6 +303,7 @@ class EncodeDataset(Dataset):
         tokenizer: PreTrainedTokenizer = None,
         dataset_split: str = 'train',
         dataset_language: str = 'default',
+        **kwargs,
     ):
         if args:
             data_name_or_path = args.data_name_or_path

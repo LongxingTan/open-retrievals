@@ -186,7 +186,6 @@ def main():
         logger.info('Set rank model to ColBERT')
         train_dataset = RetrievalTrainDataset(
             args=data_args,
-            tokenizer=tokenizer,
             train_group_size=data_args.train_group_size,
             unfold_each_positive=data_args.unfold_each_positive,
             positive_key=data_args.positive_key,
