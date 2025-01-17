@@ -5,7 +5,6 @@ import random
 from typing import Dict, Iterable, List, Optional, Tuple, Union
 
 import datasets
-from reference.arcface_pointwise_finetune import tokenizer
 from torch.utils.data import Dataset
 from transformers import BatchEncoding, PreTrainedTokenizer
 
