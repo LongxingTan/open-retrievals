@@ -223,7 +223,6 @@ class LLMRerankCollator(DataCollatorForSeq2Seq):
         add_target_token: str = '',
         sep_token: str = "\n",
         max_length: int = 128,
-        tokenize_args: Optional[Dict] = None,
         pad_to_multiple_of: Optional[int] = 8,
     ):
         self.tokenizer = tokenizer

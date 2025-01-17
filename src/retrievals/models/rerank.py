@@ -606,7 +606,7 @@ class LLMRanker(AutoModelForRanking):
         use_qlora: bool = False,
         lora_config=None,
         lora_path: Optional[str] = None,
-        # quantization_config=None,
+        quantization_config=None,
         task_prompt: Optional[str] = None,
         query_instruction: Optional[str] = 'A: {}',
         document_instruction: Optional[str] = 'B: {}',

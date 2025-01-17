@@ -5,6 +5,7 @@ import random
 from typing import Dict, Iterable, List, Optional, Tuple, Union
 
 import datasets
+from reference.arcface_pointwise_finetune import tokenizer
 from torch.utils.data import Dataset
 from transformers import BatchEncoding, PreTrainedTokenizer
 
@@ -192,6 +193,7 @@ class RerankTrainDataset(Dataset):
         negative_key: Optional[str] = 'negative',
         args: Optional = None,
         dataset_split: str = 'train',
+        tokenizer: PreTrainedTokenizer = None,
         **kwargs,
     ):
         """
@@ -249,6 +251,7 @@ class RerankTrainDataset(Dataset):
             dataset = self.generate_samples(dataset)
 
         self.dataset = dataset
+        self.tokenizer = tokenizer
         logger.info(f"Generate total {len(self.dataset)} rerank data.")
 
     def __len__(self):

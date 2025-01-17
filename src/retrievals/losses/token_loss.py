@@ -26,7 +26,7 @@ class TokenLoss(nn.Module):
         batch_size = labels.size(0) // self.train_group_size
         _, max_indices = torch.max(labels, dim=1)
         # shift the targets such that output n predicts token n+1
-        predict_indices = max_indices - 1
+        predict_indices = max_indices - 1  # (batch_size, )
         logits = [logits[i, predict_indices[i], :] for i in range(logits.shape[0])]
         logits = torch.stack(logits, dim=0)
         scores = logits[:, self.token_index]
