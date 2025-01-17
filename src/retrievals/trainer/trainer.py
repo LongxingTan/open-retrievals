@@ -36,7 +36,7 @@ class RetrievalTrainer(Trainer):
         if isinstance(outputs, dict) and 'loss' in outputs:
             return outputs['loss']
         else:
-            return self.loss_fn(*outputs, negatives_cross_device=self.negatives_cross_device)
+            return self.loss_fn(*outputs, negatives_cross_device=self.negative_cross_device)
 
     def compute_pair_loss(self, model: nn.Module, inputs: Any, return_outputs: bool = False):
         query = inputs["query"]
