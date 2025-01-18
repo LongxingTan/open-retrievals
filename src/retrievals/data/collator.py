@@ -35,20 +35,23 @@ class RetrievalCollator(DataCollatorWithPadding):
                 f'Length of keys and max_lengths should be same, while get {len(self.keys)} and {len(self.max_lengths)}'
             )
 
-        texts = {key: [] for key in self.keys}
+        texts_dict = {key: [] for key in self.keys}
         for feature in features:
             for key in self.keys:
                 if key in feature:
-                    texts[key].append(feature[key])
+                    texts_dict[key].append(feature[key])
 
-        tokenize_fn = self.tokenizer
         result = {}
         for i, key in enumerate(self.keys):
-            result[key] = self._flatten_and_tokenize(texts[key], self.max_lengths[i], tokenize_fn)
+            result[key] = self._flatten_and_tokenize(texts_dict, key, self.max_lengths[i])
 
         return result
 
-    def _flatten_and_tokenize(self, texts: List[Any], max_length: int, tokenize_fn) -> Dict[str, Any]:
+    def _flatten_and_tokenize(self, texts_dict: Dict[str, List[Any]], key: str, max_length: int) -> Dict[str, Any]:
+        texts = texts_dict[key]
+        if not texts:
+            raise ValueError(f"Tokenizer input is empty list, check the setup keys {key} for collator")
+
         if isinstance(texts[0], list):
             texts = sum(texts, [])  # Flatten nested lists
 
@@ -58,7 +61,7 @@ class RetrievalCollator(DataCollatorWithPadding):
             "return_tensors": "pt",
             "truncation": True,
         }
-        return tokenize_fn(texts, **tokenize_args)
+        return self.tokenizer(texts, **tokenize_args)
 
     def _mask_pad_token(self, q):
         if random.random() > 0.9:

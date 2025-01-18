@@ -254,6 +254,7 @@ query_instruction = "Retrieve relevant passages that answer the query\nQuery: {}
 document_instruction = "Document: {}"
 
 train_dataset = load_dataset('shibing624/nli_zh', 'STS-B')['train']
+train_dataset = train_dataset.rename_columns({'sentence1': 'query', 'sentence2': 'positive'})
 train_dataset = train_dataset.map(add_instructions)
 tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, use_fast=False)
 model = AutoModelForEmbedding.from_pretrained(model_name_or_path, pooling_method="last", use_lora=True)
@@ -273,7 +274,7 @@ trainer = RetrievalTrainer(
     model=train_model,
     args=training_arguments,
     train_dataset=train_dataset,
-    data_collator=RetrievalCollator(tokenizer, keys=['sentence1', 'sentence2'], max_lengths=[32, 128]),
+    data_collator=RetrievalCollator(tokenizer, keys=['query', 'positive'], max_lengths=[64, 128]),
 )
 trainer.optimizer = optimizer
 trainer.scheduler = scheduler
