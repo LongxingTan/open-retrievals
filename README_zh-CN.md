@@ -225,6 +225,7 @@ training_arguments = TrainingArguments(
     per_device_train_batch_size=batch_size,
     remove_unused_columns=False,
     logging_steps=100,
+    report_to="none",
 )
 trainer = RetrievalTrainer(
     model=train_model,
@@ -277,6 +278,7 @@ training_arguments = TrainingArguments(
     per_device_train_batch_size=batch_size,
     remove_unused_columns=False,
     logging_steps=100,
+    report_to="none",
 )
 trainer = RetrievalTrainer(
     model=train_model,
@@ -391,6 +393,7 @@ training_args = TrainingArguments(
     output_dir=output_dir,
     remove_unused_columns=False,
     logging_steps=100,
+    report_to="none",
 )
 trainer = RerankTrainer(
     model=model,
@@ -469,6 +472,7 @@ training_args = TrainingArguments(
     num_train_epochs=epochs,
     output_dir="./checkpoints",
     remove_unused_columns=False,
+    report_to="none",
 )
 trainer = RerankTrainer(
     model=model,
