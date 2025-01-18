@@ -1,15 +1,21 @@
 import shutil
 import tempfile
 from unittest import TestCase
+from unittest.mock import patch
 
 import torch
 from torch import nn
 from torch.utils.data import DataLoader, Dataset
-from transformers import AutoModel, AutoTokenizer, TrainingArguments
+from transformers import (
+    AutoModel,
+    AutoModelForCausalLM,
+    AutoTokenizer,
+    TrainingArguments,
+)
 
 from src.retrievals.data.collator import RerankCollator
 from src.retrievals.losses import ColbertLoss
-from src.retrievals.models.rerank import AutoModelForRanking, ColBERT
+from src.retrievals.models.rerank import AutoModelForRanking, ColBERT, LLMRanker
 from src.retrievals.trainer.trainer import RerankTrainer
 
 from .test_modeling_common import ModelTesterMixin
@@ -126,3 +132,70 @@ class TestColBERT(TestCase):
         self.assertIn("doc_input_ids", preprocessed)
         self.assertIsInstance(preprocessed["query_input_ids"], torch.Tensor)
         self.assertIsInstance(preprocessed["doc_input_ids"], torch.Tensor)
+
+
+class TestLLMRanker(TestCase):
+    def setUp(self):
+        self.model_name = "gpt2"
+        self.tokenizer = AutoTokenizer.from_pretrained(self.model_name)
+        if self.tokenizer.pad_token is None:
+            self.tokenizer.pad_token = self.tokenizer.eos_token
+        self.model = AutoModelForCausalLM.from_pretrained(self.model_name)
+        self.task_prompt = (
+            "Given a query A and a passage B, determine whether the passage contains "
+            "an answer to the query by providing a prediction of either 'Yes' or 'No'."
+        )
+
+        self.llm_ranker = LLMRanker(
+            model=self.model,
+            tokenizer=self.tokenizer,
+            task_prompt=self.task_prompt,
+            target_token='Yes',
+            sep_token='\n',
+            query_instruction='A: {}',
+            document_instruction='B: {}',
+            device="cpu",
+        )
+
+    def test_initialization(self):
+        self.assertIsNotNone(self.llm_ranker.model)
+        self.assertIsNotNone(self.llm_ranker.tokenizer)
+        self.assertEqual(self.llm_ranker.task_prompt, self.task_prompt)
+        self.assertEqual(
+            self.llm_ranker.target_token_loc, self.tokenizer('Yes', add_special_tokens=False)['input_ids'][0]
+        )
+        self.assertEqual(self.llm_ranker.sep_token, '\n')
+
+    def test_preprocess_pair(self):
+        batch_sentence_pair = [("This is a query.", "This is a document.")]
+        processed = self.llm_ranker.preprocess_pair(batch_sentence_pair, max_length=10)
+        self.assertIn('input_ids', processed)
+        self.assertIn('attention_mask', processed)
+        self.assertIsInstance(processed['input_ids'], torch.Tensor)
+        self.assertIsInstance(processed['attention_mask'], torch.Tensor)
+
+    def test_compute_score(self):
+        sentence_pairs = [("This is a query.", "This is a document.")]
+        scores = self.llm_ranker.compute_score(sentence_pairs, batch_size=1)
+
+        self.assertIsInstance(scores, float)
+
+    def test_forward(self):
+        input_ids = torch.tensor([[1, 2, 3, 4, 5]])
+        attention_mask = torch.tensor([[1, 1, 1, 1, 1]])
+        output = self.llm_ranker.forward(input_ids, attention_mask)
+        self.assertIn('logits', output)
+
+    @patch('transformers.AutoModelForCausalLM.from_pretrained')
+    def test_from_pretrained(self, mock_from_pretrained):
+        mock_from_pretrained.return_value = self.model
+        llm_ranker = LLMRanker.from_pretrained(
+            model_name_or_path=self.model_name,
+            task_prompt=self.task_prompt,
+            query_instruction='A: {}',
+            document_instruction='B: {}',
+            device="cpu",
+        )
+        self.assertIsNotNone(llm_ranker.model)
+        self.assertIsNotNone(llm_ranker.tokenizer)
+        self.assertEqual(llm_ranker.task_prompt, self.task_prompt)

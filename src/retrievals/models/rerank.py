@@ -582,13 +582,16 @@ class LLMRanker(AutoModelForRanking):
         return_dict: Optional[bool] = True,
         **kwargs,
     ):
-        model_output = self.model(input_ids, attention_mask, output_hidden_states=True)
+        model_output = self.model(
+            input_ids=input_ids, attention_mask=attention_mask, output_hidden_states=True, past_key_values=None
+        )
 
         outputs_dict = dict()
         outputs_dict['logits'] = model_output.logits
         if self.training:
-            loss = self.loss_fn(model_output.logits, labels)
-            outputs_dict['loss'] = loss
+            if self.loss_fn is not None:
+                loss = self.loss_fn(model_output.logits, labels)
+                outputs_dict['loss'] = loss
         return outputs_dict
 
     @classmethod
