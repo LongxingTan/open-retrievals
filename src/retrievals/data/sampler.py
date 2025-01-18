@@ -1,10 +1,12 @@
 """
-sampler
-- override the get_train_dataloader/get_eval_dataloader methods in Trainer to use the custom sampler
+Custom samplers for batch processing in PyTorch.
+
+This module provides various sampling strategies for creating batches,
+particularly focusing on grouped and distributed sampling scenarios.
 """
 
 import logging
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 import numpy as np
 import torch
@@ -16,12 +18,20 @@ logger = logging.getLogger(__name__)
 
 class GroupedBatchSampler(BatchSampler):
     """
-    It enforces that the batch only contain elements from the same group.
-    shuffle should be set to False for custom sampler
+    Batch sampler that ensures batches contain elements from the same group.
+
+    This sampler maintains group consistency within batches while supporting
+    optional shuffling of samples within groups. shuffle should be set to False for custom sampler
     """
 
     def __init__(
-        self, sampler: Sampler, group_ids: List[int], batch_size: int, shuffle: bool = True, seed: Optional[int] = None
+        self,
+        sampler: Sampler,
+        group_ids: List[int],
+        batch_size: int,
+        shuffle: bool = True,
+        drop_last: bool = False,
+        seed: Optional[int] = None,
     ):
         """
         sampler (Sampler): Base sampler.
@@ -30,6 +40,7 @@ class GroupedBatchSampler(BatchSampler):
             The group ids must be a set of integers in the range [0, num_groups).
         batch_size (int): Size of mini-batch.
         """
+        super().__init__(sampler, batch_size, drop_last=drop_last)
         self.sampler = sampler
         self.group_ids = np.asarray(group_ids)
         assert self.group_ids.ndim == 1
@@ -149,6 +160,14 @@ class GroupSortedBatchSampler(BatchSampler):
         # self.buffer_per_group = {k: [] for k in self.groups}
 
 
+def split_batches(inputs, batch_size: int, drop_last: bool = False):
+    l = np.split(inputs, np.arange(batch_size, len(inputs), batch_size))
+    if drop_last:
+        if len(l[-1]) != batch_size:
+            l = l[:-1]
+    return l
+
+
 class DistributedBucketSampler(torch.utils.data.distributed.DistributedSampler):
     def __init__(
         self,
@@ -173,14 +192,6 @@ class DistributedBucketSampler(torch.utils.data.distributed.DistributedSampler):
 
     def __len__(self):
         return
-
-
-def split_batches(inputs, batch_size: int, drop_last: bool = False):
-    l = np.split(inputs, np.arange(batch_size, len(inputs), batch_size))
-    if drop_last:
-        if len(l[-1]) != batch_size:
-            l = l[:-1]
-    return l
 
 
 class SyncedSampler(DistributedSampler):
