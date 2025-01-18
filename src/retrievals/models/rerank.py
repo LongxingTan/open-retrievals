@@ -301,7 +301,7 @@ class ColBERT(BaseRanker):
         return self.score(query_embedding, positive_embedding, query_attention_mask)
 
     def _encode(
-        self, input_ids: torch.Tensor, attention_mask: torch.Tensor, normalize_embeddings: bool = True
+        self, input_ids: torch.Tensor, attention_mask: torch.Tensor, normalize_embeddings: bool = True, **kwargs
     ) -> torch.Tensor:
         """Encode input IDs and attention masks into embeddings."""
         outputs = self.model(input_ids, attention_mask=attention_mask, output_hidden_states=True)

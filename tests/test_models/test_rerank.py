@@ -8,6 +8,7 @@ from torch.utils.data import DataLoader, Dataset
 from transformers import AutoModel, AutoTokenizer, TrainingArguments
 
 from src.retrievals.data.collator import RerankCollator
+from src.retrievals.losses import ColbertLoss
 from src.retrievals.models.rerank import AutoModelForRanking, ColBERT
 from src.retrievals.trainer.trainer import RerankTrainer
 
@@ -75,12 +76,17 @@ class AutoModelForRankingTest(TestCase, ModelTesterMixin):
 
 class TestColBERT(TestCase):
     def setUp(self):
-        # Create mock objects
-        self.model = AutoModel.from_pretrained("bert-base-uncased")
-        self.tokenizer = AutoTokenizer.from_pretrained("bert-base-uncased")
-        self.linear_layer = nn.Linear(768, 256)
+        self.model_name = "bert-base-uncased"
+        self.tokenizer = AutoTokenizer.from_pretrained(self.model_name)
+        self.model = AutoModel.from_pretrained(self.model_name)
+        self.linear_layer = nn.Linear(self.model.config.hidden_size, 1024)
+        self.loss_fn = ColbertLoss()
         self.colbert = ColBERT(
-            model=self.model, tokenizer=self.tokenizer, linear_layer=self.linear_layer, max_length=128, device='cpu'
+            model=self.model,
+            tokenizer=self.tokenizer,
+            linear_layer=self.linear_layer,
+            loss_fn=self.loss_fn,
+            device="cpu",
         )
 
     def test_forward(self):
@@ -100,6 +106,16 @@ class TestColBERT(TestCase):
         )
         self.assertIn('loss', output)
         self.assertIsInstance(output['loss'], torch.Tensor)
+
+    def test_encode(self):
+        sentences = ["This is a test sentence.", "Another test sentence."]
+        embeddings = self.colbert.encode(sentences, batch_size=2, convert_to_numpy=False)
+        self.assertEqual(len(embeddings), 2)
+
+    def test_compute_score(self):
+        sentence_pairs = [("This is a query.", "This is a document.")]
+        scores = self.colbert.compute_score(sentence_pairs, batch_size=1)
+        self.assertIsInstance(scores, float)
 
     def test_preprocess_pair(self):
         batch_sentence_pair = [["Hello, world!", "Hello there!"]]
