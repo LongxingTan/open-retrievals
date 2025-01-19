@@ -14,15 +14,13 @@ class OcrConfig:
 class OCRecognizer(object):
     """OCR class for recognize the scanned document"""
 
-    def __init__(self, ocr_model='ppocr'):
+    def __init__(self, ocr_model: str = 'ppocr'):
         if ocr_model == 'ppocr':
             self.ocr_model = PPRecognizer()
 
     def recognize(self, file):
         logging.info('START OCR')
-        start_time = time.time()
-
-        elapsed_time = time.time() - start_time
+        elapsed_time = 0
         logging.info(f'FINISH OCR, Elapsed time: {elapsed_time:.3f}s')
         return
 
