@@ -308,7 +308,6 @@ class AutoModelForEmbedding(Base):
         self,
         inputs: Union[DataLoader, Dict, List, str],
         index_path: Optional[str] = None,
-        max_document_length: int = 512,
         split_documents: bool = False,
         batch_size: int = 16,
         show_progress_bar: bool = None,

@@ -128,7 +128,7 @@ class RerankTrainer(Trainer):
         self.model.tokenizer.save_pretrained(output_dir)
 
 
-class DistilTrainer(Trainer):
+class DistillTrainer(Trainer):
     # https://github.com/texttron/tevatron/blob/tevatron-v1/src/tevatron/distillation/trainer.py
     def __init__(
         self,
@@ -136,7 +136,7 @@ class DistilTrainer(Trainer):
         temperature: float = 1.0,
         **kwargs,
     ):
-        super(DistilTrainer, self).__init__(**kwargs)
+        super(DistillTrainer, self).__init__(**kwargs)
         self.teacher_model = teacher_model
         self.temperature = temperature
         self._dist_loss_scale_factor = 1

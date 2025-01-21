@@ -11,5 +11,5 @@ from .models.pooling import AutoPooling
 from .models.rerank import AutoModelForRanking, ColBERT, LLMRanker
 from .models.retrieval_auto import AutoModelForRetrieval, BM25Retrieval, FaissRetrieval
 from .trainer.custom_trainer import NLPTrainer, TrainingArguments
-from .trainer.trainer import RerankTrainer, RetrievalTrainer
+from .trainer.trainer import DistillTrainer, RerankTrainer, RetrievalTrainer
 from .trainer.tuner import AutoTuner
