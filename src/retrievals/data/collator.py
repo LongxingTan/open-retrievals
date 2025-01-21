@@ -83,6 +83,7 @@ class RerankCollator(DataCollatorWithPadding):
         document_key: str = 'document',
     ):
         self.tokenizer = tokenizer
+        self.tokenizer.padding_side = "right"
         if not hasattr(self.tokenizer, "pad_token_id") or self.tokenizer.pad_token is None:
             self.tokenizer.add_special_tokens({"pad_token": "[PAD]"})
 

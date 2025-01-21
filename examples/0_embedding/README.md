@@ -72,6 +72,7 @@ model = AutoModelForEmbedding.from_pretrained(
 ## 2. Deployment
 speed: `Nvidia TensorRT + Nvidia Triton inference server` > `Microsoft ONNX Runtime + Nvidia Triton inference server` > `Pytorch + FastAPI`
 
+### 2.1 Transfer to onnx
 **Prerequisites**
 ```shell
 pip install optimum
@@ -81,3 +82,9 @@ pip install onnxruntime
 ```shell
 python embed2onnx.py --model_name BAAI/bge-small-en-v1.5 --output_path ./onnx_model
 ```
+
+### 2.2 embed server
+
+
+
+### 2.3 embed client

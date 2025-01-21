@@ -106,8 +106,6 @@ class AutoModelForRanking(BaseRanker):
 
         if self.temperature is not None:
             logits = logits / self.temperature
-        if not self.training:
-            return logits
 
         scores = logits.view(-1, self.train_group_size)
         if labels is not None:
@@ -134,18 +132,6 @@ class AutoModelForRanking(BaseRanker):
             self.loss_fn = nn.MSELoss() if self.loss_type == 'regression' else nn.BCEWithLogitsLoss(reduction='mean')
         return self.loss_fn(scores.squeeze(), labels.squeeze().float())
 
-    def set_model_type(self, model_type: Literal['cross-encoder', 'colbert'], **kwargs):
-        logger.info(f'Set model type to: {model_type}')
-        model_type = model_type.lower().replace('-', '').replace('_', '')
-        model_class = {'crossencoder': self, 'colbert': ColBERT, 'llm': LLMRanker}
-        model_class = model_class.get(model_type)
-        return model_class(
-            model=self.model,
-            tokenizer=self.tokenizer,
-            loss_fn=self.loss_fn,
-            **kwargs,
-        )
-
     @classmethod
     def from_pretrained(
         cls,
@@ -155,7 +141,6 @@ class AutoModelForRanking(BaseRanker):
         loss_fn: Union[nn.Module, Callable] = None,
         loss_type: Literal['classification', 'regression'] = 'classification',
         causal_lm: bool = False,
-        generative_llm_reranking: bool = False,
         trust_remote_code: bool = True,
         use_fp16: bool = False,
         use_lora: bool = False,
@@ -603,7 +588,6 @@ class LLMRanker(AutoModelForRanking):
         loss_fn: Union[nn.Module, Callable] = None,
         loss_type: Literal['classification', 'regression'] = 'classification',
         causal_lm: bool = False,
-        generative_llm_reranking: bool = False,
         trust_remote_code: bool = True,
         use_fp16: bool = False,
         use_lora: bool = False,
