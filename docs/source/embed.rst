@@ -157,6 +157,19 @@ If the positive and negative examples have some noise in label, the directly poi
 
 **Pairwise fine-tune LLM embedding**
 
+- no need to set `causal_lm=True` like LLMRanker for AutoModelForEmbedding, but normally set the pooling_method to `last`
+
+- set `query_instruction` and `document_instruction` in `RetrievalTrainDataset` during train or add it manually to text directly, while set it in `AutoModelForEmbedding` during encode
+
+- "Given a query and a relevant document, retrieve the document that are pertinent to the query\nQuery: "
+
+- use the appropriate `pooling_method`: `last`
+
+- maybe we need to reduce the batch_size due to large model size
+
+- set `use_lora` to `True` if you want to use lora to reduce training memory
+
+
 .. code-block:: shell
 
     MODEL_NAME="intfloat/e5-mistral-7b-instruct"

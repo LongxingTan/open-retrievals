@@ -8,12 +8,6 @@ Welcome to Open-Retrievals, a cutting-edge repository designed to empower your r
 ## 🔍 1. Embedding Models
 - [embedding-pairwise finetune](./0_embedding/train_pairwise.py)
 - [embedding-llm pairwise finetune](./0_embedding/train_llm.py)
-  - no need to set `causal_lm=True` like LLMRanker for AutoModelForEmbedding, but normally set the pooling_method to `last`
-  - set `query_instruction` and `document_instruction` in `RetrievalTrainDataset` during train or add it manually to text directly, while set it in `AutoModelForEmbedding` during encode
-  - "Given a query and a relevant document, retrieve the document that are pertinent to the query\nQuery: "
-  - use the appropriate `pooling_method`: `last`
-  - maybe we need to reduce the batch_size due to large model size
-  - set `use_lora` to `True` if you want to use lora to reduce training memory
 
 
 | Model                  | Original | Finetuned |
@@ -47,8 +41,6 @@ Welcome to Open-Retrievals, a cutting-edge repository designed to empower your r
 - [rerank-cross encoder](./2_reranking/train_cross_encoder.py)
 - [rerank-colbert](3_colbert/train_colbert.py)
 - [rerank-llm finetune](./2_reranking/train_llm.py)
-  - `AutoModelForRanking.from_pretrained(model_name_or_path, causal_lm=True)`
-  - Prompt: "Given a query with a relevant body, determine whether the document is pertinent to the query by providing a prediction of either 'Yes' or 'No'."
 
 
 | Model                             | Original | Finetuned |
