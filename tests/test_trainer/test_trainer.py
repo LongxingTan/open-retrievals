@@ -24,7 +24,7 @@ from src.retrievals import (
 )
 from src.retrievals.losses import TripletLoss
 from src.retrievals.trainer.trainer import (
-    DistilTrainer,
+    DistillTrainer,
     RerankTrainer,
     RetrievalTrainer,
 )
@@ -126,14 +126,14 @@ class MockOutput:
         self.logits = logits
 
 
-class TestDistilTrainer(TestCase):
+class TestDistillTrainer(TestCase):
     def setUp(self):
         self.device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
 
         self.model = MockModel().to(self.device)
         self.teacher_model = MockModel().to(self.device)
         self.temperature = 1.0
-        self.trainer = DistilTrainer(model=self.model, teacher_model=self.teacher_model, temperature=self.temperature)
+        self.trainer = DistillTrainer(model=self.model, teacher_model=self.teacher_model, temperature=self.temperature)
 
         self.input_ids = torch.randn(2, 10).to(self.device)
         self.inputs = {'input_ids': self.input_ids}
