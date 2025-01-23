@@ -106,8 +106,6 @@ class AutoModelForRanking(BaseRanker):
 
         if self.temperature is not None:
             logits = logits / self.temperature
-        if not self.training:
-            return logits
 
         scores = logits.view(-1, self.train_group_size)
         if labels is not None:
@@ -134,18 +132,6 @@ class AutoModelForRanking(BaseRanker):
             self.loss_fn = nn.MSELoss() if self.loss_type == 'regression' else nn.BCEWithLogitsLoss(reduction='mean')
         return self.loss_fn(scores.squeeze(), labels.squeeze().float())
 
-    def set_model_type(self, model_type: Literal['cross-encoder', 'colbert'], **kwargs):
-        logger.info(f'Set model type to: {model_type}')
-        model_type = model_type.lower().replace('-', '').replace('_', '')
-        model_class = {'crossencoder': self, 'colbert': ColBERT, 'llm': LLMRanker}
-        model_class = model_class.get(model_type)
-        return model_class(
-            model=self.model,
-            tokenizer=self.tokenizer,
-            loss_fn=self.loss_fn,
-            **kwargs,
-        )
-
     @classmethod
     def from_pretrained(
         cls,
@@ -155,7 +141,6 @@ class AutoModelForRanking(BaseRanker):
         loss_fn: Union[nn.Module, Callable] = None,
         loss_type: Literal['classification', 'regression'] = 'classification',
         causal_lm: bool = False,
-        generative_llm_reranking: bool = False,
         trust_remote_code: bool = True,
         use_fp16: bool = False,
         use_lora: bool = False,
@@ -301,7 +286,7 @@ class ColBERT(BaseRanker):
         return self.score(query_embedding, positive_embedding, query_attention_mask)
 
     def _encode(
-        self, input_ids: torch.Tensor, attention_mask: torch.Tensor, normalize_embeddings: bool = True
+        self, input_ids: torch.Tensor, attention_mask: torch.Tensor, normalize_embeddings: bool = True, **kwargs
     ) -> torch.Tensor:
         """Encode input IDs and attention masks into embeddings."""
         outputs = self.model(input_ids, attention_mask=attention_mask, output_hidden_states=True)
@@ -582,13 +567,16 @@ class LLMRanker(AutoModelForRanking):
         return_dict: Optional[bool] = True,
         **kwargs,
     ):
-        model_output = self.model(input_ids, attention_mask, output_hidden_states=True)
+        model_output = self.model(
+            input_ids=input_ids, attention_mask=attention_mask, output_hidden_states=True, past_key_values=None
+        )
 
         outputs_dict = dict()
         outputs_dict['logits'] = model_output.logits
         if self.training:
-            loss = self.loss_fn(model_output.logits, labels)
-            outputs_dict['loss'] = loss
+            if self.loss_fn is not None:
+                loss = self.loss_fn(model_output.logits, labels)
+                outputs_dict['loss'] = loss
         return outputs_dict
 
     @classmethod
@@ -600,7 +588,6 @@ class LLMRanker(AutoModelForRanking):
         loss_fn: Union[nn.Module, Callable] = None,
         loss_type: Literal['classification', 'regression'] = 'classification',
         causal_lm: bool = False,
-        generative_llm_reranking: bool = False,
         trust_remote_code: bool = True,
         use_fp16: bool = False,
         use_lora: bool = False,

@@ -2,6 +2,7 @@ import tempfile
 from unittest import TestCase
 
 import torch
+from torch.utils.data import DataLoader, TensorDataset
 from transformers import AutoConfig, AutoModel
 
 from src.retrievals.models.embedding_auto import (
@@ -113,26 +114,8 @@ class AutoModelForEmbeddingTest(TestCase, ModelTesterMixin):
         model_name_or_path = "sentence-transformers/all-MiniLM-L6-v2"
         self.model = AutoModelForEmbedding.from_pretrained(model_name_or_path, pooling_method="cls")
 
-    def test_config(self):
-        pass
-
-    def test_inputs_embeds(self):
-        pass
-
-    def test_model_common_attributes(self):
-        pass
-
-    # def test_model(self):
-    #     config, inputs_dict = self.model_tester.prepare_config_and_inputs()
-    #     self.model_tester.create_and_check_model(*config_and_inputs)
-    #     config.return_dict = True
-    #
-    # def test_model_from_pretrained(self):
-    #     config_and_inputs = self.model_tester.prepare_config_and_inputs()
-    #     self.model_tester.create_and_check_for_pretraining(*config_and_inputs)
-
     def test_encode_from_text(self):
-        query_emb = self.model.encode(
+        query_embed = self.model.encode(
             [
                 "Hello Word, a test sentence",
                 "My second tuple",
@@ -140,13 +123,33 @@ class AutoModelForEmbeddingTest(TestCase, ModelTesterMixin):
             ],
             is_query=True,
         )
-        document_emb = self.model.encode(["Second input for model", "With two inputs", "final test Oh"])
-        assert query_emb.shape == (3, 384)
-        assert document_emb.shape == (3, 384)
-        # assert abs(np.sum(emb) - 32.14627) < 0.001
+        document_embed = self.model.encode(["Second input for model", "With two inputs", "final test Oh"])
+        self.assertEqual(query_embed.shape, (3, 384))
+        self.assertEqual(document_embed.shape, (3, 384))
 
     def test_forward_from_text(self):
         pass
+
+    def test_encode_from_loader(self):
+        batch_size = 2
+        seq_length = 10
+        num_batches = 3
+
+        input_ids = torch.randint(0, 1000, (batch_size * num_batches, seq_length))
+        attention_mask = torch.ones_like(input_ids)
+
+        dataset = TensorDataset(input_ids, attention_mask)
+        loader = DataLoader(
+            dataset,
+            batch_size=batch_size,
+            shuffle=False,
+            collate_fn=lambda batch: {
+                'input_ids': torch.stack([item[0] for item in batch]),
+                'attention_mask': torch.stack([item[1] for item in batch]),
+            },
+        )
+        query_embed = self.model._encode_from_loader(loader)
+        self.assertEqual(query_embed.shape, (num_batches * batch_size, 384))
 
 
 class PairwiseModelTest(TestCase, ModelTesterMixin):
@@ -170,3 +173,11 @@ class ListwiseModelTest(TestCase):
         list_pool = self.model._unsorted_segment_mean(input_tensor, segment_ids, num_segments)
         print(list_pool)
         # self.assertEqual()
+
+    def test_sorted_segment_mean(self):
+        input_tensor = torch.tensor([[1.0, 2.0], [3.0, 4.0], [5.0, 6.0], [7.0, 8.0]])
+        segment_ids = torch.tensor([0, 0, 1, 1])
+        num_segments = 2
+
+        list_pool = self.model._sorted_segment_mean(input_tensor, segment_ids, num_segments)
+        print(list_pool)

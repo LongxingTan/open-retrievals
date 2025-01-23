@@ -236,7 +236,6 @@ def main():
             num_labels=1,
             loss_fn=TokenLoss(token_index=token_index, train_group_size=data_args.train_group_size),
             causal_lm=True,
-            generative_llm_reranking=True,
             use_lora=training_args.use_lora,
             quantization_config=quantization_config,
         )

@@ -214,6 +214,7 @@ training_arguments = TrainingArguments(
     per_device_train_batch_size=batch_size,
     remove_unused_columns=False,
     logging_steps=100,
+    report_to="none",
 )
 trainer = RetrievalTrainer(
     model=train_model,

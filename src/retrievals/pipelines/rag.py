@@ -1,9 +1,14 @@
-"""RAG pipeline"""
+"""
+RAG (Retrieval-Augmented Generation) Pipeline Implementation
+
+This module implements a RAG pipeline that combines document retrieval with
+language model generation for enhanced question answering capabilities.
+"""
 
 import argparse
 import logging
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, List, Literal, Optional, Tuple, TypeVar, Union
 
 from ..tools.file_parser import FileParser
@@ -25,98 +30,95 @@ def parse_args():
     return parser.parse_args()
 
 
-class RAGConfig(object):
-    def __init__(self, top_n: int = 3):
-        self.top_n = top_n
+@dataclass
+class RAGConfig:
+    """Configuration for RAG pipeline."""
+
+    top_k: int = 3
+    model_name: str = "gpt-3.5-turbo"
+    chunk_size: int = 512
+    chunk_overlap: int = 50
 
     @classmethod
-    def from_dict(
-        cls,
-    ):
-        return RAGConfig()
+    def from_dict(cls, config_dict: Dict[str, Any]) -> "RAGConfig":
+        return cls(**config_dict)
+
+
+@dataclass
+class ChatSession:
+    """Maintains chat history and state."""
+
+    query: str
+    history: List[Tuple[str, str]] = field(default_factory=list)
+
+    def add_interaction(self, query: str, response: str) -> None:
+        self.history.append((query, response))
 
 
 class SimpleRAG(object):
-    def __init__(self, embedder, retriever, generator, reranker=None):
+    """Main RAG pipeline implementation."""
+
+    def __init__(
+        self,
+        config: RAGConfig,
+        document_processor,
+        embedder,
+        retriever,
+        generator,
+        reranker=None,
+    ):
+        self.config = config
+        self.document_processor = document_processor
         self.embedder = embedder
         self.retriever = retriever
         self.reranker = reranker
         self.generator = generator
 
-    def build(self):
-        pass
+    def process_query(self, query: str, session: Optional[ChatSession] = None) -> str:
+        """Process a query through the RAG pipeline."""
+        # Retrieve relevant documents
+        results = self.retriever.retrieve(query, self.config.top_k)
 
-    def add(self):
-        pass
+        # Rerank if reranker is available
+        if self.reranker:
+            results = self.reranker.rerank(query, results)
 
-    def load(self):
-        pass
+        # Prepare context
+        context = self._prepare_context(results)
 
-    def search(self):
-        pass
+        # Generate response
+        response = self.generator.generate(query, context)
 
-    def generate(self, query: str, context: Optional[str] = None):
-        """LLM response"""
-        prompt_kwargs = {'context': context, 'query': query}
-        response = self.generator(prompt_kwargs)
+        # Update session if provided
+        if session:
+            session.add_interaction(query, response)
+
         return response
 
-    @classmethod
-    def from_dict(cls):
-        """Create an instance from previously serialized data"""
-        obj = cls.__new__(cls)
-        return obj
+    def _prepare_context(self, results) -> str:
+        """Prepare context from search results."""
+        return "\n".join(result.content for result in results)
+
+    @staticmethod
+    def extract_citations(text: str):
+        """Extract citation IDs from text."""
+        matches = re.findall(r"\[([\d, ]+)\]", text)
+        citations = set()
+        for match in matches:
+            citations.update(int(m.strip()) for m in match.split(",") if m.strip())
+        return citations
 
 
-def index_process():
-    return
+def parse_arguments() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="RAG Pipeline")
+    parser.add_argument("--config", help="Path to configuration file")
+    parser.add_argument("--model", help="Model name or path")
+    return parser.parse_args()
 
 
-def retrieval_process(query, top_k: int = 3):
-    return
-
-
-def rerank_process():
-    return
-
-
-def chat_process(llm, prompt, history):
-    response, history = llm.chat(prompt, history)
-    return response, history
-
-
-def rag_process(prompt, corpus_path, top_k: int = 3):
-    global llm, history
-
-    context = retrieval_process(prompt, top_k=top_k)
-
-    context = rerank_process(prompt, context)
-
-    prompt_with_context = RAG_PROMPT.format(question=prompt, context="\n".join(context))
-
-    response, history = chat_process(prompt_with_context, history)
-    return
-
-
-class Session(object):
-    def __init__(self, query: str, history: list):
-        self.query = query
-        self.history = history
-
-
-def extract_citations(bullet):
-    # matches digits or commas
-    matches = re.findall(r"\[([\d, ]+)\]", bullet)
-    ref_ids = []
-    for match in matches:
-        ref_ids += [int(m.strip()) for m in match.split(",") if len(m.strip()) > 0]
-    return ref_ids
-
-
-def main():
-    args = parse_args()
-    print(args)
-    return
+def main() -> None:
+    args = parse_arguments()
+    logger.info(f"Starting RAG pipeline with args: {args}")
 
 
 if __name__ == '__main__':

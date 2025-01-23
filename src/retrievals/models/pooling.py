@@ -10,12 +10,15 @@ class AutoPooling(nn.Module):
 
     def __init__(self, pooling_method: str, **kwargs) -> None:
         super().__init__()
+        if not isinstance(pooling_method, str):
+            raise TypeError("pooling_method must be a string")
+
         if pooling_method in ["mean", 'avg', 'average']:
             self.pooling = MeanPooling()
         elif pooling_method in ["cls", 'first']:
             self.pooling = ClsTokenPooling()
         elif pooling_method == "weighted":
-            self.pooling = WeightedLayerPooling()
+            self.pooling = WeightedLayerPooling(num_hidden_layers=12)
         elif pooling_method in ['eos', "last"]:
             self.pooling = LastTokenPooling()
         else:
@@ -77,6 +80,7 @@ class LastTokenPooling(nn.Module):
             emb = last_hidden_state[:, -1]
         else:
             sequence_lengths = attention_mask.sum(dim=1) - 1
+            sequence_lengths = sequence_lengths.long()  # Cast to long
             batch_size = last_hidden_state.shape[0]
             emb = last_hidden_state[
                 torch.arange(batch_size, device=last_hidden_state.device),
@@ -96,6 +100,9 @@ class AttentionPooling(nn.Module):
 class WeightedLayerPooling(nn.Module):
     def __init__(self, num_hidden_layers: int, layer_start: int = 4, layer_weights=None):
         super().__init__()
+        if layer_start < 0 or layer_start >= num_hidden_layers:
+            raise ValueError("layer_start must be between 0 and num_hidden_layers")
+
         self.layer_start = layer_start
         self.num_hidden_layers = num_hidden_layers
         self.layer_weights = (
@@ -112,8 +119,12 @@ class WeightedLayerPooling(nn.Module):
 
 
 class GeMText(nn.Module):
-    """GeM Pooling for NLP
+    """Generalized Mean Pooling layer.
     Generalized mean: https://arxiv.org/abs/1711.02512
+
+    Args:
+        p (float): Power for the pooling operation. Default: 3
+        eps (float): Small value to prevent numerical instability. Default: 1e-6
     """
 
     def __init__(self, dim, p: int = 3, eps: float = 1e-6):

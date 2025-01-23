@@ -7,6 +7,7 @@ from unittest.mock import MagicMock, patch
 
 import torch
 import transformers
+from torch import nn
 from torch.utils.data import DataLoader, Dataset
 from transformers import (
     AutoModelForSequenceClassification,
@@ -23,7 +24,7 @@ from src.retrievals import (
 )
 from src.retrievals.losses import TripletLoss
 from src.retrievals.trainer.trainer import (
-    DistilTrainer,
+    DistillTrainer,
     RerankTrainer,
     RetrievalTrainer,
 )
@@ -111,31 +112,44 @@ class PseudoRerankTrainDataset(Dataset):
         return self.examples[item]
 
 
-class TestDistilTrainer(TestCase):
-    def setUp(self) -> None:
-        self.output_dir = tempfile.mkdtemp()
-        model_name_or_path = "distilbert-base-uncased"
-        self.model = AutoModelForSequenceClassification.from_pretrained(model_name_or_path)
-        self.teacher_model = AutoModelForSequenceClassification.from_pretrained(model_name_or_path)
-        self.tokenizer = AutoTokenizer.from_pretrained(model_name_or_path)
+class MockModel(nn.Module):
+    def __init__(self):
+        super(MockModel, self).__init__()
+        self.fc = nn.Linear(10, 10)
 
-        self.train_dataset = PseudoRerankTrainDataset()
-        self.trainer = DistilTrainer(
-            model=self.model,
-            teacher_model=self.teacher_model,
-            train_dataset=self.train_dataset,
-            tokenizer=self.tokenizer,
-        )
+    def forward(self, **kwargs):
+        return MockOutput(logits=self.fc(kwargs['input_ids']))
 
-    def tearDown(self):
-        shutil.rmtree(self.output_dir)
+
+class MockOutput:
+    def __init__(self, logits):
+        self.logits = logits
+
+
+class TestDistillTrainer(TestCase):
+    def setUp(self):
+        self.device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
+
+        self.model = MockModel().to(self.device)
+        self.teacher_model = MockModel().to(self.device)
+        self.temperature = 1.0
+        self.trainer = DistillTrainer(model=self.model, teacher_model=self.teacher_model, temperature=self.temperature)
+
+        self.input_ids = torch.randn(2, 10).to(self.device)
+        self.inputs = {'input_ids': self.input_ids}
 
     def test_compute_loss(self):
-        inputs = {'input_ids': torch.tensor([[101, 201, 301]]), 'attention_mask': torch.tensor([[1, 1, 1]])}
+        loss, outputs = self.trainer.compute_loss(self.model, self.inputs, return_outputs=True)
 
-        loss = self.trainer.compute_loss(self.model, inputs)
+        self.assertTrue(isinstance(loss, torch.Tensor))
+        self.assertEqual(loss.dim(), 0)
 
-        self.assertIsInstance(loss, torch.Tensor)
+        self.assertTrue(hasattr(outputs, 'logits'))
+        self.assertEqual(outputs.logits.shape, torch.Size([2, 10]))
 
-    def test_save_model(self):
-        self.trainer._save(output_dir=self.output_dir)
+    def test_get_teacher_probabilities(self):
+        teacher_scores = torch.randn(2, 10)  # Batch size of 2, feature size of 10
+        student_shape = (2, 10)  # Batch size of 2, feature size of 10
+
+        teacher_probs = self.trainer._get_teacher_probabilities(teacher_scores, student_shape)
+        self.assertEqual(teacher_probs.shape, torch.Size(student_shape))

@@ -105,7 +105,7 @@ class AutoModelForEmbedding(Base):
         )
         batch_dict["input_ids"] = [input_ids + [self.tokenizer.eos_token_id] for input_ids in batch_dict["input_ids"]]
         batch_dict = self.tokenizer.pad(batch_dict, padding=True, return_attention_mask=True, return_tensors="pt")
-        batch_dict.pop("token_type_ids")
+        batch_dict.pop("token_type_ids", None)
         return self.forward_from_tensor(**batch_dict)
 
     def encode(
@@ -308,7 +308,6 @@ class AutoModelForEmbedding(Base):
         self,
         inputs: Union[DataLoader, Dict, List, str],
         index_path: Optional[str] = None,
-        max_document_length: int = 512,
         split_documents: bool = False,
         batch_size: int = 16,
         show_progress_bar: bool = None,

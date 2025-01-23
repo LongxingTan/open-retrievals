@@ -5,6 +5,7 @@ from typing import Any, Callable, Optional
 import torch
 import torch.distributed as dist
 import torch.nn as nn
+from torch.cuda import device
 from transformers import Trainer
 
 logger = logging.getLogger(__name__)
@@ -35,8 +36,10 @@ class RetrievalTrainer(Trainer):
         outputs = model(inputs, return_dict=True)
         if isinstance(outputs, dict) and 'loss' in outputs:
             return outputs['loss']
+        elif hasattr(outputs, 'loss'):
+            return outputs.loss
         else:
-            return self.loss_fn(*outputs, negatives_cross_device=self.negatives_cross_device)
+            return self.loss_fn(*outputs, negatives_cross_device=self.negative_cross_device)
 
     def compute_pair_loss(self, model: nn.Module, inputs: Any, return_outputs: bool = False):
         query = inputs["query"]
@@ -125,30 +128,38 @@ class RerankTrainer(Trainer):
         self.model.tokenizer.save_pretrained(output_dir)
 
 
-class DistilTrainer(Trainer):
+class DistillTrainer(Trainer):
     # https://github.com/texttron/tevatron/blob/tevatron-v1/src/tevatron/distillation/trainer.py
     def __init__(
         self,
-        teacher_model,
+        teacher_model: nn.Module,
+        temperature: float = 1.0,
         **kwargs,
     ):
-        super(DistilTrainer, self).__init__(**kwargs)
+        super(DistillTrainer, self).__init__(**kwargs)
         self.teacher_model = teacher_model
+        self.temperature = temperature
         self._dist_loss_scale_factor = 1
 
     def compute_loss(self, model: nn.Module, inputs, return_outputs=False, **kwargs):
-        student_scores = model(**inputs).logits
+        # reranking model, scores is flatten logit; embedding model, scores is flatten similarity of query & doc
+        student_outputs = model(**inputs)
+        student_scores = student_outputs.logits
+
         with torch.no_grad():
             teacher_scores = self.teacher_model(**inputs).logits
+            teacher_probs = self._get_teacher_probabilities(teacher_scores, student_scores.shape)
 
-        teacher_mat = torch.zeros(student_scores.shape, dtype=student_scores.dtype, device=teacher_scores.device)
-        index = torch.arange(teacher_scores.size(0), device=teacher_scores.device)
-        teacher_scores = torch.softmax(
-            teacher_scores.view(student_scores.size(0), -1), dim=1, dtype=student_scores.dtype
+        student_log_probs = nn.functional.log_softmax(student_scores / self.temperature, dim=1)
+        loss = (
+            nn.functional.kl_div(student_log_probs, teacher_probs, reduction='batchmean') * self._dist_loss_scale_factor
         )
-        teacher_mat = torch.scatter(
-            teacher_mat, dim=-1, index=index.view(student_scores.size(0), -1), src=teacher_scores
-        )
-        student_scores = nn.functional.log_softmax(student_scores, dim=1)
-        loss = nn.functional.kl_div(student_scores, teacher_mat, reduction='batchmean') * self._dist_loss_scale_factor
-        return loss
+        return (loss, student_outputs) if return_outputs else loss
+
+    @torch.no_grad()
+    def _get_teacher_probabilities(self, teacher_scores: torch.Tensor, student_shape):
+        batch_size = student_shape[0]
+        teacher_mat = torch.zeros(student_shape, dtype=teacher_scores.dtype, device=teacher_scores.device)
+        teacher_scores = torch.softmax(teacher_scores.view(batch_size, -1) / self.temperature, dim=1)
+        index = torch.arange(teacher_scores.size(0), device=teacher_scores.device).view(batch_size, -1)
+        return torch.scatter(teacher_mat, dim=-1, index=index, src=teacher_scores)
