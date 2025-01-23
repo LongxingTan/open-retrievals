@@ -142,6 +142,7 @@ class DistillTrainer(Trainer):
         self._dist_loss_scale_factor = 1
 
     def compute_loss(self, model: nn.Module, inputs, return_outputs=False, **kwargs):
+        # reranking model, scores is flatten logit; embedding model, scores is flatten similarity of query & doc
         student_outputs = model(**inputs)
         student_scores = student_outputs.logits
 

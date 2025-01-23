@@ -290,6 +290,24 @@ class LLMRerankCollator(DataCollatorForSeq2Seq):
         return batch
 
 
+class RerankDistillCollator(DataCollatorWithPadding):
+    def __init__(
+        self,
+        tokenizer: PreTrainedTokenizer,
+        teacher_tokenizer: PreTrainedTokenizer,
+        query_max_length: int,
+        document_max_length,
+    ):
+        self.tokenizer = tokenizer
+        self.teacher_tokenizer = teacher_tokenizer
+        self.query_max_length = query_max_length
+        self.document_max_length = document_max_length
+
+    def __call__(self, features):
+        # features: encoded_student_query, encoded_student_document, encoded_teacher_pairs
+        return
+
+
 class EncodeCollator(DataCollatorWithPadding):
     def __init__(self, tokenizer: PreTrainedTokenizer, id_key: Optional[str] = None, **kwargs):
         self.tokenizer = tokenizer
