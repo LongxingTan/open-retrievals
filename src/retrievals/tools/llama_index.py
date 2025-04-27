@@ -10,9 +10,10 @@ from llama_index.postprocessor.types import BaseNodePostprocessor
 from llama_index.schema import MetadataMode, NodeWithScore, QueryBundle
 from llama_index.utils import infer_torch_device
 
+from retrievals.modules.generator.generator import BaseLLM
+
 from ..models.embedding_auto import AutoModelForEmbedding
 from ..models.rerank import AutoModelForRanking
-from .generator import BaseLLM
 
 
 class LlamaIndexEmbedding(AutoModelForEmbedding, BaseEmbedding):

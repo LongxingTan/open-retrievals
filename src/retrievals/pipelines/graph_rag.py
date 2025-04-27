@@ -7,8 +7,9 @@ Graph, community, entity
 
 import logging
 
+from retrievals.modules.compressor.refiner import LLMRefiner
+
 from ..models.retrieval_auto import GraphRetrieval
-from ..tools.refiner import LLMRefiner
 
 logger = logging.getLogger(__name__)
 

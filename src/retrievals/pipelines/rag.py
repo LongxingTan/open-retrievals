@@ -11,10 +11,11 @@ import re
 from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, List, Literal, Optional, Tuple, TypeVar, Union
 
-from ..tools.file_parser import FileParser
-from ..tools.generator import BaseLLM
+from retrievals.modules.generator.generator import BaseLLM
+from retrievals.modules.parser.file_parser import FileParser
+from retrievals.modules.router.router import Router
+
 from ..tools.prompts import RAG_PROMPT
-from ..tools.router import Router
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(

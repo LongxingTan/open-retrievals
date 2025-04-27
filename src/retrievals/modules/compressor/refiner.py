@@ -4,8 +4,8 @@ import logging
 from abc import ABC, abstractmethod
 from typing import Optional, Union
 
-from .generator import BaseLLM
-from .prompts import SUMMARIZE_PROMPT
+from retrievals.modules.generator.generator import BaseLLM
+from retrievals.tools.prompts import SUMMARIZE_PROMPT
 
 logger = logging.getLogger(__name__)
 

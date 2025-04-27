@@ -15,9 +15,10 @@ from langchain_core.embeddings import Embeddings
 from langchain_core.retrievers import BaseRetriever
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
+from retrievals.modules.generator.generator import BaseLLM
+
 from ..models.embedding_auto import AutoModelForEmbedding
 from ..models.rerank import AutoModelForRanking
-from .generator import BaseLLM
 
 logger = logging.getLogger(__name__)
 

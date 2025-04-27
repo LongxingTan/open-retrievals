@@ -3,7 +3,7 @@
 import logging
 from abc import ABC, abstractmethod
 
-from .generator import BaseLLM
+from retrievals.modules.generator.generator import BaseLLM
 
 logger = logging.getLogger(__name__)
 

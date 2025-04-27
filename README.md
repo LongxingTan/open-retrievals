@@ -478,3 +478,4 @@ coming soon
 - [UKPLab/sentence-transformers](https://github.com/UKPLab/sentence-transformers)
 - [luyug/Dense](https://github.com/luyug/Dense)
 - [FlagOpen/FlagEmbedding](https://github.com/FlagOpen/FlagEmbedding)
+- [texttron/tevatron](https://github.com/texttron/tevatron)
