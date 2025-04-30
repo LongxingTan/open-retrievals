@@ -69,13 +69,11 @@ jobs:
         with:
           python-version: 3.11
 
-      - name: Cache pip
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('docs/requirements_docs.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
+      - name: Create pip cache directory manually
+        run: |
+          CACHE_DIR="$HOME/.cache/pip"
+          mkdir -p "$CACHE_DIR"
+          echo "Using manual pip cache at $CACHE_DIR"
 
       - name: Install dependencies
         run: |
