@@ -9,8 +9,8 @@ from typing import List, Optional
 import torch
 import transformers
 from torch import nn
+from torch.optim import AdamW
 from transformers import (
-    AdamW,
     AutoTokenizer,
     HfArgumentParser,
     TrainingArguments,

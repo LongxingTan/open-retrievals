@@ -8,6 +8,7 @@ from typing import Callable, Dict, List, Literal, Optional, Tuple, Union
 import numpy as np
 import torch
 import torch.nn as nn
+from dataclass import dataclass
 from tqdm.auto import tqdm, trange
 from transformers import (
     AutoConfig,
@@ -26,6 +27,16 @@ from .pooling import AutoPooling
 from .utils import batch_to_device, check_causal_lm, get_device_name
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass
+class RankerOutput:
+    yes_logit_mean: Optional[torch.Tensor] = None
+    no_logit_mean: Optional[torch.Tensor] = None
+    loss: Optional[torch.Tensor] = None
+    logits: Optional[torch.Tensor] = None
+    distillation_loss: Optional[torch.Tensor] = None
+    ce_loss: Optional[torch.Tensor] = None
 
 
 class AutoModelForRanking(BaseRanker):

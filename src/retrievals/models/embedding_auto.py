@@ -11,6 +11,7 @@ from typing import Callable, Dict, List, Literal, Optional, Tuple, Union
 import numpy as np
 import torch
 import torch.nn as nn
+from dataclass import dataclass
 from torch.utils.data import DataLoader
 from tqdm.auto import tqdm, trange
 from transformers import (
@@ -26,6 +27,16 @@ from .pooling import AutoPooling
 from .utils import batch_to_device, check_causal_lm, get_device_name
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass
+class EmbedderOutput:
+    q_reps: Optional[torch.Tensor] = None
+    p_reps: Optional[torch.Tensor] = None
+    loss: Optional[torch.Tensor] = None
+    scores: Optional[torch.Tensor] = None
+    nce_loss: Optional[torch.Tensor] = None
+    distill_loss: Optional[torch.Tensor] = None
 
 
 class AutoModelForEmbedding(Base):
