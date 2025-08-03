@@ -15,6 +15,7 @@ base_packages = [
     "tokenizers>=0.14",
     "datasets>=1.1.3",
     "tqdm >= 4.66",
+    "omegaconf",
 ]
 
 

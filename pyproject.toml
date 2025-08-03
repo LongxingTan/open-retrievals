@@ -1,3 +1,7 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
 [tool.black]
 line-length = 120
 include = '\.pyi?$'
@@ -14,7 +18,3 @@ profile = "black"
 src_paths = ["src", "examples", "tests"]
 skip_gitignore = true
 known_first_party = ["retrievals"]
-
-[build-system]
-requires = ["setuptools", "wheel"]
-build-backend = "setuptools.build_meta"
