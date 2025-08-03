@@ -4,7 +4,6 @@ import sys
 from copy import deepcopy
 from functools import partial
 
-
 USAGE = (
     "-" * 70
     + "\n"
@@ -22,5 +21,11 @@ USAGE = (
 
 
 def main():
-    from . import *
-    
+    pass
+
+
+if __name__ == "__main__":
+    from multiprocessing import freeze_support
+
+    freeze_support()
+    main()
