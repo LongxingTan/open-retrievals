@@ -72,6 +72,7 @@ def find_all_linear_names(model: PreTrainedModel, linear_type: Optional[object] 
     """
     if linear_type is None:
         linear_type = nn.Linear
+
     lora_module_names = set()
     for name, module in model.named_modules():
         if isinstance(module, linear_type):
