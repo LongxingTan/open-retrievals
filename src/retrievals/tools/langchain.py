@@ -5,11 +5,7 @@ from typing import Any, Dict, List, Optional, Sequence
 
 from langchain.llms.base import LLM
 from langchain.retrievers.document_compressors.base import BaseDocumentCompressor
-from langchain_core.callbacks.manager import (
-    CallbackManagerForLLMRun,
-    CallbackManagerForRetrieverRun,
-    Callbacks,
-)
+from langchain_core.callbacks.manager import CallbackManagerForLLMRun, CallbackManagerForRetrieverRun, Callbacks
 from langchain_core.documents import Document
 from langchain_core.embeddings import Embeddings
 from langchain_core.retrievers import BaseRetriever

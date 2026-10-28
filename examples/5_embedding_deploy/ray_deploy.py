@@ -14,6 +14,9 @@ from pydantic import BaseModel, Field
 from ray import serve
 from ray.serve.config import HTTPOptions
 
+from retrievals.models import AutoModelForEmbedding
+from retrievals.models.rerank import LLMRanker
+
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -92,16 +95,17 @@ class BatchCombineInferModel:
         """Initialize the model with proper error handling and logging."""
         try:
             logger.info("Initializing embedding model...")
-            self.model_embedding = Qwen3Embedding(
+            self.model_embedding = AutoModelForEmbedding.from_pretrained(
                 model_name_or_path=model_name_or_path_embedding,
+                pooling_method="last",
+                normalize_embeddings=True,
             )
             logger.info("Embedding model initialized successfully")
 
             logger.info("Initializing reranker model...")
-            self.model_reranker = Qwen3Reranker(
+            self.model_reranker = LLMRanker.from_pretrained(
                 model_name_or_path=model_name_or_path_reranker,
-                instruction="Retrieval document that can answer user's query",
-                max_length=2048,
+                target_token="yes",
             )
             logger.info("Reranker model initialized successfully")
 
@@ -139,7 +143,9 @@ class BatchCombineInferModel:
 
             # Generate embeddings
             with torch.inference_mode():
-                embeddings = self.model_embedding.encode(request.input, is_query=request.is_query)
+                embeddings = self.model_embedding.encode(
+                    request.input, is_query=request.is_query, convert_to_tensor=True
+                )
                 # Convert to list format
                 embeddings_list = embeddings.cpu().detach().numpy().tolist()
 
@@ -177,8 +183,11 @@ class BatchCombineInferModel:
 
             # Create pairs and compute scores
             with torch.inference_mode():
-                pairs = list(zip(request.questions, request.texts))
-                scores = self.model_reranker.compute_scores(pairs, request.instruction)
+                pairs = [
+                    (f"Instruct: {request.instruction}\nQuery: {question}", text)
+                    for question, text in zip(request.questions, request.texts)
+                ]
+                scores = self.model_reranker.compute_score(pairs, max_length=2048, normalize=True)
 
                 # Ensure scores is a list
                 if not isinstance(scores, list):

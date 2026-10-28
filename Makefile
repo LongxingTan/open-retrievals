@@ -1,22 +1,23 @@
 .PHONY: style test docs pre-release
 
 check_dirs := src examples tests
+PYTHON ?= uv run python
 
 
 style: ## run checks on all files and potentially modifies some of them
-	black $(check_dirs)
-	isort $(check_dirs)
-	flake8 $(check_dirs)
-	pre-commit run --all-files
+	uv run black $(check_dirs)
+	uv run isort $(check_dirs)
+	uv run flake8 $(check_dirs)
+	uv run pre-commit run --all-files
 
 
 test: ## run tests for the library
-	python -m unittest
+	$(PYTHON) -m unittest
 
 
 docs:  ## run tests for the docs
-	make -C docs clean M=$(shell pwd)
-	make -C docs html M=$(shell pwd)
+	uv run --group docs make -C docs clean M=$(shell pwd)
+	uv run --group docs make -C docs html M=$(shell pwd)
 
 
 help:  ## Show this help

@@ -19,22 +19,30 @@ pretrain -> fine tuning -> distill
 ----------------------------
 
 
-.. code-block:: shell
+.. code-block:: python
 
-    QUERY_ENCODE_DIR=nq-queries
-    OUT_DIR=temp
-    MODEL_DIR="BAAI/bge-base-zh-v1.5"
-    QUERY=nq-test-queries.json
-    mkdir $QUERY_ENCODE_DIR
+    from retrievals import AutoModelForEmbedding, AutoModelForRetrieval
 
-    python -m retrievals.pipelines.embed \
-        --model_name_or_path $MODEL_DIR \
-        --output_dir $OUT_DIR \
-        --do_encode \
-        --fp16 \
-        --per_device_eval_batch_size 256 \
-        --data_name_or_path $QUERY \
-        --is_query true
+    model = AutoModelForEmbedding.from_pretrained(
+        "sentence-transformers/all-MiniLM-L6-v2", pooling_method="mean"
+    )
+    documents = ["A dog is chasing a car.", "A man is playing a guitar."]
+    document_embeddings = model.encode(
+        documents, normalize_embeddings=True, convert_to_tensor=True
+    )
+    query_embeddings = model.encode(
+        ["He plays guitar."], normalize_embeddings=True, convert_to_tensor=True
+    )
+    matcher = AutoModelForRetrieval(method="cosine")
+    scores, indices = matcher.search(
+        query_embeddings, document_embed=document_embeddings, top_k=2
+    )
+
+The cosine search path expects tensors and computes dot products; normalize both
+sets of embeddings for cosine similarity. Returned indices refer to document order.
+For persisted indexes, install ``faiss-cpu``, call ``model.build_index()`` with an
+``index_path``, then pass NumPy query embeddings and that path to ``search()``.
+
 
 
 3. Retrieval

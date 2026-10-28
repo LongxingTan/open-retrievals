@@ -3,12 +3,12 @@
 import json
 import logging
 import os
+from dataclasses import dataclass
 from typing import Callable, Dict, List, Literal, Optional, Tuple, Union
 
 import numpy as np
 import torch
 import torch.nn as nn
-from dataclass import dataclass
 from tqdm.auto import tqdm, trange
 from transformers import (
     AutoConfig,
@@ -64,7 +64,7 @@ class AutoModelForRanking(BaseRanker):
         self.model: Optional[nn.Module] = model
         self.tokenizer = tokenizer
         self.train_group_size = train_group_size
-        self.pooling = AutoPooling(self.pooling_method) if pooling_method else None
+        self.pooling = AutoPooling(pooling_method) if pooling_method else None
         self.loss_fn = loss_fn
         self.loss_type = loss_type
         self.causal_lm = causal_lm
@@ -112,7 +112,7 @@ class AutoModelForRanking(BaseRanker):
         **kwargs,
     ) -> Dict[str, torch.Tensor]:
         """Forward pass for cross-encoder models."""
-        features = self.encode(input_ids, attention_mask)
+        features = self.encode(input_ids, attention_mask, **kwargs)
         logits = features.logits
 
         if self.temperature is not None:
@@ -125,10 +125,12 @@ class AutoModelForRanking(BaseRanker):
         return {'logits': logits} if return_dict else logits
 
     def encode(
-        self, input_ids: torch.Tensor, attention_mask: torch.Tensor
+        self, input_ids: torch.Tensor, attention_mask: torch.Tensor, **kwargs
     ) -> Union[torch.Tensor, SequenceClassifierOutput]:
         """Encode input IDs and attention masks into embeddings."""
-        model_output: SequenceClassifierOutput = self.model(input_ids, attention_mask, output_hidden_states=True)
+        model_output: SequenceClassifierOutput = self.model(
+            input_ids=input_ids, attention_mask=attention_mask, output_hidden_states=True, **kwargs
+        )
 
         if not self.pooling:
             return model_output
@@ -281,10 +283,17 @@ class ColBERT(BaseRanker):
         neg_input_ids: Optional[torch.Tensor] = None,
         neg_attention_mask: Optional[torch.Tensor] = None,
         return_dict: bool = True,
+        return_embeddings: bool = False,
         **kwargs,
     ):
         query_embedding = self._encode(query_input_ids, attention_mask=query_attention_mask, normalize_embeddings=True)
         positive_embedding = self._encode(pos_input_ids, attention_mask=pos_attention_mask, normalize_embeddings=True)
+
+        if return_embeddings:
+            embeddings = {"query": query_embedding, "positive": positive_embedding}
+            if neg_input_ids is not None:
+                embeddings["negative"] = self._encode(neg_input_ids, neg_attention_mask, normalize_embeddings=True)
+            return embeddings
 
         if self.training:
             negative_embedding = None
@@ -611,6 +620,7 @@ class LLMRanker(AutoModelForRanking):
         document_instruction: Optional[str] = 'B: {}',
         device: Optional[str] = None,
         temperature: Optional[float] = None,
+        target_token: str = 'Yes',
         **kwargs,
     ):
 
@@ -654,6 +664,7 @@ class LLMRanker(AutoModelForRanking):
             temperature=temperature,
             causal_lm=causal_lm,
             task_prompt=task_prompt,
+            target_token=target_token,
             query_instruction=query_instruction,
             document_instruction=document_instruction,
             device=device,
@@ -666,7 +677,6 @@ class LLMRanker(AutoModelForRanking):
                 """by providing a prediction of either 'Yes' or 'No'."""
             )
 
-        reranker.target_token_loc = reranker.tokenizer('Yes', add_special_tokens=False)['input_ids'][0]
         reranker.sep_token = '\n'
 
         return reranker

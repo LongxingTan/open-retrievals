@@ -5,11 +5,7 @@ from unittest import TestCase
 
 from transformers import BertTokenizer
 
-from src.retrievals.data.dataset import (
-    EncodeDataset,
-    RerankTrainDataset,
-    RetrievalTrainDataset,
-)
+from src.retrievals.data.dataset import EncodeDataset, RerankTrainDataset, RetrievalTrainDataset
 
 
 class RetrievalTrainDatasetTest(TestCase):

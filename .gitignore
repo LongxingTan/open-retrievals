@@ -97,3 +97,12 @@ coverage.xml
 **/.pdf
 /encode.py
 /.build/*
+
+# Local planning and agent session state
+/TODO.md
+/.omo/
+
+# Generated training artifacts
+/outputs/
+/tmp_trainer/
+/wandb/

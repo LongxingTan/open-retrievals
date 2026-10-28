@@ -29,13 +29,29 @@ Now you are ready, proceed with
     pip install open-retrievals
 
     # install with support of evaluation
-    pip install open-retrievals[eval]
+    pip install 'open-retrievals[eval]'
 
 Or install from source code
 
 .. code-block:: shell
 
-    python -m pip install -U git+https://github.com/LongxingTan/open-retrievals.git
+    git clone https://github.com/LongxingTan/open-retrievals.git
+    cd open-retrievals
+    pip install -e .
+    # Optional LoRA support
+    pip install -e '.[lora]'
+
+Train the supported YAML tasks from the repository root:
+
+.. code-block:: shell
+
+    rag-cli train examples/configs/dense_retrieval.yaml
+    rag-cli train examples/configs/cross_encoder.yaml
+    rag-cli train examples/configs/colbert.yaml
+
+These workflows use Transformers Trainer. Ray, verl, LLaMA-Factory execution,
+quantized YAML training, and YAML distillation are not implemented. Other CLI
+commands such as ``api``, ``chat``, ``export``, and ``webui`` are placeholders.
 
 
 Examples
@@ -55,11 +71,11 @@ Run a simple example
 
 Open-retrievals support to fine-tune the embedding model, reranking model, llm easily for custom usage.
 
-* `Embedding pairwise fine-tuning <https://github.com/LongxingTan/open-retrievals/blob/master/examples/embedding_pairwise_finetune.py>`_
-* `LLM embedding pairwise fine-tuning <https://github.com/LongxingTan/open-retrievals/blob/master/examples/embedding_llm_finetune.py>`_
-* `ColBERT fine-tuning <https://github.com/LongxingTan/open-retrievals/blob/master/examples/rerank_colbert.py>`_
-* `Cross-encoder reranking fine-tuning <https://github.com/LongxingTan/open-retrievals/blob/master/examples/rerank_cross_encoder.py>`_
-* `LLM reranking fine-tuning <https://github.com/LongxingTan/open-retrievals/blob/master/examples/rerank_llm_finetune.py>`_
+* `Embedding pairwise fine-tuning <https://github.com/LongxingTan/open-retrievals/blob/master/examples/0_embedding/train_pairwise.md>`_
+* `LLM embedding pairwise fine-tuning <https://github.com/LongxingTan/open-retrievals/blob/master/examples/0_embedding/train_llm.md>`_
+* `ColBERT fine-tuning <https://github.com/LongxingTan/open-retrievals/blob/master/examples/3_colbert/train_colbert.md>`_
+* `Cross-encoder reranking fine-tuning <https://github.com/LongxingTan/open-retrievals/blob/master/examples/2_reranking/train_cross_encoder.md>`_
+* `LLM reranking fine-tuning <https://github.com/LongxingTan/open-retrievals/blob/master/examples/2_reranking/train_llm.md>`_
 
 
 Use cases
@@ -69,13 +85,13 @@ Use cases
 * `scifact dataset <https://github.com/LongxingTan/open-retrievals/tree/master/examples/scifact>`_
 * `msmacro dataset <https://github.com/LongxingTan/open-retrievals/tree/master/examples/msmacro>`_
 * `wikipedia nq dataset <https://github.com/LongxingTan/open-retrievals/tree/master/examples/wikipedia-nq>`_
-* `rag example <https://github.com/LongxingTan/open-retrievals/tree/master/examples/rag>`_
+* `rag example <https://github.com/LongxingTan/open-retrievals/tree/master/examples/4_rag>`_
 
 
 Contributing
 ---------------------
 
-If you want to contribute to the project, please refer to our `contribution guidelines <https://github.com/LongxingTan/Time-series-prediction/blob/master/CONTRIBUTING.md>`_.
+If you want to contribute to the project, please refer to our `contribution guidelines <https://github.com/LongxingTan/open-retrievals/blob/master/CONTRIBUTING.md>`_.
 
 
 .. toctree::

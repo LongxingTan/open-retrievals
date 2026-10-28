@@ -1,0 +1,41 @@
+# Fast Training Configuration
+# Optimized for quick experiments
+
+exp_name: "fast_experiment"
+seed: 42
+device: "auto"
+gpu_num: 1
+output_dir: "./outputs/fast_experiment"
+
+model:
+  model_type: "bert"
+  model_name_or_path: "bert-base-uncased"
+  pooling_method: "cls"
+  normalize_embeddings: true
+  max_length: 128
+
+training:
+  num_epochs: 1
+  learning_rate: 1e-4
+  batch_size: 64
+  eval_batch_size: 64
+  warmup_ratio: 0.1
+  gradient_accumulation_steps: 1
+  max_grad_norm: 1.0
+  mixed_precision: "fp16"
+  eval_strategy: "no"
+  save_strategy: "no"
+  logging_steps: 50
+  gradient_checkpointing: false
+
+data:
+  dataset_name: "shibing624/nli_zh"
+  data_format: "huggingface"
+  max_samples: 1000  # Only use 1000 samples for fast training
+  query_col: "query"
+  doc_col: "document"
+  max_length: 128
+
+loss:
+  loss_type: "infonce"
+  temperature: 0.05

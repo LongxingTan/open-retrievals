@@ -14,8 +14,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-13] # add windows-2019 when poetry allows installation with `-f` flag
-        python-version: [3.8, '3.10', '3.12']
+        os: [ubuntu-latest, macos-latest]
+        python-version: ['3.10', '3.12']
 
     steps:
       - uses: actions/checkout@v4
@@ -24,31 +24,20 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Get full Python version
-        id: full-python-version
-        shell: bash
-        run: echo ::set-output name=version::$(python -c "import sys; print('-'.join(str(v) for v in sys.version_info))")
-
-      - name: Upgrade pip
-        shell: bash
-        run: python -m pip install --upgrade pip
-
+      - uses: astral-sh/setup-uv@v6
       - name: Install dependencies
-        shell: bash
-        run: |
-          pip install --no-cache-dir -r requirements.txt
-          pip install --extra-index-url https://pypi.org/simple --no-cache-dir coverage pytest codecov-cli>=0.4.1
+        run: uv sync --locked
 
       - name: Run unittest
         shell: bash
         # run: python -m unittest discover -s ./tests  -p 'test_*.py'
-        run: coverage run -m unittest discover -s ./tests -p 'test*.py'
+        run: uv run --locked coverage run -m unittest discover -s ./tests -p 'test*.py'
 
       - name: Statistics
         if: success()
         run: |
-          coverage report -i
-          coverage xml -i
+          uv run --locked coverage report -i
+          uv run --locked coverage xml -i
 
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v4.0.1
@@ -69,24 +58,13 @@ jobs:
         with:
           python-version: 3.11
 
-      - name: Create pip cache directory manually
-        run: |
-          CACHE_DIR="$HOME/.cache/pip"
-          mkdir -p "$CACHE_DIR"
-          echo "Using manual pip cache at $CACHE_DIR"
-
+      - uses: astral-sh/setup-uv@v6
       - name: Install dependencies
         run: |
           sudo apt-get update && sudo apt-get install -y pandoc
-          python -m pip install --upgrade pip
-          pip install -r docs/requirements_docs.txt
-        shell: bash
-
+          uv sync --locked --group docs
       - name: Build sphinx documentation
-        run: |
-          cd docs
-          make clean
-          make html --debug --jobs 2 SPHINXOPTS=""
+        run: make docs
 
       - name: Upload built docs
         uses: actions/upload-artifact@v4
@@ -95,3 +73,21 @@ jobs:
           path: docs/build/html/
         # Use always() to always run this step to publish test results when there are test failures
         if: success()
+
+  installed-wheel:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: astral-sh/setup-uv@v6
+      - name: Build and install wheel into a clean environment
+        run: |
+          uv build --wheel
+          uv venv /tmp/retrievals-wheel
+          uv pip install --python /tmp/retrievals-wheel/bin/python dist/*.whl
+          cp scripts/smoke_installed.py /tmp/smoke_installed.py
+      - name: Test packaged YAML workflows outside checkout
+        working-directory: /tmp
+        run: PATH=/tmp/retrievals-wheel/bin:$PATH /tmp/retrievals-wheel/bin/python /tmp/smoke_installed.py

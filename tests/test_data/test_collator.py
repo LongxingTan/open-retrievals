@@ -6,12 +6,7 @@ from unittest import TestCase
 import torch
 from transformers import BertTokenizer
 
-from src.retrievals.data.collator import (
-    ColBertCollator,
-    LLMRerankCollator,
-    RerankCollator,
-    RetrievalCollator,
-)
+from src.retrievals.data.collator import ColBertCollator, LLMRerankCollator, RerankCollator, RetrievalCollator
 
 
 class CollatorTest(TestCase):

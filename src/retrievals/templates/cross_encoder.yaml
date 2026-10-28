@@ -1,0 +1,16 @@
+task_type: cross_encoder
+output_dir: ./outputs/rerank
+model:
+  model_name_or_path: bert-base-uncased
+data:
+  train_file: sample.jsonl
+  valid_file: sample.jsonl
+  doc_col: positive
+  label_col: label
+  max_length: 128
+training:
+  num_epochs: 1
+  batch_size: 2
+  learning_rate: 2e-5
+loss:
+  loss_type: bce

@@ -1,0 +1,53 @@
+# Distillation Configuration
+# Training a smaller model using a larger teacher
+
+exp_name: "distillation_example"
+seed: 42
+device: "auto"
+gpu_num: 1
+output_dir: "./outputs/distilled_model"
+task_type: "distillation"
+
+model:
+  model_type: "bert"
+  model_name_or_path: "distilbert-base-uncased"  # Student model
+  pooling_method: "mean"
+  normalize_embeddings: true
+  max_length: 512
+
+training:
+  num_epochs: 5
+  learning_rate: 5e-5
+  batch_size: 32
+  eval_batch_size: 32
+  warmup_ratio: 0.1
+  gradient_accumulation_steps: 1
+  max_grad_norm: 1.0
+  mixed_precision: "bf16"
+  eval_strategy: "epoch"
+  save_strategy: "epoch"
+  save_total_limit: 3
+  logging_steps: 100
+
+data:
+  dataset_name: "msmacro"
+  data_format: "json"
+  train_file: "./data/train.jsonl"
+  valid_file: "./data/valid.jsonl"
+  query_col: "query"
+  doc_col: "document"
+  max_length: 512
+
+loss:
+  loss_type: "distillation"
+  distill_temperature: 2.0
+  alpha: 0.7
+  loss_types: ["logits", "hidden_states"]
+
+distillation:
+  teacher_model: "bert-base-uncased"
+  teacher_checkpoint: "./teacher_model"
+  temperature: 2.0
+  alpha: 0.7
+  loss_types: ["logits", "hidden_states"]
+  distill_layers: 6

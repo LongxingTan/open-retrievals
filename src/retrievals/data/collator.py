@@ -4,12 +4,7 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 import torch
-from transformers import (
-    BatchEncoding,
-    DataCollatorForSeq2Seq,
-    DataCollatorWithPadding,
-    PreTrainedTokenizer,
-)
+from transformers import BatchEncoding, DataCollatorForSeq2Seq, DataCollatorWithPadding, PreTrainedTokenizer
 
 logger = logging.getLogger(__name__)
 
@@ -258,6 +253,9 @@ class ColBertCollator(DataCollatorWithPadding):
 
         query_texts = [feature[self.query_key] for feature in features]
         pos_texts = [feature[self.positive_key] for feature in features]
+        has_negatives = [self.negative_key in feature for feature in features]
+        if any(has_negatives) and not all(has_negatives):
+            raise ValueError("Every row in a batch must either have negatives or use positive-only training")
 
         if isinstance(query_texts[0], list):
             query_texts = sum(query_texts, [])
@@ -369,13 +367,16 @@ class LLMRerankCollator(DataCollatorForSeq2Seq):
             formatted_examples.append(formatted_text)
 
         # Tokenize formatted examples
+        pad_to_multiple_of = self.pad_to_multiple_of
+        if pad_to_multiple_of and self.max_length % pad_to_multiple_of:
+            pad_to_multiple_of = None
         tokenized = self.tokenizer(
             formatted_examples,
             padding=True,
             max_length=self.max_length,
             truncation=True,
             return_tensors=return_tensors,
-            pad_to_multiple_of=self.pad_to_multiple_of,
+            pad_to_multiple_of=pad_to_multiple_of,
         )
 
         return tokenized

@@ -9,12 +9,7 @@ from typing import Dict, List, Optional
 
 import transformers
 from datasets import load_dataset
-from transformers import (
-    AutoModelForCausalLM,
-    AutoTokenizer,
-    DataCollatorForSeq2Seq,
-    Trainer,
-)
+from transformers import AutoModelForCausalLM, AutoTokenizer, DataCollatorForSeq2Seq, Trainer
 
 from ..models.utils import find_all_linear_names
 

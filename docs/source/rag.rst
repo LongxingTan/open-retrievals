@@ -14,11 +14,38 @@ The basic RAG process is document indexing, query embedding, retrieval, optional
 
 .. code-block:: python
 
-    from retrievals import AutoModelForEmbedding
+    from retrievals import AutoModelForEmbedding, AutoModelForRetrieval
+
+    documents = ["Retrieval finds relevant documents.", "Reranking reorders candidates."]
+    query = "What does retrieval do?"
+    model = AutoModelForEmbedding.from_pretrained(
+        "sentence-transformers/all-MiniLM-L6-v2", pooling_method="mean"
+    )
+    document_embeddings = model.encode(
+        documents, normalize_embeddings=True, convert_to_tensor=True
+    )
+    query_embeddings = model.encode(
+        [query], normalize_embeddings=True, convert_to_tensor=True
+    )
+    scores, indices = AutoModelForRetrieval().search(
+        query_embeddings, document_embed=document_embeddings, top_k=2
+    )
+    context = "\n".join(documents[i] for i in indices[0])
+    prompt = f"Answer using this context:\n{context}\nQuestion: {query}"
+
+Pass ``prompt`` to your generation model or service. YAML training prepares the
+embedding or reranking model; it does not run an end-to-end RAG application.
 
 
 Integrated with Langchain
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. note::
+
+    The following is a legacy integration example. The current adapter imports
+    ``retrievals.modules.generator.generator``, which is absent from this checkout,
+    and is not a working installation path. Use the native retrieval example above
+    to prepare context for your application's generation service.
 
 .. image:: https://colab.research.google.com/assets/colab-badge.svg
     :target: https://colab.research.google.com/drive/1fJC-8er-a4NRkdJkwWr4On7lGt9rAO4P?usp=sharing
@@ -39,7 +66,7 @@ Integrated with Langchain
     rerank_model_name_or_path = "BAAI/bge-reranker-base"
     llm_model_name_or_path = "microsoft/Phi-3-mini-128k-instruct"
 
-    embeddings = LangchainEmbedding(model_name_or_path=embed_model_name_or_path, model_kwargs={'pooling_method': 'mean'})
+    embeddings = LangchainEmbedding(model_name=embed_model_name_or_path, model_kwargs={'pooling_method': 'mean'})
     vectordb = Vectorstore(
         persist_directory=persist_directory,
         embedding_function=embeddings,
@@ -163,5 +190,3 @@ Layout
 
 OCR
 ~~~~~~~~~~~~~~
-
-.. code-block:: python

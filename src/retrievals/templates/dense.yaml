@@ -1,0 +1,19 @@
+task_type: dense_retrieval
+output_dir: ./outputs/dense
+model:
+  model_name_or_path: bert-base-uncased
+  pooling_method: mean
+  normalize_embeddings: true
+data:
+  train_file: sample.jsonl
+  valid_file: sample.jsonl
+  query_max_length: 32
+  doc_max_length: 128
+  negative_samples: 2
+training:
+  num_epochs: 1
+  batch_size: 2
+  learning_rate: 2e-5
+loss:
+  loss_type: infonce
+  temperature: 0.05

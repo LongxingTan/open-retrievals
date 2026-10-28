@@ -24,7 +24,7 @@ class SimCSE(Base):
         temperature: float = 0.05,
         dynamic_temperature: bool = False,
         negatives_cross_device: bool = False,
-        **kwargs
+        **kwargs,
     ):
         super().__init__(negatives_cross_device)
         self.criterion = criterion

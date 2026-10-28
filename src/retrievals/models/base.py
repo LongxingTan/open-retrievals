@@ -73,7 +73,6 @@ class Base(ABC, nn.Module):
         self.tokenizer = tokenizer
         self.config = config or ModelConfig(**kwargs)
         self.device = get_device_name()
-        self.to(self.device)
 
     @abstractmethod
     def forward(self, *args, **kwargs) -> torch.Tensor:
@@ -507,5 +506,10 @@ class BaseRanker(Base):
         sorted_docs = [doc for doc, _ in doc_score_pairs]
 
         if return_dict:
-            return {'documents': sorted_docs, 'scores': [score for _, score in doc_score_pairs]}
+            return {
+                'documents': sorted_docs,
+                'rerank_document': sorted_docs,
+                'rerank_scores': [score for _, score in doc_score_pairs],
+                'scores': [score for _, score in doc_score_pairs],
+            }
         return sorted_docs

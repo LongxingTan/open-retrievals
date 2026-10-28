@@ -1,116 +1,70 @@
-import os
-import subprocess
-import sys
-from copy import deepcopy
-from functools import partial
+"""YAML training command line interface."""
 
-from .logger import logging
-from .utils import get_device_count, is_env_enabled
+import argparse
+import json
+from importlib.resources import files
+from pathlib import Path
 
-USAGE = (
-    "-" * 70
-    + "\n"
-    + "| Usage:                                                             |\n"
-    + "|   rag-cli api -h: launch an OpenAI-style API server       |\n"
-    + "|   rag-cli chat -h: launch a chat interface in CLI         |\n"
-    + "|   rag-cli eval -h: evaluate models                        |\n"
-    + "|   rag-cli export -h: merge LoRA adapters and export model |\n"
-    + "|   rag-cli train -h: train models                          |\n"
-    + "|   rag-cli webchat -h: launch a chat interface in Web UI   |\n"
-    + "|   rag-cli webui: launch LlamaBoard                        |\n"
-    + "|   rag-cli version: show version info                      |\n"
-    + "-" * 70
-)
+from omegaconf import OmegaConf
+from omegaconf.errors import OmegaConfBaseException
 
 
-def main():
-    from . import launcher
-    from .pipelines import *
-    from .version import short_version as VERSION
+def main(argv=None):
+    parser = argparse.ArgumentParser(description="Train retrieval models from YAML")
+    commands = parser.add_subparsers(dest="command", required=True)
+    init = commands.add_parser("init", help="Create a configuration and sample data")
+    init.add_argument("task", choices=("dense", "cross_encoder", "colbert"))
+    init.add_argument("--output", type=Path, default=Path("train.yaml"))
+    for command in ("validate", "train", "evaluate"):
+        child = commands.add_parser(command)
+        child.add_argument("config", type=Path)
+        child.add_argument("overrides", nargs="*", metavar="key=value")
+    export = commands.add_parser("export", help="Export saved dense embeddings for serving")
+    export.add_argument("--model", required=True, type=Path)
+    export.add_argument("--output", required=True, type=Path)
+    export.add_argument("--backend", choices=("vllm", "triton"), required=True)
+    export.add_argument("--model-name", default="embedding")
+    args = parser.parse_args(argv)
+    try:
+        if args.command == "export":
+            from .export import export_model
 
-    logger = logging.get_logger(__name__)
-    WELCOME = (
-        "-" * 58
-        + "\n"
-        + f"| Welcome to Open Retrievals, version {VERSION}"
-        + " " * (21 - len(VERSION))
-        + "|\n|"
-        + " " * 56
-        + "|\n"
-        + "| Project page: https://github.com/LongxingTan/open-retrievals |\n"
-        + "-" * 58
-    )
+            print(export_model(args.model, args.output, args.backend, args.model_name))
+            return
+        if args.command == "init":
+            template = files("retrievals.templates")
+            if args.output.suffix.lower() not in (".yaml", ".yml"):
+                raise ValueError("--output must end in .yaml or .yml")
+            data_path = args.output.with_suffix(".jsonl")
+            if args.output.exists() or data_path.exists():
+                raise ValueError("Configuration or sample data already exists; choose another --output")
+            args.output.parent.mkdir(parents=True, exist_ok=True)
+            content = OmegaConf.create(template.joinpath(args.task + ".yaml").read_text())
+            content.data.train_file = data_path.name
+            content.data.valid_file = data_path.name
+            data = "ranking.jsonl" if args.task == "cross_encoder" else "retrieval.jsonl"
+            data_path.write_text(template.joinpath(data).read_text())
+            OmegaConf.save(content, args.output)
+            print(f"Created {args.output} and {data_path}")
+            return
+        from .config import ConfigManager
 
-    COMMAND_MAP = {
-        "api": run_api,
-        "chat": run_chat,
-        "env": print_env,
-        "eval": run_eval,
-        "export": export_model,
-        "train": run_train,
-        "webchat": run_web_demo,
-        "webui": run_web_ui,
-        "version": partial(print, WELCOME),
-        "help": partial(print, USAGE),
-    }
-    command = sys.argv.pop(1) if len(sys.argv) > 1 else "help"
-    if command == "train" and (
-        is_env_enabled("FORCE_TORCHRUN") or (get_device_count() > 1 and not is_env_enabled("USE_RAY"))
-    ):
-        # launch distributed training
-        nnodes = os.getenv("NNODES", "1")
-        node_rank = os.getenv("NODE_RANK", "0")
-        nproc_per_node = os.getenv("NPROC_PER_NODE", str(get_device_count()))
-        master_addr = os.getenv("MASTER_ADDR", "127.0.0.1")
-        master_port = os.getenv("MASTER_PORT", str(find_available_port()))
-        logger.info_rank0(f"Initializing {nproc_per_node} distributed tasks at: {master_addr}:{master_port}")
-        if int(nnodes) > 1:
-            logger.info_rank0(f"Multi-node training enabled: num nodes: {nnodes}, node rank: {node_rank}")
+        if any("=" not in value for value in args.overrides):
+            raise ValueError("Overrides must use key=value syntax")
+        config = ConfigManager.load_config(str(args.config), args.overrides)
+        if args.command == "validate":
+            print("Configuration is valid")
+        elif args.command == "train":
+            from .train import train
 
-        # elastic launch support
-        max_restarts = os.getenv("MAX_RESTARTS", "0")
-        rdzv_id = os.getenv("RDZV_ID")
-        min_nnodes = os.getenv("MIN_NNODES")
-        max_nnodes = os.getenv("MAX_NNODES")
+            train(config)
+        else:
+            from .train import evaluate
 
-        env = deepcopy(os.environ)
-        if is_env_enabled("OPTIM_TORCH", "1"):
-            # optimize DDP, see https://zhuanlan.zhihu.com/p/671834539
-            env["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
-            env["TORCH_NCCL_AVOID_RECORD_STREAMS"] = "1"
-
-        if rdzv_id is not None:
-            # launch elastic job with fault tolerant support when possible
-            # see also https://docs.pytorch.org/docs/stable/elastic/train_script.html
-            rdzv_nnodes = nnodes
-            # elastic number of nodes if MIN_NNODES and MAX_NNODES are set
-            if min_nnodes is not None and max_nnodes is not None:
-                rdzv_nnodes = f"{min_nnodes}:{max_nnodes}"
-
-            process = subprocess.run(
-                (
-                    "torchrun --nnodes {rdzv_nnodes} --nproc-per-node {nproc_per_node} "
-                    "--rdzv-id {rdzv_id} --rdzv-backend c10d --rdzv-endpoint {master_addr}:{master_port} "
-                    "--max-restarts {max_restarts} {file_name} {args}"
-                )
-                .format(
-                    rdzv_nnodes=rdzv_nnodes,
-                    nproc_per_node=nproc_per_node,
-                    rdzv_id=rdzv_id,
-                    master_addr=master_addr,
-                    master_port=master_port,
-                    max_restarts=max_restarts,
-                    file_name=launcher.__file__,
-                    args=" ".join(sys.argv[1:]),
-                )
-                .split(),
-                env=env,
-                check=True,
-            )
+            print(json.dumps(evaluate(config), indent=2))
+    except (ValueError, OSError, OmegaConfBaseException) as error:
+        parser.error(str(error))
 
 
 if __name__ == "__main__":
-    from multiprocessing import freeze_support
-
-    freeze_support()
     main()

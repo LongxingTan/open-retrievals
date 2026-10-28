@@ -41,6 +41,7 @@ class DatasetConfig:
     separator: str = ' '
     dataset_split: str = 'train'
     dataset_language: str = 'default'
+    id_key: Optional[str] = None
 
 
 class RetrievalTrainDataset(Dataset):
@@ -57,15 +58,17 @@ class RetrievalTrainDataset(Dataset):
 
     def __init__(
         self,
-        config: Optional[DatasetConfig] = None,
+        config: Optional[Union[DatasetConfig, str, datasets.Dataset]] = None,
         tokenizer: Optional[PreTrainedTokenizer] = None,
         **kwargs,
     ):
-        if not config and not kwargs.get('data_name_or_path'):
+        if config is None and kwargs.get('data_name_or_path') is None:
             raise ValueError('Provide either config or data_name_or_path')
 
-        if config:
+        if isinstance(config, DatasetConfig):
             self.config = config
+        elif config is not None:
+            self.config = DatasetConfig(data_name_or_path=config, **kwargs)
         else:
             self.config = DatasetConfig(**kwargs)
 
@@ -216,15 +219,17 @@ class RerankTrainDataset(Dataset):
 
     def __init__(
         self,
-        config: Optional[DatasetConfig] = None,
+        config: Optional[Union[DatasetConfig, str, datasets.Dataset]] = None,
         tokenizer: Optional[PreTrainedTokenizer] = None,
         **kwargs,
     ):
-        if not config and not kwargs.get('data_name_or_path'):
+        if config is None and kwargs.get('data_name_or_path') is None:
             raise ValueError('Provide either config or data_name_or_path')
 
-        if config:
+        if isinstance(config, DatasetConfig):
             self.config = config
+        elif config is not None:
+            self.config = DatasetConfig(data_name_or_path=config, **kwargs)
         else:
             self.config = DatasetConfig(**kwargs)
 
@@ -360,15 +365,20 @@ class EncodeDataset(Dataset):
 
     def __init__(
         self,
-        config: Optional[DatasetConfig] = None,
+        config: Optional[Union[DatasetConfig, str, datasets.Dataset]] = None,
         tokenizer: Optional[PreTrainedTokenizer] = None,
         **kwargs,
     ):
-        if not config and not kwargs.get('data_name_or_path'):
+        if config is None and kwargs.get('data_name_or_path') is None:
             raise ValueError('Provide either config or data_name_or_path')
 
-        if config:
+        if 'text_key' in kwargs:
+            kwargs['query_key'] = kwargs.pop('text_key')
+
+        if isinstance(config, DatasetConfig):
             self.config = config
+        elif config is not None:
+            self.config = DatasetConfig(data_name_or_path=config, **kwargs)
         else:
             self.config = DatasetConfig(**kwargs)
 

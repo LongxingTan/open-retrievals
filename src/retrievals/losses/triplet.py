@@ -23,7 +23,7 @@ class TripletLoss(Base):
         margin: float = 0.0,
         use_inbatch_negative: bool = False,
         negatives_cross_device: bool = False,
-        **kwargs
+        **kwargs,
     ):
         super().__init__(negatives_cross_device)
         self.temperature = temperature

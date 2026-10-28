@@ -5,14 +5,7 @@ from C_MTEB.tasks import AbsTaskReranking, ChineseRerankingEvaluator
 from datasets import load_dataset
 from mteb import MTEB
 
-from retrievals import (
-    AutoModelForEmbedding,
-    AutoModelForRanking,
-    ColBERT,
-    LLMRanker,
-    RetrievalCollator,
-    RetrievalTrainer,
-)
+from retrievals import AutoModelForEmbedding, AutoModelForRanking, ColBERT, LLMRanker, RetrievalCollator
 
 logger = logging.getLogger(__name__)
 

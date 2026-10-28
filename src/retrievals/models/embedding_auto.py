@@ -1,26 +1,21 @@
 """Text embedding model"""
 
 import copy
+import json
 import logging
 import os
 import time
 from collections.abc import Iterable
 from contextlib import nullcontext
+from dataclasses import dataclass
 from typing import Callable, Dict, List, Literal, Optional, Tuple, Union
 
 import numpy as np
 import torch
 import torch.nn as nn
-from dataclass import dataclass
 from torch.utils.data import DataLoader
 from tqdm.auto import tqdm, trange
-from transformers import (
-    AutoConfig,
-    AutoModel,
-    AutoTokenizer,
-    BatchEncoding,
-    PreTrainedTokenizer,
-)
+from transformers import AutoConfig, AutoModel, AutoTokenizer, BatchEncoding, PreTrainedTokenizer
 
 from .base import Base
 from .pooling import AutoPooling
@@ -55,6 +50,7 @@ class AutoModelForEmbedding(Base):
         document_instruction: Optional[str] = None,
         use_fp16: bool = False,
         device: Optional[str] = None,
+        normalize_embeddings: bool = False,
         **kwargs,
     ):
         """
@@ -64,6 +60,7 @@ class AutoModelForEmbedding(Base):
         self.model = model
         self.tokenizer = tokenizer
         self.pooling_method = pooling_method
+        self.normalize_embeddings = normalize_embeddings
         self.pooling = AutoPooling(pooling_method) if pooling_method else None
         self.loss_fn = loss_fn
         self.max_length = max_length or self._determine_max_length()
@@ -103,6 +100,8 @@ class AutoModelForEmbedding(Base):
         if self.pooling is not None and not without_pooling:
             last_hidden_state = model_output.get('last_hidden_state', model_output[0])
             embeddings = self.pooling(last_hidden_state, attention_mask=attention_mask)
+            if self.normalize_embeddings:
+                embeddings = torch.nn.functional.normalize(embeddings, dim=-1)
             return embeddings
         return model_output
 
@@ -374,11 +373,23 @@ class AutoModelForEmbedding(Base):
         embedding_model = cls(**kwargs)
         return AutoModelForRetrieval(embedding_model, **retrieval_args)
 
+    def save_pretrained(self, path, safe_serialization=True):
+        super().save_pretrained(path, safe_serialization=safe_serialization)
+        with open(os.path.join(path, "embedding_config.json"), "w") as handle:
+            json.dump(
+                {
+                    "pooling_method": self.pooling_method,
+                    "normalize_embeddings": self.normalize_embeddings,
+                    "max_length": self.max_length,
+                },
+                handle,
+            )
+
     @classmethod
     def from_pretrained(
         cls,
         model_name_or_path: Optional[str] = None,
-        pooling_method: Optional[str] = "cls",
+        pooling_method: Optional[str] = None,
         pretrained: bool = True,
         config_path: Optional[str] = None,
         trust_remote_code: bool = True,
@@ -394,8 +405,18 @@ class AutoModelForEmbedding(Base):
         mrl_dim: int = -1,
         pretrained_linear_name: str = 'linear.pt',
         max_length: Optional[int] = None,
+        normalize_embeddings: Optional[bool] = None,
         **kwargs,
     ):
+        metadata = {}
+        metadata_path = os.path.join(model_name_or_path, "embedding_config.json")
+        if os.path.isfile(metadata_path):
+            with open(metadata_path) as handle:
+                metadata = json.load(handle)
+        pooling_method = pooling_method or metadata.get("pooling_method", "cls")
+        max_length = max_length or metadata.get("max_length")
+        if normalize_embeddings is None:
+            normalize_embeddings = metadata.get("normalize_embeddings", False)
         config = AutoConfig.from_pretrained(
             config_path or model_name_or_path, output_hidden_states=True, trust_remote_code=trust_remote_code
         )
@@ -446,6 +467,7 @@ class AutoModelForEmbedding(Base):
             document_instruction=document_instruction,
             use_fp16=use_fp16,
             max_length=max_length,
+            normalize_embeddings=normalize_embeddings,
             **kwargs,
         )
 

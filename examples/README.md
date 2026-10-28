@@ -6,8 +6,8 @@ Welcome to Open-Retrievals, a cutting-edge repository designed to empower your r
 
 
 ## 🔍 1. Embedding Models
-- [embedding-pairwise finetune](./0_embedding/train_pairwise.py)
-- [embedding-llm pairwise finetune](./0_embedding/train_llm.py)
+- [embedding-pairwise finetune](./0_embedding/train_pairwise.md)
+- [embedding-llm pairwise finetune](./0_embedding/train_llm.md)
 
 
 | Model                  | Original | Finetuned |
@@ -38,9 +38,9 @@ Welcome to Open-Retrievals, a cutting-edge repository designed to empower your r
 ```
 
 ## 📊 2. [Reranking](./2_reranking)
-- [rerank-cross encoder](./2_reranking/train_cross_encoder.py)
-- [rerank-colbert](3_colbert/train_colbert.py)
-- [rerank-llm finetune](./2_reranking/train_llm.py)
+- [rerank-cross encoder](./2_reranking/train_cross_encoder.md)
+- [rerank-colbert](3_colbert/train_colbert.md)
+- [rerank-llm finetune](./2_reranking/train_llm.md)
 
 
 | Model                             | Original | Finetuned |

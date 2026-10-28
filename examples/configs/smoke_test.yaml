@@ -1,0 +1,40 @@
+# Smoke-test config for dense retrieval training
+# Uses tiny fixture data for fast CI validation
+
+task_type: "dense_retrieval"
+exp_name: "smoke_test"
+seed: 42
+output_dir: "./outputs/smoke_test"
+
+model:
+  model_type: "bert"
+  model_name_or_path: "bert-base-uncased"
+  pooling_method: "cls"
+  max_length: 128
+
+training:
+  num_epochs: 1
+  max_steps: 1
+  use_cpu: true
+  learning_rate: 5e-5
+  batch_size: 2
+  eval_batch_size: 2
+  warmup_ratio: 0.0
+  mixed_precision: "no"
+  eval_strategy: "no"
+  save_strategy: "no"
+  logging_steps: 1
+
+data:
+  train_file: "../../tests/fixtures/retrieval_train.jsonl"
+  data_format: "jsonl"
+  query_col: "query"
+  positive_col: "positive"
+  negative_col: "negative"
+  query_max_length: 64
+  doc_max_length: 128
+  negative_samples: 2
+
+loss:
+  loss_type: "infonce"
+  temperature: 0.05
