@@ -12,7 +12,7 @@ class PairKL(Base):
         criterion: Union[nn.Module, Callable, None] = nn.KLDivLoss(reduction="batchmean"),
         temperature: float = 0.05,
         negatives_cross_device: bool = False,
-        **kwargs
+        **kwargs,
     ):
         super().__init__(negatives_cross_device)
         self.criterion = criterion

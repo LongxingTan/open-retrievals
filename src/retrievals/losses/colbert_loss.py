@@ -25,6 +25,9 @@ class ColbertLoss(Base):
         positive_embeddings: torch.Tensor,
         negative_embeddings: Optional[torch.Tensor] = None,
         mask: Optional[torch.Tensor] = None,
+        document_mask: Optional[torch.Tensor] = None,
+        negative_mask: Optional[torch.Tensor] = None,
+        mask_includes_cls: bool = False,
     ):
 
         if negative_embeddings is None and self.use_inbatch_negative is False:
@@ -35,11 +38,17 @@ class ColbertLoss(Base):
             query_embeddings = self._dist_gather_tensor(query_embeddings)
             positive_embeddings = self._dist_gather_tensor(positive_embeddings)
             negative_embeddings = self._dist_gather_tensor(negative_embeddings)
+            mask = self._dist_gather_tensor(mask)
+            document_mask = self._dist_gather_tensor(document_mask)
+            negative_mask = self._dist_gather_tensor(negative_mask)
 
-        scores = self.similarity(query_embeddings, positive_embeddings)
+        if mask is not None and mask_includes_cls:
+            mask = mask[:, 1:]
+
+        scores = self.similarity(query_embeddings, positive_embeddings, mask, document_mask)
 
         if negative_embeddings is not None:
-            negative_scores = self.similarity(query_embeddings, negative_embeddings, mask=mask)
+            negative_scores = self.similarity(query_embeddings, negative_embeddings, mask, negative_mask)
             scores = torch.cat([scores, negative_scores], dim=-1)
 
         if self.temperature is not None:
@@ -53,7 +62,7 @@ class ColbertLoss(Base):
         loss = self.criterion(scores, labels)
         return loss
 
-    def similarity(self, query_embeddings, document_embeddings, mask: Optional[torch.Tensor] = None):
+    def similarity(self, query_embeddings, document_embeddings, mask=None, document_mask=None):
         if self.use_inbatch_negative:  # query_embeddings.size(0) != document_embeddings.size(0) and
             late_interactions = torch.einsum(
                 "bsh,cdh->bcsd",
@@ -70,14 +79,14 @@ class ColbertLoss(Base):
                 query_embeddings,
                 document_embeddings,
             )
-        late_interactions = late_interactions.max(-1).values.sum(-1)
-
-        # if mask is not None:
-        #     query_sequence_length = mask[:, 1:].sum(-1, keepdim=False)
-        #     if late_interactions.dim() == 2:  # if the train_group_size > 2, the late_interactions shape: batch * neg
-        #         query_sequence_length = query_sequence_length.unsqueeze(1)
-        #
-        #     late_interactions = late_interactions / query_sequence_length
-        # else:
-        #     late_interactions = late_interactions / query_embeddings.size(1)
-        return late_interactions
+        if document_mask is not None:
+            if self.use_inbatch_negative:
+                document_mask = document_mask[None, :, None, :]
+            else:
+                document_mask = document_mask.reshape(query_embeddings.size(0), -1, 1, document_mask.size(-1))
+            late_interactions = late_interactions.masked_fill(~document_mask.bool(), float("-inf"))
+        token_scores = late_interactions.max(-1).values
+        token_scores = token_scores.masked_fill(~torch.isfinite(token_scores), 0)
+        if mask is not None:
+            token_scores = token_scores * mask[:, None, :].to(token_scores.dtype)
+        return token_scores.sum(-1)

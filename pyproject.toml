@@ -1,3 +1,50 @@
+[project]
+name = "open_retrievals"
+version = "0.0.15"
+description = "Text Embeddings for Retrieval and RAG based on transformers"
+readme = "README.md"
+requires-python = ">=3.10"
+license = "Apache-2.0"
+authors = [{name = "Longxing Tan", email = "tanlongxing888@163.com"}]
+dependencies = [
+    "torch>=2.2",
+    "transformers>=4.45,<5",
+    "tokenizers>=0.14",
+    "datasets>=1.1.3",
+    "tqdm>=4.66",
+    "omegaconf>=2.3",
+    "numpy>=2",
+    "pandas",
+    "scikit-learn",
+    "faiss-cpu>=1.8",
+    "accelerate>=0.26",
+]
+
+[project.urls]
+Homepage = "https://github.com/LongxingTan/open-retrievals"
+
+[project.scripts]
+rag-cli = "retrievals.cli:main"
+
+[project.optional-dependencies]
+lora = ["peft>=0.13,<1"]
+eval = ["beir>=2.0.0", "mteb", "C-MTEB>=1.1.0"]
+
+[dependency-groups]
+dev = ["black[jupyter]", "isort>=5", "flake8", "pre-commit", "pytest", "coverage", "peft>=0.13,<1"]
+docs = ["recommonmark>=0.7.1", "nbconvert>=6.3.0", "sphinx>3.2", "pandoc", "ipython", "nbsphinx", "sphinx-markdown-tables", "pydata-sphinx-theme", "docutils", "sphinx-autobuild", "cloudpickle"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+"retrievals.templates" = ["*.yaml", "*.jsonl"]
+"*" = ["**/*.cu", "**/*.cpp", "**/*.cuh", "**/*.h", "**/*.pyx"]
+
+[build-system]
+requires = ["setuptools>=77", "wheel"]
+build-backend = "setuptools.build_meta"
+
 [tool.black]
 line-length = 120
 include = '\.pyi?$'
@@ -11,10 +58,25 @@ skip-string-normalization = true  # Avoid black replace all single quotes to the
 
 [tool.isort]
 profile = "black"
+line_length = 120
 src_paths = ["src", "examples", "tests"]
 skip_gitignore = true
 known_first_party = ["retrievals"]
 
-[build-system]
-requires = ["setuptools", "wheel"]
-build-backend = "setuptools.build_meta"
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
+log_cli_level = "ERROR"
+
+[tool.coverage.run]
+source = ["retrievals"]
+
+[tool.coverage.report]
+omit = ["tests/*"]
+show_missing = true
+
+[tool.mypy]
+ignore_missing_imports = true
+no_implicit_optional = true
+check_untyped_defs = true
+cache_dir = ".cache/mypy/"

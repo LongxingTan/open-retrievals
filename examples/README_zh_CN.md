@@ -31,8 +31,8 @@ export HF_ENDPOINT=https://hf-mirror.com
 
 **微调**
 
-- [向量模型pairwise微调](./0_embedding/train_pairwise.py)
-- [decoder大模型向量模型pairwise微调](./0_embedding/train_llm.py)
+- [向量模型pairwise微调](./0_embedding/train_pairwise.md)
+- [decoder大模型向量模型pairwise微调](./0_embedding/train_llm.md)
   - 设置 `query_instruction`
     - "给定一个查询和一个相关文档，检索与查询相关的文档\n查询: {}"
   - 使用适当的 `pooling_method`
@@ -43,9 +43,9 @@ export HF_ENDPOINT=https://hf-mirror.com
 
 ## 📊 2. [重排](./2_reranking)
 
-- [重排序-交叉编码器](./2_reranking/train_cross_encoder.py)
-- [重排序-ColBERT](3_colbert/train_colbert.py)
-- [重排序-LLM微调](./2_reranking/train_llm.py)
+- [重排序-交叉编码器](./2_reranking/train_cross_encoder.md)
+- [重排序-ColBERT](3_colbert/train_colbert.md)
+- [重排序-LLM微调](./2_reranking/train_llm.md)
   - `AutoModelForRanking.from_pretrained(model_name_or_path, causal_lm=True)`
   - 提示: "给定一个带有相关正文的查询，通过提供'是'或'否'的预测来确定文档是否与查询相关。"
 

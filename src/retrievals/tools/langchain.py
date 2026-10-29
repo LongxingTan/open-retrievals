@@ -5,19 +5,16 @@ from typing import Any, Dict, List, Optional, Sequence
 
 from langchain.llms.base import LLM
 from langchain.retrievers.document_compressors.base import BaseDocumentCompressor
-from langchain_core.callbacks.manager import (
-    CallbackManagerForLLMRun,
-    CallbackManagerForRetrieverRun,
-    Callbacks,
-)
+from langchain_core.callbacks.manager import CallbackManagerForLLMRun, CallbackManagerForRetrieverRun, Callbacks
 from langchain_core.documents import Document
 from langchain_core.embeddings import Embeddings
 from langchain_core.retrievers import BaseRetriever
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
+from retrievals.modules.generator.generator import BaseLLM
+
 from ..models.embedding_auto import AutoModelForEmbedding
 from ..models.rerank import AutoModelForRanking
-from .generator import BaseLLM
 
 logger = logging.getLogger(__name__)
 

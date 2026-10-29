@@ -1,0 +1,16 @@
+{"query": "What is Python used for?", "positive": "Python is a versatile programming language used for web development, data science, artificial intelligence, and automation.", "label": 1}
+{"query": "What is Python used for?", "positive": "Carpets come in many different colors and patterns.", "label": 0}
+{"query": "How does photosynthesis work?", "positive": "Photosynthesis is the process by which plants convert sunlight, water, and carbon dioxide into glucose and oxygen.", "label": 1}
+{"query": "How does photosynthesis work?", "positive": "The stock market fluctuates based on economic indicators and investor sentiment.", "label": 0}
+{"query": "What causes climate change?", "positive": "Climate change is primarily caused by increased greenhouse gas emissions from human activities such as burning fossil fuels.", "label": 1}
+{"query": "What causes climate change?", "positive": "The first iPhone was released by Apple in 2007.", "label": 0}
+{"query": "What is blockchain technology?", "positive": "Blockchain is a decentralized digital ledger that records transactions across many computers in a way that ensures security and transparency.", "label": 1}
+{"query": "What is blockchain technology?", "positive": "Pizza originated in Naples, Italy and has become popular worldwide.", "label": 0}
+{"query": "Explain quantum computing", "positive": "Quantum computing uses quantum bits or qubits that can exist in multiple states simultaneously, enabling certain computations to be performed much faster than classical computers.", "label": 1}
+{"query": "Explain quantum computing", "positive": "The Great Barrier Reef is the world's largest coral reef system located off the coast of Australia.", "label": 0}
+{"query": "What is CRISPR gene editing?", "positive": "CRISPR is a revolutionary gene-editing technology that allows scientists to modify DNA sequences and alter gene function with high precision.", "label": 1}
+{"query": "What is CRISPR gene editing?", "positive": "The violin is a string instrument played with a bow.", "label": 0}
+{"query": "How do vaccines work?", "positive": "Vaccines work by introducing a weakened or inactive form of a pathogen to stimulate the body's immune response and create immunological memory.", "label": 1}
+{"query": "How do vaccines work?", "positive": "Chocolate is made from cocoa beans harvested from the cacao tree.", "label": 0}
+{"query": "What is the theory of relativity?", "positive": "Einstein's theory of relativity describes how space and time are interwoven into a single continuum known as spacetime, and how gravity arises from the curvature of this spacetime.", "label": 1}
+{"query": "What is the theory of relativity?", "positive": "The Nile River is the longest river in Africa.", "label": 0}

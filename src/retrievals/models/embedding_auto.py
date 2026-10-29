@@ -1,11 +1,13 @@
 """Text embedding model"""
 
 import copy
+import json
 import logging
 import os
 import time
 from collections.abc import Iterable
 from contextlib import nullcontext
+from dataclasses import dataclass
 from typing import Callable, Dict, List, Literal, Optional, Tuple, Union
 
 import numpy as np
@@ -13,19 +15,23 @@ import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
 from tqdm.auto import tqdm, trange
-from transformers import (
-    AutoConfig,
-    AutoModel,
-    AutoTokenizer,
-    BatchEncoding,
-    PreTrainedTokenizer,
-)
+from transformers import AutoConfig, AutoModel, AutoTokenizer, BatchEncoding, PreTrainedTokenizer
 
 from .base import Base
 from .pooling import AutoPooling
 from .utils import batch_to_device, check_causal_lm, get_device_name
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass
+class EmbedderOutput:
+    q_reps: Optional[torch.Tensor] = None
+    p_reps: Optional[torch.Tensor] = None
+    loss: Optional[torch.Tensor] = None
+    scores: Optional[torch.Tensor] = None
+    nce_loss: Optional[torch.Tensor] = None
+    distill_loss: Optional[torch.Tensor] = None
 
 
 class AutoModelForEmbedding(Base):
@@ -44,6 +50,7 @@ class AutoModelForEmbedding(Base):
         document_instruction: Optional[str] = None,
         use_fp16: bool = False,
         device: Optional[str] = None,
+        normalize_embeddings: bool = False,
         **kwargs,
     ):
         """
@@ -53,9 +60,11 @@ class AutoModelForEmbedding(Base):
         self.model = model
         self.tokenizer = tokenizer
         self.pooling_method = pooling_method
+        self.normalize_embeddings = normalize_embeddings
         self.pooling = AutoPooling(pooling_method) if pooling_method else None
         self.loss_fn = loss_fn
         self.max_length = max_length or self._determine_max_length()
+        self.query_max_length = kwargs.get("query_max_length", self.max_length)
         self.query_instruction = query_instruction or '{}'
         self.document_instruction = document_instruction or '{}'
         self.use_fp16 = use_fp16
@@ -74,6 +83,24 @@ class AutoModelForEmbedding(Base):
         output_hidden_states: Optional[bool] = None,
         return_dict: Optional[bool] = False,
     ):
+        if isinstance(inputs, dict) and "query" in inputs:
+            query = self.forward(inputs["query"])
+            documents = [inputs["positive"]]
+            if "negative" in inputs:
+                documents.append(inputs["negative"])
+            width = max(item["input_ids"].shape[1] for item in documents)
+            merged = {}
+            for key in ("input_ids", "attention_mask"):
+                fill = self.tokenizer.pad_token_id if key == "input_ids" else 0
+                merged[key] = torch.cat(
+                    [
+                        torch.nn.functional.pad(item[key], (0, width - item[key].shape[1]), value=fill)
+                        for item in documents
+                    ]
+                )
+            embeddings = self.forward(merged)
+            count = documents[0]["input_ids"].shape[0]
+            return query, embeddings[:count], embeddings[count:] if len(documents) > 1 else None
         if isinstance(inputs, (dict, BatchEncoding)):
             embeddings = self.forward_from_tensor(inputs['input_ids'], inputs['attention_mask'])
         elif isinstance(inputs, str) or (isinstance(inputs, Iterable) and isinstance(inputs[0], str)):
@@ -92,6 +119,8 @@ class AutoModelForEmbedding(Base):
         if self.pooling is not None and not without_pooling:
             last_hidden_state = model_output.get('last_hidden_state', model_output[0])
             embeddings = self.pooling(last_hidden_state, attention_mask=attention_mask)
+            if self.normalize_embeddings:
+                embeddings = torch.nn.functional.normalize(embeddings, dim=-1)
             return embeddings
         return model_output
 
@@ -255,7 +284,7 @@ class AutoModelForEmbedding(Base):
                 padding=True,
                 truncation=True,
                 return_tensors="pt",
-                max_length=self.max_length,
+                max_length=self.query_max_length if is_query else self.max_length,
             )
             features = batch_to_device(features, device)
 
@@ -363,11 +392,24 @@ class AutoModelForEmbedding(Base):
         embedding_model = cls(**kwargs)
         return AutoModelForRetrieval(embedding_model, **retrieval_args)
 
+    def save_pretrained(self, path, safe_serialization=True):
+        super().save_pretrained(path, safe_serialization=safe_serialization)
+        with open(os.path.join(path, "embedding_config.json"), "w") as handle:
+            json.dump(
+                {
+                    "pooling_method": self.pooling_method,
+                    "normalize_embeddings": self.normalize_embeddings,
+                    "max_length": self.max_length,
+                    "query_max_length": self.query_max_length,
+                },
+                handle,
+            )
+
     @classmethod
     def from_pretrained(
         cls,
         model_name_or_path: Optional[str] = None,
-        pooling_method: Optional[str] = "cls",
+        pooling_method: Optional[str] = None,
         pretrained: bool = True,
         config_path: Optional[str] = None,
         trust_remote_code: bool = True,
@@ -383,8 +425,18 @@ class AutoModelForEmbedding(Base):
         mrl_dim: int = -1,
         pretrained_linear_name: str = 'linear.pt',
         max_length: Optional[int] = None,
+        normalize_embeddings: Optional[bool] = None,
         **kwargs,
     ):
+        metadata = {}
+        metadata_path = os.path.join(model_name_or_path, "embedding_config.json")
+        if os.path.isfile(metadata_path):
+            with open(metadata_path) as handle:
+                metadata = json.load(handle)
+        pooling_method = pooling_method or metadata.get("pooling_method", "cls")
+        max_length = max_length or metadata.get("max_length")
+        if normalize_embeddings is None:
+            normalize_embeddings = metadata.get("normalize_embeddings", False)
         config = AutoConfig.from_pretrained(
             config_path or model_name_or_path, output_hidden_states=True, trust_remote_code=trust_remote_code
         )
@@ -435,6 +487,8 @@ class AutoModelForEmbedding(Base):
             document_instruction=document_instruction,
             use_fp16=use_fp16,
             max_length=max_length,
+            query_max_length=metadata.get("query_max_length", max_length),
+            normalize_embeddings=normalize_embeddings,
             **kwargs,
         )
 

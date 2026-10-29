@@ -27,7 +27,7 @@ class InfoNCE(Base):
         use_inbatch_negative: bool = True,
         negatives_cross_device: bool = False,
         negative_mode: Literal['paired', 'unpaired'] = "unpaired",
-        **kwargs
+        **kwargs,
     ):
         """
         if not normalized: temperature = 1.0, reset temperature = 1.0 due to using inner product to compute similarity

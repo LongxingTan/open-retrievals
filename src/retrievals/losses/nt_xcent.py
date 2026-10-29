@@ -10,7 +10,7 @@ class NTXcent(nn.Module):
         self,
         criterion: Union[nn.Module, Callable] = nn.CrossEntropyLoss(label_smoothing=0.0, reduction='mean'),
         temperature=0.05,
-        **kwargs
+        **kwargs,
     ):
         super().__init__()
         self.criterion = criterion

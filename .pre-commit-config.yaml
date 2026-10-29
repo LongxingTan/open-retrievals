@@ -10,9 +10,10 @@ repos:
     - id: check-yaml
     - id: check-ast
   - repo: https://github.com/PyCQA/flake8
-    rev: "3.9.2"
+    rev: "5.0.4"
     hooks:
     - id: flake8
+      exclude: 'tests|.venv|docs'
   - repo: https://github.com/pre-commit/mirrors-isort
     rev: v5.10.1
     hooks:

@@ -36,22 +36,18 @@ Rerank
         ["In 1974, I won the championship in Southeast Asia in my first kickboxing match", "In 1982, I defeated the heavy hitter Ryu Long."],
         ["In 1974, I won the championship in Southeast Asia in my first kickboxing match", "A man is playing a guitar."],
     ]
-    model_name_or_path: str = 'BAAI/bge-m3'
+    model_name_or_path: str = 'outputs/colbert/model'
     model = ColBERT.from_pretrained(
         model_name_or_path,
-        colbert_dim=1024,
+        colbert_dim=128,
         use_fp16=True,
     )
-    embeddings = model.encode(sentences[0], normalize_embeddings=True)
-    print('Embedding shape: ', embeddings.shape)
-
     scores_list = model.compute_score(sentences)
     print('Ranking score: ', scores_list)
 
-.. code::
+Use a trained ColBERT export so its projection weights are restored. Loading a
+plain backbone without projection weights initializes a new projection.
 
-    Embedding shape: (2, 21, 1024)
-    Ranking score: [5.445939064025879, 3.0762712955474854]
 
 
 **LLM generative reranking**
@@ -89,45 +85,15 @@ prepare data
 
 .. code-block:: python
 
-    from transformers import AutoTokenizer, TrainingArguments, get_cosine_schedule_with_warmup, AdamW
-    from retrievals import RerankCollator, AutoModelForRanking, RerankTrainer, RerankTrainDataset
+    from retrievals.train import train
 
-    model_name_or_path: str = "BAAI/bge-reranker-base"
-    max_length: int = 128
-    learning_rate: float = 3e-5
-    batch_size: int = 4
-    epochs: int = 3
-    output_dir: str = "./checkpoints"
+    trainer = train("examples/configs/cross_encoder.yaml")
 
-    train_dataset = RerankTrainDataset("C-MTEB/T2Reranking", positive_key="positive", negative_key="negative", dataset_split='dev')
-    tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, use_fast=False)
-    model = AutoModelForRanking.from_pretrained(model_name_or_path)
-    optimizer = AdamW(model.parameters(), lr=learning_rate)
-    num_train_steps = int(len(train_dataset) / batch_size * epochs)
-    scheduler = get_cosine_schedule_with_warmup(
-        optimizer,
-        num_warmup_steps=0.05 * num_train_steps,
-        num_training_steps=num_train_steps,
-    )
+Provide rows such as ``{"query": "cat", "document": "pet", "label": 1}``.
+Map columns with ``data.query_col``, ``data.doc_col``, and ``data.label_col``.
+The YAML workflow supports binary classification with labels in [0, 1] and
+``loss.loss_type: bce``. Regression and listwise objectives are not YAML workflows.
 
-    training_args = TrainingArguments(
-        learning_rate=learning_rate,
-        per_device_train_batch_size=batch_size,
-        num_train_epochs=epochs,
-        output_dir=output_dir,
-        remove_unused_columns=False,
-        logging_steps=100,
-        report_to="none",
-    )
-    trainer = RerankTrainer(
-        model=model,
-        args=training_args,
-        train_dataset=train_dataset,
-        data_collator=RerankCollator(tokenizer, max_length=max_length),
-    )
-    trainer.optimizer = optimizer
-    trainer.scheduler = scheduler
-    trainer.train()
 
 
 3. Fine-tune ColBERT reranking model
@@ -143,68 +109,16 @@ prepare data
 
 .. code-block:: python
 
-    import os
-    import transformers
-    from transformers import (
-        AdamW,
-        AutoTokenizer,
-        TrainingArguments,
-        get_cosine_schedule_with_warmup,
-    )
+    from retrievals.train import train
 
-    from retrievals import ColBERT, ColBertCollator, RerankTrainer, RetrievalTrainDataset
-    from retrievals.losses import ColbertLoss
+    trainer = train("examples/configs/colbert.yaml")
 
-    transformers.logging.set_verbosity_error()
-    os.environ["WANDB_DISABLED"] = "true"
+ColBERT uses query/positive/negative rows, ``loss.loss_type: colbert``, and masked
+late interaction. Set projection size with ``model.colbert_dim`` or
+``colbert.colbert_dim``. Positive-only batches require
+``loss.use_inbatch_negative: true``. Punctuation masking is not implemented.
+Exports include ``colbert_linear.pt`` alongside the backbone and tokenizer.
 
-    model_name_or_path: str = "BAAI/bge-m3"
-    learning_rate: float = 5e-6
-    batch_size: int = 1
-    epochs: int = 3
-    colbert_dim: int = 1024
-    output_dir: str = './checkpoints'
-
-    train_dataset = RetrievalTrainDataset(
-        'C-MTEB/T2Reranking', positive_key='positive', negative_key='negative', dataset_split='dev'
-    )
-    tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, use_fast=False)
-    data_collator = ColBertCollator(
-        tokenizer,
-        query_max_length=64,
-        document_max_length=256,
-        positive_key='positive',
-        negative_key='negative',
-    )
-    model = ColBERT.from_pretrained(
-        model_name_or_path,
-        colbert_dim=colbert_dim,
-        loss_fn=ColbertLoss(use_inbatch_negative=False),
-    )
-
-    optimizer = AdamW(model.parameters(), lr=learning_rate)
-    num_train_steps = int(len(train_dataset) / batch_size * epochs)
-    scheduler = get_cosine_schedule_with_warmup(
-        optimizer, num_warmup_steps=0.05 * num_train_steps, num_training_steps=num_train_steps
-    )
-
-    training_args = TrainingArguments(
-        learning_rate=learning_rate,
-        per_device_train_batch_size=batch_size,
-        num_train_epochs=epochs,
-        output_dir=output_dir,
-        remove_unused_columns=False,
-        logging_steps=100,
-    )
-    trainer = RerankTrainer(
-        model=model,
-        args=training_args,
-        train_dataset=train_dataset,
-        data_collator=data_collator,
-    )
-    trainer.optimizer = optimizer
-    trainer.scheduler = scheduler
-    trainer.train()
 
 
 4. Fine-tune LLM Generative reranker
@@ -250,102 +164,14 @@ prepare representative reranking data
     + passages + '\n\nOutput only the passage label of the most relevant passage:'
 
 
+The following commands use the legacy pipeline interface. Generative LLM
+reranking is separate from YAML cross-encoder classification.
+
 **Cross encoder reranking**
 
-.. code-block:: shell
+.. code-block:: bash
 
-    MODEL_NAME="BAAI/bge-reranker-base"
-    TRAIN_DATA="/t2_ranking.jsonl"
-    OUTPUT_DIR="/t2_output"
+    rag-cli init cross_encoder --output train.yaml
+    rag-cli train train.yaml
 
-    torchrun --nproc_per_node 1 \
-      -m retrievals.pipelines.rerank \
-      --output_dir $OUTPUT_DIR \
-      --overwrite_output_dir \
-      --model_name_or_path $MODEL_NAME \
-      --model_type cross-encoder \
-      --do_train \
-      --data_name_or_path $TRAIN_DATA \
-      --positive_key positive \
-      --negative_key negative \
-      --learning_rate 2e-5 \
-      --fp16 \
-      --num_train_epochs 3 \
-      --per_device_train_batch_size 64 \
-      --dataloader_drop_last True \
-      --max_length 512 \
-      --save_total_limit 1 \
-      --logging_steps 100
-
-
-**Colbert reranking**
-
-.. code-block:: shell
-
-    MODEL_NAME='hfl/chinese-roberta-wwm-ext'
-    TRAIN_DATA="/t2_ranking.jsonl"
-    OUTPUT_DIR="/t2_output"
-
-    torchrun --nproc_per_node 1 \
-      --module retrievals.pipelines.rerank \
-      --output_dir $OUTPUT_DIR \
-      --overwrite_output_dir \
-      --model_name_or_path $MODEL_NAME \
-      --tokenizer_name $MODEL_NAME \
-      --model_type colbert \
-      --do_train \
-      --data_name_or_path $TRAIN_DATA \
-      --positive_key positive \
-      --negative_key negative \
-      --learning_rate 1e-4 \
-      --bf16 \
-      --num_train_epochs 3 \
-      --per_device_train_batch_size 64 \
-      --dataloader_drop_last True \
-      --max_length 256 \
-      --train_group_size 4 \
-      --unfold_each_positive false \
-      --save_total_limit 1 \
-      --logging_steps 100 \
-      --use_inbatch_negative false
-
-
-**LLM reranking**
-
-.. code-block:: shell
-
-    MODEL_NAME="Qwen/Qwen2-1.5B-Instruct"
-    TRAIN_DATA="/t2_ranking.jsonl"
-    OUTPUT_DIR="/t2_output"
-
-    torchrun --nproc_per_node 1 \
-        -m retrievals.pipelines.rerank \
-        --output_dir ${OUTPUT_DIR} \
-        --overwrite_output_dir \
-        --model_name_or_path $MODEL_NAME \
-        --model_type llm \
-        --causal_lm True \
-        --use_lora True \
-        --data_name_or_path $TRAIN_DATA \
-        --task_prompt "Given a query A and a passage B, determine whether the passage contains an answer to the query by providing a prediction of either 'Yes' or 'No'." \
-        --query_instruction "A: " \
-        --document_instruction 'B: ' \
-        --positive_key positive \
-        --negative_key negative \
-        --learning_rate 2e-4 \
-        --num_train_epochs 3 \
-        --per_device_train_batch_size 4 \
-        --gradient_accumulation_steps 16 \
-        --dataloader_drop_last True \
-        --max_len 256 \
-        --train_group_size 4 \
-        --logging_steps 10 \
-        --save_steps 20000 \
-        --save_total_limit 1 \
-        --bf16
-
-
-Reference
--------------------
-
-- https://github.com/ielab/llm-rankers/tree/main
+Use YAML configuration for training. See the YAML training guide for supported tasks.

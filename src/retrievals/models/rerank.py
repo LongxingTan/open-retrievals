@@ -3,6 +3,7 @@
 import json
 import logging
 import os
+from dataclasses import dataclass
 from typing import Callable, Dict, List, Literal, Optional, Tuple, Union
 
 import numpy as np
@@ -26,6 +27,16 @@ from .pooling import AutoPooling
 from .utils import batch_to_device, check_causal_lm, get_device_name
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass
+class RankerOutput:
+    yes_logit_mean: Optional[torch.Tensor] = None
+    no_logit_mean: Optional[torch.Tensor] = None
+    loss: Optional[torch.Tensor] = None
+    logits: Optional[torch.Tensor] = None
+    distillation_loss: Optional[torch.Tensor] = None
+    ce_loss: Optional[torch.Tensor] = None
 
 
 class AutoModelForRanking(BaseRanker):
@@ -53,7 +64,7 @@ class AutoModelForRanking(BaseRanker):
         self.model: Optional[nn.Module] = model
         self.tokenizer = tokenizer
         self.train_group_size = train_group_size
-        self.pooling = AutoPooling(self.pooling_method) if pooling_method else None
+        self.pooling = AutoPooling(pooling_method) if pooling_method else None
         self.loss_fn = loss_fn
         self.loss_type = loss_type
         self.causal_lm = causal_lm
@@ -101,7 +112,7 @@ class AutoModelForRanking(BaseRanker):
         **kwargs,
     ) -> Dict[str, torch.Tensor]:
         """Forward pass for cross-encoder models."""
-        features = self.encode(input_ids, attention_mask)
+        features = self.encode(input_ids, attention_mask, **kwargs)
         logits = features.logits
 
         if self.temperature is not None:
@@ -114,10 +125,12 @@ class AutoModelForRanking(BaseRanker):
         return {'logits': logits} if return_dict else logits
 
     def encode(
-        self, input_ids: torch.Tensor, attention_mask: torch.Tensor
+        self, input_ids: torch.Tensor, attention_mask: torch.Tensor, **kwargs
     ) -> Union[torch.Tensor, SequenceClassifierOutput]:
         """Encode input IDs and attention masks into embeddings."""
-        model_output: SequenceClassifierOutput = self.model(input_ids, attention_mask, output_hidden_states=True)
+        model_output: SequenceClassifierOutput = self.model(
+            input_ids=input_ids, attention_mask=attention_mask, output_hidden_states=True, **kwargs
+        )
 
         if not self.pooling:
             return model_output
@@ -174,7 +187,7 @@ class AutoModelForRanking(BaseRanker):
             trust_remote_code=trust_remote_code,
             **kwargs,
         )
-        if causal_lm or check_causal_lm(model_name_or_path):
+        if causal_lm:
             tokenizer.padding_side = "right"
             tokenizer.add_eos_token = True
 
@@ -270,10 +283,17 @@ class ColBERT(BaseRanker):
         neg_input_ids: Optional[torch.Tensor] = None,
         neg_attention_mask: Optional[torch.Tensor] = None,
         return_dict: bool = True,
+        return_embeddings: bool = False,
         **kwargs,
     ):
         query_embedding = self._encode(query_input_ids, attention_mask=query_attention_mask, normalize_embeddings=True)
         positive_embedding = self._encode(pos_input_ids, attention_mask=pos_attention_mask, normalize_embeddings=True)
+
+        if return_embeddings:
+            embeddings = {"query": query_embedding, "positive": positive_embedding}
+            if neg_input_ids is not None:
+                embeddings["negative"] = self._encode(neg_input_ids, neg_attention_mask, normalize_embeddings=True)
+            return embeddings
 
         if self.training:
             negative_embedding = None
@@ -307,7 +327,9 @@ class ColBERT(BaseRanker):
         """Compute the loss for ColBERT."""
         if not self.loss_fn:
             self.loss_fn = ColbertLoss(temperature=self.temperature, use_inbatch_negative=False)
-        return self.loss_fn(query_embedding, positive_embedding, negative_embedding, attention_mask)
+        return self.loss_fn(
+            query_embedding, positive_embedding, negative_embedding, attention_mask, mask_includes_cls=True
+        )
 
     def preprocess_pair(
         self,
@@ -479,7 +501,7 @@ class ColBERT(BaseRanker):
     def from_pretrained(
         cls,
         model_name_or_path: str,
-        colbert_dim: int = 1024,
+        colbert_dim: Optional[int] = None,
         pretrained_linear_name: str = 'colbert_linear.pt',
         loss_fn: Union[nn.Module, Callable] = ColbertLoss(),
         trust_remote_code: bool = True,
@@ -501,6 +523,13 @@ class ColBERT(BaseRanker):
         tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, trust_remote_code=trust_remote_code)
         model = AutoModel.from_pretrained(model_name_or_path, trust_remote_code=trust_remote_code, **kwargs)
 
+        weights_path = os.path.join(model_name_or_path, pretrained_linear_name)
+        if colbert_dim is None:
+            colbert_dim = (
+                torch.load(weights_path, map_location="cpu", weights_only=True)["weight"].shape[0]
+                if os.path.isfile(weights_path)
+                else 128
+            )
         linear_layer = nn.Linear(model.config.hidden_size, colbert_dim)
         if os.path.exists(path=os.path.join(model_name_or_path, pretrained_linear_name)):
             logger.info(
@@ -600,6 +629,7 @@ class LLMRanker(AutoModelForRanking):
         document_instruction: Optional[str] = 'B: {}',
         device: Optional[str] = None,
         temperature: Optional[float] = None,
+        target_token: str = 'Yes',
         **kwargs,
     ):
 
@@ -643,6 +673,7 @@ class LLMRanker(AutoModelForRanking):
             temperature=temperature,
             causal_lm=causal_lm,
             task_prompt=task_prompt,
+            target_token=target_token,
             query_instruction=query_instruction,
             document_instruction=document_instruction,
             device=device,
@@ -655,7 +686,6 @@ class LLMRanker(AutoModelForRanking):
                 """by providing a prediction of either 'Yes' or 'No'."""
             )
 
-        reranker.target_token_loc = reranker.tokenizer('Yes', add_special_tokens=False)['input_ids'][0]
         reranker.sep_token = '\n'
 
         return reranker

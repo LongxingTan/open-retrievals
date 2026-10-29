@@ -6,17 +6,12 @@ from unittest.mock import patch
 import torch
 from torch import nn
 from torch.utils.data import DataLoader, Dataset
-from transformers import (
-    AutoModel,
-    AutoModelForCausalLM,
-    AutoTokenizer,
-    TrainingArguments,
-)
+from transformers import AutoModel, AutoModelForCausalLM, AutoTokenizer, TrainingArguments
 
 from src.retrievals.data.collator import RerankCollator
 from src.retrievals.losses import ColbertLoss
 from src.retrievals.models.rerank import AutoModelForRanking, ColBERT, LLMRanker
-from src.retrievals.trainer.trainer import RerankTrainer
+from src.retrievals.trainer.rerank import CrossEncoderTrainer
 
 from .test_modeling_common import ModelTesterMixin
 
@@ -63,6 +58,8 @@ class AutoModelForRankingTest(TestCase, ModelTesterMixin):
         self.assertEqual(len(scores), len(self.text_pairs))
         self.assertIn('rerank_document', document_ranked)
         self.assertIn('rerank_scores', document_ranked)
+        self.assertEqual(document_ranked['rerank_document'], document_ranked['documents'])
+        self.assertEqual(document_ranked['rerank_scores'], document_ranked['scores'])
 
     def test_trainer(self):
         train_dataset = PseudoRerankTrainDataset()
@@ -70,7 +67,8 @@ class AutoModelForRankingTest(TestCase, ModelTesterMixin):
             output_dir=self.output_dir, remove_unused_columns=False, per_device_train_batch_size=2, num_train_epochs=1
         )
 
-        self.trainer = RerankTrainer(
+        self.trainer = CrossEncoderTrainer(
+            loss_fn=nn.BCEWithLogitsLoss(),
             model=self.model,
             args=training_args,
             train_dataset=train_dataset,
@@ -169,6 +167,7 @@ class TestLLMRanker(TestCase):
     def test_preprocess_pair(self):
         batch_sentence_pair = [("This is a query.", "This is a document.")]
         processed = self.llm_ranker.preprocess_pair(batch_sentence_pair, max_length=10)
+        self.assertLessEqual(processed['input_ids'].shape[1], 10)
         self.assertIn('input_ids', processed)
         self.assertIn('attention_mask', processed)
         self.assertIsInstance(processed['input_ids'], torch.Tensor)

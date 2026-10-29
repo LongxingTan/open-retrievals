@@ -1,0 +1,18 @@
+task_type: colbert
+output_dir: ./outputs/colbert
+model:
+  model_name_or_path: bert-base-uncased
+  colbert_dim: 128
+data:
+  train_file: ../../tests/fixtures/retrieval_train.jsonl
+  query_max_length: 32
+  doc_max_length: 128
+  negative_samples: 2
+training:
+  num_epochs: 1
+  batch_size: 2
+  learning_rate: 2e-5
+loss:
+  loss_type: colbert
+  temperature: 0.05
+  use_inbatch_negative: true

@@ -486,6 +486,17 @@ trainer.train()
 ```
 </details>
 
+### 多node多gpu训练
+- 同一个集群内的机器，配置机器间ssh免密登录
+- local_hostfile: 注意默认第一个是master_addr
+```text
+ip-172-31-31-108 slots=4
+ip-172-31-35-128 slots=4
+```
+- deepspeed
+```shell
+deepspeed --hostfile=local_hostfile
+```
 
 ## RAG 模块
 coming soon

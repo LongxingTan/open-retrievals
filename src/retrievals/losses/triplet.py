@@ -23,7 +23,7 @@ class TripletLoss(Base):
         margin: float = 0.0,
         use_inbatch_negative: bool = False,
         negatives_cross_device: bool = False,
-        **kwargs
+        **kwargs,
     ):
         super().__init__(negatives_cross_device)
         self.temperature = temperature
@@ -39,6 +39,8 @@ class TripletLoss(Base):
         mask: Optional[torch.Tensor] = None,
         margin: float = 0.0,
     ):
+        if negative_embeddings is None or negative_embeddings.numel() == 0:
+            raise ValueError("TripletLoss requires explicit negative embeddings")
         if margin:
             self.set_margin(margin=margin)
 
@@ -56,12 +58,12 @@ class TripletLoss(Base):
         )
         neg_similarity = neg_similarity / self.temperature
         similarity_diff = pos_similarity.unsqueeze(1) - neg_similarity
+        losses = F.softplus(self.margin - similarity_diff)
         if mask is not None:
-            similarity_diff = similarity_diff * mask
-            mask_sum = mask.sum() if mask.sum() > 0 else 1  # Avoid division by zero
-            loss = -torch.log(torch.sigmoid(similarity_diff) + self.margin).sum() / mask_sum
+            weights = mask.to(device=losses.device, dtype=losses.dtype).expand_as(losses)
+            loss = (losses * weights).sum() / weights.sum().clamp_min(1)
         else:
-            loss = -torch.log(torch.sigmoid(similarity_diff) + self.margin).mean()
+            loss = losses.mean()
 
         return loss
 

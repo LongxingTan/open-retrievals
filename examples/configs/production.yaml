@@ -1,0 +1,50 @@
+# Production Training Configuration
+# Optimized for large-scale training
+
+exp_name: "production_training"
+seed: 42
+device: "auto"
+gpu_num: 8
+output_dir: "./outputs/production_model"
+
+model:
+  model_type: "bert"
+  model_name_or_path: "bert-large-uncased"
+  pooling_method: "cls"
+  normalize_embeddings: true
+  max_length: 512
+
+training:
+  num_epochs: 10
+  learning_rate: 2e-5
+  batch_size: 64  # Per GPU batch size
+  eval_batch_size: 128
+  warmup_ratio: 0.1
+  gradient_accumulation_steps: 4
+  max_grad_norm: 1.0
+  mixed_precision: "bf16"
+  eval_strategy: "epoch"
+  save_strategy: "epoch"
+  save_total_limit: 5
+  load_best_model_at_end: true
+  metric_for_best_model: "eval_loss"
+  logging_steps: 500
+  gradient_checkpointing: true
+  ddp_find_unused_parameters: false
+
+data:
+  train_file: "./data/large_corpus/train.jsonl"
+  valid_file: "./data/large_corpus/valid.jsonl"
+  data_format: "json"
+  query_col: "query"
+  doc_col: "document"
+  negative_samples: 16
+  use_inbatch_negative: true
+  max_length: 512
+
+loss:
+  loss_type: "infonce"
+  temperature: 0.05
+  label_smoothing: 0.05
+
+data_augmentation: true

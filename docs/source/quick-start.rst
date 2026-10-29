@@ -50,40 +50,20 @@ To further improve the retrieval performance, we can fine tune the embedding mod
 
 .. code-block:: python
 
-    import torch.nn as nn
-    from datasets import load_dataset
-    from transformers import AutoTokenizer, AdamW, get_linear_schedule_with_warmup, TrainingArguments
-    from retrievals import AutoModelForEmbedding, RetrievalTrainer, RetrievalCollator, RetrievalCollator
-    from retrievals.losses import ArcFaceAdaptiveMarginLoss, InfoNCE, SimCSE, TripletLoss
+    from retrievals.train import train
 
-    model_name_or_path: str = "sentence-transformers/paraphrase-multilingual-mpnet-base-v2"
-    batch_size: int = 128
-    epochs: int = 3
-
-    train_dataset = load_dataset('shibing624/nli_zh', 'STS-B')['train']
-    train_dataset = train_dataset.rename_columns({'sentence1': 'query', 'sentence2': 'document'})
-    tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, use_fast=False)
-    model = AutoModelForEmbedding.from_pretrained(model_name_or_path, pooling_method="mean")
-    optimizer = AdamW(model.parameters(), lr=5e-5)
-    num_train_steps = int(len(train_dataset) / batch_size * epochs)
-    scheduler = get_linear_schedule_with_warmup(optimizer, num_warmup_steps=0.05 * num_train_steps, num_training_steps=num_train_steps)
-
-    training_arguments = TrainingArguments(
-        output_dir='./checkpoints',
-        num_train_epochs=epochs,
-        per_device_train_batch_size=batch_size,
-        remove_unused_columns=False,
+    trainer = train(
+        "examples/configs/dense_retrieval.yaml",
+        overrides=["training.learning_rate=3e-5"],
     )
-    trainer = RetrievalTrainer(
-        model=model,
-        args=training_arguments,
-        train_dataset=train_dataset,
-        data_collator=RetrievalCollator(tokenizer, keys=['query', 'document'], max_lengths=[128, 128]),
-        loss_fn=InfoNCE(nn.CrossEntropyLoss(label_smoothing=0.05)),
-    )
-    trainer.optimizer = optimizer
-    trainer.scheduler = scheduler
-    trainer.train()
+
+Run from the repository root after installing ``pip install -e .``.
+The example uses fixture data; replace ``data.train_file`` with your own JSON/JSONL,
+CSV, Parquet, or Hugging Face dataset configuration. Dense rows contain ``query``,
+``positive`` (text or a list of texts), and optional ``negative`` values.
+``train()`` saves the model, tokenizer, and resolved configuration in
+``output_dir/model/``.
+
 
 
 It's also easy to use multiple gpus for transformers `Trainer`.
@@ -108,12 +88,15 @@ Save the document embedding offline using the vector database.
     sentences = ['A dog is chasing car.', 'A man is playing a guitar.']
     model_name_or_path = "sentence-transformers/all-MiniLM-L6-v2"
     index_path = './database/faiss/faiss.index'
-    model = AutoModelForEmbedding.from_pretrained(model_name_or_path, pooling_method='mean)
+    model = AutoModelForEmbedding.from_pretrained(model_name_or_path, pooling_method='mean')
+    from pathlib import Path
+
+    Path(index_path).parent.mkdir(parents=True, exist_ok=True)
     model.build_index(sentences, index_path=index_path)
 
     query_embed = model.encode("He plays guitar.")
     matcher = AutoModelForRetrieval()
-    dists, indices = matcher.search(query_embed, index_path=index_path)
+    dists, indices = matcher.search(query_embed, index_path=index_path, top_k=2)
     print(indices)
 
 
@@ -147,45 +130,16 @@ Similarly, fine tune the reranking model to get a better performance for the spe
 
 .. code-block:: python
 
-    from transformers import AutoTokenizer, TrainingArguments, get_cosine_schedule_with_warmup, AdamW
-    from retrievals import RerankCollator, AutoModelForRanking, RerankTrainer, RerankTrainDataset
+    from retrievals.train import train
 
-    model_name_or_path: str = "BAAI/bge-reranker-base"
-    max_length: int = 128
-    learning_rate: float = 3e-5
-    batch_size: int = 4
-    epochs: int = 3
-    output_dir: str = "./checkpoints"
+    trainer = train("examples/configs/cross_encoder.yaml")
 
-    train_dataset = RerankTrainDataset("C-MTEB/T2Reranking", positive_key="positive", negative_key="negative", dataset_split='dev')
-    tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, use_fast=False)
-    model = AutoModelForRanking.from_pretrained(model_name_or_path)
-    optimizer = AdamW(model.parameters(), lr=learning_rate)
-    num_train_steps = int(len(train_dataset) / batch_size * epochs)
-    scheduler = get_cosine_schedule_with_warmup(
-        optimizer,
-        num_warmup_steps=0.05 * num_train_steps,
-        num_training_steps=num_train_steps,
-    )
+Cross-encoder YAML training uses labeled query/document pairs and BCE with logits.
+Map custom columns with ``data.query_col``, ``data.doc_col``, and ``data.label_col``.
+Set ``data.valid_file`` and ``training.eval_strategy: epoch`` for held-out loss.
+Resume using ``training.resume_from_checkpoint`` pointing at a ``checkpoint-*``
+directory; the final ``model/`` export is intended for inference.
 
-    training_args = TrainingArguments(
-        learning_rate=learning_rate,
-        per_device_train_batch_size=batch_size,
-        num_train_epochs=epochs,
-        output_dir=output_dir,
-        remove_unused_columns=False,
-        logging_steps=100,
-        report_to="none",
-    )
-    trainer = RerankTrainer(
-        model=model,
-        args=training_args,
-        train_dataset=train_dataset,
-        data_collator=RerankCollator(tokenizer, max_length=max_length),
-    )
-    trainer.optimizer = optimizer
-    trainer.scheduler = scheduler
-    trainer.train()
 
 
 4. RAG

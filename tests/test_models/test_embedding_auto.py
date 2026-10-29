@@ -5,19 +5,9 @@ import torch
 from torch.utils.data import DataLoader, TensorDataset
 from transformers import AutoConfig, AutoModel
 
-from src.retrievals.models.embedding_auto import (
-    AutoModelForEmbedding,
-    ListwiseModel,
-    PairwiseModel,
-)
+from src.retrievals.models.embedding_auto import AutoModelForEmbedding, ListwiseModel, PairwiseModel
 
-from .test_modeling_common import (
-    ModelTesterMixin,
-    device,
-    floats_tensor,
-    ids_tensor,
-    random_attention_mask,
-)
+from .test_modeling_common import ModelTesterMixin, device, floats_tensor, ids_tensor, random_attention_mask
 
 
 class AutoModelForEmbeddingTester:

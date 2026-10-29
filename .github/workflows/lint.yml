@@ -12,30 +12,30 @@ jobs:
       runs-on: ubuntu-latest
       steps:
         - name: Checkout
-          uses: actions/checkout@v2
-        - name: Set up Python 3.8
-          uses: actions/setup-python@v2
+          uses: actions/checkout@v4
+        - name: Set up Python 3.10
+          uses: actions/setup-python@v5
           with:
-            python-version: 3.8
+            python-version: '3.10'
         - name: Install Black
-          run: pip install black[jupyter]
+          uses: astral-sh/setup-uv@v6
         - name: Run Black
-          run: black --check .
+          run: uv run --locked black --check .
 
   imports-check-isort:
     name: Check valid import formatting with isort
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
-      - name: Set up Python 3.8
-        uses: actions/setup-python@v2
+        uses: actions/checkout@v4
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v5
         with:
-          python-version: 3.8
+          python-version: '3.10'
       - name: Install isort
-        run: pip install isort==5.6.4
+        uses: astral-sh/setup-uv@v6
       - name: Run isort
-        run: isort --check-only --diff .
+        run: uv run --locked isort --check-only --diff .
 
   linter-flake8:
     name: Check valid formatting with flake8
@@ -43,15 +43,15 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
-      - uses: actions/setup-python@v2
+        uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
-          python-version: 3.8
+          python-version: '3.10'
 
       - name: Install dependencies
-        run: pip install flake8==3.9.2
+        uses: astral-sh/setup-uv@v6
       - name: Run checks
-        run: flake8
+        run: uv run --locked flake8
 
   pre-commit-hooks:
     name: Check that pre-commit hooks pass
@@ -59,12 +59,12 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
-      - uses: actions/setup-python@v2
+        uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
-          python-version: 3.8
+          python-version: '3.10'
       - name: Install dependencies
-        run: pip install pre-commit
+        uses: astral-sh/setup-uv@v6
 
       - name: Run checks
-        run: pre-commit run --all-files
+        run: uv run --locked pre-commit run --all-files

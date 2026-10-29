@@ -1,7 +1,3 @@
-from typing import Dict
-
-from torch import nn
-
 from .arcface import ArcFaceAdaptiveMarginLoss
 from .circle import MultiLabelCircleLoss
 from .colbert_loss import ColbertLoss
@@ -14,23 +10,23 @@ from .token_loss import TokenLoss
 from .triplet import TripletLoss, TripletRankingLoss
 
 
-class AutoLoss(nn.Module):
-    def __init__(self, loss_name: str, loss_kwargs: Dict):
-        super(AutoLoss, self).__init__()
-        if loss_name == 'simcse':
-            self.loss_fn = SimCSE(**loss_kwargs)
-        elif loss_name == 'triplet':
-            self.loss_fn = TripletLoss(**loss_kwargs)
-        elif loss_name == 'infonce':
-            self.loss_fn = InfoNCE(**loss_kwargs)
-        elif loss_name == 'arcface':
-            self.loss_fn = ArcFaceAdaptiveMarginLoss(**loss_kwargs)
-        elif loss_name == 'cosent':
-            self.loss_fn = CoSentLoss(**loss_kwargs)
-        elif loss_name == 'pearson':
-            self.loss_fn = PearsonLoss(**loss_kwargs)
-        elif loss_name == 'triplet_ranking':
-            self.loss_fn = TripletRankingLoss(**loss_kwargs)
+def get_loss_fn(*args, **kwargs):
+    from .factory import get_loss_fn as _get_loss_fn
 
-    def forward(self, *args, **kwargs):
-        return self.loss_fn(*args, **kwargs)
+    return _get_loss_fn(*args, **kwargs)
+
+
+__all__ = [
+    "ArcFaceAdaptiveMarginLoss",
+    "ColbertLoss",
+    "CoSentLoss",
+    "CosineSimilarity",
+    "InfoNCE",
+    "MultiLabelCircleLoss",
+    "PearsonLoss",
+    "SimCSE",
+    "TokenLoss",
+    "TripletLoss",
+    "TripletRankingLoss",
+    "get_loss_fn",
+]
