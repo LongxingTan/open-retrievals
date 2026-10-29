@@ -24,6 +24,7 @@ class TrainingWorkflowTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         torch.set_num_threads(1)
+        torch.manual_seed(42)
         cls.temp = tempfile.TemporaryDirectory()
         cls.root = Path(cls.temp.name)
         cls.model_path = cls.root / "tiny-bert"
@@ -105,6 +106,75 @@ class TrainingWorkflowTests(unittest.TestCase):
             }
         )
 
+    def test_models_learn_toy_pairs(self):
+        for task in ("dense_retrieval", "colbert", "cross_encoder"):
+            config = self.config(task)
+            config.training.max_steps = 50
+            config.training.eval_strategy = "no"
+            config.training.save_strategy = "no"
+            config.training.logging_steps = 50
+            trainer = build_trainer(config)
+            trainer.train()
+            trainer.model.eval()
+            if task == "cross_encoder":
+                batch = trainer.data_collator([trainer.train_dataset[i] for i in range(2)])
+                with torch.no_grad():
+                    _, outputs = trainer.compute_loss(trainer.model, batch, return_outputs=True)
+                scores = outputs["logits"].reshape(-1)
+                # With one positive and one negative, this is exactly AUC = 1.
+                self.assertGreater(scores[0].item(), scores[1].item())
+            else:
+                from src.retrievals.trainer.retrieval_metrics import RetrievalEvaluator
+
+                corpus = self.root / f"learn-{task}-corpus.jsonl"
+                queries = self.root / f"learn-{task}-queries.jsonl"
+                corpus.write_text("\n".join(json.dumps({"id": text, "text": text}) for text in ("pet", "road")))
+                queries.write_text(
+                    "\n".join(
+                        json.dumps({"query": query, "relevant_ids": [doc]})
+                        for query, doc in (("cat", "pet"), ("car", "road"))
+                    )
+                )
+                config.data.valid_query_file = str(queries)
+                config.data.valid_corpus_file = str(corpus)
+                metrics = RetrievalEvaluator(config.data, task)(trainer.model, 2)
+                self.assertEqual(metrics["eval_recall_at_1"], 1.0, task)
+
+    def test_corpus_evaluation(self):
+        corpus = self.root / "corpus.jsonl"
+        queries = self.root / "queries.jsonl"
+        corpus.write_text(json.dumps({"id": "cat", "text": "cat"}) + "\n" + json.dumps({"id": "car", "text": "car"}))
+        queries.write_text(json.dumps({"query": "cat", "relevant_ids": ["cat"]}))
+        for task in ("dense_retrieval", "colbert"):
+            config = self.config(task)
+            config.data.valid_file = None
+            config.data.valid_query_file = str(queries)
+            config.data.valid_corpus_file = str(corpus)
+            trainer = build_trainer(config)
+            metrics = trainer.evaluate()
+            self.assertEqual(metrics["eval_recall_at_1"], 1.0)
+            self.assertEqual(metrics["eval_ndcg_at_10"], 1.0)
+            self.assertEqual(trainer.args.metric_for_best_model, "eval_ndcg_at_10")
+
+    def test_grouped_reranking(self):
+        config = self.config("cross_encoder")
+        config.data.train_file = str(self.retrieval_file)
+        config.data.valid_file = str(self.retrieval_file)
+        trainer = build_trainer(config)
+        batch = next(iter(trainer.get_train_dataloader()))
+        self.assertEqual(batch["group_sizes"].tolist(), [2, 2])
+        loss = trainer.compute_loss(trainer.model, batch)
+        self.assertTrue(torch.isfinite(loss))
+        loss.backward()
+
+    def test_exported_lengths(self):
+        config = self.config()
+        trainer = build_trainer(config)
+        path = save_model(trainer, config)
+        reloaded = AutoModelForEmbedding.from_pretrained(str(path), device="cpu")
+        self.assertEqual(reloaded.max_length, config.data.doc_max_length)
+        self.assertEqual(reloaded.query_max_length, config.data.query_max_length)
+
     def test_tasks_train_evaluate_export_reload(self):
         for task in ("dense_retrieval", "cross_encoder", "colbert"):
             with self.subTest(task=task):
@@ -181,15 +251,16 @@ class TrainingWorkflowTests(unittest.TestCase):
         self.assertTrue(torch.isfinite(loss))
         loss.backward()
 
-    def test_colbert_rejects_mixed_negative_batches_in_either_order(self):
+    def test_colbert_accepts_mixed_negative_batches_in_either_order(self):
         trainer = build_trainer(self.config("colbert"))
         rows = [
             {"query": "cat", "positive": "pet"},
             {"query": "car", "positive": "road", "negative": ["dog"]},
         ]
         for batch in (rows, rows[::-1]):
-            with self.assertRaisesRegex(ValueError, "Every row"):
-                trainer.data_collator(batch)
+            inputs = trainer.data_collator(batch)
+            self.assertEqual(inputs["neg_input_ids"].shape[0], 1)
+            self.assertTrue(torch.isfinite(trainer.compute_loss(trainer.model, inputs)))
 
     def test_export_preserves_relative_dictionary_paths(self):
         config = self.config()

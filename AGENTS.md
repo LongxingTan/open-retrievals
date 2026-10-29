@@ -118,31 +118,31 @@ The refactored trainer should support:
 ```python
 class UnifiedTrainer:
     """Unified trainer supporting multiple frameworks and model types"""
-    
+
     def __init__(self, config: TrainingConfig, model, train_dataset, val_dataset):
         self.config = config
         self.framework = config.framework  # "verl" or "llama_factory"
         self.setup_framework()
-    
+
     def setup_framework(self):
         """Initialize training framework"""
         if self.framework == "verl":
             self.setup_verl()
         elif self.framework == "llama_factory":
             self.setup_llama_factory()
-    
+
     def train_dense_retrieval(self):
         """Dense passage retrieval training"""
         pass
-    
+
     def train_colbert(self):
         """ColBERT late interaction training"""
         pass
-    
+
     def train_cross_encoder(self):
         """Cross-encoder ranking training"""
         pass
-    
+
     def train_distillation(self, teacher_model, student_model):
         """Knowledge distillation training"""
         pass

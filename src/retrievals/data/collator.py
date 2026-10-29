@@ -90,7 +90,7 @@ class RetrievalCollator(DataCollatorWithPadding):
             texts = sum(texts, [])  # Flatten nested lists
 
         tokenize_args = {
-            "padding": "max_length",
+            "padding": "longest",
             "max_length": max_length,
             "return_tensors": "pt",
             "truncation": True,
@@ -163,6 +163,21 @@ class RerankCollator(DataCollatorWithPadding):
         if not features:
             raise ValueError("Features list cannot be empty")
 
+        group_sizes = None
+        if isinstance(features[0], dict) and "positive" in features[0] and self.document_key not in features[0]:
+            group_sizes = []
+            pairs = []
+            for feature in features:
+                documents = [feature["positive"], *feature.get("negative", [])]
+                if len(documents) < 2:
+                    raise ValueError("Grouped reranking requires at least one negative per query")
+                group_sizes.append(len(documents))
+                pairs.extend(
+                    {"query": feature["query"], "document": document, "labels": float(i == 0)}
+                    for i, document in enumerate(documents)
+                )
+            features = pairs
+
         if isinstance(features[0], list):
             features = sum(features, [])
 
@@ -181,7 +196,7 @@ class RerankCollator(DataCollatorWithPadding):
         batch = tokenize_fn(
             text=query_texts,
             text_pair=document_texts,
-            padding="max_length",
+            padding="longest",
             max_length=self.max_length,
             return_tensors="pt",
             **tokenize_args,
@@ -190,6 +205,9 @@ class RerankCollator(DataCollatorWithPadding):
         if 'labels' in features[0]:
             labels = [feature['labels'] for feature in features]
             batch['labels'] = torch.tensor(labels, dtype=torch.float32)
+
+        if group_sizes is not None:
+            batch["group_sizes"] = torch.tensor(group_sizes, dtype=torch.long)
 
         return batch
 
@@ -254,8 +272,6 @@ class ColBertCollator(DataCollatorWithPadding):
         query_texts = [feature[self.query_key] for feature in features]
         pos_texts = [feature[self.positive_key] for feature in features]
         has_negatives = [self.negative_key in feature for feature in features]
-        if any(has_negatives) and not all(has_negatives):
-            raise ValueError("Every row in a batch must either have negatives or use positive-only training")
 
         if isinstance(query_texts[0], list):
             query_texts = sum(query_texts, [])
@@ -267,10 +283,10 @@ class ColBertCollator(DataCollatorWithPadding):
         tokenize_args.update(self.tokenize_args)
 
         query_inputs = tokenize_fn(
-            query_texts, padding="max_length", max_length=self.query_max_length, return_tensors="pt", **tokenize_args
+            query_texts, padding="longest", max_length=self.query_max_length, return_tensors="pt", **tokenize_args
         )
         pos_inputs = tokenize_fn(
-            pos_texts, padding="max_length", max_length=self.document_max_length, return_tensors="pt", **tokenize_args
+            pos_texts, padding="longest", max_length=self.document_max_length, return_tensors="pt", **tokenize_args
         )
 
         batch = {
@@ -280,14 +296,14 @@ class ColBertCollator(DataCollatorWithPadding):
             'pos_attention_mask': pos_inputs['attention_mask'],
         }
 
-        if self.negative_key in features[0]:
-            neg_texts = [feature[self.negative_key] for feature in features]
+        if any(has_negatives):
+            neg_texts = [feature.get(self.negative_key, []) for feature in features]
             if isinstance(neg_texts[0], list):
                 neg_texts = sum(neg_texts, [])
 
             neg_inputs = tokenize_fn(
                 neg_texts,
-                padding='max_length',
+                padding='longest',
                 max_length=self.document_max_length,
                 return_tensors='pt',
                 **tokenize_args,

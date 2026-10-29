@@ -83,9 +83,10 @@ def export_model(model_path, output_dir, backend="vllm", model_name="embedding")
         model_dir = destination / model_name
         shutil.copyfile(Path(__file__).with_name("triton_backend.py"), model_dir / "1" / "model.py")
         (model_dir / "config.pbtxt").write_text(
-            f'name: "{model_name}"\nbackend: "python"\nmax_batch_size: 0\n'
-            'input [{ name: "TEXT" data_type: TYPE_STRING dims: [ -1 ] }]\n'
-            'output [{ name: "EMBEDDING" data_type: TYPE_FP32 dims: [ -1, -1 ] }]\n'
+            f'name: "{model_name}"\nbackend: "python"\nmax_batch_size: 64\n'
+            'input [{ name: "TEXT" data_type: TYPE_STRING dims: [ 1 ] }]\n'
+            'output [{ name: "EMBEDDING" data_type: TYPE_FP32 dims: [ -1 ] }]\n'
+            'dynamic_batching { max_queue_delay_microseconds: 1000 }\n'
             'instance_group [{ kind: KIND_CPU count: 1 }]\n'
         )
     return destination

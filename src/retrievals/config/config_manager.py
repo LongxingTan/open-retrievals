@@ -14,25 +14,21 @@ class ConfigManager:
         """Load configuration from YAML file with optional overrides."""
         base_config = OmegaConf.load(config_path)
 
+        directory = Path(config_path).resolve().parent
+        ConfigManager.resolve_paths(base_config, directory)
+        # Command-line paths are interpreted at the invocation directory.
         # Apply command line overrides if provided
         if overrides:
             if isinstance(overrides, dict):
                 override_config = OmegaConf.create(overrides)
             else:
                 override_config = OmegaConf.from_dotlist(overrides)
+            ConfigManager.resolve_paths(override_config, Path.cwd())
             base_config = OmegaConf.merge(base_config, override_config)
 
         # Convert to structured config
         schema = OmegaConf.structured(MainConfig)
         config = OmegaConf.merge(schema, base_config)
-
-        directory = Path(config_path).resolve().parent
-        for key in ("train_file", "valid_file", "test_file"):
-            value = config.data[key]
-            if value and "://" not in value and not Path(value).is_absolute():
-                config.data[key] = str(directory / value)
-        if not Path(config.output_dir).is_absolute():
-            config.output_dir = str(directory / config.output_dir)
 
         # Validate
         ConfigManager.validate_config(config)
@@ -45,8 +41,24 @@ class ConfigManager:
         config = OmegaConf.create(config_dict)
         schema = OmegaConf.structured(MainConfig)
         config = OmegaConf.merge(schema, config)
+        ConfigManager.resolve_paths(config, Path.cwd())
         ConfigManager.validate_config(config)
         return config
+
+    @staticmethod
+    def resolve_paths(config, directory):
+        for name in (
+            "data.train_file",
+            "data.valid_file",
+            "data.test_file",
+            "data.valid_query_file",
+            "data.valid_corpus_file",
+            "output_dir",
+            "training.resume_from_checkpoint",
+        ):
+            value = OmegaConf.select(config, name)
+            if value and "://" not in value and not Path(value).is_absolute():
+                OmegaConf.update(config, name, str(directory / value))
 
     @staticmethod
     def validate_config(config: Union[DictConfig, MainConfig]) -> None:
@@ -93,6 +105,23 @@ class ConfigManager:
         }
         if config.loss.loss_type not in task_losses[config.task_type]:
             raise ValueError(f"Loss {config.loss.loss_type!r} is not supported by the {config.task_type} YAML workflow")
+        if (
+            config.loss.loss_type == "triplet" or not config.loss.use_inbatch_negative
+        ) and config.data.negative_samples == 0:
+            raise ValueError("Explicit-negative training requires data.negative_samples > 0")
+        if config.task_type == "dense_retrieval" and not config.model.normalize_embeddings:
+            raise ValueError("Dense cosine losses require model.normalize_embeddings=true")
+        if bool(config.data.valid_query_file) != bool(config.data.valid_corpus_file):
+            raise ValueError("Set both valid_query_file and valid_corpus_file")
+        if config.data.valid_query_file:
+            if config.task_type == "cross_encoder":
+                raise ValueError("Corpus evaluation supports dense retrieval and ColBERT")
+            if config.training.metric_for_best_model == "eval_loss":
+                config.training.metric_for_best_model = "eval_ndcg_at_10"
+                config.training.greater_is_better = True
+        from ..train import training_arguments
+
+        training_arguments(config)
         if config.ranking is not None and config.ranking.objective != "classification":
             raise ValueError("The YAML reranking workflow currently supports classification only")
         if config.model.load_in_4bit or config.model.load_in_8bit:

@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 
 
 @dataclass
-class ModelConfig:
+class InferenceOptions:
     """Configuration for model initialization and training.
 
     Args:
@@ -60,7 +60,7 @@ class Base(ABC, nn.Module):
         self,
         model: Optional[Union[str, nn.Module]] = None,
         tokenizer: Optional[PreTrainedTokenizer] = None,
-        config: Optional[ModelConfig] = None,
+        config: Optional[InferenceOptions] = None,
         **kwargs,
     ):
         super().__init__()
@@ -71,8 +71,12 @@ class Base(ABC, nn.Module):
             )
         self.model = model
         self.tokenizer = tokenizer
-        self.config = config or ModelConfig(**kwargs)
+        self.inference_options = config or InferenceOptions(**kwargs)
         self.device = get_device_name()
+
+    @property
+    def config(self):
+        return self.model.config
 
     @abstractmethod
     def forward(self, *args, **kwargs) -> torch.Tensor:
@@ -308,7 +312,7 @@ class BaseRanker(Base):
         self,
         model: Optional[nn.Module] = None,
         tokenizer: Optional[PreTrainedTokenizer] = None,
-        config: Optional[ModelConfig] = None,
+        config: Optional[InferenceOptions] = None,
         **kwargs,
     ):
         super().__init__(model, tokenizer, config, **kwargs)
@@ -396,21 +400,31 @@ class BaseRanker(Base):
             sentence_pairs = [sentence_pairs]
 
         # Use config values if not specified
-        batch_size = batch_size or self.config.batch_size
-        max_length = max_length or self.config.max_length
-        normalize = normalize if normalize is not None else self.config.normalize
-        show_progress_bar = show_progress_bar if show_progress_bar is not None else self.config.show_progress_bar
+        batch_size = batch_size or self.inference_options.batch_size
+        max_length = max_length or self.inference_options.max_length
+        normalize = normalize if normalize is not None else self.inference_options.normalize
+        show_progress_bar = (
+            show_progress_bar if show_progress_bar is not None else self.inference_options.show_progress_bar
+        )
 
         # Sort by length for efficiency
         length_sorted_idx = np.argsort([-self._text_length(q) - self._text_length(p) for q, p in sentence_pairs])
         sentences_sorted = [sentence_pairs[idx] for idx in length_sorted_idx]
 
         # Apply instructions if configured
-        if self.config.query_instruction or self.config.document_instruction:
+        if self.inference_options.query_instruction or self.inference_options.document_instruction:
             sentences_sorted = [
                 (
-                    self.config.query_instruction.format(pair[0]) if self.config.query_instruction else pair[0],
-                    self.config.document_instruction.format(pair[1]) if self.config.document_instruction else pair[1],
+                    (
+                        self.inference_options.query_instruction.format(pair[0])
+                        if self.inference_options.query_instruction
+                        else pair[0]
+                    ),
+                    (
+                        self.inference_options.document_instruction.format(pair[1])
+                        if self.inference_options.document_instruction
+                        else pair[1]
+                    ),
                 )
                 for pair in sentences_sorted
             ]
@@ -472,9 +486,11 @@ class BaseRanker(Base):
             Union[Dict[str, List[str]], List[str]]: Reranked documents
         """
         # Use config values if not specified
-        batch_size = batch_size or self.config.batch_size
-        show_progress_bar = show_progress_bar if show_progress_bar is not None else self.config.show_progress_bar
-        normalize = normalize if normalize is not None else self.config.normalize
+        batch_size = batch_size or self.inference_options.batch_size
+        show_progress_bar = (
+            show_progress_bar if show_progress_bar is not None else self.inference_options.show_progress_bar
+        )
+        normalize = normalize if normalize is not None else self.inference_options.normalize
 
         if long_documents_split:
             splitter = DocumentSplitter(

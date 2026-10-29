@@ -13,13 +13,20 @@ class DenseTrainer(Trainer):
         self.label_names = []
 
     def compute_loss(self, model, inputs, return_outputs=False, **kwargs):
-        query = model(inputs["query"])
-        positive = model(inputs["positive"])
-        negative = model(inputs["negative"]) if "negative" in inputs else None
+        query, positive, negative = model(inputs)
         loss = self.loss_fn(query, positive, negative)
         if return_outputs:
             return loss, {"scores": query @ positive.T}
         return loss
+
+    def evaluate(self, eval_dataset=None, ignore_keys=None, metric_key_prefix="eval"):
+        evaluator = getattr(self, "retrieval_evaluator", None)
+        if evaluator is None:
+            return super().evaluate(eval_dataset, ignore_keys, metric_key_prefix)
+        metrics = evaluator(self.model, self.args.per_device_eval_batch_size, metric_key_prefix)
+        self.log(metrics)
+        self.control = self.callback_handler.on_evaluate(self.args, self.state, self.control, metrics)
+        return metrics
 
     def prediction_step(self, model, inputs, prediction_loss_only, ignore_keys=None):
         # Dataset losses remain valid in eval mode and do not require relevance labels.

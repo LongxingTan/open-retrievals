@@ -74,7 +74,7 @@ class ServingExportTests(unittest.TestCase):
                             with torch.inference_mode():
                                 expected = model.forward_from_tensor(tokens["input_ids"], tokens["attention_mask"])
                             responses = backend.execute(
-                                [np.array([x.encode() for x in texts], dtype=object), np.array([], dtype=object)]
+                                [np.array([[x.encode()] for x in texts], dtype=object), np.array([], dtype=object)]
                             )
                             np.testing.assert_allclose(
                                 responses[0]["output_tensors"][0], expected.numpy(), rtol=1e-5, atol=1e-6

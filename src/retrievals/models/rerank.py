@@ -187,7 +187,7 @@ class AutoModelForRanking(BaseRanker):
             trust_remote_code=trust_remote_code,
             **kwargs,
         )
-        if causal_lm or check_causal_lm(model_name_or_path):
+        if causal_lm:
             tokenizer.padding_side = "right"
             tokenizer.add_eos_token = True
 
@@ -327,7 +327,9 @@ class ColBERT(BaseRanker):
         """Compute the loss for ColBERT."""
         if not self.loss_fn:
             self.loss_fn = ColbertLoss(temperature=self.temperature, use_inbatch_negative=False)
-        return self.loss_fn(query_embedding, positive_embedding, negative_embedding, attention_mask)
+        return self.loss_fn(
+            query_embedding, positive_embedding, negative_embedding, attention_mask, mask_includes_cls=True
+        )
 
     def preprocess_pair(
         self,
@@ -499,7 +501,7 @@ class ColBERT(BaseRanker):
     def from_pretrained(
         cls,
         model_name_or_path: str,
-        colbert_dim: int = 1024,
+        colbert_dim: Optional[int] = None,
         pretrained_linear_name: str = 'colbert_linear.pt',
         loss_fn: Union[nn.Module, Callable] = ColbertLoss(),
         trust_remote_code: bool = True,
@@ -521,6 +523,13 @@ class ColBERT(BaseRanker):
         tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, trust_remote_code=trust_remote_code)
         model = AutoModel.from_pretrained(model_name_or_path, trust_remote_code=trust_remote_code, **kwargs)
 
+        weights_path = os.path.join(model_name_or_path, pretrained_linear_name)
+        if colbert_dim is None:
+            colbert_dim = (
+                torch.load(weights_path, map_location="cpu", weights_only=True)["weight"].shape[0]
+                if os.path.isfile(weights_path)
+                else 128
+            )
         linear_layer = nn.Linear(model.config.hidden_size, colbert_dim)
         if os.path.exists(path=os.path.join(model_name_or_path, pretrained_linear_name)):
             logger.info(

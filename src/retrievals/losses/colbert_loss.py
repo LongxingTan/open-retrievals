@@ -27,6 +27,7 @@ class ColbertLoss(Base):
         mask: Optional[torch.Tensor] = None,
         document_mask: Optional[torch.Tensor] = None,
         negative_mask: Optional[torch.Tensor] = None,
+        mask_includes_cls: bool = False,
     ):
 
         if negative_embeddings is None and self.use_inbatch_negative is False:
@@ -40,6 +41,9 @@ class ColbertLoss(Base):
             mask = self._dist_gather_tensor(mask)
             document_mask = self._dist_gather_tensor(document_mask)
             negative_mask = self._dist_gather_tensor(negative_mask)
+
+        if mask is not None and mask_includes_cls:
+            mask = mask[:, 1:]
 
         scores = self.similarity(query_embeddings, positive_embeddings, mask, document_mask)
 
@@ -84,8 +88,5 @@ class ColbertLoss(Base):
         token_scores = late_interactions.max(-1).values
         token_scores = token_scores.masked_fill(~torch.isfinite(token_scores), 0)
         if mask is not None:
-            # Legacy ColBERT callers include CLS; their embeddings omit it.
-            if mask.size(-1) == token_scores.size(-1) + 1:
-                mask = mask[:, 1:]
             token_scores = token_scores * mask[:, None, :].to(token_scores.dtype)
         return token_scores.sum(-1)

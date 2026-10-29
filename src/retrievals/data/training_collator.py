@@ -10,7 +10,5 @@ class DenseCollator:
 
     def __call__(self, rows):
         has_negatives = ["negative" in row for row in rows]
-        if any(has_negatives) and not all(has_negatives):
-            raise ValueError("Every row in a batch must either have negatives or use positive-only training")
-        keys = ["query", "positive"] + (["negative"] if all(has_negatives) else [])
+        keys = ["query", "positive"] + (["negative"] if any(has_negatives) else [])
         return RetrievalCollator(self.tokenizer, self.lengths[: len(keys)], keys)(rows)

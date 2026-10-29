@@ -6,7 +6,7 @@ from concurrent.futures import ThreadPoolExecutor
 from functools import lru_cache
 from typing import Optional
 
-from .constants import RUNNING_LOG
+RUNNING_LOG = "running_log.txt"
 
 _thread_lock = threading.RLock()
 _default_handler: Optional["logging.Handler"] = None

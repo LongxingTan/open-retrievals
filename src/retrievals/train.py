@@ -1,21 +1,16 @@
 """Assemble explicit task trainers from the same configuration used by the CLI."""
 
+import json
 from inspect import signature
 from pathlib import Path
 
 import torch
 from omegaconf import OmegaConf
-from transformers import (
-    AutoModel,
-    AutoModelForSequenceClassification,
-    AutoTokenizer,
-    TrainingArguments,
-    set_seed,
-)
+from transformers import AutoModel, AutoModelForSequenceClassification, AutoTokenizer, TrainingArguments, set_seed
 
 from .config import ConfigManager, MainConfig
 from .data.collator import ColBertCollator, RerankCollator
-from .data.training import load_training_dataset
+from .data.training import RetrievalDataset, load_training_dataset
 from .data.training_collator import DenseCollator
 from .losses import get_loss_fn
 from .models import AutoModelForEmbedding, AutoModelForRanking, ColBERT
@@ -58,7 +53,7 @@ def load_model(config):
         backbone = PeftModel.from_pretrained(backbone, settings.model_name_or_path, is_trainable=settings.use_lora)
     else:
         backbone = loader.from_pretrained(settings.model_name_or_path, **kwargs)
-    if len(tokenizer) != backbone.get_input_embeddings().num_embeddings:
+    if len(tokenizer) > backbone.get_input_embeddings().num_embeddings:
         backbone.resize_token_embeddings(len(tokenizer))
     backbone.config.pad_token_id = tokenizer.pad_token_id
     if settings.use_lora and not adapter_path.is_file():
@@ -87,14 +82,14 @@ def load_model(config):
     return AutoModelForEmbedding(
         **common,
         pooling_method=settings.pooling_method,
-        max_length=settings.max_length,
+        max_length=config.data.doc_max_length,
         normalize_embeddings=settings.normalize_embeddings,
     )
 
 
 def training_arguments(config, training=True):
     settings = config.training
-    if training and settings.eval_strategy != "no" and not config.data.valid_file:
+    if training and settings.eval_strategy != "no" and not (config.data.valid_file or config.data.valid_query_file):
         raise ValueError("Set data.valid_file when training.eval_strategy enables evaluation")
     optimizers = {"adamw": "adamw_torch", "sgd": "sgd"}
     if settings.optimizer not in optimizers:
@@ -147,8 +142,24 @@ def build_trainer(config, *, training=True):
     set_seed(config.seed)
     train_dataset = load_training_dataset(config.data, config.task_type) if training else None
     eval_dataset = load_training_dataset(config.data, config.task_type, training=False)
-    if not training and eval_dataset is None:
+    if not training and eval_dataset is None and not config.data.valid_query_file:
         raise ValueError("Evaluation requires data.valid_file")
+    for dataset in (train_dataset, eval_dataset):
+        if not isinstance(dataset, RetrievalDataset):
+            continue
+        counts = [len(dataset[index].get("negative", [])) for index in range(len(dataset))]
+        requires_negatives = (
+            config.task_type == "cross_encoder"
+            or config.loss.loss_type == "triplet"
+            or not config.loss.use_inbatch_negative
+        )
+        missing = [index for index, count in enumerate(counts) if count == 0]
+        if requires_negatives and missing:
+            raise ValueError(f"Explicit negatives are required at dataset rows {missing}")
+        if config.task_type != "cross_encoder" and not config.loss.use_inbatch_negative and len(set(counts)) > 1:
+            raise ValueError("Per-row negative training requires equal negative counts in all rows")
+    if eval_dataset is None and config.data.valid_query_file:
+        eval_dataset = [0]  # Trainer requires a dataset when evaluation is enabled.
     model = load_model(config)
     data = config.data
     if config.task_type == "dense_retrieval":
@@ -171,6 +182,10 @@ def build_trainer(config, *, training=True):
         loss_fn=get_loss_fn(config.loss),
         **({"label_smoothing": config.loss.label_smoothing} if config.task_type == "cross_encoder" else {}),
     )
+    if config.data.valid_query_file:
+        from .trainer.retrieval_metrics import RetrievalEvaluator
+
+        trainer.retrieval_evaluator = RetrievalEvaluator(config.data, config.task_type)
     trainer.model_accepts_loss_kwargs = False
     model.device = args.device
     return trainer
@@ -182,9 +197,20 @@ def save_model(trainer, config, output_dir=None):
     if trainer.is_world_process_zero():
         model = trainer.accelerator.unwrap_model(trainer.model)
         model.save_pretrained(str(path))
+        contract = {
+            "task": config.task_type,
+            "pooling_method": config.model.pooling_method,
+            "normalize_embeddings": config.task_type != "cross_encoder",
+            "max_length": config.data.max_length if config.task_type == "cross_encoder" else config.data.doc_max_length,
+            "query_max_length": config.data.query_max_length,
+            "document_max_length": config.data.doc_max_length,
+            "colbert_dim": model.linear.out_features if config.task_type == "colbert" else None,
+        }
+        (path / "embedding_config.json").write_text(json.dumps(contract, indent=2))
         saved = OmegaConf.create(ConfigManager.to_dict(config))
         saved.model.model_name_or_path = str(path.resolve())
         saved.model.tokenizer_name = None
+        saved.training.resume_from_checkpoint = None
         # Dictionary configurations resolve local paths against the working directory.
         # Preserve those locations when writing YAML into the export directory.
         for key in ("train_file", "valid_file", "test_file"):

@@ -92,3 +92,10 @@ appropriate to the serving dtype; also check nearest-neighbor agreement.
 The Python backend was chosen to reuse the exact embedding forward path without
 requiring an ONNX/TensorRT graph conversion. It does not provide TensorRT
 optimization or vLLM scheduling.
+
+Triton exports use a standalone Transformers backend (no `retrievals` installation
+is required). Install `torch`, `transformers`, and `numpy` in the Triton Python
+backend environment. `TEXT` has shape `[batch, 1]`; `EMBEDDING` has shape
+`[batch, hidden_size]`. The generated configuration enables dynamic batching with
+up to 64 inputs and a 1 ms queue delay. Pooling and normalization are read from
+`embedding_config.json`.

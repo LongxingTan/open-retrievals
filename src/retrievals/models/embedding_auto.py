@@ -64,6 +64,7 @@ class AutoModelForEmbedding(Base):
         self.pooling = AutoPooling(pooling_method) if pooling_method else None
         self.loss_fn = loss_fn
         self.max_length = max_length or self._determine_max_length()
+        self.query_max_length = kwargs.get("query_max_length", self.max_length)
         self.query_instruction = query_instruction or '{}'
         self.document_instruction = document_instruction or '{}'
         self.use_fp16 = use_fp16
@@ -82,6 +83,24 @@ class AutoModelForEmbedding(Base):
         output_hidden_states: Optional[bool] = None,
         return_dict: Optional[bool] = False,
     ):
+        if isinstance(inputs, dict) and "query" in inputs:
+            query = self.forward(inputs["query"])
+            documents = [inputs["positive"]]
+            if "negative" in inputs:
+                documents.append(inputs["negative"])
+            width = max(item["input_ids"].shape[1] for item in documents)
+            merged = {}
+            for key in ("input_ids", "attention_mask"):
+                fill = self.tokenizer.pad_token_id if key == "input_ids" else 0
+                merged[key] = torch.cat(
+                    [
+                        torch.nn.functional.pad(item[key], (0, width - item[key].shape[1]), value=fill)
+                        for item in documents
+                    ]
+                )
+            embeddings = self.forward(merged)
+            count = documents[0]["input_ids"].shape[0]
+            return query, embeddings[:count], embeddings[count:] if len(documents) > 1 else None
         if isinstance(inputs, (dict, BatchEncoding)):
             embeddings = self.forward_from_tensor(inputs['input_ids'], inputs['attention_mask'])
         elif isinstance(inputs, str) or (isinstance(inputs, Iterable) and isinstance(inputs[0], str)):
@@ -265,7 +284,7 @@ class AutoModelForEmbedding(Base):
                 padding=True,
                 truncation=True,
                 return_tensors="pt",
-                max_length=self.max_length,
+                max_length=self.query_max_length if is_query else self.max_length,
             )
             features = batch_to_device(features, device)
 
@@ -381,6 +400,7 @@ class AutoModelForEmbedding(Base):
                     "pooling_method": self.pooling_method,
                     "normalize_embeddings": self.normalize_embeddings,
                     "max_length": self.max_length,
+                    "query_max_length": self.query_max_length,
                 },
                 handle,
             )
@@ -467,6 +487,7 @@ class AutoModelForEmbedding(Base):
             document_instruction=document_instruction,
             use_fp16=use_fp16,
             max_length=max_length,
+            query_max_length=metadata.get("query_max_length", max_length),
             normalize_embeddings=normalize_embeddings,
             **kwargs,
         )

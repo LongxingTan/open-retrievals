@@ -88,9 +88,9 @@ class NumericalParityTests(unittest.TestCase):
         trainer = object.__new__(DenseTrainer)
         trainer.loss_fn = lambda q, p, n: (q - p).square().mean()
         # The loss needs no score matrix; only an explicit output request does.
-        inputs = {'query': torch.randn(3, 8), 'positive': torch.randn(3, 8)}
+        inputs = (torch.randn(3, 8), torch.randn(3, 8), None)
         with patch.object(torch.Tensor, '__matmul__', side_effect=AssertionError('unused scores')):
             loss = trainer.compute_loss(lambda x: x, inputs)
         self.assertTrue(torch.isfinite(loss))
         _, outputs = trainer.compute_loss(lambda x: x, inputs, return_outputs=True)
-        torch.testing.assert_close(outputs['scores'], inputs['query'] @ inputs['positive'].T)
+        torch.testing.assert_close(outputs['scores'], inputs[0] @ inputs[1].T)
